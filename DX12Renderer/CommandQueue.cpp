@@ -26,6 +26,40 @@ CommandQueue::CommandQueue(const ComPtr<ID3D12Device2>& device, const D3D12_COMM
 	assert(FenceEvent && "Failed to create fence event handle.");
 }
 
+CommandQueue::~CommandQueue() = default;
+
+uint64_t CommandQueue::Signal()
+{
+	const uint64_t fenceValue = ++FenceValue;
+	D3D12CommandQueue->Signal(D3D12Fence.Get(), fenceValue);
+	return fenceValue;
+}
+
+bool CommandQueue::IsFenceComplete(const uint64_t fenceValue) const
+{
+	return D3D12Fence->GetCompletedValue() >= fenceValue;
+}
+
+void CommandQueue::WaitForFenceValue(const uint64_t fenceValue) const
+{
+	if (!IsFenceComplete(fenceValue))
+	{
+		D3D12Fence->SetEventOnCompletion(fenceValue, FenceEvent);
+		WaitForSingleObject(FenceEvent, DWORD_MAX);
+	}
+}
+
+void CommandQueue::Flush()
+{
+	WaitForFenceValue(Signal());
+}
+
+ComPtr<ID3D12CommandQueue> CommandQueue::GetD3D12CommandQueue() const
+{
+	return D3D12CommandQueue;
+}
+
+
 ComPtr<ID3D12CommandAllocator> CommandQueue::CreateCommandAllocator() const
 {
 	ComPtr<ID3D12CommandAllocator> commandAllocator;

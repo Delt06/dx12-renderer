@@ -158,12 +158,31 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Application.cpp" />
     <ClCompile Include="CommandQueue.cpp" />
+    <ClCompile Include="DX12LibPCH.cpp" />
+    <ClCompile Include="Game.cpp" />
+    <ClCompile Include="HighResolutionClock.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Application.h" />
     <ClInclude Include="CommandQueue.h" />
+    <ClInclude Include="DX12LibPCH.h" />
+    <ClInclude Include="Events.h" />
+    <ClInclude Include="Game.h" />
     <ClInclude Include="Helpers.h" />
+    <ClInclude Include="HighResolutionClock.h" />
+    <ClInclude Include="KeyCodes.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="Window.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Icon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
