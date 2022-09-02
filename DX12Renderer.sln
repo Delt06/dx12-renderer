@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DX12Renderer", "DX12Renderer\DX12Renderer.vcxproj", "{5EDB09FC-1D61-4E9A-B556-A81BB2D6B766}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
+		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5EDB09FC-1D61-4E9A-B556-A81BB2D6B766}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5EDB09FC-1D61-4E9A-B556-A81BB2D6B766}.Debug|Win32.Build.0 = Debug|Win32
+		{5EDB09FC-1D61-4E9A-B556-A81BB2D6B766}.Debug|x64.ActiveCfg = Debug|x64
+		{5EDB09FC-1D61-4E9A-B556-A81BB2D6B766}.Debug|x64.Build.0 = Debug|x64
+		{5EDB09FC-1D61-4E9A-B556-A81BB2D6B766}.Release|Win32.ActiveCfg = Release|Win32
+		{5EDB09FC-1D61-4E9A-B556-A81BB2D6B766}.Release|Win32.Build.0 = Release|Win32
+		{5EDB09FC-1D61-4E9A-B556-A81BB2D6B766}.Release|x64.ActiveCfg = Release|x64
+		{5EDB09FC-1D61-4E9A-B556-A81BB2D6B766}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+EndGlobal
