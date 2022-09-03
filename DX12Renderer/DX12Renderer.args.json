@@ -1,0 +1,20 @@
+{
+  "FileVersion": 2,
+  "Id": "5edb09fc-1d61-4e9a-b556-a81bb2d6b766",
+  "Items": [
+    {
+      "Id": "c8f6b0fe-606d-42b6-b6f8-1a232d3779a6",
+      "Command": "",
+      "Items": [
+        {
+          "Id": "8b49c4d0-141d-40c9-b94d-8d3aa818f079",
+          "Command": "--width 1920"
+        },
+        {
+          "Id": "4cda3b1e-0f40-4bcd-8570-9a13724243d5",
+          "Command": "--height 1080"
+        }
+      ]
+    }
+  ]
+}

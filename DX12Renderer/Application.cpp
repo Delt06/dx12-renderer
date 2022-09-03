@@ -33,7 +33,7 @@ struct MakeWindow final : Window
 	}
 };
 
-Application::Application(const HINSTANCE hInst)
+Application::Application(const HINSTANCE hInst, const bool useWarp)
 	: HInstance(hInst)
 	  , TearingSupported(false)
 {
@@ -70,7 +70,7 @@ Application::Application(const HINSTANCE hInst)
 		MessageBoxA(nullptr, "Unable to register the window class.", "Error", MB_OK | MB_ICONERROR);
 	}
 
-	DxgiAdapter = GetAdapter(false);
+	DxgiAdapter = GetAdapter(useWarp);
 	if (DxgiAdapter)
 	{
 		D3d12Device = CreateDevice(DxgiAdapter);
@@ -85,11 +85,11 @@ Application::Application(const HINSTANCE hInst)
 	}
 }
 
-void Application::Create(HINSTANCE hInst)
+void Application::Create(const HINSTANCE hInst, const bool useWarp)
 {
 	if (!gsPSingleton)
 	{
-		gsPSingleton = new Application(hInst);
+		gsPSingleton = new Application(hInst, useWarp);
 	}
 }
 

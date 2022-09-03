@@ -20,7 +20,7 @@ public:
 	/**
 	* Create the application singleton with the application instance handle.
 	*/
-	static void Create(HINSTANCE hInst);
+	static void Create(HINSTANCE hInst, bool useWarp = false);
 
 	/**
 	* Destroy the application instance and all windows created by this application instance.
@@ -97,7 +97,7 @@ public:
 
 protected:
 	// Create an application instance.
-	Application(HINSTANCE hInst);
+	Application(HINSTANCE hInst, bool useWarp = false);
 	// Destroy the application instance and all windows associated with this application.
 	virtual ~Application();
 
