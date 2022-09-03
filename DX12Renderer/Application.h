@@ -74,7 +74,7 @@ public:
 	* Request to quit the application and close all windows.
 	* @param exitCode The error code to return to the invoking process.
 	*/
-	static void Quit(int exitCode = 0);
+	void Quit(int exitCode = 0);
 
 	/**
 	 * Get the Direct3D 12 device

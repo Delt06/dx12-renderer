@@ -40,6 +40,9 @@ public:
 	 */
 	virtual void Destroy();
 
+	int GetClientWidth() const;
+	int GetClientHeight() const;
+
 protected:
 	friend class Window;
 
