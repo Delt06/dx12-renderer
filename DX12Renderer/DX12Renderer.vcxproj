@@ -165,11 +165,13 @@
     <ClCompile Include="HighResolutionClock.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Tutorials\Tutorial2.cpp" />
+    <ClCompile Include="UploadBuffer.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
     <ClInclude Include="CommandQueue.h" />
+    <ClInclude Include="Defines.h" />
     <ClInclude Include="DX12LibPCH.h" />
     <ClInclude Include="Events.h" />
     <ClInclude Include="Game.h" />
@@ -178,6 +180,7 @@
     <ClInclude Include="KeyCodes.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Tutorials\Tutorial2.h" />
+    <ClInclude Include="UploadBuffer.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>
