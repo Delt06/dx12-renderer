@@ -178,7 +178,7 @@
     <ClCompile Include="ResourceWrapper.cpp" />
     <ClCompile Include="RootSignature.cpp" />
     <ClCompile Include="Texture.cpp" />
-    <ClCompile Include="Tutorial2\Camera.cpp" />
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Tutorial2\Tutorial2.cpp" />
     <ClCompile Include="UploadBuffer.cpp" />
     <ClCompile Include="VertexBuffer.cpp" />
@@ -210,7 +210,7 @@
     <ClInclude Include="RootSignature.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureUsageType.h" />
-    <ClInclude Include="Tutorial2\Camera.h" />
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="Tutorial2\Tutorial2.h" />
     <ClInclude Include="UploadBuffer.h" />
     <ClInclude Include="VertexBuffer.h" />
