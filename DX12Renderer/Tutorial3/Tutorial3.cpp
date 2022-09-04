@@ -342,7 +342,7 @@ void Tutorial3::OnRender(RenderEventArgs& e)
 
 		commandList->SetGraphicsDynamicConstantBuffer(MatricesCb, matrices);
 		commandList->SetGraphicsDynamicConstantBuffer(MaterialCb, Material());
-		commandList->SetGraphicsDynamicConstantBuffer(DirLightCb, MDirectionalLight);
+		commandList->SetGraphicsDynamicConstantBuffer(DirLightCb, directionalLight);
 
 		SphereMesh->Draw(*commandList);
 	}
