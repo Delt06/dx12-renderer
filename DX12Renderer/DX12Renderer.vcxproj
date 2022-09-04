@@ -168,6 +168,8 @@
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="HighResolutionClock.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ResourceStateTracker.cpp" />
+    <ClCompile Include="ResourceWrapper.cpp" />
     <ClCompile Include="RootSignature.cpp" />
     <ClCompile Include="Tutorials\Tutorial2.cpp" />
     <ClCompile Include="UploadBuffer.cpp" />
@@ -188,6 +190,8 @@
     <ClInclude Include="HighResolutionClock.h" />
     <ClInclude Include="KeyCodes.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="ResourceStateTracker.h" />
+    <ClInclude Include="ResourceWrapper.h" />
     <ClInclude Include="RootSignature.h" />
     <ClInclude Include="Tutorials\Tutorial2.h" />
     <ClInclude Include="UploadBuffer.h" />
