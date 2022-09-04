@@ -175,7 +175,7 @@ void Camera::UpdateInverseViewMatrix() const
 
 void Camera::UpdateProjectionMatrix() const
 {
-	PData->ProjectionMatrix = XMMatrixPerspectiveFovLH(XMConvertToRadians(VFov), AspectRatio, ZNear, ZNear);
+	PData->ProjectionMatrix = XMMatrixPerspectiveFovLH(XMConvertToRadians(VFov), AspectRatio, ZNear, ZFar);
 
 	ProjectionDirty = false;
 	InverseProjectionDirty = true;

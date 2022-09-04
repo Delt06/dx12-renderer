@@ -1,7 +1,34 @@
-﻿/**
-* @brief A window for our application.
-*/
-#pragma once
+﻿#pragma once
+
+/*
+ *  Copyright(c) 2018 Jeremiah van Oosten
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files(the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions :
+ *
+ *  The above copyright notice and this permission notice shall be included in
+ *  all copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ *  IN THE SOFTWARE.
+ */
+
+/**
+ *  @file Window.h
+ *  @date October 24, 2018
+ *  @author Jeremiah van Oosten
+ *
+ *  @brief A window for our application.
+ */
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -9,19 +36,21 @@
 #include <wrl.h>
 #include <d3d12.h>
 #include <dxgi1_5.h>
+
+#include <Events.h>
+#include <HighResolutionClock.h>
+#include <RenderTarget.h>
+#include <Texture.h>
+
 #include <memory>
-#include <string>
 
-#include "Events.h"
-#include "HighResolutionClock.h"
-
-// Forward-declare the DirectXTemplate class.
 class Game;
+class Texture;
 
-class Window
+class Window : public std::enable_shared_from_this<Window>
 {
 public:
-	// Number of swap chain back buffers.
+	// Number of swapchain back buffers.
 	static constexpr UINT BUFFER_COUNT = 3;
 
 	/**
@@ -29,6 +58,11 @@ public:
 	* @returns The handle to the window instance or nullptr if this is not a valid window.
 	*/
 	HWND GetWindowHandle() const;
+
+	/**
+	 * Initialize the window.
+	 */
+	void Initialize();
 
 	/**
 	* Destroy this window.
@@ -67,30 +101,26 @@ public:
 	void Hide();
 
 	/**
-	 * Return the current back buffer index.
+	 * Get the render target of the window. This method should be called every
+	 * frame since the color attachment point changes depending on the window's
+	 * current back buffer.
 	 */
-	UINT GetCurrentBackBufferIndex() const;
+	const RenderTarget& GetRenderTarget() const;
 
 	/**
-	 * Present the swap chain's back buffer to the screen.
+	 * Present the swapchain's back buffer to the screen.
 	 * Returns the current back buffer index after the present.
+	 *
+	 * @param texture The texture to copy to the swap chain's backbuffer before
+	 * presenting. By default, this is an empty texture. In this case, no copy
+	 * will be performed. Use the Window::GetRenderTarget method to get a render
+	 * target for the window's color buffer.
 	 */
-	UINT Present();
-
-	/**
-	 * Get the render target view for the current back buffer.
-	 */
-	D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentRenderTargetView() const;
-
-	/**
-	 * Get the back buffer resource for the current back buffer.
-	 */
-	Microsoft::WRL::ComPtr<ID3D12Resource> GetCurrentBackBuffer() const;
-
+	UINT Present(const Texture& texture = Texture());
 
 protected:
 	// The Window procedure needs to call protected methods of this class.
-	friend LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+	friend LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 	// Only the application can create a window.
 	friend class Application;
@@ -126,10 +156,10 @@ protected:
 	// The window was resized.
 	virtual void OnResize(ResizeEventArgs& e);
 
-	// Create the swap chain.
+	// Create the swapchain.
 	Microsoft::WRL::ComPtr<IDXGISwapChain4> CreateSwapChain();
 
-	// Update the render target views for the swap chain back buffers.
+	// Update the render target views for the swapchain back buffers.
 	void UpdateRenderTargetViews();
 
 private:
@@ -148,17 +178,22 @@ private:
 
 	HighResolutionClock UpdateClock;
 	HighResolutionClock RenderClock;
-	uint64_t FrameCounter;
+
+	UINT64 FenceValues[BUFFER_COUNT];
+	uint64_t FrameValues[BUFFER_COUNT];
 
 	std::weak_ptr<Game> PGame;
 
 	Microsoft::WRL::ComPtr<IDXGISwapChain4> DxgiSwapChain;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> D3d12RtvDescriptorHeap;
-	Microsoft::WRL::ComPtr<ID3D12Resource> D3d12BackBuffers[BUFFER_COUNT];
+	Texture BackBufferTextures[BUFFER_COUNT];
+	// Marked mutable to allow modification in a const function.
+	mutable RenderTarget MRenderTarget;
 
-	UINT RtvDescriptorSize;
 	UINT CurrentBackBufferIndex;
 
 	RECT WindowRect;
 	bool IsTearingSupported;
+
+	int PreviousMouseX;
+	int PreviousMouseY;
 };

@@ -36,7 +36,7 @@ bool Game::Initialize()
 
 void Game::Destroy()
 {
-	Application::DestroyWindow(PWindow);
+	Application::Get().DestroyWindow(PWindow);
 	PWindow.reset();
 }
 

@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// ReSharper disable CppRedundantQualifier
+#pragma once
 
 /*
  *  Copyright(c) 2018 Jeremiah van Oosten
@@ -53,7 +54,7 @@ public:
 
 	void Destroy();
 
-	ComPtr<ID3D12RootSignature> GetRootSignature() const
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> GetRootSignature() const
 	{
 		return D3d12RootSignature;
 	}
@@ -77,7 +78,7 @@ public:
 
 private:
 	D3D12_ROOT_SIGNATURE_DESC1 RootSignatureDesc;
-	ComPtr<ID3D12RootSignature> D3d12RootSignature;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> D3d12RootSignature;
 
 	// Need to know the number of descriptors per descriptor table.
 	uint32_t NumDescriptorsPerTable[MAX_DESCRIPTOR_TABLES];

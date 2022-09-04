@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// ReSharper disable CppRedundantQualifier
+#pragma once
 
 /*
  *  Copyright(c) 2018 Jeremiah van Oosten
@@ -75,7 +76,7 @@ public:
 	/**
 	 * Get direct access to the ID3D12GraphicsCommandList2 interface.
 	 */
-	ComPtr<ID3D12GraphicsCommandList2> GetGraphicsCommandList() const
+	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> GetGraphicsCommandList() const
 	{
 		return D3d12CommandList;
 	}
@@ -193,7 +194,7 @@ public:
 	/**
 	 * Clear a texture.
 	 */
-	/*void ClearTexture(const Texture& texture, const float clearColor[4]);*/
+	void ClearTexture(const Texture& texture, const float clearColor[4]);
 
 	/**
 	 * Clear depth/stencil texture.
@@ -319,7 +320,7 @@ public:
 	/**
 	 * Set the pipeline state object on the command list.
 	 */
-	void SetPipelineState(ComPtr<ID3D12PipelineState> pipelineState);
+	void SetPipelineState(Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState);
 
 	/**
 	 * Set the current root signature on the command list.
@@ -413,7 +414,7 @@ public:
 
 protected:
 private:
-	void TrackObject(ComPtr<ID3D12Object> object);
+	void TrackObject(Microsoft::WRL::ComPtr<ID3D12Object> object);
 	void TrackResource(const Resource& res);
 
 	// Generate mips for UAV compatible textures.
@@ -430,11 +431,11 @@ private:
 	// Binds the current descriptor heaps to the command list.
 	void BindDescriptorHeaps();
 
-	using TrackedObjectsType = std::vector<ComPtr<ID3D12Object>>;
+	using TrackedObjectsType = std::vector<Microsoft::WRL::ComPtr<ID3D12Object>>;
 
 	D3D12_COMMAND_LIST_TYPE D3d12CommandListType;
-	ComPtr<ID3D12GraphicsCommandList2> D3d12CommandList;
-	ComPtr<ID3D12CommandAllocator> D3d12CommandAllocator;
+	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> D3d12CommandList;
+	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> D3d12CommandAllocator;
 
 	// For copy queues, it may be necessary to generate mips while loading textures.
 	// Mips can't be generated on copy queues but must be generated on compute or

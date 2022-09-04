@@ -1,12 +1,14 @@
-#include "Window.h"
+#include <DX12LibPCH.h>
 
-#include "DX12LibPCH.h"
-#include "Application.h"
-#include "CommandQueue.h"
-#include <d3d12.h>
-#include <d3dx12.h>
-#include "Window.h"
-#include "Game.h"
+#include <Window.h>
+
+#include <Application.h>
+#include <CommandQueue.h>
+#include <CommandList.h>
+#include <Game.h>
+#include <RenderTarget.h>
+#include <ResourceStateTracker.h>
+#include <Texture.h>
 
 Window::Window(HWND hWnd, const std::wstring& windowName, int clientWidth, int clientHeight, bool vSync)
 	: HWnd(hWnd)
@@ -15,16 +17,19 @@ Window::Window(HWND hWnd, const std::wstring& windowName, int clientWidth, int c
 	  , ClientHeight(clientHeight)
 	  , VSync(vSync)
 	  , Fullscreen(false)
-	  , FrameCounter(0)
+	  , FenceValues{0}
+	  , FrameValues{0}
 {
 	Application& app = Application::Get();
 
 	IsTearingSupported = app.IsTearingSupported();
 
-	DxgiSwapChain = CreateSwapChain();
-	D3d12RtvDescriptorHeap = app.CreateDescriptorHeap(BUFFER_COUNT, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	RtvDescriptorSize = app.GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	for (int i = 0; i < BUFFER_COUNT; ++i)
+	{
+		BackBufferTextures[i].SetName(L"Backbuffer[" + std::to_wstring(i) + L"]");
+	}
 
+	DxgiSwapChain = CreateSwapChain();
 	UpdateRenderTargetViews();
 }
 
@@ -34,6 +39,11 @@ Window::~Window()
 	// the window goes out of scope.
 	assert(!HWnd && "Use Application::DestroyWindow before destruction.");
 }
+
+void Window::Initialize()
+{
+}
+
 
 HWND Window::GetWindowHandle() const
 {
@@ -65,6 +75,7 @@ void Window::Destroy()
 		// Notify the registered game that the window is being destroyed.
 		pGame->OnWindowDestroy();
 	}
+
 	if (HWnd)
 	{
 		DestroyWindow(HWnd);
@@ -117,7 +128,7 @@ void Window::SetFullscreen(bool fullscreen)
 
 			// Set the window style to a borderless window so the client area fills
 			// the entire screen.
-			UINT windowStyle = WS_OVERLAPPEDWINDOW & ~(WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX |
+			const UINT windowStyle = WS_OVERLAPPEDWINDOW & ~(WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX |
 				WS_MAXIMIZEBOX);
 
 			SetWindowLongW(HWnd, GWL_STYLE, windowStyle);
@@ -125,12 +136,12 @@ void Window::SetFullscreen(bool fullscreen)
 			// Query the name of the nearest display device for the window.
 			// This is required to set the fullscreen dimensions of the window
 			// when using a multi-monitor setup.
-			HMONITOR hMonitor = MonitorFromWindow(HWnd, MONITOR_DEFAULTTONEAREST);
+			const HMONITOR hMonitor = MonitorFromWindow(HWnd, MONITOR_DEFAULTTONEAREST);
 			MONITORINFOEX monitorInfo = {};
 			monitorInfo.cbSize = sizeof(MONITORINFOEX);
 			::GetMonitorInfo(hMonitor, &monitorInfo);
 
-			SetWindowPos(HWnd, HWND_TOPMOST,
+			SetWindowPos(HWnd, HWND_TOP,
 			             monitorInfo.rcMonitor.left,
 			             monitorInfo.rcMonitor.top,
 			             monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
@@ -167,26 +178,26 @@ void Window::RegisterCallbacks(std::shared_ptr<Game> pGame)
 	PGame = pGame;
 }
 
-void Window::OnUpdate(UpdateEventArgs&)
+void Window::OnUpdate(UpdateEventArgs& e)
 {
 	UpdateClock.Tick();
 
 	if (auto pGame = PGame.lock())
 	{
-		FrameCounter++;
-
-		UpdateEventArgs updateEventArgs(UpdateClock.GetDeltaSeconds(), UpdateClock.GetTotalSeconds());
+		UpdateEventArgs updateEventArgs(UpdateClock.GetDeltaSeconds(), UpdateClock.GetTotalSeconds(),
+		                                e.FrameNumber);
 		pGame->OnUpdate(updateEventArgs);
 	}
 }
 
-void Window::OnRender(RenderEventArgs&)
+void Window::OnRender(RenderEventArgs& e)
 {
 	RenderClock.Tick();
 
 	if (auto pGame = PGame.lock())
 	{
-		RenderEventArgs renderEventArgs(RenderClock.GetDeltaSeconds(), RenderClock.GetTotalSeconds());
+		RenderEventArgs renderEventArgs(RenderClock.GetDeltaSeconds(), RenderClock.GetTotalSeconds(),
+		                                e.FrameNumber);
 		pGame->OnRender(renderEventArgs);
 	}
 }
@@ -210,6 +221,12 @@ void Window::OnKeyReleased(KeyEventArgs& e)
 // The mouse was moved
 void Window::OnMouseMoved(MouseMotionEventArgs& e)
 {
+	e.RelX = e.X - PreviousMouseX;
+	e.RelY = e.Y - PreviousMouseY;
+
+	PreviousMouseX = e.X;
+	PreviousMouseY = e.Y;
+
 	if (auto pGame = PGame.lock())
 	{
 		pGame->OnMouseMoved(e);
@@ -219,6 +236,9 @@ void Window::OnMouseMoved(MouseMotionEventArgs& e)
 // A button on the mouse was pressed
 void Window::OnMouseButtonPressed(MouseButtonEventArgs& e)
 {
+	PreviousMouseX = e.X;
+	PreviousMouseY = e.Y;
+
 	if (auto pGame = PGame.lock())
 	{
 		pGame->OnMouseButtonPressed(e);
@@ -253,16 +273,19 @@ void Window::OnResize(ResizeEventArgs& e)
 
 		Application::Get().Flush();
 
+		// Release all references to back buffer textures.
+		MRenderTarget.AttachTexture(Color0, Texture());
 		for (int i = 0; i < BUFFER_COUNT; ++i)
 		{
-			D3d12BackBuffers[i].Reset();
+			ResourceStateTracker::RemoveGlobalResourceState(BackBufferTextures[i].GetD3D12Resource().Get());
+			BackBufferTextures[i].Reset();
 		}
 
 		DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
 		ThrowIfFailed(DxgiSwapChain->GetDesc(&swapChainDesc));
 		ThrowIfFailed(DxgiSwapChain->ResizeBuffers(BUFFER_COUNT, ClientWidth,
-		                                             ClientHeight, swapChainDesc.BufferDesc.Format,
-		                                             swapChainDesc.Flags));
+		                                           ClientHeight, swapChainDesc.BufferDesc.Format,
+		                                           swapChainDesc.Flags));
 
 		CurrentBackBufferIndex = DxgiSwapChain->GetCurrentBackBufferIndex();
 
@@ -323,48 +346,63 @@ ComPtr<IDXGISwapChain4> Window::CreateSwapChain()
 	return dxgiSwapChain4;
 }
 
-// Update the render target views for the swapchain back buffers.
 void Window::UpdateRenderTargetViews()
 {
-	auto device = Application::Get().GetDevice();
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(D3d12RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
 	for (int i = 0; i < BUFFER_COUNT; ++i)
 	{
 		ComPtr<ID3D12Resource> backBuffer;
 		ThrowIfFailed(DxgiSwapChain->GetBuffer(i, IID_PPV_ARGS(&backBuffer)));
 
-		device->CreateRenderTargetView(backBuffer.Get(), nullptr, rtvHandle);
+		ResourceStateTracker::AddGlobalResourceState(backBuffer.Get(), D3D12_RESOURCE_STATE_COMMON);
 
-		D3d12BackBuffers[i] = backBuffer;
-
-		rtvHandle.Offset(RtvDescriptorSize);
+		BackBufferTextures[i].SetD3D12Resource(backBuffer);
+		BackBufferTextures[i].CreateViews();
 	}
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE Window::GetCurrentRenderTargetView() const
+const RenderTarget& Window::GetRenderTarget() const
 {
-	return CD3DX12_CPU_DESCRIPTOR_HANDLE(D3d12RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
-	                                     CurrentBackBufferIndex, RtvDescriptorSize);
+	MRenderTarget.AttachTexture(Color0, BackBufferTextures[CurrentBackBufferIndex]);
+	return MRenderTarget;
 }
 
-ComPtr<ID3D12Resource> Window::GetCurrentBackBuffer() const
+UINT Window::Present(const Texture& texture)
 {
-	return D3d12BackBuffers[CurrentBackBufferIndex];
-}
+	auto commandQueue = Application::Get().GetCommandQueue(D3D12_COMMAND_LIST_TYPE_DIRECT);
+	auto commandList = commandQueue->GetCommandList();
 
-UINT Window::GetCurrentBackBufferIndex() const
-{
-	return CurrentBackBufferIndex;
-}
+	auto& backBuffer = BackBufferTextures[CurrentBackBufferIndex];
 
-UINT Window::Present()
-{
+	if (texture.IsValid())
+	{
+		if (texture.GetD3D12ResourceDesc().SampleDesc.Count > 1)
+		{
+			commandList->ResolveSubresource(backBuffer, texture);
+		}
+		else
+		{
+			commandList->CopyResource(backBuffer, texture);
+		}
+	}
+
+	RenderTarget renderTarget;
+	renderTarget.AttachTexture(Color0, backBuffer);
+
+	commandList->TransitionBarrier(backBuffer, D3D12_RESOURCE_STATE_PRESENT);
+	commandQueue->ExecuteCommandList(commandList);
+
 	UINT syncInterval = VSync ? 1 : 0;
 	UINT presentFlags = IsTearingSupported && !VSync ? DXGI_PRESENT_ALLOW_TEARING : 0;
 	ThrowIfFailed(DxgiSwapChain->Present(syncInterval, presentFlags));
+
+	FenceValues[CurrentBackBufferIndex] = commandQueue->Signal();
+	FrameValues[CurrentBackBufferIndex] = Application::GetFrameCount();
+
 	CurrentBackBufferIndex = DxgiSwapChain->GetCurrentBackBufferIndex();
+
+	commandQueue->WaitForFenceValue(FenceValues[CurrentBackBufferIndex]);
+
+	Application::Get().ReleaseStaleDescriptors(FrameValues[CurrentBackBufferIndex]);
 
 	return CurrentBackBufferIndex;
 }

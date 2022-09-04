@@ -10,7 +10,8 @@ inline void ThrowIfFailed(const HRESULT result)
 {
 	if (FAILED(result))
 	{
-		throw std::exception();
+		const std::string message = std::to_string(result);
+		throw std::exception(message.c_str());
 	}
 }
 

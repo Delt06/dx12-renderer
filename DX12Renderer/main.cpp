@@ -5,9 +5,10 @@
 #include <shellapi.h>
 
 #include "Application.h"
-#include "Tutorial2/Tutorial2.h"
 
 #include <dxgidebug.h>
+
+#include "Tutorial3/Tutorial3.h"
 
 void ReportLiveObjects()
 {
@@ -22,7 +23,6 @@ struct Parameters
 {
 	int ClientWidth = 1280;
 	int ClientHeight = 720;
-	bool UseWarp = false;
 	std::string DemoName;
 };
 
@@ -43,11 +43,6 @@ void ParseCommandLineArguments(Parameters& parameters)
 			parameters.ClientHeight = wcstol(argv[++i], nullptr, 10);
 		}
 
-		if (wcscmp(argv[i], L"-warp") == 0 || wcscmp(argv[i], L"--warp") == 0)
-		{
-			parameters.UseWarp = true;
-		}
-
 		if (wcscmp(argv[i], L"-d") == 0 || wcscmp(argv[i], L"--demo") == 0)
 		{
 			parameters.DemoName = std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>().to_bytes(argv[++i]);
@@ -59,8 +54,9 @@ void ParseCommandLineArguments(Parameters& parameters)
 
 std::shared_ptr<Game> CreateGame(const Parameters& parameters)
 {
-	if (parameters.DemoName == "Tutorial2")
-		return std::make_shared<Tutorial2>(L"Learning DirectX 12 - Lesson 2", parameters.ClientWidth,
+
+	if (parameters.DemoName == "Tutorial3")
+		return std::make_shared<Tutorial3>(L"Learning DirectX 12 - Lesson 3", parameters.ClientWidth,
 		                                   parameters.ClientHeight);
 
 	const std::string message = "'" + std::string(parameters.DemoName) + "' is an unknown demo name";
@@ -83,7 +79,7 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	Parameters parameters;
 	ParseCommandLineArguments(parameters);
 
-	Application::Create(hInstance, parameters.UseWarp);
+	Application::Create(hInstance);
 	{
 		const auto demo = CreateGame(parameters);
 		retCode = Application::Get().Run(demo);
