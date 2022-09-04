@@ -63,7 +63,7 @@ std::shared_ptr<Game> CreateGame(const Parameters& parameters)
 		return std::make_shared<Tutorial2>(L"Learning DirectX 12 - Lesson 2", parameters.ClientWidth,
 		                                   parameters.ClientHeight);
 
-	const std::string message = std::string(parameters.DemoName) + " is an unknown demo name";
+	const std::string message = "'" + std::string(parameters.DemoName) + "' is an unknown demo name";
 	throw std::exception(message.c_str());
 }
 
@@ -85,8 +85,7 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 
 	Application::Create(hInstance, parameters.UseWarp);
 	{
-		const auto demo = std::make_shared<Tutorial2>(L"Learning DirectX 12 - Lesson 2", parameters.ClientWidth,
-		                                              parameters.ClientHeight);
+		const auto demo = CreateGame(parameters);
 		retCode = Application::Get().Run(demo);
 	}
 	Application::Destroy();
