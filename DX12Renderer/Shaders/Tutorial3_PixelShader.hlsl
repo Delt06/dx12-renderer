@@ -17,6 +17,7 @@ struct Material
 
 struct DirectionalLight
 {
+	float4 DirectionWs;
 	float4 DirectionVs;
 	float4 Color;
 };
