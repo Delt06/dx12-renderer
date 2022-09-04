@@ -159,7 +159,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="Buffer.cpp" />
+    <ClCompile Include="ByteAddressBuffer.cpp" />
+    <ClCompile Include="CommandList.cpp" />
     <ClCompile Include="CommandQueue.cpp" />
+    <ClCompile Include="ConstantBuffer.cpp" />
     <ClCompile Include="DescriptorAllocation.cpp" />
     <ClCompile Include="DescriptorAllocator.cpp" />
     <ClCompile Include="DescriptorAllocatorPage.cpp" />
@@ -167,17 +171,26 @@
     <ClCompile Include="DynamicDescriptorHeap.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="HighResolutionClock.cpp" />
+    <ClCompile Include="IndexBuffer.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="RenderTarget.cpp" />
     <ClCompile Include="ResourceStateTracker.cpp" />
     <ClCompile Include="ResourceWrapper.cpp" />
     <ClCompile Include="RootSignature.cpp" />
-    <ClCompile Include="Tutorials\Tutorial2.cpp" />
+    <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="Tutorial2\Camera.cpp" />
+    <ClCompile Include="Tutorial2\Tutorial2.cpp" />
     <ClCompile Include="UploadBuffer.cpp" />
+    <ClCompile Include="VertexBuffer.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
+    <ClInclude Include="Buffer.h" />
+    <ClInclude Include="ByteAddressBuffer.h" />
+    <ClInclude Include="CommandList.h" />
     <ClInclude Include="CommandQueue.h" />
+    <ClInclude Include="ConstantBuffer.h" />
     <ClInclude Include="Defines.h" />
     <ClInclude Include="DescriptorAllocation.h" />
     <ClInclude Include="DescriptorAllocator.h" />
@@ -188,13 +201,19 @@
     <ClInclude Include="Game.h" />
     <ClInclude Include="Helpers.h" />
     <ClInclude Include="HighResolutionClock.h" />
+    <ClInclude Include="IndexBuffer.h" />
     <ClInclude Include="KeyCodes.h" />
+    <ClInclude Include="RenderTarget.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="ResourceStateTracker.h" />
     <ClInclude Include="ResourceWrapper.h" />
     <ClInclude Include="RootSignature.h" />
-    <ClInclude Include="Tutorials\Tutorial2.h" />
+    <ClInclude Include="Texture.h" />
+    <ClInclude Include="TextureUsageType.h" />
+    <ClInclude Include="Tutorial2\Camera.h" />
+    <ClInclude Include="Tutorial2\Tutorial2.h" />
     <ClInclude Include="UploadBuffer.h" />
+    <ClInclude Include="VertexBuffer.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>

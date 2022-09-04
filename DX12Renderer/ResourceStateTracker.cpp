@@ -12,6 +12,10 @@ std::mutex ResourceStateTracker::GlobalMutex;
 bool ResourceStateTracker::IsLocked;
 ResourceStateTracker::ResourceStateMapType ResourceStateTracker::GlobalResourceStates;
 
+ResourceStateTracker::ResourceStateTracker() = default;
+
+ResourceStateTracker::~ResourceStateTracker() = default;
+
 void ResourceStateTracker::ResourceBarrier(const D3D12_RESOURCE_BARRIER& barrier)
 {
 	if (barrier.Type == D3D12_RESOURCE_BARRIER_TYPE_TRANSITION)

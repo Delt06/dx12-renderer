@@ -25,6 +25,8 @@ DynamicDescriptorHeap::DynamicDescriptorHeap(const D3D12_DESCRIPTOR_HEAP_TYPE he
 	DescriptorHandleCache = std::make_unique<D3D12_CPU_DESCRIPTOR_HANDLE[]>(NumDescriptorsPerHeap);
 }
 
+DynamicDescriptorHeap::~DynamicDescriptorHeap() = default;
+
 void DynamicDescriptorHeap::ParseRootSignature(const RootSignature& rootSignature)
 {
 	// If the root signature changes, all descriptors must be (re)bound to the

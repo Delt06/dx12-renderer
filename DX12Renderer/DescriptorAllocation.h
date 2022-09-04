@@ -1,11 +1,11 @@
-﻿#pragma once
+#pragma once
 
 #include <d3d12.h>
 
 #include <cstdint>
 #include <memory>
 
-#include "DescriptorAllocator.h"
+#include "DescriptorAllocatorPage.h"
 
 /**
  * \brief Single allocation of contiguous descriptors in a descriptor heap.

@@ -1,10 +1,11 @@
 #define WIN32_LEAN_AND_MEAN
+#include <codecvt>
 #include <Windows.h>
 #include <Shlwapi.h>
 #include <shellapi.h>
 
 #include "Application.h"
-#include "Tutorials/Tutorial2.h"
+#include "Tutorial2/Tutorial2.h"
 
 #include <dxgidebug.h>
 
@@ -22,6 +23,7 @@ struct Parameters
 	int ClientWidth = 1280;
 	int ClientHeight = 720;
 	bool UseWarp = false;
+	std::string DemoName;
 };
 
 void ParseCommandLineArguments(Parameters& parameters)
@@ -45,9 +47,24 @@ void ParseCommandLineArguments(Parameters& parameters)
 		{
 			parameters.UseWarp = true;
 		}
+
+		if (wcscmp(argv[i], L"-d") == 0 || wcscmp(argv[i], L"--demo") == 0)
+		{
+			parameters.DemoName = std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>().to_bytes(argv[++i]);
+		}
 	}
 
 	LocalFree(argv);
+}
+
+std::shared_ptr<Game> CreateGame(const Parameters& parameters)
+{
+	if (parameters.DemoName == "Tutorial2")
+		return std::make_shared<Tutorial2>(L"Learning DirectX 12 - Lesson 2", parameters.ClientWidth,
+		                                   parameters.ClientHeight);
+
+	const std::string message = std::string(parameters.DemoName) + " is an unknown demo name";
+	throw std::exception(message.c_str());
 }
 
 int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLine, int nCmdShow)

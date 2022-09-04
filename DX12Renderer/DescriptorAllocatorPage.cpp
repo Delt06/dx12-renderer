@@ -1,4 +1,4 @@
-﻿#include "DX12LibPCH.h"
+#include "DX12LibPCH.h"
 
 #include "DescriptorAllocatorPage.h"
 #include "Application.h"

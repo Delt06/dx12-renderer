@@ -1,6 +1,4 @@
-﻿#pragma once
-
-#include "DescriptorAllocation.h"
+#pragma once
 
 #include <d3d12.h>
 
@@ -10,6 +8,8 @@
 #include <memory>
 #include <mutex>
 #include <queue>
+
+class DescriptorAllocation;
 
 class DescriptorAllocatorPage : public std::enable_shared_from_this<DescriptorAllocatorPage>
 {
@@ -106,7 +106,7 @@ private:
 	FreeListBySizeType FreeListBySize;
 	StaleDescriptorQueueType StaleDescriptors;
 
-	ComPtr<ID3D12DescriptorHeap> DescriptorHeap;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DescriptorHeap;
 	D3D12_DESCRIPTOR_HEAP_TYPE HeapType;
 	D3D12_CPU_DESCRIPTOR_HANDLE BaseDescriptor;
 	uint32_t DescriptorHandleIncrementSize;
