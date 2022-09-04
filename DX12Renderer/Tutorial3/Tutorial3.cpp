@@ -337,6 +337,7 @@ void Tutorial3::OnRender(RenderEventArgs& e)
 		SphereMesh->Draw(*commandList);
 	}
 
+	commandQueue->ExecuteCommandList(commandList);
 	PWindow->Present(MRenderTarget.GetTexture(Color0));
 }
 
