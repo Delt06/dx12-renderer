@@ -164,9 +164,11 @@
     <ClCompile Include="DescriptorAllocator.cpp" />
     <ClCompile Include="DescriptorAllocatorPage.cpp" />
     <ClCompile Include="DX12LibPCH.cpp" />
+    <ClCompile Include="DynamicDescriptorHeap.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="HighResolutionClock.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="RootSignature.cpp" />
     <ClCompile Include="Tutorials\Tutorial2.cpp" />
     <ClCompile Include="UploadBuffer.cpp" />
     <ClCompile Include="Window.cpp" />
@@ -179,12 +181,14 @@
     <ClInclude Include="DescriptorAllocator.h" />
     <ClInclude Include="DescriptorAllocatorPage.h" />
     <ClInclude Include="DX12LibPCH.h" />
+    <ClInclude Include="DynamicDescriptorHeap.h" />
     <ClInclude Include="Events.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="Helpers.h" />
     <ClInclude Include="HighResolutionClock.h" />
     <ClInclude Include="KeyCodes.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="RootSignature.h" />
     <ClInclude Include="Tutorials\Tutorial2.h" />
     <ClInclude Include="UploadBuffer.h" />
     <ClInclude Include="Window.h" />
