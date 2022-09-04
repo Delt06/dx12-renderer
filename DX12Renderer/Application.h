@@ -95,6 +95,12 @@ public:
 	                                                                  D3D12_DESCRIPTOR_HEAP_TYPE type) const;
 	UINT GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE type) const;
 
+
+	static uint64_t GetFrameCount()
+	{
+		return FrameCount;
+	}
+
 protected:
 	// Create an application instance.
 	Application(HINSTANCE hInst, bool useWarp = false);
@@ -104,11 +110,11 @@ protected:
 	Microsoft::WRL::ComPtr<IDXGIAdapter4> GetAdapter(bool useWarp) const;
 	Microsoft::WRL::ComPtr<ID3D12Device2> CreateDevice(Microsoft::WRL::ComPtr<IDXGIAdapter4> adapter) const;
 	bool CheckTearingSupport() const;
-private:
+
 	Application(const Application& copy) = delete;
 
 	Application& operator=(const Application& other) = delete;
-
+private:
 	// The application instance handle that this application was created with.
 	HINSTANCE HInstance;
 
@@ -120,4 +126,6 @@ private:
 	std::shared_ptr<CommandQueue> CopyCommandQueue;
 
 	bool TearingSupported;
+
+	static uint64_t FrameCount;
 };

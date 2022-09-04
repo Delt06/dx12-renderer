@@ -160,6 +160,9 @@
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="CommandQueue.cpp" />
+    <ClCompile Include="DescriptorAllocation.cpp" />
+    <ClCompile Include="DescriptorAllocator.cpp" />
+    <ClCompile Include="DescriptorAllocatorPage.cpp" />
     <ClCompile Include="DX12LibPCH.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="HighResolutionClock.cpp" />
@@ -172,6 +175,9 @@
     <ClInclude Include="Application.h" />
     <ClInclude Include="CommandQueue.h" />
     <ClInclude Include="Defines.h" />
+    <ClInclude Include="DescriptorAllocation.h" />
+    <ClInclude Include="DescriptorAllocator.h" />
+    <ClInclude Include="DescriptorAllocatorPage.h" />
     <ClInclude Include="DX12LibPCH.h" />
     <ClInclude Include="Events.h" />
     <ClInclude Include="Game.h" />
