@@ -371,7 +371,8 @@ void CommandList::GenerateMips(Texture& texture)
 	{
 		if (!m_ComputeCommandList)
 		{
-			m_ComputeCommandList = Application::Get().GetCommandQueue(D3D12_COMMAND_LIST_TYPE_COMPUTE)->GetCommandList();
+			m_ComputeCommandList = Application::Get().GetCommandQueue(D3D12_COMMAND_LIST_TYPE_COMPUTE)->
+			                                          GetCommandList();
 		}
 		m_ComputeCommandList->GenerateMips(texture);
 		return;
@@ -417,7 +418,7 @@ void CommandList::GenerateMips(Texture& texture)
 
 		// Describe a UAV compatible resource that is used to perform
 		// mipmapping of the original texture.
-		auto uavDesc = aliasDesc;   // The flags for the UAV description must match that of the alias description.
+		auto uavDesc = aliasDesc; // The flags for the UAV description must match that of the alias description.
 		uavDesc.Format = Texture::GetUavCompatibleFormat(resourceDesc.Format);
 
 		D3D12_RESOURCE_DESC resourceDescs[] = {
@@ -907,7 +908,7 @@ void CommandList::GenerateMipsUav(Texture& texture, DXGI_FORMAT format)
 
 		Dispatch(Math::DivideByMultiple(dstWidth, 8), Math::DivideByMultiple(dstHeight, 8));
 
-		UavBarrier(texture);
+		//UavBarrier(texture);
 
 		srcMip += mipCount;
 	}

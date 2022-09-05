@@ -62,10 +62,11 @@ void ResourceStateTracker::ResourceBarrier(const D3D12_RESOURCE_BARRIER& barrier
 			// Add a pending barrier. The pending barriers will be resolved
 			// before the command list is executed on the command queue.
 			PendingResourceBarriers.push_back(barrier);
-			// Push the final known state (possibly replacing the previously known state for the subresource).
-			FinalResourceStates[transitionBarrier.pResource].SetSubresourceState(
-				transitionBarrier.Subresource, transitionBarrier.StateAfter);
 		}
+
+		// Push the final known state (possibly replacing the previously known state for the subresource).
+		FinalResourceStates[transitionBarrier.pResource].SetSubresourceState(
+			transitionBarrier.Subresource, transitionBarrier.StateAfter);
 	}
 	else
 	{
