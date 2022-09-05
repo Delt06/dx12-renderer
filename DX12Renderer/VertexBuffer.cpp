@@ -20,7 +20,7 @@ void VertexBuffer::CreateViews(const size_t numElements, const size_t elementSiz
 	NumVertices = numElements;
 	VertexStride = elementSize;
 
-	VertexBufferView.BufferLocation = D3d12Resource->GetGPUVirtualAddress();
+	VertexBufferView.BufferLocation = m_d3d12Resource->GetGPUVirtualAddress();
 	VertexBufferView.SizeInBytes = static_cast<UINT>(NumVertices * VertexStride);
 	VertexBufferView.StrideInBytes = static_cast<UINT>(VertexStride);
 }

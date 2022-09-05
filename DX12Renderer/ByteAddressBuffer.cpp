@@ -30,7 +30,7 @@ void ByteAddressBuffer::CreateViews(size_t numElements, size_t elementSize)
     srvDesc.Buffer.NumElements = static_cast<UINT>(BufferSize) / 4;
     srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
 
-    device->CreateShaderResourceView(D3d12Resource.Get(), &srvDesc, Srv.GetDescriptorHandle());
+    device->CreateShaderResourceView(m_d3d12Resource.Get(), &srvDesc, Srv.GetDescriptorHandle());
 
     D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
     uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
@@ -38,5 +38,5 @@ void ByteAddressBuffer::CreateViews(size_t numElements, size_t elementSize)
     uavDesc.Buffer.NumElements = static_cast<UINT>(BufferSize) / 4;
     uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
 
-    device->CreateUnorderedAccessView(D3d12Resource.Get(), nullptr, &uavDesc, Uav.GetDescriptorHandle());
+    device->CreateUnorderedAccessView(m_d3d12Resource.Get(), nullptr, &uavDesc, Uav.GetDescriptorHandle());
 }

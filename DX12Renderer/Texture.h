@@ -1,5 +1,7 @@
 #pragma once
 
+// ReSharper disable CppRedundantQualifier
+
 /*
  *  Copyright(c) 2018 Jeremiah van Oosten
  *
@@ -31,15 +33,17 @@
  */
 
 
+#include "ResourceWrapper.h"
 #include "DescriptorAllocation.h"
 #include "TextureUsageType.h"
 
+#include <d3d12.h>
 #include "d3dx12.h"
 
 #include <mutex>
 #include <unordered_map>
 
-#include "ResourceWrapper.h"
+#include "Application.h"
 
 class Texture : public ResourceWrapper
 {
@@ -64,12 +68,12 @@ public:
 
 	TextureUsageType GetTextureUsage() const
 	{
-		return TextureUsage;
+		return m_TextureUsage;
 	}
 
 	void SetTextureUsage(TextureUsageType textureUsage)
 	{
-		TextureUsage = textureUsage;
+		m_TextureUsage = textureUsage;
 	}
 
 	/**
@@ -84,18 +88,15 @@ public:
 
 	/**
 	* Get the SRV for a resource.
-	*
-	* @param dxgiFormat The required format of the resource. When accessing a
-	* depth-stencil buffer as a shader resource view, the format will be different.
 	*/
-	D3D12_CPU_DESCRIPTOR_HANDLE
-	GetShaderResourceView(const D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc = nullptr) const override;
+	D3D12_CPU_DESCRIPTOR_HANDLE GetShaderResourceView(
+		const D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc = nullptr) const override;
 
 	/**
 	* Get the UAV for a (sub)resource.
 	*/
-	D3D12_CPU_DESCRIPTOR_HANDLE
-	GetUnorderedAccessView(const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc = nullptr) const override;
+	D3D12_CPU_DESCRIPTOR_HANDLE GetUnorderedAccessView(
+		const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc = nullptr) const override;
 
 	/**
 	 * Get the RTV for the texture.
@@ -107,48 +108,52 @@ public:
 	 */
 	virtual D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilView() const;
 
-	static bool CheckSRVSupport(D3D12_FORMAT_SUPPORT1 formatSupport)
+	bool CheckSrvSupport() const
 	{
-		return ((formatSupport & D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE) != 0 ||
-			(formatSupport & D3D12_FORMAT_SUPPORT1_SHADER_LOAD) != 0);
+		return CheckFormatSupport(D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE);
 	}
 
-	static bool CheckRTVSupport(D3D12_FORMAT_SUPPORT1 formatSupport)
+	bool CheckRtvSupport() const
 	{
-		return ((formatSupport & D3D12_FORMAT_SUPPORT1_RENDER_TARGET) != 0);
+		return CheckFormatSupport(D3D12_FORMAT_SUPPORT1_RENDER_TARGET);
 	}
 
-	static bool CheckUAVSupport(D3D12_FORMAT_SUPPORT1 formatSupport)
+	bool CheckUavSupport() const
 	{
-		return ((formatSupport & D3D12_FORMAT_SUPPORT1_TYPED_UNORDERED_ACCESS_VIEW) != 0);
+		return CheckFormatSupport(D3D12_FORMAT_SUPPORT1_TYPED_UNORDERED_ACCESS_VIEW) &&
+			CheckFormatSupport(D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) &&
+			CheckFormatSupport(D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE);
 	}
 
-	static bool CheckDSVSupport(D3D12_FORMAT_SUPPORT1 formatSupport)
+	bool CheckDsvSupport() const
 	{
-		return ((formatSupport & D3D12_FORMAT_SUPPORT1_DEPTH_STENCIL) != 0);
+		return CheckFormatSupport(D3D12_FORMAT_SUPPORT1_DEPTH_STENCIL);
 	}
 
-	static bool IsUAVCompatibleFormat(DXGI_FORMAT format);
-	static bool IsSRGBFormat(DXGI_FORMAT format);
-	static bool IsBGRFormat(DXGI_FORMAT format);
+	static bool IsUavCompatibleFormat(DXGI_FORMAT format);
+	static bool IsSRgbFormat(DXGI_FORMAT format);
+	static bool IsBgrFormat(DXGI_FORMAT format);
 	static bool IsDepthFormat(DXGI_FORMAT format);
 
 	// Return a typeless format from the given format.
 	static DXGI_FORMAT GetTypelessFormat(DXGI_FORMAT format);
+	// Return an sRGB format in the same format family.
+	static DXGI_FORMAT GetSRgbFormat(DXGI_FORMAT format);
+	static DXGI_FORMAT GetUavCompatibleFormat(DXGI_FORMAT format);
 
 protected:
 private:
 	DescriptorAllocation CreateShaderResourceView(const D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc) const;
 	DescriptorAllocation CreateUnorderedAccessView(const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc) const;
 
-	mutable std::unordered_map<size_t, DescriptorAllocation> ShaderResourceViews;
-	mutable std::unordered_map<size_t, DescriptorAllocation> UnorderedAccessViews;
+	mutable std::unordered_map<size_t, DescriptorAllocation> m_ShaderResourceViews;
+	mutable std::unordered_map<size_t, DescriptorAllocation> m_UnorderedAccessViews;
 
-	mutable std::mutex ShaderResourceViewsMutex;
-	mutable std::mutex UnorderedAccessViewsMutex;
+	mutable std::mutex m_ShaderResourceViewsMutex;
+	mutable std::mutex m_UnorderedAccessViewsMutex;
 
-	DescriptorAllocation RenderTargetView;
-	DescriptorAllocation DepthStencilView;
+	DescriptorAllocation m_RenderTargetView;
+	DescriptorAllocation m_DepthStencilView;
 
-	TextureUsageType TextureUsage;
+	TextureUsageType m_TextureUsage;
 };

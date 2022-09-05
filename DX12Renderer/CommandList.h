@@ -45,6 +45,8 @@
 #include <mutex> // for std::mutex
 #include <vector> // for std::vector
 
+#include "GenerateMipsPso.h"
+
 class Buffer;
 class ByteAddressBuffer;
 class ConstantBuffer;
@@ -93,6 +95,8 @@ public:
 	 */
 	void TransitionBarrier(const Resource& resource, D3D12_RESOURCE_STATES stateAfter,
 	                       UINT subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, bool flushBarriers = false);
+	void TransitionBarrier(Microsoft::WRL::ComPtr<ID3D12Resource> resource, D3D12_RESOURCE_STATES stateAfter,
+		UINT subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, bool flushBarriers = false);
 
 	/**
 	 * Add a UAV barrier to ensure that any writes to a resource have completed
@@ -113,6 +117,7 @@ public:
 	 * @param afterResource The resource that will occupy the space in the heap.
 	 */
 	void AliasingBarrier(const Resource& beforeResource, const Resource& afterResource, bool flushBarriers = false);
+	void AliasingBarrier(Microsoft::WRL::ComPtr<ID3D12Resource> beforeResource, Microsoft::WRL::ComPtr<ID3D12Resource> afterResource, bool flushBarriers = false);
 
 	/**
 	 * Flush any barriers that have been pushed to the command list.
@@ -123,6 +128,7 @@ public:
 	 * Copy resources.
 	 */
 	void CopyResource(const Resource& dstRes, const Resource& srcRes);
+	void CopyResource(Microsoft::WRL::ComPtr<ID3D12Resource> dstRes, Microsoft::WRL::ComPtr<ID3D12Resource> srcRes);
 
 	/**
 	 * Resolve a multisampled resource into a non-multisampled resource.
@@ -418,7 +424,7 @@ private:
 	void TrackResource(const Resource& res);
 
 	// Generate mips for UAV compatible textures.
-	//void GenerateMips_UAV(Texture& texture);
+	void GenerateMipsUav(Texture& texture, bool isSRgb);
 	//// Generate mips for BGR textures.
 	//void GenerateMips_BGR(Texture& texture);
 	//// Generate mips for sRGB textures.
@@ -466,7 +472,7 @@ private:
 	ID3D12DescriptorHeap* DescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
 
 	// Pipeline state object for Mip map generation.
-	//std::unique_ptr<GenerateMipsPso> GenerateMipsPso;
+	std::unique_ptr<GenerateMipsPso> m_GenerateMipsPso;
 	//// Pipeline state object for converting panorama (equirectangular) to cubemaps
 	//std::unique_ptr<PanoToCubemapPSO> PanoToCubemapPso;
 

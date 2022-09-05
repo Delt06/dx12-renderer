@@ -20,7 +20,7 @@ void ConstantBuffer::CreateViews(const size_t numElements, const size_t elementS
 	SizeInBytes = numElements * elementSize;
 
 	D3D12_CONSTANT_BUFFER_VIEW_DESC d3d12ConstantBufferViewDesc;
-	d3d12ConstantBufferViewDesc.BufferLocation = D3d12Resource->GetGPUVirtualAddress();
+	d3d12ConstantBufferViewDesc.BufferLocation = m_d3d12Resource->GetGPUVirtualAddress();
 	d3d12ConstantBufferViewDesc.SizeInBytes = static_cast<UINT>(Math::AlignUp(SizeInBytes, 16));
 
 	const auto device = Application::Get().GetDevice();
