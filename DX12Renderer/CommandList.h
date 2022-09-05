@@ -183,13 +183,13 @@ public:
 	/**
 	 * Set the current primitive topology for the rendering pipeline.
 	 */
-	void SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY primitiveTopology);
+	void SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY primitiveTopology) const;
 
 	/**
 	 * Load a texture by a filename.
 	 */
-	/*void LoadTextureFromFile(Texture& texture, const std::wstring& fileName,
-	                         TextureUsageType textureUsage = TextureUsageType::Albedo);*/
+	void LoadTextureFromFile(Texture& texture, const std::wstring& fileName,
+	                         TextureUsageType textureUsage = TextureUsageType::Albedo);
 
 	/**
 	 * Clear a texture.
@@ -207,7 +207,7 @@ public:
 	 * The first subresource is used to generate the mip chain.
 	 * Mips are automatically generated for textures loaded from files.
 	 */
-	//void GenerateMips(Texture& texture);
+	void GenerateMips(Texture& texture);
 
 	/**
 	 * Generate a cubemap texture from a panoramic (equirectangular) texture.
@@ -217,8 +217,8 @@ public:
 	/**
 	 * Copy subresource data to a texture.
 	 */
-	/*void CopyTextureSubresource(Texture& texture, uint32_t firstSubresource, uint32_t numSubresources,
-	                            D3D12_SUBRESOURCE_DATA* subresourceData);*/
+	void CopyTextureSubresource(const Texture& texture, uint32_t firstSubresource, uint32_t numSubresources,
+	                            const D3D12_SUBRESOURCE_DATA* subresourceData);
 
 	/**
 	 * Set a dynamic constant buffer data to an inline descriptor in the root

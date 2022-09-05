@@ -45,7 +45,8 @@ void ParseCommandLineArguments(Parameters& parameters)
 
 		if (wcscmp(argv[i], L"-d") == 0 || wcscmp(argv[i], L"--demo") == 0)
 		{
-			parameters.DemoName = std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>().to_bytes(argv[++i]);
+			std::wstring arg = argv[++i];
+			parameters.DemoName = std::string(arg.begin(), arg.end());
 		}
 	}
 
