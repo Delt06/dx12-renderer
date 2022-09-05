@@ -68,6 +68,8 @@ private:
 	std::unique_ptr<Mesh> TorusMesh;
 	std::unique_ptr<Mesh> PlaneMesh;
 
+	std::shared_ptr<Texture> m_Texture;
+
 	RenderTarget MRenderTarget;
 	RootSignature MRootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> MPipelineState;

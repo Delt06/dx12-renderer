@@ -94,7 +94,8 @@ void ResourceStateTracker::TransitionResource(const ResourceWrapper& resource, c
 void ResourceStateTracker::UavBarrier(const ResourceWrapper* resource)
 {
 	ID3D12Resource* pResource = resource != nullptr ? resource->GetD3D12Resource().Get() : nullptr;
-	ResourceBarrier(CD3DX12_RESOURCE_BARRIER::UAV(pResource));
+	const auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(pResource);
+	ResourceBarrier(barrier);
 }
 
 void ResourceStateTracker::AliasBarrier(const ResourceWrapper* beforeResource, const ResourceWrapper* afterResource)
@@ -102,18 +103,21 @@ void ResourceStateTracker::AliasBarrier(const ResourceWrapper* beforeResource, c
 	ID3D12Resource* pResourceBefore = beforeResource != nullptr ? beforeResource->GetD3D12Resource().Get() : nullptr;
 	ID3D12Resource* pResourceAfter = afterResource != nullptr ? afterResource->GetD3D12Resource().Get() : nullptr;
 
-	ResourceBarrier(CD3DX12_RESOURCE_BARRIER::Aliasing(pResourceBefore, pResourceAfter));
+	const auto barrier = CD3DX12_RESOURCE_BARRIER::Aliasing(pResourceBefore, pResourceAfter);
+	ResourceBarrier(barrier);
 }
 
-void ResourceStateTracker::FlushResourceBarriers(CommandList& commandList)
+void ResourceStateTracker::FlushResourceBarriers(const CommandList& commandList)
 {
-	UINT numBarriers = static_cast<UINT>(ResourceBarriers.size());
-	if (numBarriers > 0)
+	const UINT numBarriers = static_cast<UINT>(ResourceBarriers.size());
+	if (numBarriers == 0)
 	{
-		auto d3d12CommandList = commandList.GetGraphicsCommandList();
-		d3d12CommandList->ResourceBarrier(numBarriers, ResourceBarriers.data());
-		ResourceBarriers.clear();
+		return;
 	}
+
+	const auto d3d12CommandList = commandList.GetGraphicsCommandList();
+	d3d12CommandList->ResourceBarrier(numBarriers, ResourceBarriers.data());
+	ResourceBarriers.clear();
 }
 
 uint32_t ResourceStateTracker::FlushPendingResourceBarriers(CommandList& commandList)
@@ -209,8 +213,8 @@ void ResourceStateTracker::Lock()
 
 void ResourceStateTracker::Unlock()
 {
-	IsLocked = false;
 	GlobalMutex.unlock();
+	IsLocked = false;
 }
 
 void ResourceStateTracker::AddGlobalResourceState(ID3D12Resource* resource, const D3D12_RESOURCE_STATES state)

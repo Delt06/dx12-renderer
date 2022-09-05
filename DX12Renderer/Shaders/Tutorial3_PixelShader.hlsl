@@ -30,6 +30,9 @@ struct LightResult
 ConstantBuffer<Material> materialCb : register(b0, space1);
 ConstantBuffer<DirectionalLight> dirLightCb : register(b1);
 
+Texture2D diffuseTexture : register(t0);
+SamplerState diffuseSampler : register(s0);
+
 float Diffuse(const float3 n, const float3 l)
 {
 	return max(0, dot(n, l));
@@ -63,6 +66,7 @@ float4 main(PixelShaderInput IN) : SV_Target
 	const float4 ambient = materialCb.Ambient;
 	const float4 diffuse = materialCb.Diffuse * result.Diffuse;
 	const float4 specular = materialCb.Specular * result.Specular;
+	const float4 texColor = diffuseTexture.Sample(diffuseSampler, IN.Uv);
 
-	return emissive + ambient + diffuse + specular;
+	return emissive + (ambient + diffuse + specular) * texColor;
 }

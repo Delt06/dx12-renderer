@@ -72,7 +72,7 @@ public:
 	 */
 	D3D12_COMMAND_LIST_TYPE GetCommandListType() const
 	{
-		return D3d12CommandListType;
+		return m_D3d12CommandListType;
 	}
 
 	/**
@@ -80,7 +80,7 @@ public:
 	 */
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> GetGraphicsCommandList() const
 	{
-		return D3d12CommandList;
+		return m_D3d12CommandList;
 	}
 
 	using Resource = ResourceWrapper;
@@ -415,7 +415,7 @@ public:
 
 	std::shared_ptr<CommandList> GetGenerateMipsCommandList() const
 	{
-		return ComputeCommandList;
+		return m_ComputeCommandList;
 	}
 
 protected:
@@ -424,7 +424,7 @@ private:
 	void TrackResource(const Resource& res);
 
 	// Generate mips for UAV compatible textures.
-	void GenerateMipsUav(Texture& texture, bool isSRgb);
+	void GenerateMipsUav(Texture& texture, DXGI_FORMAT format);
 	//// Generate mips for BGR textures.
 	//void GenerateMips_BGR(Texture& texture);
 	//// Generate mips for sRGB textures.
@@ -439,37 +439,37 @@ private:
 
 	using TrackedObjectsType = std::vector<Microsoft::WRL::ComPtr<ID3D12Object>>;
 
-	D3D12_COMMAND_LIST_TYPE D3d12CommandListType;
-	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> D3d12CommandList;
-	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> D3d12CommandAllocator;
+	D3D12_COMMAND_LIST_TYPE m_D3d12CommandListType;
+	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> m_D3d12CommandList;
+	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_D3d12CommandAllocator;
 
 	// For copy queues, it may be necessary to generate mips while loading textures.
 	// Mips can't be generated on copy queues but must be generated on compute or
 	// direct queues. In this case, a Compute command list is generated and executed 
 	// after the copy queue is finished uploading the first sub resource.
-	std::shared_ptr<CommandList> ComputeCommandList;
+	std::shared_ptr<CommandList> m_ComputeCommandList;
 
 	// Keep track of the currently bound root signatures to minimize root
 	// signature changes.
-	ID3D12RootSignature* PRootSignature;
+	ID3D12RootSignature* m_PRootSignature;
 
 	// Resource created in an upload heap. Useful for drawing of dynamic geometry
 	// or for uploading constant buffer data that changes every draw call.
-	std::unique_ptr<UploadBuffer> PUploadBuffer;
+	std::unique_ptr<UploadBuffer> m_PUploadBuffer;
 
 	// Resource state tracker is used by the command list to track (per command list)
 	// the current state of a resource. The resource state tracker also tracks the 
 	// global state of a resource in order to minimize resource state transitions.
-	std::unique_ptr<ResourceStateTracker> PResourceStateTracker;
+	std::unique_ptr<ResourceStateTracker> m_PResourceStateTracker;
 
 	// The dynamic descriptor heap allows for descriptors to be staged before
 	// being committed to the command list. Dynamic descriptors need to be
 	// committed before a Draw or Dispatch.
-	std::unique_ptr<DynamicDescriptorHeap> DynamicDescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
+	std::unique_ptr<DynamicDescriptorHeap> m_DynamicDescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
 
 	// Keep track of the currently bound descriptor heaps. Only change descriptor 
 	// heaps if they are different than the currently bound descriptor heaps.
-	ID3D12DescriptorHeap* DescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
+	ID3D12DescriptorHeap* m_DescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
 
 	// Pipeline state object for Mip map generation.
 	std::unique_ptr<GenerateMipsPso> m_GenerateMipsPso;
@@ -481,9 +481,9 @@ private:
 	// until the command list is finished executing, a reference to the object
 	// is stored. The referenced objects are released when the command list is 
 	// reset.
-	TrackedObjectsType TrackedObjects;
+	TrackedObjectsType m_TrackedObjects;
 
 	// Keep track of loaded textures to avoid loading the same texture multiple times.
-	static std::map<std::wstring, ID3D12Resource*> TextureCache;
-	static std::mutex TextureCacheMutex;
+	static std::map<std::wstring, ID3D12Resource*> m_TextureCache;
+	static std::mutex m_TextureCacheMutex;
 };

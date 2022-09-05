@@ -52,6 +52,7 @@ enum RootParameters
 	MaterialCb,
 	// ConstantBuffer<Material> DirLightCb : register( b1, space1 );
 	DirLightCb,
+	Textures,
 	NumRootParameters
 };
 
@@ -123,6 +124,9 @@ bool Tutorial3::LoadContent()
 	TorusMesh = Mesh::CreateTorus(*commandList);
 	PlaneMesh = Mesh::CreatePlane(*commandList);
 
+	m_Texture = std::make_shared<Texture>();
+	commandList->LoadTextureFromFile(*m_Texture, L"bricks.jpg");
+
 	MDirectionalLight.DirectionWs = XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f);
 
 	XMVECTOR lightDir = XMLoadFloat4(&MDirectionalLight.DirectionWs);
@@ -148,7 +152,7 @@ bool Tutorial3::LoadContent()
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
-	CD3DX12_DESCRIPTOR_RANGE1 descriptorRage(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2);
+	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
 	CD3DX12_ROOT_PARAMETER1 rootParameters[NumRootParameters];
 	rootParameters[MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
@@ -157,9 +161,12 @@ bool Tutorial3::LoadContent()
 	                                                    D3D12_SHADER_VISIBILITY_PIXEL);
 	rootParameters[DirLightCb].InitAsConstantBufferView(1, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
 	                                                    D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[Textures].InitAsDescriptorTable(1, &descriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
+
+	CD3DX12_STATIC_SAMPLER_DESC linearRepeatSampler(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR);
 
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
-	rootSignatureDescription.Init_1_1(NumRootParameters, rootParameters, 0, nullptr, rootSignatureFlags);
+	rootSignatureDescription.Init_1_1(NumRootParameters, rootParameters, 1, &linearRepeatSampler, rootSignatureFlags);
 
 	MRootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
 
@@ -345,6 +352,7 @@ void Tutorial3::OnRender(RenderEventArgs& e)
 		commandList->SetGraphicsDynamicConstantBuffer(MatricesCb, matrices);
 		commandList->SetGraphicsDynamicConstantBuffer(MaterialCb, Material());
 		commandList->SetGraphicsDynamicConstantBuffer(DirLightCb, directionalLight);
+		commandList->SetShaderResourceView(Textures, 0, *m_Texture, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 		SphereMesh->Draw(*commandList);
 	}

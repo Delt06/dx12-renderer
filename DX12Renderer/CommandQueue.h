@@ -77,17 +77,17 @@ private:
 	// a shared pointer to the "in-flight" command list.
 	using CommandListEntry = std::tuple<uint64_t, std::shared_ptr<CommandList>>;
 
-	D3D12_COMMAND_LIST_TYPE CommandListType;
-	Microsoft::WRL::ComPtr<ID3D12CommandQueue> D3d12CommandQueue;
-	Microsoft::WRL::ComPtr<ID3D12Fence> D3d12Fence;
-	std::atomic_uint64_t FenceValue;
+	D3D12_COMMAND_LIST_TYPE m_CommandListType;
+	Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_D3d12CommandQueue;
+	Microsoft::WRL::ComPtr<ID3D12Fence> m_D3d12Fence;
+	std::atomic_uint64_t m_FenceValue;
 
-	ThreadSafeQueue<CommandListEntry> InFlightCommandLists;
-	ThreadSafeQueue<std::shared_ptr<CommandList>> AvailableCommandLists;
+	ThreadSafeQueue<CommandListEntry> m_InFlightCommandLists;
+	ThreadSafeQueue<std::shared_ptr<CommandList>> m_AvailableCommandLists;
 
 	// A thread to process in-flight command lists.
-	std::thread ProcessInFlightCommandListsThread;
-	std::atomic_bool IsProcessingInFlightCommandLists;
-	std::mutex ProcessInFlightCommandListsThreadMutex;
-	std::condition_variable ProcessInFlightCommandListsThreadCv;
+	std::thread m_ProcessInFlightCommandListsThread;
+	std::atomic_bool m_IsProcessingInFlightCommandLists;
+	std::mutex m_ProcessInFlightCommandListsThreadMutex;
+	std::condition_variable m_ProcessInFlightCommandListsThreadCv;
 };

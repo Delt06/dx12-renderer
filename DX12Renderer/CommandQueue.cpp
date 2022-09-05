@@ -7,9 +7,9 @@
 #include <ResourceStateTracker.h>
 
 CommandQueue::CommandQueue(D3D12_COMMAND_LIST_TYPE type)
-	: CommandListType(type)
-	  , FenceValue(0)
-	  , IsProcessingInFlightCommandLists(true)
+	: m_CommandListType(type)
+	  , m_FenceValue(0)
+	  , m_IsProcessingInFlightCommandLists(true)
 {
 	auto device = Application::Get().GetDevice();
 
@@ -19,41 +19,41 @@ CommandQueue::CommandQueue(D3D12_COMMAND_LIST_TYPE type)
 	desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	desc.NodeMask = 0;
 
-	ThrowIfFailed(device->CreateCommandQueue(&desc, IID_PPV_ARGS(&D3d12CommandQueue)));
-	ThrowIfFailed(device->CreateFence(FenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&D3d12Fence)));
+	ThrowIfFailed(device->CreateCommandQueue(&desc, IID_PPV_ARGS(&m_D3d12CommandQueue)));
+	ThrowIfFailed(device->CreateFence(m_FenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_D3d12Fence)));
 
 	switch (type)
 	{
 	case D3D12_COMMAND_LIST_TYPE_COPY:
-		D3d12CommandQueue->SetName(L"Copy Command Queue");
+		m_D3d12CommandQueue->SetName(L"Copy Command Queue");
 		break;
 	case D3D12_COMMAND_LIST_TYPE_COMPUTE:
-		D3d12CommandQueue->SetName(L"Compute Command Queue");
+		m_D3d12CommandQueue->SetName(L"Compute Command Queue");
 		break;
 	case D3D12_COMMAND_LIST_TYPE_DIRECT:
-		D3d12CommandQueue->SetName(L"Direct Command Queue");
+		m_D3d12CommandQueue->SetName(L"Direct Command Queue");
 		break;
 	}
 
-	ProcessInFlightCommandListsThread = std::thread(&CommandQueue::ProcessInFlightCommandLists, this);
+	m_ProcessInFlightCommandListsThread = std::thread(&CommandQueue::ProcessInFlightCommandLists, this);
 }
 
 CommandQueue::~CommandQueue()
 {
-	IsProcessingInFlightCommandLists = false;
-	ProcessInFlightCommandListsThread.join();
+	m_IsProcessingInFlightCommandLists = false;
+	m_ProcessInFlightCommandListsThread.join();
 }
 
 uint64_t CommandQueue::Signal()
 {
-	uint64_t fenceValue = ++FenceValue;
-	D3d12CommandQueue->Signal(D3d12Fence.Get(), fenceValue);
+	uint64_t fenceValue = ++m_FenceValue;
+	m_D3d12CommandQueue->Signal(m_D3d12Fence.Get(), fenceValue);
 	return fenceValue;
 }
 
 bool CommandQueue::IsFenceComplete(uint64_t fenceValue)
 {
-	return D3d12Fence->GetCompletedValue() >= fenceValue;
+	return m_D3d12Fence->GetCompletedValue() >= fenceValue;
 }
 
 void CommandQueue::WaitForFenceValue(uint64_t fenceValue)
@@ -64,7 +64,7 @@ void CommandQueue::WaitForFenceValue(uint64_t fenceValue)
 		assert(event && "Failed to create fence event handle.");
 
 		// Is this function thread safe?
-		D3d12Fence->SetEventOnCompletion(fenceValue, event);
+		m_D3d12Fence->SetEventOnCompletion(fenceValue, event);
 		WaitForSingleObject(event, DWORD_MAX);
 
 		CloseHandle(event);
@@ -73,14 +73,14 @@ void CommandQueue::WaitForFenceValue(uint64_t fenceValue)
 
 void CommandQueue::Flush()
 {
-	std::unique_lock<std::mutex> lock(ProcessInFlightCommandListsThreadMutex);
-	ProcessInFlightCommandListsThreadCv.wait(lock, [this] { return InFlightCommandLists.Empty(); });
+	std::unique_lock<std::mutex> lock(m_ProcessInFlightCommandListsThreadMutex);
+	m_ProcessInFlightCommandListsThreadCv.wait(lock, [this] { return m_InFlightCommandLists.Empty(); });
 
 	// In case the command queue was signaled directly 
 	// using the CommandQueue::Signal method then the 
 	// fence value of the command queue might be higher than the fence
 	// value of any of the executed command lists.
-	WaitForFenceValue(FenceValue);
+	WaitForFenceValue(m_FenceValue);
 }
 
 std::shared_ptr<CommandList> CommandQueue::GetCommandList()
@@ -88,14 +88,15 @@ std::shared_ptr<CommandList> CommandQueue::GetCommandList()
 	std::shared_ptr<CommandList> commandList;
 
 	// If there is a command list on the queue.
-	if (!AvailableCommandLists.Empty())
+	if (!m_AvailableCommandLists.Empty())
 	{
-		AvailableCommandLists.TryPop(commandList);
+		m_AvailableCommandLists.TryPop(commandList);
+		assert(commandList != nullptr);
 	}
 	else
 	{
 		// Otherwise create a new command list.
-		commandList = std::make_shared<CommandList>(CommandListType);
+		commandList = std::make_shared<CommandList>(m_CommandListType);
 	}
 
 	return commandList;
@@ -148,7 +149,7 @@ uint64_t CommandQueue::ExecuteCommandLists(const std::vector<std::shared_ptr<Com
 	}
 
 	UINT numCommandLists = static_cast<UINT>(d3d12CommandLists.size());
-	D3d12CommandQueue->ExecuteCommandLists(numCommandLists, d3d12CommandLists.data());
+	m_D3d12CommandQueue->ExecuteCommandLists(numCommandLists, d3d12CommandLists.data());
 	uint64_t fenceValue = Signal();
 
 	ResourceStateTracker::Unlock();
@@ -156,7 +157,7 @@ uint64_t CommandQueue::ExecuteCommandLists(const std::vector<std::shared_ptr<Com
 	// Queue command lists for reuse.
 	for (auto commandList : toBeQueued)
 	{
-		InFlightCommandLists.Push({fenceValue, commandList});
+		m_InFlightCommandLists.Push({fenceValue, commandList});
 	}
 
 	// If there are any command lists that generate mips then execute those
@@ -173,36 +174,36 @@ uint64_t CommandQueue::ExecuteCommandLists(const std::vector<std::shared_ptr<Com
 
 void CommandQueue::Wait(const CommandQueue& other)
 {
-	D3d12CommandQueue->Wait(other.D3d12Fence.Get(), other.FenceValue);
+	m_D3d12CommandQueue->Wait(other.m_D3d12Fence.Get(), other.m_FenceValue);
 }
 
 ComPtr<ID3D12CommandQueue> CommandQueue::GetD3D12CommandQueue() const
 {
-	return D3d12CommandQueue;
+	return m_D3d12CommandQueue;
 }
 
 void CommandQueue::ProcessInFlightCommandLists()
 {
-	std::unique_lock<std::mutex> lock(ProcessInFlightCommandListsThreadMutex, std::defer_lock);
+	std::unique_lock lock(m_ProcessInFlightCommandListsThreadMutex, std::defer_lock);
 
-	while (IsProcessingInFlightCommandLists)
+	while (m_IsProcessingInFlightCommandLists)
 	{
 		CommandListEntry commandListEntry;
 
 		lock.lock();
-		while (InFlightCommandLists.TryPop(commandListEntry))
+		while (m_InFlightCommandLists.TryPop(commandListEntry))
 		{
 			const auto fenceValue = std::get<0>(commandListEntry);
-			auto commandList = std::get<1>(commandListEntry);
+			const auto commandList = std::get<1>(commandListEntry);
 
 			WaitForFenceValue(fenceValue);
 
 			commandList->Reset();
 
-			AvailableCommandLists.Push(commandList);
+			m_AvailableCommandLists.Push(commandList);
 		}
 		lock.unlock();
-		ProcessInFlightCommandListsThreadCv.notify_one();
+		m_ProcessInFlightCommandListsThreadCv.notify_one();
 
 		std::this_thread::yield();
 	}

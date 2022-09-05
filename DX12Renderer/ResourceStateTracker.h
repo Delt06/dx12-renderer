@@ -67,7 +67,7 @@ public:
 	 * Flush any (non-pending) resource barriers that have been pushed to the resource state
 	 * tracker.
 	 */
-	void FlushResourceBarriers(CommandList& commandList);
+	void FlushResourceBarriers(const CommandList& commandList);
 
 	/**
 	 * Commit final resource states to the global resource state map.

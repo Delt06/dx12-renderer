@@ -4,6 +4,9 @@
 
 /**/x64/*
 /**/x86/*
+/**/Debug/*
+
+*.pdb
 
 *.vcxproj.filters
 *.vcxproj.user

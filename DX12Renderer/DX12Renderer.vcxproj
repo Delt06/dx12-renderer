@@ -235,6 +235,9 @@
     <Image Include="Icon.ico" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="$(SolutionDir)\Assets\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <FxCompile Include="Shaders\GenerateMips_CS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>
