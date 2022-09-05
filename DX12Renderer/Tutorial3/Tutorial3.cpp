@@ -123,6 +123,8 @@ bool Tutorial3::LoadContent()
 	TorusMesh = Mesh::CreateTorus(*commandList);
 	PlaneMesh = Mesh::CreatePlane(*commandList);
 
+	MDirectionalLight.DirectionWs = XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f);
+
 	XMVECTOR lightDir = XMLoadFloat4(&MDirectionalLight.DirectionWs);
 	XMStoreFloat4(&MDirectionalLight.DirectionWs, XMVector4Normalize(lightDir));
 
@@ -289,10 +291,6 @@ void Tutorial3::OnUpdate(UpdateEventArgs& e)
 	XMVECTOR cameraRotation = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(CameraController.Pitch),
 	                                                           XMConvertToRadians(CameraController.Yaw), 0.0f);
 	MCamera.SetRotation(cameraRotation);
-
-	XMVECTOR lightDirVs = XMLoadFloat4(&MDirectionalLight.DirectionWs);
-	lightDirVs = XMVector4Transform(lightDirVs, MCamera.GetViewMatrix());
-	XMStoreFloat4(&MDirectionalLight.DirectionVs, lightDirVs);
 }
 
 void XM_CALLCONV ComputeMatrices(FXMMATRIX model, CXMMATRIX view, CXMMATRIX viewProjection, Matrices& matrices)
@@ -335,6 +333,10 @@ void Tutorial3::OnRender(RenderEventArgs& e)
 
 		Matrices matrices;
 		ComputeMatrices(worldMatrix, viewMatrix, viewProjectionMatrix, matrices);
+
+		XMVECTOR lightDirVs = XMLoadFloat4(&MDirectionalLight.DirectionWs);
+		lightDirVs = XMVector4Transform(lightDirVs, MCamera.GetViewMatrix());
+		XMStoreFloat4(&MDirectionalLight.DirectionVs, lightDirVs);
 
 		DirectionalLightUniform directionalLight;
 		directionalLight.Color = MDirectionalLight.Color;

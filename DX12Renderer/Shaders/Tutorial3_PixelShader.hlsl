@@ -17,7 +17,6 @@ struct Material
 
 struct DirectionalLight
 {
-	float4 DirectionWs;
 	float4 DirectionVs;
 	float4 Color;
 };
@@ -50,8 +49,8 @@ LightResult Phong(const float3 positionVs, const float3 normalVs)
 
 	const float3 viewDir = normalize(-positionVs);
 	const float3 lightDir = dirLightCb.DirectionVs.xyz;
-	lightResult.Diffuse = Diffuse(normalVs, lightDir);
-	lightResult.Specular = Specular(viewDir, normalVs, lightDir);
+	lightResult.Diffuse = Diffuse(normalVs, lightDir) * dirLightCb.Color;
+	lightResult.Specular = Specular(viewDir, normalVs, lightDir) * dirLightCb.Color;
 
 	return lightResult;
 }
