@@ -382,7 +382,7 @@ void CommandList::GenerateMips(Texture& texture)
 
 	// If the texture doesn't have a valid resource, do nothing.
 	if (!resource) return;
-	auto resourceDesc = resource->GetDesc();
+	const auto resourceDesc = resource->GetDesc();
 
 	// If the texture only has a single mip level (level 0)
 	// do nothing.
