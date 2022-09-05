@@ -235,7 +235,11 @@
     <Image Include="Icon.ico" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(SolutionDir)\Assets\**" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(SolutionDir)\Assets\**">
+      <Link>Assets\%(RecursiveDir)\%(Filename)%(Extension)</Link>
+       <TargetPath>Assets\%(RecursiveDir)\%(Filename)%(Extension)</TargetPath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\GenerateMips_CS.hlsl">
