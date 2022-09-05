@@ -125,7 +125,7 @@ bool Tutorial3::LoadContent()
 	PlaneMesh = Mesh::CreatePlane(*commandList);
 
 	m_Texture = std::make_shared<Texture>();
-	commandList->LoadTextureFromFile(*m_Texture, L"bricks.jpg");
+	commandList->LoadTextureFromFile(*m_Texture, L"bricks.jpg",);
 
 	MDirectionalLight.DirectionWs = XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f);
 
