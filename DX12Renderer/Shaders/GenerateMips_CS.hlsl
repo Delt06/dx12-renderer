@@ -131,20 +131,22 @@ void main(ComputeShaderInput IN)
 			// Use 2 bilinear samples to guarantee we don't undersample when downsizing by more than 2x
 			// horizontally.
 			const float2 uv = texelSize * (IN.DispatchThreadId.xy + float2(0.25f, 0.5f));
-			const float offset = texelSize * float2(0.5f, 0.0f);
+			const float2 offset = texelSize * float2(0.5f, 0.0f);
 			src1 = 0.5f * (srcMip.SampleLevel(linearClampSampler, uv, srcMipLevel) + srcMip.SampleLevel(
 				linearClampSampler, uv + offset, srcMipLevel));
 		}
+		break;
 	case WIDTH_EVEN_HEIGHT_ODD:
 		{
 			// > 2:1 in Y dimension
 			// Use 2 bilinear samples to guarantee we don't undersample when downsizing by more than 2x
 			// vertically.
 			const float2 uv = texelSize * (IN.DispatchThreadId.xy + float2(0.5f, 0.25f));
-			const float offset = texelSize * float2(0.0f, 0.5f);
+			const float2 offset = texelSize * float2(0.0f, 0.5f);
 			src1 = 0.5f * (srcMip.SampleLevel(linearClampSampler, uv, srcMipLevel) + srcMip.SampleLevel(
 				linearClampSampler, uv + offset, srcMipLevel));
 		}
+		break;
 
 	case WIDTH_HEIGHT_ODD:
 		{
@@ -152,7 +154,7 @@ void main(ComputeShaderInput IN)
 			// Use 4 bilinear samples to guarantee we don't undersample when downsizing by more than 2x
 			// in both directions.
 			const float2 uv = texelSize * (IN.DispatchThreadId.xy + float2(0.25f, 0.25f));
-			const float offset = texelSize * 0.5f;
+			const float2 offset = texelSize * 0.5f;
 
 			src1 = 0.25f * (
 				srcMip.SampleLevel(linearClampSampler, uv, srcMipLevel) +
