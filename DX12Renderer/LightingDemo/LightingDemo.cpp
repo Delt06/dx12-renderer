@@ -95,28 +95,28 @@ namespace
 
 LightingDemo::LightingDemo(const std::wstring& name, int width, int height, bool vSync)
 	: Base(name, width, height, vSync)
-	  , Viewport(CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height)))
-	  , ScissorRect(CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX))
-	  , CameraController{}
-	  , AnimatedLights(false)
-	  , Width(0)
-	  , Height(0)
+	  , m_Viewport(CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height)))
+	  , m_ScissorRect(CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX))
+	  , m_CameraController{}
+	  , m_AnimatedLights(false)
+	  , m_Width(0)
+	  , m_Height(0)
 {
 	XMVECTOR cameraPos = XMVectorSet(0, 5, -20, 1);
 	XMVECTOR cameraTarget = XMVectorSet(0, 5, 0, 1);
 	XMVECTOR cameraUp = XMVectorSet(0, 1, 0, 0);
 
-	MCamera.SetLookAt(cameraPos, cameraTarget, cameraUp);
+	m_Camera.SetLookAt(cameraPos, cameraTarget, cameraUp);
 
-	PAlignedCameraData = static_cast<CameraData*>(_aligned_malloc(sizeof(CameraData), 16));
+	m_PAlignedCameraData = static_cast<CameraData*>(_aligned_malloc(sizeof(CameraData), 16));
 
-	PAlignedCameraData->InitialPosition = MCamera.GetTranslation();
-	PAlignedCameraData->InitialQRotation = MCamera.GetRotation();
+	m_PAlignedCameraData->m_InitialPosition = m_Camera.GetTranslation();
+	m_PAlignedCameraData->m_InitialQRotation = m_Camera.GetRotation();
 }
 
 LightingDemo::~LightingDemo()
 {
-	_aligned_free(PAlignedCameraData);
+	_aligned_free(m_PAlignedCameraData);
 }
 
 bool LightingDemo::LoadContent()
@@ -151,7 +151,7 @@ bool LightingDemo::LoadContent()
 		XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
 		m_GameObjects.push_back(GameObject(worldMatrix, mesh));
 	}
-	
+
 	{
 		auto mesh = Mesh::CreatePlane(*commandList);
 		XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
@@ -164,12 +164,13 @@ bool LightingDemo::LoadContent()
 	m_Texture = std::make_shared<Texture>();
 	commandList->LoadTextureFromFile(*m_Texture, L"Assets/Textures/Gravel_001_BaseColor.jpg");
 	m_NormalMap = std::make_shared<Texture>();
-	commandList->LoadTextureFromFile(*m_NormalMap, L"Assets/Textures/Gravel_001_Normal.jpg", TextureUsageType::Normalmap);
+	commandList->LoadTextureFromFile(*m_NormalMap, L"Assets/Textures/Gravel_001_Normal.jpg",
+	                                 TextureUsageType::Normalmap);
 
-	MDirectionalLight.DirectionWs = XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f);
+	m_DirectionalLight.DirectionWs = XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f);
 
-	XMVECTOR lightDir = XMLoadFloat4(&MDirectionalLight.DirectionWs);
-	XMStoreFloat4(&MDirectionalLight.DirectionWs, XMVector4Normalize(lightDir));
+	XMVECTOR lightDir = XMLoadFloat4(&m_DirectionalLight.DirectionWs);
+	XMStoreFloat4(&m_DirectionalLight.DirectionWs, XMVector4Normalize(lightDir));
 
 	ComPtr<ID3DBlob> vertexShaderBlob;
 	ThrowIfFailed(D3DReadFileToBlob(L"LightingDemo_VertexShader.cso", &vertexShaderBlob));
@@ -207,7 +208,7 @@ bool LightingDemo::LoadContent()
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
 	rootSignatureDescription.Init_1_1(NumRootParameters, rootParameters, 1, &linearRepeatSampler, rootSignatureFlags);
 
-	MRootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
+	m_RootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
 
 	// Setup the pipeline state.
 	struct PipelineStateStream
@@ -230,7 +231,7 @@ bool LightingDemo::LoadContent()
 	rtvFormats.NumRenderTargets = 1;
 	rtvFormats.RTFormats[0] = backBufferFormat;
 
-	pipelineStateStream.RootSignature = MRootSignature.GetRootSignature().Get();
+	pipelineStateStream.RootSignature = m_RootSignature.GetRootSignature().Get();
 	pipelineStateStream.InputLayout = {VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT};
 	pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
@@ -245,10 +246,10 @@ bool LightingDemo::LoadContent()
 		sizeof(PipelineStateStream), &pipelineStateStream
 	};
 
-	ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&MPipelineState)));
+	ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_PipelineState)));
 
 	auto colorDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat,
-	                                              Width, Height,
+	                                              m_Width, m_Height,
 	                                              1, 1,
 	                                              1, 0,
 	                                              D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
@@ -261,7 +262,7 @@ bool LightingDemo::LoadContent()
 	                            L"Color Render Target");
 
 	auto depthDesc = CD3DX12_RESOURCE_DESC::Tex2D(depthBufferFormat,
-	                                              Width, Height,
+	                                              m_Width, m_Height,
 	                                              1, 1,
 	                                              1, 0,
 	                                              D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
@@ -273,8 +274,8 @@ bool LightingDemo::LoadContent()
 	                            TextureUsageType::Depth,
 	                            L"Depth Render Target");
 
-	MRenderTarget.AttachTexture(Color0, colorTexture);
-	MRenderTarget.AttachTexture(DepthStencil, depthTexture);
+	m_RenderTarget.AttachTexture(Color0, colorTexture);
+	m_RenderTarget.AttachTexture(DepthStencil, depthTexture);
 
 	auto fenceValue = commandQueue->ExecuteCommandList(commandList);
 	commandQueue->WaitForFenceValue(fenceValue);
@@ -286,18 +287,18 @@ void LightingDemo::OnResize(ResizeEventArgs& e)
 {
 	Base::OnResize(e);
 
-	if (Width != e.Width || Height != e.Height)
+	if (m_Width != e.Width || m_Height != e.Height)
 	{
-		Width = std::max(1, e.Width);
-		Height = std::max(1, e.Height);
+		m_Width = std::max(1, e.Width);
+		m_Height = std::max(1, e.Height);
 
-		const float aspectRatio = static_cast<float>(Width) / static_cast<float>(Height);
-		MCamera.SetProjection(45.0f, aspectRatio, 0.1f, 1000.0f);
+		const float aspectRatio = static_cast<float>(m_Width) / static_cast<float>(m_Height);
+		m_Camera.SetProjection(45.0f, aspectRatio, 0.1f, 1000.0f);
 
-		Viewport = CD3DX12_VIEWPORT(0.0f, 0.0f,
-		                            static_cast<float>(Width), static_cast<float>(Height));
+		m_Viewport = CD3DX12_VIEWPORT(0.0f, 0.0f,
+		                              static_cast<float>(m_Width), static_cast<float>(m_Height));
 
-		MRenderTarget.Resize(Width, Height);
+		m_RenderTarget.Resize(m_Width, m_Height);
 	}
 }
 
@@ -328,19 +329,21 @@ void LightingDemo::OnUpdate(UpdateEventArgs& e)
 	}
 
 	// Update the camera.
-	float speedMultiplier = (CameraController.Shift ? 16.0f : 4.0f);
+	float speedMultiplier = (m_CameraController.m_Shift ? 16.0f : 4.0f);
 
-	XMVECTOR cameraTranslate = XMVectorSet(CameraController.Right - CameraController.Left, 0.0f,
-	                                       CameraController.Forward - CameraController.Backward, 1.0f) * speedMultiplier
+	XMVECTOR cameraTranslate = XMVectorSet(m_CameraController.m_Right - m_CameraController.m_Left, 0.0f,
+	                                       m_CameraController.m_Forward - m_CameraController.m_Backward,
+	                                       1.0f) * speedMultiplier
 		* static_cast<float>(e.ElapsedTime);
-	XMVECTOR cameraPan = XMVectorSet(0.0f, CameraController.Up - CameraController.Down, 0.0f, 1.0f) * speedMultiplier *
+	XMVECTOR cameraPan = XMVectorSet(0.0f, m_CameraController.m_Up - m_CameraController.m_Down, 0.0f, 1.0f) *
+		speedMultiplier *
 		static_cast<float>(e.ElapsedTime);
-	MCamera.Translate(cameraTranslate, Space::Local);
-	MCamera.Translate(cameraPan, Space::Local);
+	m_Camera.Translate(cameraTranslate, Space::Local);
+	m_Camera.Translate(cameraPan, Space::Local);
 
-	XMVECTOR cameraRotation = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(CameraController.Pitch),
-	                                                           XMConvertToRadians(CameraController.Yaw), 0.0f);
-	MCamera.SetRotation(cameraRotation);
+	XMVECTOR cameraRotation = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(m_CameraController.m_Pitch),
+	                                                           XMConvertToRadians(m_CameraController.m_Yaw), 0.0f);
+	m_Camera.SetRotation(cameraRotation);
 }
 
 void XM_CALLCONV ComputeMatrices(FXMMATRIX model, CXMMATRIX view, CXMMATRIX viewProjection, Matrices& matrices)
@@ -360,29 +363,29 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 
 	// Clear the render targets
 	{
-		commandList->ClearTexture(MRenderTarget.GetTexture(Color0), CLEAR_COLOR);
-		commandList->ClearDepthStencilTexture(MRenderTarget.GetTexture(DepthStencil), D3D12_CLEAR_FLAG_DEPTH);
+		commandList->ClearTexture(m_RenderTarget.GetTexture(Color0), CLEAR_COLOR);
+		commandList->ClearDepthStencilTexture(m_RenderTarget.GetTexture(DepthStencil), D3D12_CLEAR_FLAG_DEPTH);
 	}
 
-	commandList->SetPipelineState(MPipelineState);
-	commandList->SetGraphicsRootSignature(MRootSignature);
+	commandList->SetPipelineState(m_PipelineState);
+	commandList->SetGraphicsRootSignature(m_RootSignature);
 
-	commandList->SetViewport(Viewport);
-	commandList->SetScissorRect(ScissorRect);
+	commandList->SetViewport(m_Viewport);
+	commandList->SetScissorRect(m_ScissorRect);
 
-	commandList->SetRenderTarget(MRenderTarget);
+	commandList->SetRenderTarget(m_RenderTarget);
 
 	{
-		const XMMATRIX viewMatrix = MCamera.GetViewMatrix();
-		const XMMATRIX viewProjectionMatrix = viewMatrix * MCamera.GetProjectionMatrix();
+		const XMMATRIX viewMatrix = m_Camera.GetViewMatrix();
+		const XMMATRIX viewProjectionMatrix = viewMatrix * m_Camera.GetProjectionMatrix();
 
-		XMVECTOR lightDirVs = XMLoadFloat4(&MDirectionalLight.DirectionWs);
-		lightDirVs = XMVector4Transform(lightDirVs, MCamera.GetViewMatrix());
-		XMStoreFloat4(&MDirectionalLight.DirectionVs, lightDirVs);
+		XMVECTOR lightDirVs = XMLoadFloat4(&m_DirectionalLight.DirectionWs);
+		lightDirVs = XMVector4Transform(lightDirVs, m_Camera.GetViewMatrix());
+		XMStoreFloat4(&m_DirectionalLight.DirectionVs, lightDirVs);
 
 		DirectionalLightCb directionalLightCb;
-		directionalLightCb.Color = MDirectionalLight.Color;
-		directionalLightCb.DirectionVs = MDirectionalLight.DirectionVs;
+		directionalLightCb.Color = m_DirectionalLight.Color;
+		directionalLightCb.DirectionVs = m_DirectionalLight.DirectionVs;
 
 		commandList->SetGraphicsDynamicConstantBuffer(MaterialCb, Material());
 		commandList->SetGraphicsDynamicConstantBuffer(DirLightCb, directionalLightCb);
@@ -399,7 +402,7 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 	}
 
 	commandQueue->ExecuteCommandList(commandList);
-	PWindow->Present(MRenderTarget.GetTexture(Color0));
+	PWindow->Present(m_RenderTarget.GetTexture(Color0));
 }
 
 void LightingDemo::OnKeyPressed(KeyEventArgs& e)
@@ -427,38 +430,38 @@ void LightingDemo::OnKeyPressed(KeyEventArgs& e)
 		break;
 	case KeyCode::R:
 		// Reset camera transform
-		MCamera.SetTranslation(PAlignedCameraData->InitialPosition);
-		MCamera.SetRotation(PAlignedCameraData->InitialQRotation);
-		CameraController.Pitch = 0.0f;
-		CameraController.Yaw = 0.0f;
+		m_Camera.SetTranslation(m_PAlignedCameraData->m_InitialPosition);
+		m_Camera.SetRotation(m_PAlignedCameraData->m_InitialQRotation);
+		m_CameraController.m_Pitch = 0.0f;
+		m_CameraController.m_Yaw = 0.0f;
 		break;
 	case KeyCode::Up:
 	case KeyCode::W:
-		CameraController.Forward = 1.0f;
+		m_CameraController.m_Forward = 1.0f;
 		break;
 	case KeyCode::Left:
 	case KeyCode::A:
-		CameraController.Left = 1.0f;
+		m_CameraController.m_Left = 1.0f;
 		break;
 	case KeyCode::Down:
 	case KeyCode::S:
-		CameraController.Backward = 1.0f;
+		m_CameraController.m_Backward = 1.0f;
 		break;
 	case KeyCode::Right:
 	case KeyCode::D:
-		CameraController.Right = 1.0f;
+		m_CameraController.m_Right = 1.0f;
 		break;
 	case KeyCode::Q:
-		CameraController.Down = 1.0f;
+		m_CameraController.m_Down = 1.0f;
 		break;
 	case KeyCode::E:
-		CameraController.Up = 1.0f;
+		m_CameraController.m_Up = 1.0f;
 		break;
 	case KeyCode::Space:
-		AnimatedLights = !AnimatedLights;
+		m_AnimatedLights = !m_AnimatedLights;
 		break;
 	case KeyCode::ShiftKey:
-		CameraController.Shift = true;
+		m_CameraController.m_Shift = true;
 		break;
 	}
 }
@@ -478,28 +481,28 @@ void LightingDemo::OnKeyReleased(KeyEventArgs& e)
 		break;
 	case KeyCode::Up:
 	case KeyCode::W:
-		CameraController.Forward = 0.0f;
+		m_CameraController.m_Forward = 0.0f;
 		break;
 	case KeyCode::Left:
 	case KeyCode::A:
-		CameraController.Left = 0.0f;
+		m_CameraController.m_Left = 0.0f;
 		break;
 	case KeyCode::Down:
 	case KeyCode::S:
-		CameraController.Backward = 0.0f;
+		m_CameraController.m_Backward = 0.0f;
 		break;
 	case KeyCode::Right:
 	case KeyCode::D:
-		CameraController.Right = 0.0f;
+		m_CameraController.m_Right = 0.0f;
 		break;
 	case KeyCode::Q:
-		CameraController.Down = 0.0f;
+		m_CameraController.m_Down = 0.0f;
 		break;
 	case KeyCode::E:
-		CameraController.Up = 0.0f;
+		m_CameraController.m_Up = 0.0f;
 		break;
 	case KeyCode::ShiftKey:
-		CameraController.Shift = false;
+		m_CameraController.m_Shift = false;
 		break;
 	}
 }
@@ -512,11 +515,11 @@ void LightingDemo::OnMouseMoved(MouseMotionEventArgs& e)
 
 	if (e.LeftButton)
 	{
-		CameraController.Pitch -= e.RelY * mouseSpeed;
+		m_CameraController.m_Pitch -= e.RelY * mouseSpeed;
 
-		CameraController.Pitch = Clamp(CameraController.Pitch, -90.0f, 90.0f);
+		m_CameraController.m_Pitch = Clamp(m_CameraController.m_Pitch, -90.0f, 90.0f);
 
-		CameraController.Yaw -= e.RelX * mouseSpeed;
+		m_CameraController.m_Yaw -= e.RelX * mouseSpeed;
 	}
 }
 
@@ -524,12 +527,12 @@ void LightingDemo::OnMouseMoved(MouseMotionEventArgs& e)
 void LightingDemo::OnMouseWheel(MouseWheelEventArgs& e)
 {
 	{
-		auto fov = MCamera.GetFov();
+		auto fov = m_Camera.GetFov();
 
 		fov -= e.WheelDelta;
 		fov = Clamp(fov, 12.0f, 90.0f);
 
-		MCamera.SetFov(fov);
+		m_Camera.SetFov(fov);
 
 		char buffer[256];
 		sprintf_s(buffer, "FoV: %f\n", fov);

@@ -34,49 +34,48 @@ protected:
 	void OnResize(ResizeEventArgs& e) override;
 
 private:
-
 	std::vector<GameObject> m_GameObjects;
 	std::shared_ptr<Texture> m_Texture;
 	std::shared_ptr<Texture> m_NormalMap;
 
-	RenderTarget MRenderTarget;
-	RootSignature MRootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> MPipelineState;
+	RenderTarget m_RenderTarget;
+	RootSignature m_RootSignature;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineState;
 
-	D3D12_VIEWPORT Viewport;
-	D3D12_RECT ScissorRect;
+	D3D12_VIEWPORT m_Viewport;
+	D3D12_RECT m_ScissorRect;
 
-	Camera MCamera;
+	Camera m_Camera;
 
 	static constexpr size_t ALIGNMENT = 16;
 
 	struct alignas(ALIGNMENT) CameraData
 	{
-		DirectX::XMVECTOR InitialPosition;
-		DirectX::XMVECTOR InitialQRotation;
+		DirectX::XMVECTOR m_InitialPosition;
+		DirectX::XMVECTOR m_InitialQRotation;
 	};
 
-	CameraData* PAlignedCameraData;
+	CameraData* m_PAlignedCameraData;
 
 	struct
 	{
-		float Forward;
-		float Backward;
-		float Left;
-		float Right;
-		float Up;
-		float Down;
+		float m_Forward;
+		float m_Backward;
+		float m_Left;
+		float m_Right;
+		float m_Up;
+		float m_Down;
 
-		float Pitch;
-		float Yaw;
+		float m_Pitch;
+		float m_Yaw;
 
-		bool Shift;
-	} CameraController;
+		bool m_Shift;
+	} m_CameraController;
 
-	bool AnimatedLights;
+	bool m_AnimatedLights;
 
-	int Width;
-	int Height;
+	int m_Width;
+	int m_Height;
 
-	DirectionalLight MDirectionalLight{};
+	DirectionalLight m_DirectionalLight{};
 };
