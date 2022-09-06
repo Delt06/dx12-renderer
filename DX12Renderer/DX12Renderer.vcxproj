@@ -246,6 +246,7 @@
       <TargetPath>Assets\%(RecursiveDir)\%(Filename)%(Extension)</TargetPath>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="..\README.md" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\GenerateMips_CS.hlsl">

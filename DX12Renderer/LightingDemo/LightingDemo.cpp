@@ -142,6 +142,15 @@ bool LightingDemo::LoadContent()
 		XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
 		m_GameObjects.push_back(GameObject(worldMatrix, mesh));
 	}
+
+	for (auto& mesh : ModelLoader::LoadObj(*commandList, "Assets/Models/sphere/sphere-cylcoords-1k.obj", true))
+	{
+		XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 50.0f);
+		XMMATRIX rotationMatrix = XMMatrixIdentity();
+		XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
+		XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+		m_GameObjects.push_back(GameObject(worldMatrix, mesh));
+	}
 	
 	{
 		auto mesh = Mesh::CreatePlane(*commandList);
@@ -149,24 +158,6 @@ bool LightingDemo::LoadContent()
 		XMMATRIX rotationMatrix = XMMatrixIdentity();
 		XMMATRIX scaleMatrix = XMMatrixScaling(20.0f, 1.0f, 20.0f);
 		XMMATRIX worldMatrix = scaleMatrix * translationMatrix * rotationMatrix;
-		m_GameObjects.push_back(GameObject(worldMatrix, mesh));
-	}
-
-	{
-		auto mesh = Mesh::CreateSphere(*commandList, 1, 5);
-		XMMATRIX translationMatrix = XMMatrixTranslation(4.0f, 0.0f, 2.0f);
-		XMMATRIX rotationMatrix = XMMatrixIdentity();
-		XMMATRIX scaleMatrix = XMMatrixScaling(4.0f, 4.0f, 4.0f);
-		XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-		m_GameObjects.push_back(GameObject(worldMatrix, mesh));
-	}
-
-	{
-		auto mesh = Mesh::CreateSphere(*commandList);
-		XMMATRIX translationMatrix = XMMatrixTranslation(-4.0f, 0.0f, 2.0f);
-		XMMATRIX rotationMatrix = XMMatrixIdentity();
-		XMMATRIX scaleMatrix = XMMatrixScaling(4.0f, 4.0f, 4.0f);
-		XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
 		m_GameObjects.push_back(GameObject(worldMatrix, mesh));
 	}
 

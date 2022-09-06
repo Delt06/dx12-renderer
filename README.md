@@ -13,4 +13,4 @@
 
 ### Assets
 - https://casual-effects.com/data/
-	- Teapot, Cube
+	- Teapot, Cube, Lat-Long Sphere
