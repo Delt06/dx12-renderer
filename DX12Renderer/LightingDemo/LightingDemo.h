@@ -37,6 +37,7 @@ private:
 
 	std::vector<GameObject> m_GameObjects;
 	std::shared_ptr<Texture> m_Texture;
+	std::shared_ptr<Texture> m_NormalMap;
 
 	RenderTarget MRenderTarget;
 	RootSignature MRootSignature;

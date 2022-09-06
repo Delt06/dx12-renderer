@@ -162,7 +162,9 @@ bool LightingDemo::LoadContent()
 	}
 
 	m_Texture = std::make_shared<Texture>();
-	commandList->LoadTextureFromFile(*m_Texture, L"Assets/Textures/bricks.jpg");
+	commandList->LoadTextureFromFile(*m_Texture, L"Assets/Textures/Gravel_001_BaseColor.jpg");
+	m_NormalMap = std::make_shared<Texture>();
+	commandList->LoadTextureFromFile(*m_NormalMap, L"Assets/Textures/Gravel_001_Normal.jpg", TextureUsageType::Normalmap);
 
 	MDirectionalLight.DirectionWs = XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f);
 
@@ -170,10 +172,10 @@ bool LightingDemo::LoadContent()
 	XMStoreFloat4(&MDirectionalLight.DirectionWs, XMVector4Normalize(lightDir));
 
 	ComPtr<ID3DBlob> vertexShaderBlob;
-	ThrowIfFailed(D3DReadFileToBlob(L"Tutorial3_VertexShader.cso", &vertexShaderBlob));
+	ThrowIfFailed(D3DReadFileToBlob(L"LightingDemo_VertexShader.cso", &vertexShaderBlob));
 
 	ComPtr<ID3DBlob> pixelShaderBlob;
-	ThrowIfFailed(D3DReadFileToBlob(L"Tutorial3_PixelShader.cso", &pixelShaderBlob));
+	ThrowIfFailed(D3DReadFileToBlob(L"LightingDemo_PixelShader.cso", &pixelShaderBlob));
 
 	// Create a root signature.
 	D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData;
@@ -189,7 +191,7 @@ bool LightingDemo::LoadContent()
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
-	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);
 
 	CD3DX12_ROOT_PARAMETER1 rootParameters[NumRootParameters];
 	rootParameters[MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
@@ -385,6 +387,7 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 		commandList->SetGraphicsDynamicConstantBuffer(MaterialCb, Material());
 		commandList->SetGraphicsDynamicConstantBuffer(DirLightCb, directionalLightCb);
 		commandList->SetShaderResourceView(Textures, 0, *m_Texture, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		commandList->SetShaderResourceView(Textures, 1, *m_NormalMap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 		for (const auto& go : m_GameObjects)
 		{
