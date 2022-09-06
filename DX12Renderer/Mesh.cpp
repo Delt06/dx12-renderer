@@ -3,8 +3,44 @@
 
 #include <Application.h>
 
+#include "DirectXMesh/DirectXMesh.h"
+
 using namespace DirectX;
 using namespace Microsoft::WRL;
+
+namespace
+{
+	void GenerateTangents(VertexCollectionType& vertices, const IndexCollectionType& indices)
+	{
+		const size_t nVerts = vertices.size();
+		const size_t nIndices = indices.size();
+		const size_t nFaces = nIndices / 3;
+
+		auto pos = std::make_unique<XMFLOAT3[]>(nVerts);
+		auto normals = std::make_unique<XMFLOAT3[]>(nVerts);
+		auto texcoords = std::make_unique<XMFLOAT2[]>(nVerts);
+		for (size_t j = 0; j < nVerts; ++j)
+		{
+			const auto& vertexAttributes = vertices[j];
+			pos[j] = vertexAttributes.Position;
+			normals[j] = vertexAttributes.Normal;
+			texcoords[j] = vertexAttributes.Uv;
+		}
+		const auto tangents = std::make_unique<XMFLOAT3[]>(nVerts);;
+		const auto bitangents = std::make_unique<XMFLOAT3[]>(nVerts);
+
+		ThrowIfFailed(ComputeTangentFrame(indices.data(), nFaces,
+			pos.get(), normals.get(), texcoords.get(), nVerts,
+			tangents.get(), bitangents.get()));
+
+		for (size_t j = 0; j < nVerts; ++j)
+		{
+			auto& vertexAttributes = vertices[j];
+			vertexAttributes.Tangent = tangents[j];
+			vertexAttributes.Bitangent = bitangents[j];
+		}
+	}
+}
 
 const D3D12_INPUT_ELEMENT_DESC VertexAttributes::INPUT_ELEMENTS[] = {
 	{
@@ -105,12 +141,7 @@ std::unique_ptr<Mesh> Mesh::CreateSphere(CommandList& commandList, float diamete
 		}
 	}
 
-	// Create the primitive object.
-	std::unique_ptr<Mesh> mesh(new Mesh());
-
-	mesh->Initialize(commandList, vertices, indices, rhcoords);
-
-	return mesh;
+	return CreateMesh(commandList, vertices, indices, rhcoords, true);
 }
 
 std::unique_ptr<Mesh> Mesh::CreateCube(CommandList& commandList, float size, bool rhcoords)
@@ -169,12 +200,7 @@ std::unique_ptr<Mesh> Mesh::CreateCube(CommandList& commandList, float size, boo
 		vertices.push_back(VertexAttributes((normal + side1 - side2) * size, normal, textureCoordinates[3]));
 	}
 
-	// Create the primitive object.
-	std::unique_ptr<Mesh> mesh(new Mesh());
-
-	mesh->Initialize(commandList, vertices, indices, rhcoords);
-
-	return mesh;
+	return CreateMesh(commandList, vertices, indices, rhcoords, true);
 }
 
 // Helper computes a point on a unit circle, aligned to the x/z plane and centered on the origin.
@@ -289,12 +315,7 @@ std::unique_ptr<Mesh> Mesh::CreateCone(CommandList& commandList, float diameter,
 	// Create flat triangle fan caps to seal the bottom.
 	CreateCylinderCap(vertices, indices, tessellation, height, radius, false);
 
-	// Create the primitive object.
-	std::unique_ptr<Mesh> mesh(new Mesh());
-
-	mesh->Initialize(commandList, vertices, indices, rhcoords);
-
-	return mesh;
+	return CreateMesh(commandList, vertices, indices, rhcoords, true);
 }
 
 std::unique_ptr<Mesh> Mesh::CreateTorus(CommandList& commandList, float diameter, float thickness, size_t tessellation,
@@ -353,12 +374,7 @@ std::unique_ptr<Mesh> Mesh::CreateTorus(CommandList& commandList, float diameter
 		}
 	}
 
-	// Create the primitive object.
-	std::unique_ptr<Mesh> mesh(new Mesh());
-
-	mesh->Initialize(commandList, vertices, indices, rhcoords);
-
-	return mesh;
+	return CreateMesh(commandList, vertices, indices, rhcoords, true);
 }
 
 std::unique_ptr<Mesh> Mesh::CreatePlane(CommandList& commandList, float width, float height, bool rhcoords)
@@ -376,17 +392,15 @@ std::unique_ptr<Mesh> Mesh::CreatePlane(CommandList& commandList, float width, f
 		0, 3, 1, 1, 3, 2
 	};
 
-	std::unique_ptr<Mesh> mesh(new Mesh());
-
-	mesh->Initialize(commandList, vertices, indices, rhcoords);
-
-	return mesh;
+	return CreateMesh(commandList, vertices, indices, rhcoords, true);
 }
 
 std::unique_ptr<Mesh> Mesh::CreateMesh(CommandList& commandList, VertexCollectionType& vertices,
-                                       IndexCollectionType& indices, const bool rhCoords)
+                                       IndexCollectionType& indices, const bool rhCoords, const bool generateTangents)
 {
 	std::unique_ptr<Mesh> mesh(new Mesh());
+	if (generateTangents)
+		GenerateTangents(vertices, indices);
 	mesh->Initialize(commandList, vertices, indices, rhCoords);
 	return mesh;
 }

@@ -76,6 +76,6 @@ std::vector<std::unique_ptr<Mesh>> ModelLoader::LoadObj(CommandList& commandList
 	}
 
 	std::vector<std::unique_ptr<Mesh>> outputMeshes;
-	outputMeshes.push_back(Mesh::CreateMesh(commandList, outputVertices, outputIndices, rhCoords));
+	outputMeshes.push_back(Mesh::CreateMesh(commandList, outputVertices, outputIndices, rhCoords, false));
 	return outputMeshes;
 }

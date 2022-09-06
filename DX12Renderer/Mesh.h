@@ -107,7 +107,7 @@ public:
 	                                         bool rhCoords = false);
 
 	static std::unique_ptr<Mesh> CreateMesh(CommandList& commandList, VertexCollectionType& vertices,
-	                                        IndexCollectionType& indices, bool rhCoords = false);
+	                                        IndexCollectionType& indices, bool rhCoords = false, bool generateTangents = false);
 
 	Mesh(const Mesh& copy) = delete;
 
