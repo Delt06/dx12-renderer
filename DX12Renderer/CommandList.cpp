@@ -158,57 +158,54 @@ void CommandList::CopyBuffer(Buffer& buffer, const size_t numElements, const siz
 		// This will result in a NULL resource (which may be desired to define a default null resource).
 		throw std::exception();
 	}
-	else
 	{
+		const auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+		const auto resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize, flags);
+		ThrowIfFailed(device->CreateCommittedResource(
+			&heapProperties,
+			D3D12_HEAP_FLAG_NONE,
+			&resourceDesc,
+			D3D12_RESOURCE_STATE_COMMON,
+			nullptr,
+			IID_PPV_ARGS(&d3d12Resource)));
+	}
+
+
+	// Add the resource to the global resource state tracker.
+	ResourceStateTracker::AddGlobalResourceState(d3d12Resource.Get(), D3D12_RESOURCE_STATE_COMMON);
+
+	if (bufferData != nullptr)
+	{
+		// Create an upload resource to use as an intermediate buffer to copy the buffer resource 
+		ComPtr<ID3D12Resource> uploadResource;
 		{
-			const auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-			const auto resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize, flags);
+			const auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+			const auto resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
 			ThrowIfFailed(device->CreateCommittedResource(
 				&heapProperties,
 				D3D12_HEAP_FLAG_NONE,
 				&resourceDesc,
-				D3D12_RESOURCE_STATE_COMMON,
+				D3D12_RESOURCE_STATE_GENERIC_READ,
 				nullptr,
-				IID_PPV_ARGS(&d3d12Resource)));
+				IID_PPV_ARGS(&uploadResource)));
 		}
 
 
-		// Add the resource to the global resource state tracker.
-		ResourceStateTracker::AddGlobalResourceState(d3d12Resource.Get(), D3D12_RESOURCE_STATE_COMMON);
+		D3D12_SUBRESOURCE_DATA subresourceData = {};
+		subresourceData.pData = bufferData;
+		subresourceData.RowPitch = bufferSize;
+		subresourceData.SlicePitch = subresourceData.RowPitch;
 
-		if (bufferData != nullptr)
-		{
-			// Create an upload resource to use as an intermediate buffer to copy the buffer resource 
-			ComPtr<ID3D12Resource> uploadResource;
-			{
-				const auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-				const auto resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
-				ThrowIfFailed(device->CreateCommittedResource(
-					&heapProperties,
-					D3D12_HEAP_FLAG_NONE,
-					&resourceDesc,
-					D3D12_RESOURCE_STATE_GENERIC_READ,
-					nullptr,
-					IID_PPV_ARGS(&uploadResource)));
-			}
+		m_PResourceStateTracker->TransitionResource(d3d12Resource.Get(), D3D12_RESOURCE_STATE_COPY_DEST);
+		FlushResourceBarriers();
 
+		UpdateSubresources(m_D3d12CommandList.Get(), d3d12Resource.Get(),
+		                   uploadResource.Get(), 0, 0, 1, &subresourceData);
 
-			D3D12_SUBRESOURCE_DATA subresourceData = {};
-			subresourceData.pData = bufferData;
-			subresourceData.RowPitch = bufferSize;
-			subresourceData.SlicePitch = subresourceData.RowPitch;
-
-			m_PResourceStateTracker->TransitionResource(d3d12Resource.Get(), D3D12_RESOURCE_STATE_COPY_DEST);
-			FlushResourceBarriers();
-
-			UpdateSubresources(m_D3d12CommandList.Get(), d3d12Resource.Get(),
-			                   uploadResource.Get(), 0, 0, 1, &subresourceData);
-
-			// Add references to resources so they stay in scope until the command list is reset.
-			TrackObject(uploadResource);
-		}
-		TrackObject(d3d12Resource);
+		// Add references to resources so they stay in scope until the command list is reset.
+		TrackObject(uploadResource);
 	}
+	TrackObject(d3d12Resource);
 
 	buffer.SetD3D12Resource(d3d12Resource);
 	buffer.CreateViews(numElements, elementSize);
@@ -238,6 +235,42 @@ void CommandList::SetPrimitiveTopology(const D3D_PRIMITIVE_TOPOLOGY primitiveTop
 	m_D3d12CommandList->IASetPrimitiveTopology(primitiveTopology);
 }
 
+namespace
+{
+	DirectX::ScratchImage LoadScratchImage(const fs::path& filePath, DirectX::TexMetadata* pMetadata,
+	                                       const bool builtInMipMapGeneration = true)
+	{
+		DirectX::ScratchImage scratchImage;
+
+		if (filePath.extension() == ".dds")
+		{
+			ThrowIfFailed(LoadFromDDSFile(filePath.c_str(), DirectX::DDS_FLAGS_FORCE_RGB, pMetadata, scratchImage));
+		}
+		else if (filePath.extension() == ".hdr")
+		{
+			ThrowIfFailed(LoadFromHDRFile(filePath.c_str(), pMetadata, scratchImage));
+		}
+		else if (filePath.extension() == ".tga")
+		{
+			ThrowIfFailed(LoadFromTGAFile(filePath.c_str(), pMetadata, scratchImage));
+		}
+		else
+		{
+			ThrowIfFailed(LoadFromWICFile(filePath.c_str(), DirectX::WIC_FLAGS_FORCE_RGB, pMetadata, scratchImage));
+		}
+
+		if (builtInMipMapGeneration && pMetadata->dimension == DirectX::TEX_DIMENSION_TEXTURE2D)
+		{
+			DirectX::ScratchImage mipChain;
+			ThrowIfFailed(GenerateMipMaps(scratchImage.GetImages(), scratchImage.GetImageCount(), *pMetadata,
+			                              DirectX::TEX_FILTER_DEFAULT, 0, mipChain));
+			return mipChain;
+		}
+
+		return scratchImage;
+	}
+}
+
 void CommandList::LoadTextureFromFile(Texture& texture, const std::wstring& fileName,
                                       const TextureUsageType textureUsage)
 {
@@ -259,24 +292,7 @@ void CommandList::LoadTextureFromFile(Texture& texture, const std::wstring& file
 	else
 	{
 		DirectX::TexMetadata metadata{};
-		DirectX::ScratchImage scratchImage;
-
-		if (filePath.extension() == ".dds")
-		{
-			ThrowIfFailed(LoadFromDDSFile(filePath.c_str(), DirectX::DDS_FLAGS_FORCE_RGB, &metadata, scratchImage));
-		}
-		else if (filePath.extension() == ".hdr")
-		{
-			ThrowIfFailed(LoadFromHDRFile(filePath.c_str(), &metadata, scratchImage));
-		}
-		else if (filePath.extension() == ".tga")
-		{
-			ThrowIfFailed(LoadFromTGAFile(filePath.c_str(), &metadata, scratchImage));
-		}
-		else
-		{
-			ThrowIfFailed(LoadFromWICFile(filePath.c_str(), DirectX::WIC_FLAGS_FORCE_RGB, &metadata, scratchImage));
-		}
+		auto scratchImage = LoadScratchImage(filePath, &metadata);
 
 		if (textureUsage == TextureUsageType::Albedo)
 		{
@@ -304,10 +320,6 @@ void CommandList::LoadTextureFromFile(Texture& texture, const std::wstring& file
 
 		const auto device = Application::Get().GetDevice();
 		ComPtr<ID3D12Resource> textureResource;
-
-		// Limit mip levels to fit into one compute shader dispatch
-		if (textureDesc.MipLevels == 0 || textureDesc.MipLevels > GenerateMipsPso::MAX_MIP_LEVELS_AT_ONCE + 1)
-			textureDesc.MipLevels = GenerateMipsPso::MAX_MIP_LEVELS_AT_ONCE + 1;
 
 		const auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 		constexpr auto initialResourceState = D3D12_RESOURCE_STATE_COMMON;
@@ -344,6 +356,7 @@ void CommandList::LoadTextureFromFile(Texture& texture, const std::wstring& file
 			subresources.data()
 		);
 
+		// Not used when having built-in mipmap generation from DirectXTex
 		if (subresources.size() < textureResource->GetDesc().MipLevels)
 		{
 			GenerateMips(texture);
@@ -902,14 +915,15 @@ void CommandList::GenerateMipsUav(Texture& texture, DXGI_FORMAT format)
 			uavDesc.Texture2D.MipSlice = srcMip + mip + 1;
 
 			SetUnorderedAccessView(GenerateMips::OutMip, mip, texture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-				uavDesc.Texture2D.MipSlice, 1, &uavDesc);
+			                       uavDesc.Texture2D.MipSlice, 1, &uavDesc);
 		}
 
 		// Pad any unused mip levels with a default UAV. Doing this keeps the DX12 runtime happy.
 		if (mipCount < 4)
 		{
 			m_DynamicDescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(
-				GenerateMips::OutMip, mipCount, GenerateMipsPso::MAX_MIP_LEVELS_AT_ONCE - mipCount, m_GenerateMipsPso->GetDefaultUav());
+				GenerateMips::OutMip, mipCount, GenerateMipsPso::MAX_MIP_LEVELS_AT_ONCE - mipCount,
+				m_GenerateMipsPso->GetDefaultUav());
 		}
 
 		Dispatch(Math::DivideByMultiple(dstWidth, 8), Math::DivideByMultiple(dstHeight, 8));
