@@ -185,7 +185,7 @@ void Texture::CreateViews()
 DescriptorAllocation Texture::CreateShaderResourceView(const D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc) const
 {
     auto& app = Application::Get();
-    auto device = app.GetDevice();
+    const auto device = app.GetDevice();
     auto srv = app.AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     device->CreateShaderResourceView(m_d3d12Resource.Get(), srvDesc, srv.GetDescriptorHandle());
@@ -196,7 +196,7 @@ DescriptorAllocation Texture::CreateShaderResourceView(const D3D12_SHADER_RESOUR
 DescriptorAllocation Texture::CreateUnorderedAccessView(const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc) const
 {
     auto& app = Application::Get();
-    auto device = app.GetDevice();
+    const auto device = app.GetDevice();
     auto uav = app.AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     device->CreateUnorderedAccessView(m_d3d12Resource.Get(), nullptr, uavDesc, uav.GetDescriptorHandle());

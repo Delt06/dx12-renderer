@@ -22,8 +22,7 @@ GenerateMipsPso::GenerateMipsPso()
 
 	const CD3DX12_DESCRIPTOR_RANGE1 srcMip(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0,
 	                                       D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE);
-	constexpr int maxMipLevels = 4;
-	const CD3DX12_DESCRIPTOR_RANGE1 outMip(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, maxMipLevels, 0, 0,
+	const CD3DX12_DESCRIPTOR_RANGE1 outMip(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, MAX_MIP_LEVELS_AT_ONCE, 0, 0,
 	                                       D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE);
 
 	CD3DX12_ROOT_PARAMETER1 rootParameters[GenerateMips::NumRootParameters];
@@ -64,9 +63,9 @@ GenerateMipsPso::GenerateMipsPso()
 	ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_PipelineState)));
 
 	// Create some default texture UAV's to pad any unused UAV's during mip map generation.
-	m_DefaultUav = Application::Get().AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, maxMipLevels);
+	m_DefaultUav = Application::Get().AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, MAX_MIP_LEVELS_AT_ONCE);
 
-	for (UINT i = 0; i < maxMipLevels; ++i)
+	for (UINT i = 0; i < MAX_MIP_LEVELS_AT_ONCE; ++i)
 	{
 		D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 		uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;

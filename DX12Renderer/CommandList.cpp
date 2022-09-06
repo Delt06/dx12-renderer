@@ -304,6 +304,10 @@ void CommandList::LoadTextureFromFile(Texture& texture, const std::wstring& file
 		const auto device = Application::Get().GetDevice();
 		ComPtr<ID3D12Resource> textureResource;
 
+		// Limit mip levels to fit into one compute shader dispatch
+		if (textureDesc.MipLevels == 0 || textureDesc.MipLevels > GenerateMipsPso::MAX_MIP_LEVELS_AT_ONCE + 1)
+			textureDesc.MipLevels = GenerateMipsPso::MAX_MIP_LEVELS_AT_ONCE + 1;
+
 		const auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 		constexpr auto initialResourceState = D3D12_RESOURCE_STATE_COMMON;
 		ThrowIfFailed(device->CreateCommittedResource(
@@ -673,7 +677,7 @@ void CommandList::SetShaderResourceView(const uint32_t rootParameterIndex, const
 void CommandList::SetUnorderedAccessView(const uint32_t rootParameterIndex, const uint32_t descriptorOffset,
                                          const Resource& resource, const D3D12_RESOURCE_STATES stateAfter,
                                          const UINT firstSubresource, const UINT numSubresources,
-                                         const D3D12_UNORDERED_ACCESS_VIEW_DESC* uav)
+                                         const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc)
 {
 	if (numSubresources < D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
 	{
@@ -687,8 +691,9 @@ void CommandList::SetUnorderedAccessView(const uint32_t rootParameterIndex, cons
 		TransitionBarrier(resource, stateAfter);
 	}
 
+	const auto uav = resource.GetUnorderedAccessView(uavDesc);
 	m_DynamicDescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(
-		rootParameterIndex, descriptorOffset, 1, resource.GetUnorderedAccessView(uav));
+		rootParameterIndex, descriptorOffset, 1, uav);
 	TrackResource(resource);
 }
 
@@ -835,7 +840,7 @@ void CommandList::GenerateMipsUav(Texture& texture, DXGI_FORMAT format)
 	generateMipsCB.IsSRgb = Texture::IsSRgbFormat(format);
 
 	auto resource = texture.GetD3D12Resource();
-	auto resourceDesc = resource->GetDesc();
+	const auto resourceDesc = resource->GetDesc();
 
 	// Create an SRV that uses the format of the original texture.
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -856,7 +861,7 @@ void CommandList::GenerateMipsUav(Texture& texture, DXGI_FORMAT format)
 		// 0b01(1): Width is odd, height is even.
 		// 0b10(2): Width is even, height is odd.
 		// 0b11(3): Both width and height are odd.
-		generateMipsCB.SrcDimension = (srcHeight & 1) << 1 | (srcWidth & 1);
+		generateMipsCB.SrcDimension = ((srcHeight & 1) << 1) | (srcWidth & 1);
 
 		// How many mipmap levels to compute this pass (max 4 mips per pass)
 		DWORD mipCount;
@@ -869,7 +874,7 @@ void CommandList::GenerateMipsUav(Texture& texture, DXGI_FORMAT format)
 		_BitScanForward(&mipCount, (dstWidth == 1 ? dstHeight : dstWidth) |
 		                (dstHeight == 1 ? dstWidth : dstHeight));
 		// Maximum number of mips to generate is 4.
-		mipCount = std::min<DWORD>(4, mipCount + 1);
+		mipCount = std::min<DWORD>(GenerateMipsPso::MAX_MIP_LEVELS_AT_ONCE, mipCount + 1);
 		// Clamp to total number of mips left over.
 		mipCount = (srcMip + mipCount) >= resourceDesc.MipLevels ? resourceDesc.MipLevels - srcMip - 1 : mipCount;
 
@@ -896,19 +901,19 @@ void CommandList::GenerateMipsUav(Texture& texture, DXGI_FORMAT format)
 			uavDesc.Texture2D.MipSlice = srcMip + mip + 1;
 
 			SetUnorderedAccessView(GenerateMips::OutMip, mip, texture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-			                       srcMip + mip + 1, 1, &uavDesc);
+				uavDesc.Texture2D.MipSlice, 1, &uavDesc);
 		}
 
 		// Pad any unused mip levels with a default UAV. Doing this keeps the DX12 runtime happy.
 		if (mipCount < 4)
 		{
 			m_DynamicDescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(
-				GenerateMips::OutMip, mipCount, 4 - mipCount, m_GenerateMipsPso->GetDefaultUav());
+				GenerateMips::OutMip, mipCount, GenerateMipsPso::MAX_MIP_LEVELS_AT_ONCE - mipCount, m_GenerateMipsPso->GetDefaultUav());
 		}
 
 		Dispatch(Math::DivideByMultiple(dstWidth, 8), Math::DivideByMultiple(dstHeight, 8));
 
-		//UavBarrier(texture);
+		UavBarrier(texture);
 
 		srcMip += mipCount;
 	}

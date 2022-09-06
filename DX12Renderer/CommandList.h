@@ -358,7 +358,7 @@ public:
 		D3D12_RESOURCE_STATES stateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
 		UINT firstSubresource = 0,
 		UINT numSubresources = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
-		const D3D12_UNORDERED_ACCESS_VIEW_DESC* uav = nullptr
+		const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc = nullptr
 	);
 
 	/**

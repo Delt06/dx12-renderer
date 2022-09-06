@@ -56,6 +56,8 @@ public:
         return m_DefaultUav.GetDescriptorHandle();
     }
 
+    static constexpr size_t MAX_MIP_LEVELS_AT_ONCE = 4;
+
 private:
     RootSignature m_RootSignature;
     Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineState;
