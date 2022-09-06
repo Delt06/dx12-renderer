@@ -72,8 +72,8 @@ std::unique_ptr<Mesh> Mesh::CreateSphere(CommandList& commandList, float diamete
 
 			XMVECTOR normal = XMVectorSet(dx, dy, dz, 0);
 			XMVECTOR textureCoordinate = XMVectorSet(u, v, 0, 0);
-
-			vertices.push_back(VertexAttributes(normal * radius, normal, textureCoordinate));
+			XMVECTOR position = radius * normal;
+			vertices.push_back(VertexAttributes(position, normal, textureCoordinate));
 		}
 	}
 
@@ -372,6 +372,14 @@ std::unique_ptr<Mesh> Mesh::CreatePlane(CommandList& commandList, float width, f
 
 	mesh->Initialize(commandList, vertices, indices, rhcoords);
 
+	return mesh;
+}
+
+std::unique_ptr<Mesh> Mesh::CreateMesh(CommandList& commandList, VertexCollectionType& vertices,
+                                       IndexCollectionType& indices, const bool rhCoords)
+{
+	std::unique_ptr<Mesh> mesh(new Mesh());
+	mesh->Initialize(commandList, vertices, indices, rhCoords);
 	return mesh;
 }
 

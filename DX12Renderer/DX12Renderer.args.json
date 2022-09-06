@@ -3,12 +3,12 @@
   "Id": "5edb09fc-1d61-4e9a-b556-a81bb2d6b766",
   "Items": [
     {
-      "Id": "8327290d-55ea-4360-bd3c-ca34f7c0696f",
-      "Command": "--demo Tutorial2"
-    },
-    {
       "Id": "74a37891-476f-45ec-a8eb-b35eadb2b77e",
       "Command": "--demo Tutorial3"
+    },
+    {
+      "Id": "819bda52-1309-4824-b32e-c4a3e482c937",
+      "Command": "--demo LightingDemo"
     },
     {
       "Id": "c8f6b0fe-606d-42b6-b6f8-1a232d3779a6",

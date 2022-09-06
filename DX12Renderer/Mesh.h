@@ -92,13 +92,14 @@ public:
 	static std::unique_ptr<Mesh> CreatePlane(CommandList& commandList, float width = 1, float height = 1,
 	                                         bool rhCoords = false);
 
+	static std::unique_ptr<Mesh> CreateMesh(CommandList& commandList, VertexCollectionType& vertices, IndexCollectionType& indices, bool rhCoords = false);
+
 	Mesh(const Mesh& copy) = delete;
 
 private:
 	friend struct std::default_delete<Mesh>;
-
+	
 	Mesh();
-
 	virtual ~Mesh();
 
 	void Initialize(CommandList& commandList, VertexCollectionType& vertices, IndexCollectionType& indices, bool rhCoords);

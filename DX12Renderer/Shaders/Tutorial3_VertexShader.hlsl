@@ -27,7 +27,7 @@ VertexShaderOutput main(VertexAttributes IN)
 {
 	VertexShaderOutput OUT;
 
-	OUT.PositionCs = mul(matricesCb.ModelViewProjection, float4(IN.Normal, 1.0f));
+	OUT.PositionCs = mul(matricesCb.ModelViewProjection, float4(IN.PositionOs, 1.0f));
 	OUT.PositionVs = mul(matricesCb.ModelView, float4(IN.PositionOs, 1.0f));
 	OUT.NormalVs = mul((float3x3)matricesCb.InverseTransposeModelView, IN.Normal);
 	OUT.Uv = IN.Uv;

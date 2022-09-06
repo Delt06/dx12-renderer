@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DX12Renderer", "DX12Rendere
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DirectXTex", "DirectXTex\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj", "{371B9FA9-4C90-4AC6-A123-ACED756D6C77}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OBJ-Loader", "OBJ-Loader\OBJ-Loader.vcxproj", "{3F86E9A6-DD21-475B-916B-D708B737FCED}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM64 = Debug|ARM64
@@ -56,6 +58,24 @@ Global
 		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Release|Win32.Build.0 = Release|Win32
 		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Release|x64.ActiveCfg = Release|x64
 		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Release|x64.Build.0 = Release|x64
+		{3F86E9A6-DD21-475B-916B-D708B737FCED}.Debug|ARM64.ActiveCfg = Debug|x64
+		{3F86E9A6-DD21-475B-916B-D708B737FCED}.Debug|ARM64.Build.0 = Debug|x64
+		{3F86E9A6-DD21-475B-916B-D708B737FCED}.Debug|Win32.ActiveCfg = Debug|Win32
+		{3F86E9A6-DD21-475B-916B-D708B737FCED}.Debug|Win32.Build.0 = Debug|Win32
+		{3F86E9A6-DD21-475B-916B-D708B737FCED}.Debug|x64.ActiveCfg = Debug|x64
+		{3F86E9A6-DD21-475B-916B-D708B737FCED}.Debug|x64.Build.0 = Debug|x64
+		{3F86E9A6-DD21-475B-916B-D708B737FCED}.Profile|ARM64.ActiveCfg = Debug|x64
+		{3F86E9A6-DD21-475B-916B-D708B737FCED}.Profile|ARM64.Build.0 = Debug|x64
+		{3F86E9A6-DD21-475B-916B-D708B737FCED}.Profile|Win32.ActiveCfg = Debug|Win32
+		{3F86E9A6-DD21-475B-916B-D708B737FCED}.Profile|Win32.Build.0 = Debug|Win32
+		{3F86E9A6-DD21-475B-916B-D708B737FCED}.Profile|x64.ActiveCfg = Debug|x64
+		{3F86E9A6-DD21-475B-916B-D708B737FCED}.Profile|x64.Build.0 = Debug|x64
+		{3F86E9A6-DD21-475B-916B-D708B737FCED}.Release|ARM64.ActiveCfg = Release|x64
+		{3F86E9A6-DD21-475B-916B-D708B737FCED}.Release|ARM64.Build.0 = Release|x64
+		{3F86E9A6-DD21-475B-916B-D708B737FCED}.Release|Win32.ActiveCfg = Release|Win32
+		{3F86E9A6-DD21-475B-916B-D708B737FCED}.Release|Win32.Build.0 = Release|Win32
+		{3F86E9A6-DD21-475B-916B-D708B737FCED}.Release|x64.ActiveCfg = Release|x64
+		{3F86E9A6-DD21-475B-916B-D708B737FCED}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

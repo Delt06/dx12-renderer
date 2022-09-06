@@ -156,6 +156,7 @@ void CommandList::CopyBuffer(Buffer& buffer, const size_t numElements, const siz
 	if (bufferSize == 0)
 	{
 		// This will result in a NULL resource (which may be desired to define a default null resource).
+		throw std::exception();
 	}
 	else
 	{

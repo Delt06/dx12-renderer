@@ -9,6 +9,7 @@
 #include <dxgidebug.h>
 
 #include "Tutorial3/Tutorial3.h"
+#include "LightingDemo/LightingDemo.h"
 
 void ReportLiveObjects()
 {
@@ -50,7 +51,7 @@ void ParseCommandLineArguments(Parameters& parameters)
 		}
 		else
 		{
-			parameters.DemoName = "Tutorial3";
+			parameters.DemoName = "LightingDemo";
 		}
 	}
 
@@ -62,6 +63,8 @@ std::shared_ptr<Game> CreateGame(const Parameters& parameters)
 	if (parameters.DemoName == "Tutorial3")
 		return std::make_shared<Tutorial3>(L"Learning DirectX 12 - Lesson 3", parameters.ClientWidth,
 		                                   parameters.ClientHeight);
+	if (parameters.DemoName == "LightingDemo")
+		return std::make_shared<LightingDemo>(L"Lighting Demo", parameters.ClientWidth, parameters.ClientHeight);
 
 	const std::string message = "'" + std::string(parameters.DemoName) + "' is an unknown demo name";
 	throw std::exception(message.c_str());
