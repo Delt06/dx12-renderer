@@ -48,6 +48,10 @@ void ParseCommandLineArguments(Parameters& parameters)
 			std::wstring arg = argv[++i];
 			parameters.DemoName = std::string(arg.begin(), arg.end());
 		}
+		else
+		{
+			parameters.DemoName = "Tutorial3";
+		}
 	}
 
 	LocalFree(argv);
@@ -55,7 +59,6 @@ void ParseCommandLineArguments(Parameters& parameters)
 
 std::shared_ptr<Game> CreateGame(const Parameters& parameters)
 {
-
 	if (parameters.DemoName == "Tutorial3")
 		return std::make_shared<Tutorial3>(L"Learning DirectX 12 - Lesson 3", parameters.ClientWidth,
 		                                   parameters.ClientHeight);
