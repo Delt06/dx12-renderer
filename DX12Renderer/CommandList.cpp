@@ -238,7 +238,7 @@ void CommandList::SetPrimitiveTopology(const D3D_PRIMITIVE_TOPOLOGY primitiveTop
 }
 
 void CommandList::LoadTextureFromFile(Texture& texture, const std::wstring& fileName,
-                                      const TextureUsageType textureUsage, const UINT16 maxMipLevels)
+                                      const TextureUsageType textureUsage)
 {
 	const fs::path filePath(fileName);
 	if (!exists(filePath))
@@ -300,7 +300,6 @@ void CommandList::LoadTextureFromFile(Texture& texture, const std::wstring& file
 		default:
 			throw std::exception("Invalid texture dimension.");
 		}
-		textureDesc.MipLevels = std::min(textureDesc.MipLevels, maxMipLevels);
 
 		const auto device = Application::Get().GetDevice();
 		ComPtr<ID3D12Resource> textureResource;

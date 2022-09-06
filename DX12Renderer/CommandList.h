@@ -195,7 +195,7 @@ public:
 	 * Load a texture by a filename.
 	 */
 	void LoadTextureFromFile(Texture& texture, const std::wstring& fileName,
-	                         TextureUsageType textureUsage = TextureUsageType::Albedo, UINT16 maxMipLevels = 4);
+	                         TextureUsageType textureUsage = TextureUsageType::Albedo);
 
 	/**
 	 * Clear a texture.
