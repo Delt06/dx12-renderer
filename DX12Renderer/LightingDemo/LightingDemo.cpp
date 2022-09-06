@@ -380,7 +380,7 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 		const XMMATRIX viewProjectionMatrix = viewMatrix * m_Camera.GetProjectionMatrix();
 
 		XMVECTOR lightDirVs = XMLoadFloat4(&m_DirectionalLight.DirectionWs);
-		lightDirVs = XMVector4Transform(lightDirVs, m_Camera.GetViewMatrix());
+		lightDirVs = XMVector4Transform(lightDirVs, viewMatrix);
 		XMStoreFloat4(&m_DirectionalLight.DirectionVs, lightDirVs);
 
 		DirectionalLightCb directionalLightCb;

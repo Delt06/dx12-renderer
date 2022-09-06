@@ -44,7 +44,7 @@ float3 UnpackNormal(const float3 n)
 float3 ApplyNormalMap(const float3x3 tbn, Texture2D map, const float2 uv)
 {
 	const float3 normalTs = UnpackNormal(map.Sample(defaultSampler, uv).xyz);
-	return normalize(mul(tbn, normalTs));
+	return normalize(mul(normalTs, tbn));
 }
 
 float Diffuse(const float3 n, const float3 l)
