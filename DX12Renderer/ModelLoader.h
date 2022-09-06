@@ -9,5 +9,5 @@ class Mesh;
 class ModelLoader
 {
 public:
-	static std::vector<std::unique_ptr<Mesh>> LoadObj(CommandList& commandList, const std::string& path, bool rhCoords = false);
+	static std::vector<std::unique_ptr<Mesh>> LoadObj(CommandList& commandList, const std::wstring& path, bool rhCoords = false);
 };

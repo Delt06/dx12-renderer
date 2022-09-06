@@ -9,7 +9,7 @@
 - https://www.3dgep.com/learning-directx-12-4/
 
 ### Libraries
-- https://github.com/Bly7/OBJ-Loader
+- https://github.com/microsoft/DirectXMesh
 
 ### Assets
 - https://casual-effects.com/data/

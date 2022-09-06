@@ -59,6 +59,17 @@ struct VertexAttributes
 	{
 	}
 
+	VertexAttributes(const DirectX::XMFLOAT3& position, const DirectX::XMFLOAT3& normal,
+	                 const DirectX::XMFLOAT2& textureCoordinate, const DirectX::XMFLOAT3& tangent,
+	                 const DirectX::XMFLOAT3& bitangent)
+		: Position(position),
+		  Normal(normal),
+		  Uv(textureCoordinate),
+		  Tangent(tangent),
+		  Bitangent(bitangent)
+	{
+	}
+
 	VertexAttributes(DirectX::FXMVECTOR position, DirectX::FXMVECTOR normal, DirectX::FXMVECTOR textureCoordinate)
 	{
 		XMStoreFloat3(&this->Position, position);
@@ -69,8 +80,11 @@ struct VertexAttributes
 	DirectX::XMFLOAT3 Position;
 	DirectX::XMFLOAT3 Normal{};
 	DirectX::XMFLOAT2 Uv{};
+	DirectX::XMFLOAT3 Tangent{};
+	DirectX::XMFLOAT3 Bitangent{};
 
-	static constexpr int INPUT_ELEMENT_COUNT = 3;
+
+	static constexpr int INPUT_ELEMENT_COUNT = 5;
 	static const D3D12_INPUT_ELEMENT_DESC INPUT_ELEMENTS[INPUT_ELEMENT_COUNT];
 };
 
@@ -92,17 +106,19 @@ public:
 	static std::unique_ptr<Mesh> CreatePlane(CommandList& commandList, float width = 1, float height = 1,
 	                                         bool rhCoords = false);
 
-	static std::unique_ptr<Mesh> CreateMesh(CommandList& commandList, VertexCollectionType& vertices, IndexCollectionType& indices, bool rhCoords = false);
+	static std::unique_ptr<Mesh> CreateMesh(CommandList& commandList, VertexCollectionType& vertices,
+	                                        IndexCollectionType& indices, bool rhCoords = false);
 
 	Mesh(const Mesh& copy) = delete;
 
 private:
 	friend struct std::default_delete<Mesh>;
-	
+
 	Mesh();
 	virtual ~Mesh();
 
-	void Initialize(CommandList& commandList, VertexCollectionType& vertices, IndexCollectionType& indices, bool rhCoords);
+	void Initialize(CommandList& commandList, VertexCollectionType& vertices, IndexCollectionType& indices,
+	                bool rhCoords);
 
 	VertexBuffer VertexBuffer;
 	IndexBuffer IndexBuffer;

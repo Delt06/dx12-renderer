@@ -1,55 +1,81 @@
 ﻿#include "ModelLoader.h"
 #include "Mesh.h"
-#include <OBJ_Loader.h>
+#include <../DirectXMesh/Utilities/WaveFrontReader.h>
+#include <Helpers.h>
 
-namespace
-{
-	union ConvertibleVertex
-	{
-		objl::Vertex m_Vertex;
-		VertexAttributes m_VertexAttributes;
-	};
-}
+#include "DirectXMesh/DirectXMesh.h"
 
-std::vector<std::unique_ptr<Mesh>> ModelLoader::LoadObj(CommandList& commandList, const std::string& path, const bool rhCoords)
+using namespace DirectX;
+
+std::vector<std::unique_ptr<Mesh>> ModelLoader::LoadObj(CommandList& commandList, const std::wstring& path,
+                                                        const bool rhCoords)
 {
-	objl::Loader loader;
-	if (!loader.LoadFile(path))
+	const auto mesh = std::make_unique<WaveFrontReader<uint16_t>>();
+	ThrowIfFailed(mesh->Load(path.c_str()));
+
+	const size_t nIndices = mesh->indices.size();
+	const size_t nFaces = nIndices / 3;
+	const size_t nVerts = mesh->vertices.size();
+
+
+	auto pos = std::make_unique<XMFLOAT3[]>(nVerts);
+	for (size_t j = 0; j < nVerts; ++j)
+		pos[j] = mesh->vertices[j].position;
+
+	auto normals = std::make_unique<XMFLOAT3[]>(nVerts);
+
+	if (mesh->hasNormals)
 	{
-		throw std::exception("Model was not loaded. Probably, it does not exist.");
+		for (size_t j = 0; j < nVerts; ++j)
+			normals[j] = mesh->vertices[j].normal;
+	}
+	else
+	{	
+		ThrowIfFailed(ComputeNormals(mesh->indices.data(), nFaces,
+		                             pos.get(), nVerts, CNORM_DEFAULT, normals.get()));
 	}
 
-	const std::vector<objl::Mesh>& loadedMeshes = loader.LoadedMeshes;
+	std::unique_ptr<XMFLOAT2[]> texcoords;
+	std::unique_ptr<XMFLOAT3[]> tangents;
+	std::unique_ptr<XMFLOAT3[]> bitangents;
+
+	if (mesh->hasTexcoords)
+	{
+		texcoords = std::make_unique<XMFLOAT2[]>(nVerts);
+		tangents = std::make_unique<XMFLOAT3[]>(nVerts);
+		bitangents = std::make_unique<XMFLOAT3[]>(nVerts);
+
+		for (size_t j = 0; j < nVerts; ++j)
+			texcoords[j] = mesh->vertices[j].textureCoordinate;
+
+		ThrowIfFailed(ComputeTangentFrame(mesh->indices.data(), nFaces,
+		                                  pos.get(), normals.get(), texcoords.get(), nVerts,
+		                                  tangents.get(), bitangents.get()));
+	}
+
+
+	VertexCollectionType outputVertices;
+	outputVertices.reserve(nVerts);
+
+	for (uint16_t i = 0; i < nVerts; ++i)
+	{
+		VertexAttributes vertexAttributes;
+		if (mesh->hasTexcoords)
+			vertexAttributes = VertexAttributes(pos[i], normals[i], texcoords[i], tangents[i], bitangents[i]);
+		else
+			vertexAttributes = VertexAttributes(pos[i], normals[i], {}, {}, {});
+		outputVertices.push_back(vertexAttributes);
+	}
+
+	IndexCollectionType outputIndices;
+	outputVertices.reserve(nIndices);
+
+	for (uint16_t i = 0; i < nIndices; ++i)
+	{
+		outputIndices.push_back(mesh->indices[i]);
+	}
+
 	std::vector<std::unique_ptr<Mesh>> outputMeshes;
-	outputMeshes.reserve(loadedMeshes.size());
-
-	auto toVertexAttribute = [](const objl::Vertex& vertex)
-	{
-		ConvertibleVertex convertibleVertex = {};
-		convertibleVertex.m_Vertex = vertex;
-		return convertibleVertex.m_VertexAttributes;
-	};
-
-	for (const auto& objMesh : loadedMeshes)
-	{
-		VertexCollectionType outputVertices;
-		outputVertices.reserve(objMesh.Vertices.size());
-
-		for (const auto& vertex : objMesh.Vertices)
-		{
-			outputVertices.push_back(toVertexAttribute(vertex));
-		}
-
-		IndexCollectionType outputIndices;
-		outputIndices.reserve(objMesh.Indices.size());
-
-		for (const auto index  : objMesh.Indices)
-		{
-			outputIndices.push_back(static_cast<uint16_t>(index));
-		}
-
-		outputMeshes.push_back(Mesh::CreateMesh(commandList, outputVertices, outputIndices, rhCoords));
-	}
-
+	outputMeshes.push_back(Mesh::CreateMesh(commandList, outputVertices, outputIndices, rhCoords));
 	return outputMeshes;
 }

@@ -125,7 +125,7 @@ bool LightingDemo::LoadContent()
 	const auto commandQueue = Application::Get().GetCommandQueue();
 	const auto commandList = commandQueue->GetCommandList();
 
-	for (auto& mesh : ModelLoader::LoadObj(*commandList, "Assets/Models/teapot/teapot.obj", true))
+	for (auto& mesh : ModelLoader::LoadObj(*commandList, L"Assets/Models/teapot/teapot.obj", true))
 	{
 		XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
 		XMMATRIX rotationMatrix = XMMatrixIdentity();
@@ -134,7 +134,7 @@ bool LightingDemo::LoadContent()
 		m_GameObjects.push_back(GameObject(worldMatrix, mesh));
 	}
 
-	for (auto& mesh : ModelLoader::LoadObj(*commandList, "Assets/Models/cube/cube.obj", true))
+	for (auto& mesh : ModelLoader::LoadObj(*commandList, L"Assets/Models/cube/cube.obj", true))
 	{
 		XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
 		XMMATRIX rotationMatrix = XMMatrixIdentity();
@@ -143,7 +143,7 @@ bool LightingDemo::LoadContent()
 		m_GameObjects.push_back(GameObject(worldMatrix, mesh));
 	}
 
-	for (auto& mesh : ModelLoader::LoadObj(*commandList, "Assets/Models/sphere/sphere-cylcoords-1k.obj", true))
+	for (auto& mesh : ModelLoader::LoadObj(*commandList, L"Assets/Models/sphere/sphere-cylcoords-1k.obj", true))
 	{
 		XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 50.0f);
 		XMMATRIX rotationMatrix = XMMatrixIdentity();
