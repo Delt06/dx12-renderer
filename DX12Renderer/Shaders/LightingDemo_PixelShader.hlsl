@@ -34,6 +34,8 @@ ConstantBuffer<DirectionalLight> dirLightCb : register(b1);
 
 Texture2D diffuseMap : register(t0);
 Texture2D normalMap : register(t1);
+Texture2D specularMap : register(t2);
+Texture2D glossMap : register(t3);
 SamplerState defaultSampler : register(s0);
 
 float3 UnpackNormal(const float3 n)
@@ -52,22 +54,22 @@ float Diffuse(const float3 n, const float3 l)
 	return max(0, dot(n, l));
 }
 
-float Specular(const float3 v, const float3 n, const float3 l)
+float Specular(const float3 v, const float3 n, const float3 l, const float specularPower)
 {
 	const float3 r = normalize(reflect(-l, n));
 	const float rDotV = max(0, dot(r, v));
 
-	return pow(rDotV, materialCb.SpecularPower);
+	return pow(rDotV, specularPower);
 }
 
-LightResult Phong(const float3 positionVs, const float3 normalVs)
+LightResult Phong(const float3 positionVs, const float3 normalVs, const float specularPower)
 {
 	LightResult lightResult;
 
 	const float3 viewDir = normalize(-positionVs);
 	const float3 lightDir = dirLightCb.DirectionVs.xyz;
 	lightResult.Diffuse = Diffuse(normalVs, lightDir) * dirLightCb.Color;
-	lightResult.Specular = Specular(viewDir, normalVs, lightDir) * dirLightCb.Color;
+	lightResult.Specular = Specular(viewDir, normalVs, lightDir, specularPower) * dirLightCb.Color;
 
 	return lightResult;
 }
@@ -83,12 +85,15 @@ float4 main(PixelShaderInput IN) : SV_Target
 	                              normal);
 	const float3 normalVs = ApplyNormalMap(tbn, normalMap, IN.Uv);
 
-	const LightResult result = Phong(IN.PositionVs.xyz, normalVs);
+	float specularPower = materialCb.SpecularPower;
+	specularPower *= (1 - glossMap.Sample(defaultSampler, IN.Uv).x);
+	const LightResult result = Phong(IN.PositionVs.xyz, normalVs, specularPower);
 
 	const float4 emissive = materialCb.Emissive;
 	const float4 ambient = materialCb.Ambient;
 	const float4 diffuse = materialCb.Diffuse * result.Diffuse;
-	const float4 specular = materialCb.Specular * result.Specular;
+	float4 specular = materialCb.Specular * result.Specular;
+	specular *= specularMap.Sample(defaultSampler, IN.Uv).x;
 	const float4 texColor = diffuseMap.Sample(defaultSampler, IN.Uv);
 
 	return emissive + (ambient + diffuse + specular) * texColor;

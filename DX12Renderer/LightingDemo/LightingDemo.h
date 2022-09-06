@@ -35,8 +35,7 @@ protected:
 
 private:
 	std::vector<GameObject> m_GameObjects;
-	std::shared_ptr<Texture> m_Texture;
-	std::shared_ptr<Texture> m_NormalMap;
+	std::shared_ptr<Texture> m_WhiteTexture2d;
 
 	RenderTarget m_RenderTarget;
 	RootSignature m_RootSignature;

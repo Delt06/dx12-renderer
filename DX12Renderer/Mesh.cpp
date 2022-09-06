@@ -79,7 +79,7 @@ void Mesh::Draw(CommandList& commandList) const
 	commandList.DrawIndexed(IndexCount);
 }
 
-std::unique_ptr<Mesh> Mesh::CreateSphere(CommandList& commandList, float diameter, size_t tessellation, bool rhcoords)
+std::shared_ptr<Mesh> Mesh::CreateSphere(CommandList& commandList, float diameter, size_t tessellation, bool rhcoords)
 {
 	VertexCollectionType vertices;
 	IndexCollectionType indices;
@@ -144,7 +144,7 @@ std::unique_ptr<Mesh> Mesh::CreateSphere(CommandList& commandList, float diamete
 	return CreateMesh(commandList, vertices, indices, rhcoords, true);
 }
 
-std::unique_ptr<Mesh> Mesh::CreateCube(CommandList& commandList, float size, bool rhcoords)
+std::shared_ptr<Mesh> Mesh::CreateCube(CommandList& commandList, float size, bool rhcoords)
 {
 	// A cube has six faces, each one pointing in a different direction.
 	const int FaceCount = 6;
@@ -271,7 +271,7 @@ static void CreateCylinderCap(VertexCollectionType& vertices, IndexCollectionTyp
 	}
 }
 
-std::unique_ptr<Mesh> Mesh::CreateCone(CommandList& commandList, float diameter, float height, size_t tessellation,
+std::shared_ptr<Mesh> Mesh::CreateCone(CommandList& commandList, float diameter, float height, size_t tessellation,
                                        bool rhcoords)
 {
 	VertexCollectionType vertices;
@@ -318,7 +318,7 @@ std::unique_ptr<Mesh> Mesh::CreateCone(CommandList& commandList, float diameter,
 	return CreateMesh(commandList, vertices, indices, rhcoords, true);
 }
 
-std::unique_ptr<Mesh> Mesh::CreateTorus(CommandList& commandList, float diameter, float thickness, size_t tessellation,
+std::shared_ptr<Mesh> Mesh::CreateTorus(CommandList& commandList, float diameter, float thickness, size_t tessellation,
                                         bool rhcoords)
 {
 	VertexCollectionType vertices;
@@ -377,7 +377,7 @@ std::unique_ptr<Mesh> Mesh::CreateTorus(CommandList& commandList, float diameter
 	return CreateMesh(commandList, vertices, indices, rhcoords, true);
 }
 
-std::unique_ptr<Mesh> Mesh::CreatePlane(CommandList& commandList, float width, float height, bool rhcoords)
+std::shared_ptr<Mesh> Mesh::CreatePlane(CommandList& commandList, float width, float height, bool rhcoords)
 {
 	VertexCollectionType vertices =
 	{
@@ -395,10 +395,10 @@ std::unique_ptr<Mesh> Mesh::CreatePlane(CommandList& commandList, float width, f
 	return CreateMesh(commandList, vertices, indices, rhcoords, true);
 }
 
-std::unique_ptr<Mesh> Mesh::CreateMesh(CommandList& commandList, VertexCollectionType& vertices,
+std::shared_ptr<Mesh> Mesh::CreateMesh(CommandList& commandList, VertexCollectionType& vertices,
                                        IndexCollectionType& indices, const bool rhCoords, const bool generateTangents)
 {
-	std::unique_ptr<Mesh> mesh(new Mesh());
+	auto mesh = std::make_shared<Mesh>();
 	if (generateTangents)
 		GenerateTangents(vertices, indices);
 	mesh->Initialize(commandList, vertices, indices, rhCoords);

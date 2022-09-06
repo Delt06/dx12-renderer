@@ -11,6 +11,7 @@
 
 #include <wrl.h>
 
+#include "Model.h"
 #include "ModelLoader.h"
 using namespace Microsoft::WRL;
 
@@ -125,47 +126,72 @@ bool LightingDemo::LoadContent()
 	const auto commandQueue = Application::Get().GetCommandQueue();
 	const auto commandList = commandQueue->GetCommandList();
 
-	for (auto& mesh : ModelLoader::LoadObj(*commandList, L"Assets/Models/teapot/teapot.obj", true))
+	// Generate default texture
 	{
-		XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
-		XMMATRIX rotationMatrix = XMMatrixIdentity();
-		XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
-		XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-		m_GameObjects.push_back(GameObject(worldMatrix, mesh));
+		m_WhiteTexture2d = std::make_shared<Texture>();
+		commandList->LoadTextureFromFile(*m_WhiteTexture2d, L"Assets/Textures/white.png");
 	}
 
-	for (auto& mesh : ModelLoader::LoadObj(*commandList, L"Assets/Models/cube/cube.obj", true))
+	// Load models
 	{
-		XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
-		XMMATRIX rotationMatrix = XMMatrixIdentity();
-		XMMATRIX scaleMatrix = XMMatrixScaling(1.0f, 1.0f, 1.0f);
-		XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-		m_GameObjects.push_back(GameObject(worldMatrix, mesh));
-	}
+		ModelLoader modelLoader(m_WhiteTexture2d);
 
-	for (auto& mesh : ModelLoader::LoadObj(*commandList, L"Assets/Models/sphere/sphere-cylcoords-1k.obj", true))
-	{
-		XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 50.0f);
-		XMMATRIX rotationMatrix = XMMatrixIdentity();
-		XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
-		XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-		m_GameObjects.push_back(GameObject(worldMatrix, mesh));
-	}
+		{
+			auto model = modelLoader.LoadObj(*commandList, L"Assets/Models/teapot/teapot.obj", true);
+			{
+				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
+				                    L"Assets/Textures/PavingStones/PavingStones_1K_Color.jpg");
+				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
+				                    L"Assets/Textures/PavingStones/PavingStones_1K_Normal.jpg");
+				model->SetMap(ModelMaps::Specular, m_WhiteTexture2d);
+				modelLoader.LoadMap(*model, *commandList, ModelMaps::Gloss,
+				                    L"Assets/Textures/PavingStones/PavingStones_1K_Roughness.jpg");
+			}
+			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+			XMMATRIX rotationMatrix = XMMatrixIdentity();
+			XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
+			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+			m_GameObjects.push_back(GameObject(worldMatrix, model));
+		}
 
-	{
-		auto mesh = Mesh::CreatePlane(*commandList);
-		XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
-		XMMATRIX rotationMatrix = XMMatrixIdentity();
-		XMMATRIX scaleMatrix = XMMatrixScaling(20.0f, 1.0f, 20.0f);
-		XMMATRIX worldMatrix = scaleMatrix * translationMatrix * rotationMatrix;
-		m_GameObjects.push_back(GameObject(worldMatrix, mesh));
-	}
+		{
+			auto model = modelLoader.LoadObj(*commandList, L"Assets/Models/sphere/sphere-cylcoords-1k.obj", true);
+			{
+				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
+				                    L"Assets/Textures/Metal/Metal_1K_Color.jpg");
+				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
+				                    L"Assets/Textures/Metal/Metal_1K_Normal.jpg");
+				modelLoader.LoadMap(*model, *commandList, ModelMaps::Specular,
+				                    L"Assets/Textures/Metal/Metal_1K_Specular.jpg");
+				modelLoader.LoadMap(*model, *commandList, ModelMaps::Gloss,
+				                    L"Assets/Textures/Metal/Metal_1K_Roughness.jpg");
+			}
 
-	m_Texture = std::make_shared<Texture>();
-	commandList->LoadTextureFromFile(*m_Texture, L"Assets/Textures/Gravel_001_BaseColor.jpg");
-	m_NormalMap = std::make_shared<Texture>();
-	commandList->LoadTextureFromFile(*m_NormalMap, L"Assets/Textures/Gravel_001_Normal.jpg",
-	                                 TextureUsageType::Normalmap);
+			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 50.0f);
+			XMMATRIX rotationMatrix = XMMatrixIdentity();
+			XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
+			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+			m_GameObjects.push_back(GameObject(worldMatrix, model));
+		}
+
+		{
+			auto model = make_shared<Model>(Mesh::CreatePlane(*commandList));
+			{
+				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
+				                    L"Assets/Textures/Moss/Moss_1K_Color.jpg");
+				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
+				                    L"Assets/Textures/Moss/Moss_1K_Normal.jpg");
+				model->SetMap(ModelMaps::Specular, m_WhiteTexture2d);
+				modelLoader.LoadMap(*model, *commandList, ModelMaps::Gloss,
+				                    L"Assets/Textures/Moss/Moss_1K_Roughness.jpg");
+			}
+			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+			XMMATRIX rotationMatrix = XMMatrixIdentity();
+			XMMATRIX scaleMatrix = XMMatrixScaling(20.0f, 1.0f, 20.0f);
+			XMMATRIX worldMatrix = scaleMatrix * translationMatrix * rotationMatrix;
+			m_GameObjects.push_back(GameObject(worldMatrix, model));
+		}
+	}
 
 	m_DirectionalLight.DirectionWs = XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f);
 
@@ -192,7 +218,7 @@ bool LightingDemo::LoadContent()
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
-	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);
+	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, ModelMaps::TotalNumber, 0);
 
 	CD3DX12_ROOT_PARAMETER1 rootParameters[NumRootParameters];
 	rootParameters[MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
@@ -389,15 +415,16 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 
 		commandList->SetGraphicsDynamicConstantBuffer(MaterialCb, Material());
 		commandList->SetGraphicsDynamicConstantBuffer(DirLightCb, directionalLightCb);
-		commandList->SetShaderResourceView(Textures, 0, *m_Texture, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-		commandList->SetShaderResourceView(Textures, 1, *m_NormalMap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 		for (const auto& go : m_GameObjects)
 		{
-			Matrices matrices;
-			ComputeMatrices(go.m_WorldMatrix, viewMatrix, viewProjectionMatrix, matrices);
-			commandList->SetGraphicsDynamicConstantBuffer(MatricesCb, matrices);
-			go.m_Mesh->Draw(*commandList);
+			go.Draw([&viewMatrix, &viewProjectionMatrix](auto& cmd, auto worldMatrix)
+			        {
+				        Matrices matrices;
+				        ComputeMatrices(worldMatrix, viewMatrix, viewProjectionMatrix, matrices);
+				        cmd.SetGraphicsDynamicConstantBuffer(MatricesCb, matrices);
+			        },
+			        Textures, *commandList);
 		}
 	}
 

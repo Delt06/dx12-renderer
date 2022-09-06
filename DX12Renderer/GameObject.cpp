@@ -1,8 +1,16 @@
 #include "GameObject.h"
 #include "Mesh.h"
+#include "Model.h"
 
-GameObject::GameObject(const DirectX::XMMATRIX worldMatrix, std::unique_ptr<Mesh>& mesh) :
-	m_WorldMatrix(worldMatrix),
-	m_Mesh(std::move(mesh))
+GameObject::GameObject(const DirectX::XMMATRIX worldMatrix, const std::shared_ptr<Model> model)
+	: m_WorldMatrix(worldMatrix)
+	  , m_Model(model)
 {
+}
+
+void GameObject::Draw(const std::function<void(CommandList& commandList, DirectX::XMMATRIX worldMatrix)>& setMatricesFunc,
+                      const uint32_t mapsRootParameterIndex, CommandList& commandList) const
+{
+	setMatricesFunc(commandList, m_WorldMatrix);
+	m_Model->Draw(mapsRootParameterIndex, commandList);
 }

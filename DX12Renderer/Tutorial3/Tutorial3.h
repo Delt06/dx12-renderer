@@ -62,11 +62,11 @@ protected:
 	void OnResize(ResizeEventArgs& e) override;
 
 private:
-	std::unique_ptr<Mesh> CubeMesh;
-	std::unique_ptr<Mesh> SphereMesh;
-	std::unique_ptr<Mesh> ConeMesh;
-	std::unique_ptr<Mesh> TorusMesh;
-	std::unique_ptr<Mesh> PlaneMesh;
+	std::shared_ptr<Mesh> CubeMesh;
+	std::shared_ptr<Mesh> SphereMesh;
+	std::shared_ptr<Mesh> ConeMesh;
+	std::shared_ptr<Mesh> TorusMesh;
+	std::shared_ptr<Mesh> PlaneMesh;
 
 	std::shared_ptr<Texture> m_Texture;
 

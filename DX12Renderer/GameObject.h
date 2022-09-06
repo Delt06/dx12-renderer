@@ -1,14 +1,20 @@
 #pragma once
+
 #include <DirectXMath.h>
+#include <functional>
 #include <memory>
 
-class Mesh;
+class Model;
+class CommandList;
 
 class GameObject
 {
 public:
-	GameObject(DirectX::XMMATRIX worldMatrix, std::unique_ptr<Mesh>& mesh);
+	GameObject(DirectX::XMMATRIX worldMatrix, std::shared_ptr<Model> model);
 
+	void Draw(const std::function<void(CommandList& commandList, DirectX::XMMATRIX worldMatrix)>& setMatricesFunc, uint32_t mapsRootParameterIndex, CommandList& commandList) const;
+
+private:
 	DirectX::XMMATRIX m_WorldMatrix;
-	std::unique_ptr<Mesh> m_Mesh{};
+	std::shared_ptr<Model> m_Model{};
 };

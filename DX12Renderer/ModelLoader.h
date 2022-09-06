@@ -1,13 +1,22 @@
 ﻿#pragma once
 #include <string>
-#include <vector>
 
 #include "CommandList.h"
 
-class Mesh;
+class Model;
+namespace ModelMaps
+{
+	enum MapType;
+}
+
 
 class ModelLoader
 {
 public:
-	static std::vector<std::unique_ptr<Mesh>> LoadObj(CommandList& commandList, const std::wstring& path, bool rhCoords = false);
+	explicit ModelLoader(std::shared_ptr<Texture> emptyTexture2d);
+	std::shared_ptr<Model> LoadObj(CommandList& commandList, const std::wstring& path, bool rhCoords = false);
+	void LoadMap(Model& model, CommandList& commandList, ModelMaps::MapType mapType, const std::wstring& path) const;
+
+private:
+	std::shared_ptr<Texture> m_EmptyTexture2d;
 };

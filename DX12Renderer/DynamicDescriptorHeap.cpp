@@ -166,35 +166,34 @@ void DynamicDescriptorHeap::CommitStagedDescriptors(CommandList& commandList,
 			// tables must be (re)recopied to the new descriptor heap (not just
 			// the stale descriptor tables).
 			StaleDescriptorTableBitMask = DescriptorTableBitMask;
+		}
+		DWORD rootIndex;
 
-			DWORD rootIndex;
+		while (_BitScanForward(&rootIndex, StaleDescriptorTableBitMask))
+		{
+			const UINT numSrcDescriptors = DescriptorTableCaches[rootIndex].NumDescriptors;
+			const D3D12_CPU_DESCRIPTOR_HANDLE* pSrcDescriptorHandles = DescriptorTableCaches[rootIndex].
+				BaseDescriptor;
 
-			while (_BitScanForward(&rootIndex, StaleDescriptorTableBitMask))
-			{
-				const UINT numSrcDescriptors = DescriptorTableCaches[rootIndex].NumDescriptors;
-				const D3D12_CPU_DESCRIPTOR_HANDLE* pSrcDescriptorHandles = DescriptorTableCaches[rootIndex].
-					BaseDescriptor;
+			const D3D12_CPU_DESCRIPTOR_HANDLE pDestDescriptorRangeStarts[] = {
+				CurrentCpuDescriptorHandle
+			};
+			const UINT pDestDescriptorRangeSizes[] = {
+				numSrcDescriptors
+			};
 
-				const D3D12_CPU_DESCRIPTOR_HANDLE pDestDescriptorRangeStarts[] = {
-					CurrentCpuDescriptorHandle
-				};
-				const UINT pDestDescriptorRangeSizes[] = {
-					numSrcDescriptors
-				};
+			// Copy the staged CPU visible descriptors to the GPU visible descriptor heap.
+			device->CopyDescriptors(1, pDestDescriptorRangeStarts, pDestDescriptorRangeSizes, numSrcDescriptors,
+			                        pSrcDescriptorHandles, nullptr, DescriptorHeapType);
 
-				// Copy the staged CPU visible descriptors to the GPU visible descriptor heap.
-				device->CopyDescriptors(1, pDestDescriptorRangeStarts, pDestDescriptorRangeSizes, numSrcDescriptors,
-				                        pSrcDescriptorHandles, nullptr, DescriptorHeapType);
+			// Set the descriptors on the command list using the passed-in setter function.
+			setFunc(graphicsCommandList, rootIndex, CurrentGpuDescriptorHandle);
 
-				// Set the descriptors on the command list using the passed-in setter function.
-				setFunc(graphicsCommandList, rootIndex, CurrentGpuDescriptorHandle);
+			CurrentCpuDescriptorHandle.Offset(static_cast<INT>(numSrcDescriptors), DescriptorHandleIncrementSize);
+			CurrentGpuDescriptorHandle.Offset(static_cast<INT>(numSrcDescriptors), DescriptorHandleIncrementSize);
 
-				CurrentCpuDescriptorHandle.Offset(static_cast<INT>(numSrcDescriptors), DescriptorHandleIncrementSize);
-				CurrentGpuDescriptorHandle.Offset(static_cast<INT>(numSrcDescriptors), DescriptorHandleIncrementSize);
-
-				// Flip the stale bit so the descriptor table is not recopied again unless it is updated with a new descriptor.
-				StaleDescriptorTableBitMask ^= (1 << rootIndex);
-			}
+			// Flip the stale bit so the descriptor table is not recopied again unless it is updated with a new descriptor.
+			StaleDescriptorTableBitMask ^= (1 << rootIndex);
 		}
 	}
 }

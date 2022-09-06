@@ -96,26 +96,27 @@ class Mesh final
 public:
 	void Draw(CommandList& commandList) const;
 
-	static std::unique_ptr<Mesh> CreateCube(CommandList& commandList, float size = 1, bool rhCoords = false);
-	static std::unique_ptr<Mesh> CreateSphere(CommandList& commandList, float diameter = 1, size_t tessellation = 16,
+	static std::shared_ptr<Mesh> CreateCube(CommandList& commandList, float size = 1, bool rhCoords = false);
+	static std::shared_ptr<Mesh> CreateSphere(CommandList& commandList, float diameter = 1, size_t tessellation = 16,
 	                                          bool rhCoords = false);
-	static std::unique_ptr<Mesh> CreateCone(CommandList& commandList, float diameter = 1, float height = 1,
+	static std::shared_ptr<Mesh> CreateCone(CommandList& commandList, float diameter = 1, float height = 1,
 	                                        size_t tessellation = 32, bool rhCoords = false);
-	static std::unique_ptr<Mesh> CreateTorus(CommandList& commandList, float diameter = 1, float thickness = 0.333f,
+	static std::shared_ptr<Mesh> CreateTorus(CommandList& commandList, float diameter = 1, float thickness = 0.333f,
 	                                         size_t tessellation = 32, bool rhCoords = false);
-	static std::unique_ptr<Mesh> CreatePlane(CommandList& commandList, float width = 1, float height = 1,
+	static std::shared_ptr<Mesh> CreatePlane(CommandList& commandList, float width = 1, float height = 1,
 	                                         bool rhCoords = false);
 
-	static std::unique_ptr<Mesh> CreateMesh(CommandList& commandList, VertexCollectionType& vertices,
-	                                        IndexCollectionType& indices, bool rhCoords = false, bool generateTangents = false);
+	static std::shared_ptr<Mesh> CreateMesh(CommandList& commandList, VertexCollectionType& vertices,
+	                                        IndexCollectionType& indices, bool rhCoords = false,
+	                                        bool generateTangents = false);
 
 	Mesh(const Mesh& copy) = delete;
+	virtual ~Mesh();
+	Mesh();
 
 private:
-	friend struct std::default_delete<Mesh>;
+	
 
-	Mesh();
-	virtual ~Mesh();
 
 	void Initialize(CommandList& commandList, VertexCollectionType& vertices, IndexCollectionType& indices,
 	                bool rhCoords);
