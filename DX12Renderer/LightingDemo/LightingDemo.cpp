@@ -174,7 +174,7 @@ bool LightingDemo::LoadContent()
 				                    L"Assets/Textures/Metal/Metal_1K_Roughness.jpg");
 			}
 
-			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 50.0f);
+			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 25.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
 			XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
 			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
@@ -202,10 +202,33 @@ bool LightingDemo::LoadContent()
 
 	// Create lights
 	{
-		m_DirectionalLight.m_DirectionWs = XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f);
+		m_PointLightPso = std::make_unique<PointLightPso>(device, *commandList);
 
-		m_PointLights.push_back(PointLight(XMFLOAT4(-4, 1, 0, 1)));
-		m_PointLights.push_back(PointLight(XMFLOAT4(4, 1, 2, 1)));
+		m_DirectionalLight.m_DirectionWs = XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f);
+		m_DirectionalLight.m_Color = XMFLOAT4(0.9f, 0.9f, 0.7f, 0.0f);
+
+		// magenta
+		{
+			PointLight pointLight(XMFLOAT4(-8, 2, -2, 1));
+			pointLight.m_Color = XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f);
+			m_PointLights.push_back(pointLight);
+		}
+
+		// yellow-ish
+		{
+			PointLight pointLight(XMFLOAT4(0, 2, -6, 1));
+			pointLight.m_Color = XMFLOAT4(3.0f, 2.0f, 0.25f, 1.0f);
+			m_PointLights.push_back(pointLight);
+		}
+
+		// cyan-ish
+		{
+			PointLight pointLight(XMFLOAT4(6, 2, 10, 1));
+			pointLight.m_Color = XMFLOAT4(0.0f, 4.0f, 1.5f, 1.0f);
+			pointLight.m_LinearAttenuation = 0.14f;
+			pointLight.m_QuadraticAttenuation = 0.07f;
+			m_PointLights.push_back(pointLight);
+		}
 	}
 
 
@@ -405,9 +428,6 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 		commandList->ClearDepthStencilTexture(m_RenderTarget.GetTexture(DepthStencil), D3D12_CLEAR_FLAG_DEPTH);
 	}
 
-	commandList->SetPipelineState(m_PipelineState);
-	commandList->SetGraphicsRootSignature(m_RootSignature);
-
 	commandList->SetViewport(m_Viewport);
 	commandList->SetScissorRect(m_ScissorRect);
 
@@ -417,6 +437,18 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 		const XMMATRIX viewMatrix = m_Camera.GetViewMatrix();
 		const XMMATRIX viewProjectionMatrix = viewMatrix * m_Camera.GetProjectionMatrix();
 
+		// Draw point lights
+		{
+			m_PointLightPso->Set(*commandList);
+
+			for (const auto& pointLight : m_PointLights)
+			{
+				m_PointLightPso->Draw(*commandList, viewMatrix, viewProjectionMatrix, pointLight, 1.0f);
+			}
+		}
+
+		commandList->SetPipelineState(m_PipelineState);
+		commandList->SetGraphicsRootSignature(m_RootSignature);
 
 		// Update directional light
 		{

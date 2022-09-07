@@ -12,6 +12,7 @@
 #include <VertexBuffer.h>
 
 #include "GameObject.h"
+#include "PointLightPso.h"
 
 class LightingDemo final : public Game
 {
@@ -40,6 +41,7 @@ private:
 	RenderTarget m_RenderTarget;
 	RootSignature m_RootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineState;
+	std::unique_ptr<PointLightPso> m_PointLightPso;
 
 	D3D12_VIEWPORT m_Viewport;
 	D3D12_RECT m_ScissorRect;
