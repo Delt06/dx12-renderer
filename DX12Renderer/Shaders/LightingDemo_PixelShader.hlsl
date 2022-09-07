@@ -150,7 +150,6 @@ void Combine(inout LightingResult destination, const in LightingResult source)
 
 LightingResult ComputeLighting(const float3 positionVs, const float3 normalVs, const float specularPower)
 {
-	// ReSharper disable once CppLocalVariableMayBeConst
 	LightingResult totalLightingResult;
 	totalLightingResult.Diffuse = 0;
 	totalLightingResult.Specular = 0;
