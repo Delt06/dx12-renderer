@@ -143,7 +143,6 @@ bool LightingDemo::LoadContent()
 				                    L"Assets/Textures/PavingStones/PavingStones_1K_Color.jpg");
 				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
 				                    L"Assets/Textures/PavingStones/PavingStones_1K_Normal.jpg");
-				model->SetMap(ModelMaps::Specular, m_WhiteTexture2d);
 				modelLoader.LoadMap(*model, *commandList, ModelMaps::Gloss,
 				                    L"Assets/Textures/PavingStones/PavingStones_1K_Roughness.jpg");
 			}
@@ -175,13 +174,12 @@ bool LightingDemo::LoadContent()
 		}
 
 		{
-			auto model = make_shared<Model>(Mesh::CreatePlane(*commandList));
+			auto model = modelLoader.LoadExisting(Mesh::CreatePlane(*commandList));
 			{
 				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
 				                    L"Assets/Textures/Moss/Moss_1K_Color.jpg");
 				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
 				                    L"Assets/Textures/Moss/Moss_1K_Normal.jpg");
-				model->SetMap(ModelMaps::Specular, m_WhiteTexture2d);
 				modelLoader.LoadMap(*model, *commandList, ModelMaps::Gloss,
 				                    L"Assets/Textures/Moss/Moss_1K_Roughness.jpg");
 			}
@@ -413,7 +411,6 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 		directionalLightCb.Color = m_DirectionalLight.Color;
 		directionalLightCb.DirectionVs = m_DirectionalLight.DirectionVs;
 
-		commandList->SetGraphicsDynamicConstantBuffer(MaterialCb, Material());
 		commandList->SetGraphicsDynamicConstantBuffer(DirLightCb, directionalLightCb);
 
 		for (const auto& go : m_GameObjects)
@@ -424,7 +421,7 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 				        ComputeMatrices(worldMatrix, viewMatrix, viewProjectionMatrix, matrices);
 				        cmd.SetGraphicsDynamicConstantBuffer(MatricesCb, matrices);
 			        },
-			        Textures, *commandList);
+			        *commandList, MaterialCb, Textures);
 		}
 	}
 

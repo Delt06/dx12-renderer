@@ -86,12 +86,14 @@ std::shared_ptr<Model> ModelLoader::LoadObj(CommandList& commandList, const std:
 	std::vector<std::shared_ptr<Mesh>> outputMeshes;
 	outputMeshes.push_back(Mesh::CreateMesh(commandList, outputVertices, outputIndices, rhCoords, false));
 	auto model = std::make_shared<Model>(outputMeshes);
+	model->SetMapsEmpty(m_EmptyTexture2d);
+	return model;
+}
 
-	for (uint32_t i = 0; i < ModelMaps::TotalNumber; ++i)
-	{
-		model->SetMap(static_cast<ModelMaps::MapType>(i), m_EmptyTexture2d);
-	}
-
+std::shared_ptr<Model> ModelLoader::LoadExisting(std::shared_ptr<Mesh> mesh) const
+{
+	auto model = std::make_shared<Model>(mesh);
+	model->SetMapsEmpty(m_EmptyTexture2d);
 	return model;
 }
 

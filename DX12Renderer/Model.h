@@ -35,14 +35,14 @@ public:
 
 	virtual ~Model();
 
-	void Draw(uint32_t mapsRootParameterIndex, CommandList& commandList) const;
+	void Draw(CommandList& commandList, uint32_t materialRootParameterIndex, uint32_t mapsRootParameterIndex) const;
 
 	void SetMap(ModelMaps::MapType mapType, std::shared_ptr<Texture> map);
+	void SetMapsEmpty(std::shared_ptr<Texture> emptyMap);
 
 private:
 	MeshCollectionType m_Meshes{};
 
-	Material m_Material;
+	Material m_Material{};
 	std::shared_ptr<Texture> m_Maps[ModelMaps::TotalNumber];
-	bool m_HasMaps[ModelMaps::TotalNumber]{};
 };

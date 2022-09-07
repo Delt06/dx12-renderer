@@ -8,9 +8,10 @@ GameObject::GameObject(const DirectX::XMMATRIX worldMatrix, const std::shared_pt
 {
 }
 
-void GameObject::Draw(const std::function<void(CommandList& commandList, DirectX::XMMATRIX worldMatrix)>& setMatricesFunc,
-                      const uint32_t mapsRootParameterIndex, CommandList& commandList) const
+void GameObject::Draw(
+	const std::function<void(CommandList& commandList, DirectX::XMMATRIX worldMatrix)>& setMatricesFunc,
+	CommandList& commandList, const uint32_t materialRootParameterIndex, const uint32_t mapsRootParameterIndex) const
 {
 	setMatricesFunc(commandList, m_WorldMatrix);
-	m_Model->Draw(mapsRootParameterIndex, commandList);
+	m_Model->Draw(commandList, materialRootParameterIndex, mapsRootParameterIndex);
 }

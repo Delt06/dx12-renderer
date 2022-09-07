@@ -53,6 +53,12 @@ public:
 	DirectX::XMFLOAT4 Ambient;
 	DirectX::XMFLOAT4 Diffuse;
 	DirectX::XMFLOAT4 Specular;
+
 	float SpecularPower;
 	uint32_t Padding[3];
+
+	uint32_t HasDiffuseMap{};
+	uint32_t HasNormalMap{};
+	uint32_t HasSpecularMap{};
+	uint32_t HasGlossMap{};
 };

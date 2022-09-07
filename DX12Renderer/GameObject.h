@@ -12,7 +12,9 @@ class GameObject
 public:
 	GameObject(DirectX::XMMATRIX worldMatrix, std::shared_ptr<Model> model);
 
-	void Draw(const std::function<void(CommandList& commandList, DirectX::XMMATRIX worldMatrix)>& setMatricesFunc, uint32_t mapsRootParameterIndex, CommandList& commandList) const;
+	void Draw(const std::function<void(CommandList& commandList, DirectX::XMMATRIX worldMatrix)>& setMatricesFunc,
+	          CommandList& commandList,
+	          uint32_t materialRootParameterIndex, uint32_t mapsRootParameterIndex) const;
 
 private:
 	DirectX::XMMATRIX m_WorldMatrix;
