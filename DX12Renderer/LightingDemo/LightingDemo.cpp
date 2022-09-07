@@ -19,6 +19,7 @@ using namespace Microsoft::WRL;
 #include <d3dx12.h>
 #include <d3dcompiler.h>
 #include <DirectXColors.h>
+#include <MatricesCb.h>
 
 using namespace DirectX;
 
@@ -33,12 +34,9 @@ using namespace DirectX;
 
 namespace
 {
-	struct Matrices
+	struct LightPropertiesCb
 	{
-		XMMATRIX Model;
-		XMMATRIX ModelView;
-		XMMATRIX InverseTransposeModelView;
-		XMMATRIX ModelViewProjection;
+		uint32_t NumPointLights;
 	};
 
 	struct DirectionalLightCb
@@ -47,20 +45,28 @@ namespace
 		XMFLOAT4 Color;
 	};
 
-	// An enum for root signature parameters.
-	// I'm not using scoped enums to avoid the explicit cast that would be required
-	// to use these as root indices in the root signature.
-	enum RootParameters
+	namespace RootParameters
 	{
-		// ConstantBuffer<Matrices> MatCB : register(b0);
-		MatricesCb,
-		// ConstantBuffer<Material> MaterialCB : register( b0, space1 );
-		MaterialCb,
-		// ConstantBuffer<Material> DirLightCb : register( b1, space1 );
-		DirLightCb,
-		Textures,
-		NumRootParameters
-	};
+		// An enum for root signature parameters.
+		// I'm not using scoped enums to avoid the explicit cast that would be required
+		// to use these as root indices in the root signature.
+		enum RootParameters
+		{
+			// ConstantBuffer register(b0);
+			MatricesCb,
+			// ConstantBuffer register( b0, space1 );
+			MaterialCb,
+			// ConstantBuffer register( b1, space1 );
+			DirLightCb,
+			// ConstantBuffer register( b2, space1 );
+			LightPropertiesCb,
+			Textures,
+			// StructuredBuffer PointLights : register( t4 );
+			PointLights,
+			NumRootParameters
+		};
+	}
+
 
 	// Clamp a value between a min and max range.
 	template <typename T>
@@ -194,10 +200,17 @@ bool LightingDemo::LoadContent()
 		}
 	}
 
-	m_DirectionalLight.DirectionWs = XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f);
+	// Create lights
+	{
+		m_DirectionalLight.m_DirectionWs = XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f);
 
-	XMVECTOR lightDir = XMLoadFloat4(&m_DirectionalLight.DirectionWs);
-	XMStoreFloat4(&m_DirectionalLight.DirectionWs, XMVector4Normalize(lightDir));
+		m_PointLights.push_back(PointLight(XMFLOAT4(-4, 1, 0, 1)));
+		m_PointLights.push_back(PointLight(XMFLOAT4(4, 1, 2, 1)));
+	}
+
+
+	XMVECTOR lightDir = XMLoadFloat4(&m_DirectionalLight.m_DirectionWs);
+	XMStoreFloat4(&m_DirectionalLight.m_DirectionWs, XMVector4Normalize(lightDir));
 
 	ComPtr<ID3DBlob> vertexShaderBlob;
 	ThrowIfFailed(D3DReadFileToBlob(L"LightingDemo_VertexShader.cso", &vertexShaderBlob));
@@ -221,19 +234,25 @@ bool LightingDemo::LoadContent()
 
 	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, ModelMaps::TotalNumber, 0);
 
-	CD3DX12_ROOT_PARAMETER1 rootParameters[NumRootParameters];
-	rootParameters[MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
-	                                                    D3D12_SHADER_VISIBILITY_VERTEX);
-	rootParameters[MaterialCb].InitAsConstantBufferView(0, 1, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
-	                                                    D3D12_SHADER_VISIBILITY_PIXEL);
-	rootParameters[DirLightCb].InitAsConstantBufferView(1, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
-	                                                    D3D12_SHADER_VISIBILITY_PIXEL);
-	rootParameters[Textures].InitAsDescriptorTable(1, &descriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
+	CD3DX12_ROOT_PARAMETER1 rootParameters[RootParameters::NumRootParameters];
+	rootParameters[RootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
+	                                                                    D3D12_SHADER_VISIBILITY_VERTEX);
+	rootParameters[RootParameters::MaterialCb].InitAsConstantBufferView(0, 1, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
+	                                                                    D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[RootParameters::DirLightCb].InitAsConstantBufferView(1, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
+	                                                                    D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[RootParameters::LightPropertiesCb].InitAsConstants(sizeof(LightPropertiesCb) / sizeof(float), 2, 0,
+	                                                                  D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[RootParameters::Textures].InitAsDescriptorTable(1, &descriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[RootParameters::PointLights].InitAsShaderResourceView(
+		ModelMaps::TotalNumber, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
+		D3D12_SHADER_VISIBILITY_PIXEL);
 
 	CD3DX12_STATIC_SAMPLER_DESC linearRepeatSampler(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR);
 
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
-	rootSignatureDescription.Init_1_1(NumRootParameters, rootParameters, 1, &linearRepeatSampler, rootSignatureFlags);
+	rootSignatureDescription.Init_1_1(RootParameters::NumRootParameters, rootParameters, 1, &linearRepeatSampler,
+	                                  rootSignatureFlags);
 
 	m_RootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
 
@@ -373,14 +392,6 @@ void LightingDemo::OnUpdate(UpdateEventArgs& e)
 	m_Camera.SetRotation(cameraRotation);
 }
 
-void XM_CALLCONV ComputeMatrices(FXMMATRIX model, CXMMATRIX view, CXMMATRIX viewProjection, Matrices& matrices)
-{
-	matrices.Model = model;
-	matrices.ModelView = model * view;
-	matrices.InverseTransposeModelView = XMMatrixTranspose(XMMatrixInverse(nullptr, matrices.ModelView));
-	matrices.ModelViewProjection = model * viewProjection;
-}
-
 void LightingDemo::OnRender(RenderEventArgs& e)
 {
 	Base::OnRender(e);
@@ -406,25 +417,44 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 		const XMMATRIX viewMatrix = m_Camera.GetViewMatrix();
 		const XMMATRIX viewProjectionMatrix = viewMatrix * m_Camera.GetProjectionMatrix();
 
-		XMVECTOR lightDirVs = XMLoadFloat4(&m_DirectionalLight.DirectionWs);
-		lightDirVs = XMVector4Transform(lightDirVs, viewMatrix);
-		XMStoreFloat4(&m_DirectionalLight.DirectionVs, lightDirVs);
 
-		DirectionalLightCb directionalLightCb;
-		directionalLightCb.Color = m_DirectionalLight.Color;
-		directionalLightCb.DirectionVs = m_DirectionalLight.DirectionVs;
+		// Update directional light
+		{
+			XMVECTOR lightDirVs = XMLoadFloat4(&m_DirectionalLight.m_DirectionWs);
+			lightDirVs = XMVector4Transform(lightDirVs, viewMatrix);
+			XMStoreFloat4(&m_DirectionalLight.m_DirectionVs, lightDirVs);
 
-		commandList->SetGraphicsDynamicConstantBuffer(DirLightCb, directionalLightCb);
+			DirectionalLightCb directionalLightCb;
+			directionalLightCb.Color = m_DirectionalLight.m_Color;
+			directionalLightCb.DirectionVs = m_DirectionalLight.m_DirectionVs;
+			commandList->SetGraphicsDynamicConstantBuffer(RootParameters::DirLightCb, directionalLightCb);
+		}
+
+		// Update point lights
+		{
+			LightPropertiesCb lightPropertiesCb;
+			lightPropertiesCb.NumPointLights = m_PointLights.size();
+
+			for (auto& pointLight : m_PointLights)
+			{
+				XMVECTOR lightPosVs = XMLoadFloat4(&pointLight.m_PositionWs);
+				lightPosVs = XMVector4Transform(lightPosVs, viewMatrix);
+				XMStoreFloat4(&pointLight.m_PositionVs, lightPosVs);
+			}
+
+			commandList->SetGraphics32BitConstants(RootParameters::LightPropertiesCb, lightPropertiesCb);
+			commandList->SetGraphicsDynamicStructuredBuffer(RootParameters::PointLights, m_PointLights);
+		}
 
 		for (const auto& go : m_GameObjects)
 		{
 			go.Draw([&viewMatrix, &viewProjectionMatrix](auto& cmd, auto worldMatrix)
 			        {
-				        Matrices matrices;
-				        ComputeMatrices(worldMatrix, viewMatrix, viewProjectionMatrix, matrices);
-				        cmd.SetGraphicsDynamicConstantBuffer(MatricesCb, matrices);
+				        MatricesCb matrices;
+				        matrices.Compute(worldMatrix, viewMatrix, viewProjectionMatrix);
+				        cmd.SetGraphicsDynamicConstantBuffer(RootParameters::MatricesCb, matrices);
 			        },
-			        *commandList, MaterialCb, Textures);
+			        *commandList, RootParameters::MaterialCb, RootParameters::Textures);
 		}
 	}
 

@@ -127,10 +127,10 @@ bool Tutorial3::LoadContent()
 	m_Texture = std::make_shared<Texture>();
 	commandList->LoadTextureFromFile(*m_Texture, L"Assets/Textures/bricks.jpg");
 
-	MDirectionalLight.DirectionWs = XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f);
+	MDirectionalLight.m_DirectionWs = XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f);
 
-	XMVECTOR lightDir = XMLoadFloat4(&MDirectionalLight.DirectionWs);
-	XMStoreFloat4(&MDirectionalLight.DirectionWs, XMVector4Normalize(lightDir));
+	XMVECTOR lightDir = XMLoadFloat4(&MDirectionalLight.m_DirectionWs);
+	XMStoreFloat4(&MDirectionalLight.m_DirectionWs, XMVector4Normalize(lightDir));
 
 	ComPtr<ID3DBlob> vertexShaderBlob;
 	ThrowIfFailed(D3DReadFileToBlob(L"Tutorial3_VertexShader.cso", &vertexShaderBlob));
@@ -341,13 +341,13 @@ void Tutorial3::OnRender(RenderEventArgs& e)
 		Matrices matrices;
 		ComputeMatrices(worldMatrix, viewMatrix, viewProjectionMatrix, matrices);
 
-		XMVECTOR lightDirVs = XMLoadFloat4(&MDirectionalLight.DirectionWs);
+		XMVECTOR lightDirVs = XMLoadFloat4(&MDirectionalLight.m_DirectionWs);
 		lightDirVs = XMVector4Transform(lightDirVs, MCamera.GetViewMatrix());
-		XMStoreFloat4(&MDirectionalLight.DirectionVs, lightDirVs);
+		XMStoreFloat4(&MDirectionalLight.m_DirectionVs, lightDirVs);
 
 		DirectionalLightUniform directionalLight;
-		directionalLight.Color = MDirectionalLight.Color;
-		directionalLight.DirectionVs = MDirectionalLight.DirectionVs;
+		directionalLight.Color = MDirectionalLight.m_Color;
+		directionalLight.DirectionVs = MDirectionalLight.m_DirectionVs;
 
 		commandList->SetGraphicsDynamicConstantBuffer(MatricesCb, matrices);
 		commandList->SetGraphicsDynamicConstantBuffer(MaterialCb, Material());

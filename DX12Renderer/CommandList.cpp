@@ -599,6 +599,16 @@ void CommandList::SetIndexBuffer(const IndexBuffer& indexBuffer)
 	TrackResource(indexBuffer);
 }
 
+void CommandList::SetGraphicsDynamicStructuredBuffer(const uint32_t slot, const size_t numElements,
+                                                     const size_t elementSize,
+                                                     const void* bufferData) const
+{
+	const size_t bufferSize = numElements * elementSize;
+	const auto heapAllocation = m_PUploadBuffer->Allocate(bufferSize, elementSize);
+	memcpy(heapAllocation.Cpu, bufferData, bufferSize);
+	m_D3d12CommandList->SetGraphicsRootShaderResourceView(slot, heapAllocation.Gpu);
+}
+
 void CommandList::SetViewport(const D3D12_VIEWPORT& viewport)
 {
 	SetViewports({viewport});

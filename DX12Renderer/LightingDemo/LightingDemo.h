@@ -77,4 +77,5 @@ private:
 	int m_Height;
 
 	DirectionalLight m_DirectionalLight{};
+	std::vector<PointLight> m_PointLights;
 };

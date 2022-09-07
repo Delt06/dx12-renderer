@@ -21,7 +21,7 @@ struct DirectionalLight
 	float4 Color;
 };
 
-struct LightResult
+struct LightingResult
 {
 	float4 Diffuse;
 	float4 Specular;
@@ -46,9 +46,9 @@ float Specular(const float3 v, const float3 n, const float3 l)
 	return pow(rDotV, materialCb.SpecularPower);
 }
 
-LightResult Phong(const float3 positionVs, const float3 normalVs)
+LightingResult Phong(const float3 positionVs, const float3 normalVs)
 {
-	LightResult lightResult;
+	LightingResult lightResult;
 
 	const float3 viewDir = normalize(-positionVs);
 	const float3 lightDir = dirLightCb.DirectionVs.xyz;
@@ -60,7 +60,7 @@ LightResult Phong(const float3 positionVs, const float3 normalVs)
 
 float4 main(PixelShaderInput IN) : SV_Target
 {
-	const LightResult result = Phong(IN.PositionVs.xyz, normalize(IN.NormalVs));
+	const LightingResult result = Phong(IN.PositionVs.xyz, normalize(IN.NormalVs));
 
 	const float4 emissive = materialCb.Emissive;
 	const float4 ambient = materialCb.Ambient;

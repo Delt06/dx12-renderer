@@ -302,14 +302,14 @@ public:
 	/**
 	 * Set dynamic structured buffer contents.
 	 */
-	/*void SetGraphicsDynamicStructuredBuffer(uint32_t slot, size_t numElements, size_t elementSize,
-	                                        const void* bufferData);*/
+	void SetGraphicsDynamicStructuredBuffer(uint32_t slot, size_t numElements, size_t elementSize,
+	                                        const void* bufferData) const;
 
-	//template <typename T>
-	/*void SetGraphicsDynamicStructuredBuffer(uint32_t slot, const std::vector<T>& bufferData)
+	template <typename T>
+	void SetGraphicsDynamicStructuredBuffer(const uint32_t slot, const std::vector<T>& bufferData)
 	{
 		SetGraphicsDynamicStructuredBuffer(slot, bufferData.size(), sizeof(T), bufferData.data());
-	}*/
+	}
 
 	/**
 	 * Set viewports.

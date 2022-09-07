@@ -181,6 +181,7 @@
     <ClCompile Include="Light.cpp" />
     <ClCompile Include="LightingDemo\LightingDemo.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MatricesCb.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="ModelLoader.cpp" />
@@ -220,6 +221,7 @@
     <ClInclude Include="Light.h" />
     <ClInclude Include="LightingDemo\LightingDemo.h" />
     <ClInclude Include="Material.h" />
+    <ClInclude Include="MatricesCb.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="ModelLoader.h" />

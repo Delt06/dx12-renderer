@@ -29,20 +29,80 @@ struct DirectionalLight
 	float4 Color;
 };
 
-struct LightResult
+struct PointLight
 {
-	float4 Diffuse;
-	float4 Specular;
+	float4 PositionWS; // Light position in world space.
+	//----------------------------------- (16 byte boundary)
+	float4 PositionVS; // Light position in view space.
+	//----------------------------------- (16 byte boundary)
+	float4 Color;
+	//----------------------------------- (16 byte boundary)
+	float ConstantAttenuation;
+	float LinearAttenuation;
+	float QuadraticAttenuation;
+	float Padding;
+	//----------------------------------- (16 byte boundary)
+	// Total:                              16 * 4 = 64 bytes
+};
+
+struct LightingResult
+{
+	float3 Diffuse;
+	float3 Specular;
+};
+
+struct LightPropertiesCb
+{
+	uint NumPointLights;
 };
 
 ConstantBuffer<Material> materialCb : register(b0, space1);
 ConstantBuffer<DirectionalLight> dirLightCb : register(b1);
+ConstantBuffer<LightPropertiesCb> lightPropertiesCb : register(b2);
+StructuredBuffer<PointLight> pointLights : register(t4);
 
 Texture2D diffuseMap : register(t0);
 Texture2D normalMap : register(t1);
 Texture2D specularMap : register(t2);
 Texture2D glossMap : register(t3);
 SamplerState defaultSampler : register(s0);
+
+struct Light
+{
+	float3 Color;
+	float3 DirectionVs;
+	float DistanceAttenuation;
+};
+
+Light GetMainLight()
+{
+	Light light;
+	light.Color = dirLightCb.Color.rgb;
+	light.DirectionVs = dirLightCb.DirectionVs.xyz;
+	light.DistanceAttenuation = 1.0f;
+	return light;
+}
+
+float ComputeAttenuation(const float cConstant, const float cLinear, const float cQuadratic, const float distance)
+{
+	return 1.0f / (cConstant + cLinear * distance + cQuadratic * distance * distance);
+}
+
+Light GetPointLight(const uint index, const float3 positionVs)
+{
+	Light light;
+
+	const PointLight pointLight = pointLights[index];
+	const float3 offset = pointLight.PositionVS.xyz - positionVs;
+	const float distance = length(offset);
+
+	light.Color = pointLight.Color.rgb;
+	light.DirectionVs = offset / distance;
+	light.DistanceAttenuation = ComputeAttenuation(pointLight.ConstantAttenuation, pointLight.LinearAttenuation,
+	                                               pointLight.QuadraticAttenuation, distance);
+
+	return light;
+}
 
 float3 UnpackNormal(const float3 n)
 {
@@ -68,16 +128,49 @@ float Specular(const float3 v, const float3 n, const float3 l, const float specu
 	return pow(rDotV, specularPower);
 }
 
-LightResult Phong(const float3 positionVs, const float3 normalVs, const float specularPower)
+LightingResult Phong(const in Light light, const float3 positionVs, const float3 normalVs, const float specularPower)
 {
-	LightResult lightResult;
+	LightingResult lightResult;
 
 	const float3 viewDir = normalize(-positionVs);
-	const float3 lightDir = dirLightCb.DirectionVs.xyz;
-	lightResult.Diffuse = Diffuse(normalVs, lightDir) * dirLightCb.Color;
-	lightResult.Specular = Specular(viewDir, normalVs, lightDir, specularPower) * dirLightCb.Color;
+	const float3 lightDir = light.DirectionVs.xyz;
+	const float3 attenuatedColor = light.Color * light.DistanceAttenuation;
+
+	lightResult.Diffuse = Diffuse(normalVs, lightDir) * attenuatedColor;
+	lightResult.Specular = Specular(viewDir, normalVs, lightDir, specularPower) * attenuatedColor;
 
 	return lightResult;
+}
+
+void Combine(inout LightingResult destination, const in LightingResult source)
+{
+	destination.Diffuse += source.Diffuse;
+	destination.Specular += source.Specular;
+}
+
+LightingResult ComputeLighting(const float3 positionVs, const float3 normalVs, const float specularPower)
+{
+	// ReSharper disable once CppLocalVariableMayBeConst
+	LightingResult totalLightingResult;
+	totalLightingResult.Diffuse = 0;
+	totalLightingResult.Specular = 0;
+
+	// main light
+	{
+		const Light light = GetMainLight();
+		const LightingResult lightingResult = Phong(light, positionVs, normalVs, specularPower);
+		Combine(totalLightingResult, lightingResult);
+	}
+
+	// point lights
+	for (uint i = 0; i < lightPropertiesCb.NumPointLights; ++i)
+	{
+		const Light light = GetPointLight(i, positionVs);
+		const LightingResult lightingResult = Phong(light, positionVs, normalVs, specularPower);
+		Combine(totalLightingResult, lightingResult);
+	}
+
+	return totalLightingResult;
 }
 
 float4 main(PixelShaderInput IN) : SV_Target
@@ -103,15 +196,15 @@ float4 main(PixelShaderInput IN) : SV_Target
 	float specularPower = materialCb.SpecularPower;
 	if (materialCb.HasGlossMap)
 	{
-		specularPower *= (1 - glossMap.Sample(defaultSampler, IN.Uv).x);
+		specularPower *= saturate(1 - glossMap.Sample(defaultSampler, IN.Uv).x);
 	}
 
-	const LightResult result = Phong(IN.PositionVs.xyz, normalVs, specularPower);
+	const LightingResult lightingResult = ComputeLighting(IN.PositionVs.xyz, normalVs, specularPower);
 
 	const float4 emissive = materialCb.Emissive;
 	const float4 ambient = materialCb.Ambient;
-	const float4 diffuse = materialCb.Diffuse * result.Diffuse;
-	float4 specular = materialCb.Specular * result.Specular;
+	const float4 diffuse = materialCb.Diffuse * float4(lightingResult.Diffuse, 1);
+	float4 specular = materialCb.Specular * float4(lightingResult.Specular, 1);
 	if (materialCb.HasSpecularMap)
 	{
 		specular *= specularMap.Sample(defaultSampler, IN.Uv).x;
