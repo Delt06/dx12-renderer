@@ -16,7 +16,7 @@ ModelLoader::ModelLoader(const std::shared_ptr<Texture> emptyTexture2d) :
 
 
 std::shared_ptr<Model> ModelLoader::LoadObj(CommandList& commandList, const std::wstring& path,
-                                            const bool rhCoords)
+                                            const bool rhCoords) const
 {
 	const auto mesh = std::make_unique<WaveFrontReader<uint16_t>>();
 	ThrowIfFailed(mesh->Load(path.c_str()));
