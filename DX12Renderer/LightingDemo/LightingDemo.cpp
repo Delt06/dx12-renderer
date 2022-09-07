@@ -473,7 +473,7 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 			// Update point lights
 			{
 				LightPropertiesCb lightPropertiesCb;
-				lightPropertiesCb.NumPointLights = m_PointLights.size();
+				lightPropertiesCb.NumPointLights = static_cast<uint32_t>(m_PointLights.size());
 
 				for (auto& pointLight : m_PointLights)
 				{
