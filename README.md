@@ -14,4 +14,6 @@
 ### Assets
 - https://casual-effects.com/data/
 	- Teapot, Cube, Lat-Long Sphere
-- https://3dtextures.me/2022/04/27/gravel-001/
+- https://ambientcg.com/view?id=PavingStones070
+- https://ambientcg.com/view?id=Moss002
+- https://ambientcg.com/view?id=Metal036
