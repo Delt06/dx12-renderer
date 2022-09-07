@@ -146,6 +146,7 @@ bool LightingDemo::LoadContent()
 				modelLoader.LoadMap(*model, *commandList, ModelMaps::Gloss,
 				                    L"Assets/Textures/PavingStones/PavingStones_1K_Roughness.jpg");
 			}
+			model->GetMaterial().SpecularPower = 50.0f;
 			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
 			XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
@@ -156,6 +157,7 @@ bool LightingDemo::LoadContent()
 		{
 			auto model = modelLoader.LoadObj(*commandList, L"Assets/Models/sphere/sphere-cylcoords-1k.obj", true);
 			{
+				model->GetMaterial().SpecularPower = 100.0f;
 				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
 				                    L"Assets/Textures/Metal/Metal_1K_Color.jpg");
 				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
@@ -176,6 +178,7 @@ bool LightingDemo::LoadContent()
 		{
 			auto model = modelLoader.LoadExisting(Mesh::CreatePlane(*commandList));
 			{
+				model->GetMaterial().SpecularPower = 10.0f;
 				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
 				                    L"Assets/Textures/Moss/Moss_1K_Color.jpg");
 				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,

@@ -51,6 +51,11 @@ void Model::SetMapsEmpty(const std::shared_ptr<Texture> emptyMap)
 	}
 }
 
+Material& Model::GetMaterial()
+{
+	return m_Material;
+}
+
 Model::~Model() = default;
 
 
