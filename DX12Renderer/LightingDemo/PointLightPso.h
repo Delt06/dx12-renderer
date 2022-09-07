@@ -15,8 +15,8 @@ public:
 	explicit PointLightPso(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList);
 
 	void Set(CommandList& commandList) const;
-	void Draw(CommandList& commandList, DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX viewProjectionMatrix,
-	          const PointLight& pointLight, float scale = 0.5f) const;
+	void Draw(CommandList& commandList, const PointLight& pointLight, DirectX::XMMATRIX viewMatrix,
+	          DirectX::XMMATRIX viewProjectionMatrix, DirectX::XMMATRIX projectionMatrix, float scale = 0.5f) const;
 
 private:
 	RootSignature m_RootSignature;

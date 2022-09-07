@@ -395,6 +395,24 @@ std::shared_ptr<Mesh> Mesh::CreatePlane(CommandList& commandList, float width, f
 	return CreateMesh(commandList, vertices, indices, rhcoords, true);
 }
 
+std::shared_ptr<Mesh> Mesh::CreateVerticalQuad(CommandList& commandList, float width, float height, bool rhCoords)
+{
+	VertexCollectionType vertices =
+	{
+		{XMFLOAT3(width * -0.5f, 0.5f * height, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 0.0f)}, // 0
+		{XMFLOAT3(0.5f * width, 0.5f * height, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 0.0f)}, // 1
+		{XMFLOAT3(0.5f * width, -0.5f * height, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 1.0f)}, // 2
+		{XMFLOAT3(-0.5f * width, -0.5f * height, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 1.0f)} // 3
+	};
+
+	IndexCollectionType indices =
+	{
+		0, 3, 1, 1, 3, 2
+	};
+
+	return CreateMesh(commandList, vertices, indices, rhCoords);
+}
+
 std::shared_ptr<Mesh> Mesh::CreateMesh(CommandList& commandList, VertexCollectionType& vertices,
                                        IndexCollectionType& indices, const bool rhCoords, const bool generateTangents)
 {

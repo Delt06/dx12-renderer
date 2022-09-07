@@ -231,6 +231,10 @@ bool LightingDemo::LoadContent()
 		}
 	}
 
+	// Setup particles
+	{
+		m_ParticleSystemPso = std::make_unique<ParticleSystemPso>(device, *commandList);
+	}
 
 	XMVECTOR lightDir = XMLoadFloat4(&m_DirectionalLight.m_DirectionWs);
 	XMStoreFloat4(&m_DirectionalLight.m_DirectionWs, XMVector4Normalize(lightDir));
@@ -435,7 +439,8 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 
 	{
 		const XMMATRIX viewMatrix = m_Camera.GetViewMatrix();
-		const XMMATRIX viewProjectionMatrix = viewMatrix * m_Camera.GetProjectionMatrix();
+		const XMMATRIX projectionMatrix = m_Camera.GetProjectionMatrix();
+		const XMMATRIX viewProjectionMatrix = viewMatrix * projectionMatrix;
 
 		// Draw point lights
 		{
@@ -443,50 +448,62 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 
 			for (const auto& pointLight : m_PointLights)
 			{
-				m_PointLightPso->Draw(*commandList, viewMatrix, viewProjectionMatrix, pointLight, 1.0f);
+				m_PointLightPso->Draw(*commandList, pointLight, viewMatrix, viewProjectionMatrix, projectionMatrix,
+				                      1.0f);
 			}
 		}
 
-		commandList->SetPipelineState(m_PipelineState);
-		commandList->SetGraphicsRootSignature(m_RootSignature);
-
-		// Update directional light
+		// Opaque pass
 		{
-			XMVECTOR lightDirVs = XMLoadFloat4(&m_DirectionalLight.m_DirectionWs);
-			lightDirVs = XMVector4Transform(lightDirVs, viewMatrix);
-			XMStoreFloat4(&m_DirectionalLight.m_DirectionVs, lightDirVs);
+			commandList->SetPipelineState(m_PipelineState);
+			commandList->SetGraphicsRootSignature(m_RootSignature);
 
-			DirectionalLightCb directionalLightCb;
-			directionalLightCb.Color = m_DirectionalLight.m_Color;
-			directionalLightCb.DirectionVs = m_DirectionalLight.m_DirectionVs;
-			commandList->SetGraphicsDynamicConstantBuffer(RootParameters::DirLightCb, directionalLightCb);
-		}
-
-		// Update point lights
-		{
-			LightPropertiesCb lightPropertiesCb;
-			lightPropertiesCb.NumPointLights = m_PointLights.size();
-
-			for (auto& pointLight : m_PointLights)
+			// Update directional light
 			{
-				XMVECTOR lightPosVs = XMLoadFloat4(&pointLight.m_PositionWs);
-				lightPosVs = XMVector4Transform(lightPosVs, viewMatrix);
-				XMStoreFloat4(&pointLight.m_PositionVs, lightPosVs);
+				XMVECTOR lightDirVs = XMLoadFloat4(&m_DirectionalLight.m_DirectionWs);
+				lightDirVs = XMVector4Transform(lightDirVs, viewMatrix);
+				XMStoreFloat4(&m_DirectionalLight.m_DirectionVs, lightDirVs);
+
+				DirectionalLightCb directionalLightCb;
+				directionalLightCb.Color = m_DirectionalLight.m_Color;
+				directionalLightCb.DirectionVs = m_DirectionalLight.m_DirectionVs;
+				commandList->SetGraphicsDynamicConstantBuffer(RootParameters::DirLightCb, directionalLightCb);
 			}
 
-			commandList->SetGraphics32BitConstants(RootParameters::LightPropertiesCb, lightPropertiesCb);
-			commandList->SetGraphicsDynamicStructuredBuffer(RootParameters::PointLights, m_PointLights);
+			// Update point lights
+			{
+				LightPropertiesCb lightPropertiesCb;
+				lightPropertiesCb.NumPointLights = m_PointLights.size();
+
+				for (auto& pointLight : m_PointLights)
+				{
+					XMVECTOR lightPosVs = XMLoadFloat4(&pointLight.m_PositionWs);
+					lightPosVs = XMVector4Transform(lightPosVs, viewMatrix);
+					XMStoreFloat4(&pointLight.m_PositionVs, lightPosVs);
+				}
+
+				commandList->SetGraphics32BitConstants(RootParameters::LightPropertiesCb, lightPropertiesCb);
+				commandList->SetGraphicsDynamicStructuredBuffer(RootParameters::PointLights, m_PointLights);
+			}
+
+			for (const auto& go : m_GameObjects)
+			{
+				go.Draw([&viewMatrix, &viewProjectionMatrix, &projectionMatrix](auto& cmd, auto worldMatrix)
+				        {
+					        MatricesCb matrices;
+					        matrices.Compute(worldMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
+					        cmd.SetGraphicsDynamicConstantBuffer(RootParameters::MatricesCb, matrices);
+				        },
+				        *commandList, RootParameters::MaterialCb, RootParameters::Textures);
+			}
 		}
 
-		for (const auto& go : m_GameObjects)
+		// Particle Systems
 		{
-			go.Draw([&viewMatrix, &viewProjectionMatrix](auto& cmd, auto worldMatrix)
-			        {
-				        MatricesCb matrices;
-				        matrices.Compute(worldMatrix, viewMatrix, viewProjectionMatrix);
-				        cmd.SetGraphicsDynamicConstantBuffer(RootParameters::MatricesCb, matrices);
-			        },
-			        *commandList, RootParameters::MaterialCb, RootParameters::Textures);
+			m_ParticleSystemPso->Set(*commandList);
+
+			const XMMATRIX worldMatrix = XMMatrixTranslation(0.0f, 10.0f, 0.0f);
+			m_ParticleSystemPso->Draw(*commandList, worldMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
 		}
 	}
 

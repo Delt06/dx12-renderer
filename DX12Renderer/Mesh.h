@@ -105,6 +105,8 @@ public:
 	                                         size_t tessellation = 32, bool rhCoords = false);
 	static std::shared_ptr<Mesh> CreatePlane(CommandList& commandList, float width = 1, float height = 1,
 	                                         bool rhCoords = false);
+	static std::shared_ptr<Mesh> CreateVerticalQuad(CommandList& commandList, float width = 1, float height = 1,
+		bool rhCoords = false);
 
 	static std::shared_ptr<Mesh> CreateMesh(CommandList& commandList, VertexCollectionType& vertices,
 	                                        IndexCollectionType& indices, bool rhCoords = false,
