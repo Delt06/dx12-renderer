@@ -155,7 +155,7 @@ void DirectionalLightShadowPassPso::ComputePassParameters(const Camera& camera,
 	const XMVECTOR lightDirection = XMLoadFloat4(&directionalLight.m_DirectionWs);
 	const auto viewMatrix = XMMatrixLookToLH(lightDirection * 20.0f, -lightDirection,
 	                                         XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
-	const auto projectionMatrix = XMMatrixOrthographicOffCenterLH(-100.0f, 100.0f, -100.0f, 100.0f, -10.0f, 100.0f);
+	const auto projectionMatrix = XMMatrixOrthographicOffCenterLH(-100.0f, 100.0f, -100.0f, 100.0f, -10.0f, 50.0f);
 	const auto viewProjection = viewMatrix * projectionMatrix;
 
 

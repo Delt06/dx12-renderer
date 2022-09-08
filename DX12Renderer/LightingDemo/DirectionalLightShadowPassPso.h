@@ -16,7 +16,7 @@ class DirectionalLightShadowPassPso
 {
 public:
 	DirectionalLightShadowPassPso(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList,
-	                              UINT resolution = 2048);
+	                              UINT resolution = 4096);
 	void SetContext(CommandList& commandList) const;
 	void ComputePassParameters(const Camera& camera, const DirectionalLight& directionalLight);
 	void ClearShadowMap(CommandList& commandList) const;
