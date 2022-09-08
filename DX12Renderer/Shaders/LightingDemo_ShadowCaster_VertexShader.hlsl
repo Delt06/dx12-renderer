@@ -16,7 +16,7 @@ struct VertexAttributes
 };
 
 // x - depth bias, y - normal bias (should be negative)
-static const float2 SHADOW_BIAS = float2(-5.0f, -0.002f);
+static const float2 SHADOW_BIAS = float2(-1.0f, -0.002f);
 
 // From Unity URP Shader Library
 // com.unity.render-pipelines.universal@12.1.6/ShaderLibrary/Shadows.hlsl
