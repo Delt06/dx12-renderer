@@ -7,6 +7,7 @@
 #include <Game.h>
 #include <DescriptorAllocator.h>
 #include <Window.h>
+#include <ctime>
 
 constexpr wchar_t WINDOW_CLASS_NAME[] = L"DX12RenderWindowClass";
 
@@ -106,6 +107,8 @@ void Application::Initialize()
 
 	// Initialize frame counter 
 	ms_FrameCount = 0;
+
+	srand(static_cast <unsigned> (time(nullptr)));
 }
 
 void Application::Create(HINSTANCE hInst)

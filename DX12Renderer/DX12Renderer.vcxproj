@@ -180,6 +180,7 @@
     <ClCompile Include="IndexBuffer.cpp" />
     <ClCompile Include="Light.cpp" />
     <ClCompile Include="LightingDemo\LightingDemo.cpp" />
+    <ClCompile Include="LightingDemo\ParticleSystem.cpp" />
     <ClCompile Include="LightingDemo\ParticleSystemPso.cpp" />
     <ClCompile Include="LightingDemo\PointLightPso.cpp" />
     <ClCompile Include="main.cpp" />
@@ -222,6 +223,7 @@
     <ClInclude Include="KeyCodes.h" />
     <ClInclude Include="Light.h" />
     <ClInclude Include="LightingDemo\LightingDemo.h" />
+    <ClInclude Include="LightingDemo\ParticleSystem.h" />
     <ClInclude Include="LightingDemo\ParticleSystemPso.h" />
     <ClInclude Include="LightingDemo\PointLightPso.h" />
     <ClInclude Include="Material.h" />

@@ -22,6 +22,25 @@ namespace
 			NumRootParameters,
 		};
 	}
+
+	constexpr UINT INSTANCE_DATA_INPUT_SLOT = 1;
+
+	constexpr D3D12_INPUT_ELEMENT_DESC INSTANCE_INPUT_ELEMENTS[] = {
+		{
+			"INSTANCE_PIVOT", 0, DXGI_FORMAT_R32G32B32_FLOAT, INSTANCE_DATA_INPUT_SLOT, D3D12_APPEND_ALIGNED_ELEMENT,
+			D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1
+		},
+		{
+			"INSTANCE_COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, INSTANCE_DATA_INPUT_SLOT, D3D12_APPEND_ALIGNED_ELEMENT,
+			D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1
+		},
+		{
+			"INSTANCE_SCALE", 0, DXGI_FORMAT_R32_FLOAT, INSTANCE_DATA_INPUT_SLOT, D3D12_APPEND_ALIGNED_ELEMENT,
+			D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1
+		},
+	};
+
+	constexpr size_t INSTANCE_INPUT_ELEMENT_COUNT = _countof(INSTANCE_INPUT_ELEMENTS);
 }
 
 ParticleSystemPso::ParticleSystemPso(const ComPtr<ID3D12Device2> device, CommandList& commandList)
@@ -88,25 +107,31 @@ ParticleSystemPso::ParticleSystemPso(const ComPtr<ID3D12Device2> device, Command
 	rtvFormats.NumRenderTargets = 1;
 	rtvFormats.RTFormats[0] = backBufferFormat;
 
+	constexpr size_t inputElementsCount = VertexAttributes::INPUT_ELEMENT_COUNT + INSTANCE_INPUT_ELEMENT_COUNT;
+	D3D12_INPUT_ELEMENT_DESC inputElements[inputElementsCount];
+	std::copy_n(VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT, inputElements);
+	std::copy_n(INSTANCE_INPUT_ELEMENTS, INSTANCE_INPUT_ELEMENT_COUNT,
+	            inputElements + VertexAttributes::INPUT_ELEMENT_COUNT);
+
 	pipelineStateStream.RootSignature = m_RootSignature.GetRootSignature().Get();
-	pipelineStateStream.InputLayout = {VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT};
+	pipelineStateStream.InputLayout = {inputElements, inputElementsCount};
 	pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
 	pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
 	pipelineStateStream.DsvFormat = depthBufferFormat;
 	pipelineStateStream.RtvFormats = rtvFormats;
 
-	// additive blending
+	// alpha blending
 	auto blendDesc = CD3DX12_BLEND_DESC(CD3DX12_DEFAULT());
 	{
 		auto& renderTargetBlendDesc = blendDesc.RenderTarget[0];
 		renderTargetBlendDesc.BlendEnable = TRUE;
 		renderTargetBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
 		renderTargetBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
-		renderTargetBlendDesc.SrcBlend = D3D12_BLEND_ONE;
-		renderTargetBlendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
-		renderTargetBlendDesc.DestBlend = D3D12_BLEND_ONE;
-		renderTargetBlendDesc.DestBlendAlpha = D3D12_BLEND_ONE;
+		renderTargetBlendDesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		renderTargetBlendDesc.SrcBlendAlpha = D3D12_BLEND_SRC_ALPHA;
+		renderTargetBlendDesc.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+		renderTargetBlendDesc.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
 	}
 	pipelineStateStream.Blend = blendDesc;
 
@@ -124,21 +149,30 @@ ParticleSystemPso::ParticleSystemPso(const ComPtr<ID3D12Device2> device, Command
 	ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_PipelineState)));
 }
 
-void ParticleSystemPso::Set(CommandList& commandList) const
+void ParticleSystemPso::SetContext(CommandList& commandList) const
 {
 	commandList.SetPipelineState(m_PipelineState);
 	commandList.SetGraphicsRootSignature(m_RootSignature);
-	commandList.SetShaderResourceView(RootParameters::Textures, 0, *m_Texture, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	commandList.SetShaderResourceView(RootParameters::Textures, 0, *m_Texture,
+	                                  D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 }
 
-void ParticleSystemPso::Draw(CommandList& commandList, const DirectX::XMMATRIX worldMatrix,
+void ParticleSystemPso::UploadInstanceData(CommandList& commandList,
+                                           const std::vector<ParticleInstanceData>& instanceData)
+{
+	m_InstancesCount = static_cast<uint32_t>(instanceData.size());
+	commandList.CopyVertexBuffer(m_InstanceDataVertexBuffer, instanceData);
+}
+
+void ParticleSystemPso::Draw(CommandList& commandList,
                              const DirectX::XMMATRIX viewMatrix, const DirectX::XMMATRIX viewProjectionMatrix,
                              const DirectX::XMMATRIX projectionMatrix) const
 {
 	MatricesCb matricesCb;
-	matricesCb.Compute(worldMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
+	matricesCb.Compute(DirectX::XMMatrixIdentity(), viewMatrix, viewProjectionMatrix, projectionMatrix);
 
 	commandList.SetGraphicsDynamicConstantBuffer(RootParameters::MatricesCb, matricesCb);
+	commandList.SetVertexBuffer(INSTANCE_DATA_INPUT_SLOT, m_InstanceDataVertexBuffer);
 
-	m_QuadMesh->Draw(commandList);
+	m_QuadMesh->Draw(commandList, m_InstancesCount);
 }

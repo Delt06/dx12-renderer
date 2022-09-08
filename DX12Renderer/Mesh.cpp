@@ -71,12 +71,12 @@ Mesh::Mesh() : IndexCount(0)
 
 Mesh::~Mesh() = default;
 
-void Mesh::Draw(CommandList& commandList) const
+void Mesh::Draw(CommandList& commandList, const uint32_t instanceCount) const
 {
 	commandList.SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	commandList.SetVertexBuffer(0, VertexBuffer);
 	commandList.SetIndexBuffer(IndexBuffer);
-	commandList.DrawIndexed(IndexCount);
+	commandList.DrawIndexed(IndexCount, instanceCount);
 }
 
 std::shared_ptr<Mesh> Mesh::CreateSphere(CommandList& commandList, float diameter, size_t tessellation, bool rhcoords)

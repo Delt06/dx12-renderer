@@ -15,6 +15,8 @@
 #include "ParticleSystemPso.h"
 #include "PointLightPso.h"
 
+class ParticleSystem;
+
 class LightingDemo final : public Game
 {
 public:
@@ -43,8 +45,11 @@ private:
 	RootSignature m_RootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineState;
 
+	DirectionalLight m_DirectionalLight{};
+	std::vector<PointLight> m_PointLights;
 	std::unique_ptr<PointLightPso> m_PointLightPso;
-	std::unique_ptr<ParticleSystemPso> m_ParticleSystemPso;
+
+	std::unique_ptr<ParticleSystem> m_ParticleSystem;
 
 	D3D12_VIEWPORT m_Viewport;
 	D3D12_RECT m_ScissorRect;
@@ -76,11 +81,6 @@ private:
 		bool m_Shift;
 	} m_CameraController;
 
-	bool m_AnimatedLights;
-
 	int m_Width;
 	int m_Height;
-
-	DirectionalLight m_DirectionalLight{};
-	std::vector<PointLight> m_PointLights;
 };

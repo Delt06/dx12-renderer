@@ -13,6 +13,7 @@
 
 #include "Model.h"
 #include "ModelLoader.h"
+#include "ParticleSystem.h"
 using namespace Microsoft::WRL;
 
 #include <d3d12.h>
@@ -105,7 +106,6 @@ LightingDemo::LightingDemo(const std::wstring& name, int width, int height, bool
 	  , m_Viewport(CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height)))
 	  , m_ScissorRect(CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX))
 	  , m_CameraController{}
-	  , m_AnimatedLights(false)
 	  , m_Width(0)
 	  , m_Height(0)
 {
@@ -233,7 +233,7 @@ bool LightingDemo::LoadContent()
 
 	// Setup particles
 	{
-		m_ParticleSystemPso = std::make_unique<ParticleSystemPso>(device, *commandList);
+		m_ParticleSystem = std::make_unique<ParticleSystem>(device, *commandList, XMVectorSet(7.25f, 5.6f, 0.0f, 1.0f));
 	}
 
 	XMVECTOR lightDir = XMLoadFloat4(&m_DirectionalLight.m_DirectionWs);
@@ -386,6 +386,8 @@ void LightingDemo::OnUpdate(UpdateEventArgs& e)
 
 	Base::OnUpdate(e);
 
+	if (e.ElapsedTime > 1.0f) return;
+
 	totalTime += e.ElapsedTime;
 	frameCount++;
 
@@ -417,6 +419,9 @@ void LightingDemo::OnUpdate(UpdateEventArgs& e)
 	XMVECTOR cameraRotation = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(m_CameraController.m_Pitch),
 	                                                           XMConvertToRadians(m_CameraController.m_Yaw), 0.0f);
 	m_Camera.SetRotation(cameraRotation);
+
+
+	m_ParticleSystem->Update(e.ElapsedTime);
 }
 
 void LightingDemo::OnRender(RenderEventArgs& e)
@@ -500,10 +505,7 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 
 		// Particle Systems
 		{
-			m_ParticleSystemPso->Set(*commandList);
-
-			const XMMATRIX worldMatrix = XMMatrixTranslation(0.0f, 10.0f, 0.0f);
-			m_ParticleSystemPso->Draw(*commandList, worldMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
+			m_ParticleSystem->Draw(*commandList, viewMatrix, viewProjectionMatrix, projectionMatrix);
 		}
 	}
 
@@ -562,9 +564,6 @@ void LightingDemo::OnKeyPressed(KeyEventArgs& e)
 		break;
 	case KeyCode::E:
 		m_CameraController.m_Up = 1.0f;
-		break;
-	case KeyCode::Space:
-		m_AnimatedLights = !m_AnimatedLights;
 		break;
 	case KeyCode::ShiftKey:
 		m_CameraController.m_Shift = true;

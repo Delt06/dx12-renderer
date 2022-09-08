@@ -94,7 +94,7 @@ using IndexCollectionType = std::vector<uint16_t>;
 class Mesh final
 {
 public:
-	void Draw(CommandList& commandList) const;
+	void Draw(CommandList& commandList, uint32_t instanceCount = 1) const;
 
 	static std::shared_ptr<Mesh> CreateCube(CommandList& commandList, float size = 1, bool rhCoords = false);
 	static std::shared_ptr<Mesh> CreateSphere(CommandList& commandList, float diameter = 1, size_t tessellation = 16,
