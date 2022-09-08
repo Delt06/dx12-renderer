@@ -11,6 +11,7 @@
 #include <Texture.h>
 #include <VertexBuffer.h>
 
+#include "DirectionalLightShadowPassPso.h"
 #include "GameObject.h"
 #include "ParticleSystemPso.h"
 #include "PointLightPso.h"
@@ -48,6 +49,7 @@ private:
 	DirectionalLight m_DirectionalLight{};
 	std::vector<PointLight> m_PointLights;
 	std::unique_ptr<PointLightPso> m_PointLightPso;
+	std::unique_ptr<DirectionalLightShadowPassPso> m_DirectionalLightShadowPassPso;
 
 	std::unique_ptr<ParticleSystem> m_ParticleSystem;
 

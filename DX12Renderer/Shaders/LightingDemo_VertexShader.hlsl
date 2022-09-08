@@ -6,7 +6,13 @@ struct Matrices
 	matrix ModelViewProjection;
 };
 
+struct ShadowMatrices
+{
+	matrix ModelViewProjection;
+};
+
 ConstantBuffer<Matrices> matricesCb : register(b0);
+ConstantBuffer<ShadowMatrices> shadowMatricesCb : register(b1);
 
 struct VertexAttributes
 {
@@ -23,7 +29,8 @@ struct VertexShaderOutput
 	float3 NormalVs : NORMAL;
 	float3 TangentVs : TANGENT;
 	float3 BitangentVs : BINORMAL;
-	float2 Uv : TEXCOORD;
+	float2 Uv : TEXCOORD0;
+	float4 ShadowCoords : SHADOW_COORD;
 	float4 PositionCs : SV_POSITION;
 };
 
@@ -37,6 +44,14 @@ VertexShaderOutput main(VertexAttributes IN)
 	OUT.TangentVs = mul((float3x3)matricesCb.InverseTransposeModelView, IN.TangentOs);
 	OUT.BitangentVs = mul((float3x3)matricesCb.InverseTransposeModelView, IN.BitangentOs);
 	OUT.Uv = IN.Uv;
+
+	// TODO: maybe bake range changes into the matrix?
+	// See http://www.opengl-tutorial.org/ru/intermediate-tutorials/tutorial-16-shadow-mapping/
+	// "Using the shadow map"
+	float4 shadowCoords = mul(shadowMatricesCb.ModelViewProjection, float4(IN.PositionOs, 1.0f));
+	shadowCoords.xyz = shadowCoords.xyz * 0.5f + 0.5f; // [-1; 1] -> [0, 1]
+	shadowCoords.y = 1 - shadowCoords.y;
+	OUT.ShadowCoords = shadowCoords;
 
 	return OUT;
 }

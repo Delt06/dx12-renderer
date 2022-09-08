@@ -16,6 +16,11 @@ public:
 	          CommandList& commandList,
 	          uint32_t materialRootParameterIndex, uint32_t mapsRootParameterIndex) const;
 
+
+
+	DirectX::XMMATRIX& GetWorldMatrix();
+	const DirectX::XMMATRIX& GetWorldMatrix() const;
+	std::shared_ptr<const Model> GetModel() const;
 private:
 	DirectX::XMMATRIX m_WorldMatrix;
 	std::shared_ptr<Model> m_Model{};

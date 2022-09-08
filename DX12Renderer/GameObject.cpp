@@ -15,3 +15,18 @@ void GameObject::Draw(
 	setMatricesFunc(commandList, m_WorldMatrix);
 	m_Model->Draw(commandList, materialRootParameterIndex, mapsRootParameterIndex);
 }
+
+DirectX::XMMATRIX& GameObject::GetWorldMatrix()
+{
+	return m_WorldMatrix;
+}
+
+const DirectX::XMMATRIX& GameObject::GetWorldMatrix() const
+{
+	return m_WorldMatrix;
+}
+
+std::shared_ptr<const Model> GameObject::GetModel() const
+{
+	return m_Model;
+}

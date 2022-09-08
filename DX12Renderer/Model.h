@@ -41,6 +41,8 @@ public:
 	void SetMapsEmpty(std::shared_ptr<Texture> emptyMap);
 	Material& GetMaterial();
 
+	const MeshCollectionType& GetMeshes() const;
+
 private:
 	MeshCollectionType m_Meshes{};
 

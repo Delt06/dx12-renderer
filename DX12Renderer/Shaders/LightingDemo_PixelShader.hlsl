@@ -5,6 +5,7 @@ struct PixelShaderInput
 	float3 TangentVs : TANGENT;
 	float3 BitangentVs : BINORMAL;
 	float2 Uv : TEXCOORD;
+	float4 ShadowCoords : SHADOW_COORD;
 };
 
 struct Material
@@ -57,9 +58,12 @@ struct LightPropertiesCb
 };
 
 ConstantBuffer<Material> materialCb : register(b0, space1);
-ConstantBuffer<DirectionalLight> dirLightCb : register(b1);
+ConstantBuffer<DirectionalLight> dirLightCb : register(b1, space1);
 ConstantBuffer<LightPropertiesCb> lightPropertiesCb : register(b2);
 StructuredBuffer<PointLight> pointLights : register(t4);
+
+Texture2D directionalLightShadowMap : register(t5);
+SamplerComparisonState shadowMapSampler : register(s1);
 
 Texture2D diffuseMap : register(t0);
 Texture2D normalMap : register(t1);
@@ -72,14 +76,17 @@ struct Light
 	float3 Color;
 	float3 DirectionVs;
 	float DistanceAttenuation;
+	float ShadowAttenuation;
 };
 
-Light GetMainLight()
+Light GetMainLight(float4 shadowCoords)
 {
 	Light light;
 	light.Color = dirLightCb.Color.rgb;
 	light.DirectionVs = dirLightCb.DirectionVs.xyz;
 	light.DistanceAttenuation = 1.0f;
+	/*light.ShadowAttenuation = directionalLightShadowMap.SampleCmpLevelZero(
+		shadowMapSampler, shadowCoords.xy, shadowCoords.z);*/
 	return light;
 }
 
@@ -100,6 +107,7 @@ Light GetPointLight(const uint index, const float3 positionVs)
 	light.DirectionVs = offset / distance;
 	light.DistanceAttenuation = ComputeAttenuation(pointLight.ConstantAttenuation, pointLight.LinearAttenuation,
 	                                               pointLight.QuadraticAttenuation, distance);
+	light.ShadowAttenuation = 1.0f; // TODO: implement point light shadows
 
 	return light;
 }
@@ -134,7 +142,7 @@ LightingResult Phong(const in Light light, const float3 positionVs, const float3
 
 	const float3 viewDir = normalize(-positionVs);
 	const float3 lightDir = light.DirectionVs.xyz;
-	const float3 attenuatedColor = light.Color * light.DistanceAttenuation;
+	const float3 attenuatedColor = light.Color * light.DistanceAttenuation * light.ShadowAttenuation;
 
 	lightResult.Diffuse = Diffuse(normalVs, lightDir) * attenuatedColor;
 	lightResult.Specular = Specular(viewDir, normalVs, lightDir, specularPower) * attenuatedColor;
@@ -148,7 +156,8 @@ void Combine(inout LightingResult destination, const in LightingResult source)
 	destination.Specular += source.Specular;
 }
 
-LightingResult ComputeLighting(const float3 positionVs, const float3 normalVs, const float specularPower)
+LightingResult ComputeLighting(const float3 positionVs, const float3 normalVs, const float specularPower,
+                               const float4 shadowCoords)
 {
 	LightingResult totalLightingResult;
 	totalLightingResult.Diffuse = 0;
@@ -156,7 +165,7 @@ LightingResult ComputeLighting(const float3 positionVs, const float3 normalVs, c
 
 	// main light
 	{
-		const Light light = GetMainLight();
+		const Light light = GetMainLight(shadowCoords);
 		const LightingResult lightingResult = Phong(light, positionVs, normalVs, specularPower);
 		Combine(totalLightingResult, lightingResult);
 	}
@@ -198,7 +207,7 @@ float4 main(PixelShaderInput IN) : SV_Target
 		specularPower *= saturate(1 - glossMap.Sample(defaultSampler, IN.Uv).x);
 	}
 
-	const LightingResult lightingResult = ComputeLighting(IN.PositionVs.xyz, normalVs, specularPower);
+	const LightingResult lightingResult = ComputeLighting(IN.PositionVs.xyz, normalVs, specularPower, IN.ShadowCoords);
 
 	const float4 emissive = materialCb.Emissive;
 	const float4 ambient = materialCb.Ambient;
@@ -212,5 +221,6 @@ float4 main(PixelShaderInput IN) : SV_Target
 		                        ? diffuseMap.Sample(defaultSampler, IN.Uv)
 		                        : float4(1.0f, 1.0f, 1.0f, 1.0f);
 
+	return directionalLightShadowMap.SampleCmpLevelZero(shadowMapSampler, IN.ShadowCoords.xy, IN.ShadowCoords.z);
 	return emissive + (ambient + diffuse + specular) * texColor;
 }

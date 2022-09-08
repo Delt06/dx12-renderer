@@ -46,6 +46,11 @@ namespace
 		XMFLOAT4 Color;
 	};
 
+	struct ShadowMatricesCb
+	{
+		XMMATRIX ModelViewProjection;
+	};
+
 	namespace RootParameters
 	{
 		// An enum for root signature parameters.
@@ -55,12 +60,17 @@ namespace
 		{
 			// ConstantBuffer register(b0);
 			MatricesCb,
-			// ConstantBuffer register( b0, space1 );
+			// ConstantBuffer register(b0, space1);
 			MaterialCb,
-			// ConstantBuffer register( b1, space1 );
+			// ConstantBuffer register(b1, space1);
 			DirLightCb,
-			// ConstantBuffer register( b2, space1 );
+			// ConstantBuffer register(b2);
 			LightPropertiesCb,
+			// ConstantBuffer register(b1);
+			ShadowMatricesCb,
+			// Texture2D register(t5);
+			ShadowMaps,
+			// Texture2D register(t0-t3);
 			Textures,
 			// StructuredBuffer PointLights : register( t4 );
 			PointLights,
@@ -231,6 +241,11 @@ bool LightingDemo::LoadContent()
 		}
 	}
 
+	// Setup shadows
+	{
+		m_DirectionalLightShadowPassPso = std::make_unique<DirectionalLightShadowPassPso>(device, *commandList);
+	}
+
 	// Setup particles
 	{
 		m_ParticleSystem = std::make_unique<ParticleSystem>(device, *commandList, XMVectorSet(7.25f, 5.6f, 0.0f, 1.0f));
@@ -260,25 +275,36 @@ bool LightingDemo::LoadContent()
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
 	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, ModelMaps::TotalNumber, 0);
+	CD3DX12_DESCRIPTOR_RANGE1 descriptorRangeShadowMaps(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, ModelMaps::TotalNumber + 1);
 
 	CD3DX12_ROOT_PARAMETER1 rootParameters[RootParameters::NumRootParameters];
 	rootParameters[RootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
 	                                                                    D3D12_SHADER_VISIBILITY_VERTEX);
 	rootParameters[RootParameters::MaterialCb].InitAsConstantBufferView(0, 1, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
 	                                                                    D3D12_SHADER_VISIBILITY_PIXEL);
-	rootParameters[RootParameters::DirLightCb].InitAsConstantBufferView(1, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
+	rootParameters[RootParameters::DirLightCb].InitAsConstantBufferView(1, 1, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
 	                                                                    D3D12_SHADER_VISIBILITY_PIXEL);
 	rootParameters[RootParameters::LightPropertiesCb].InitAsConstants(sizeof(LightPropertiesCb) / sizeof(float), 2, 0,
 	                                                                  D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[RootParameters::ShadowMatricesCb].InitAsConstantBufferView(1, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
+	                                                                          D3D12_SHADER_VISIBILITY_VERTEX);
+	rootParameters[RootParameters::ShadowMaps].InitAsDescriptorTable(1, &descriptorRangeShadowMaps,
+	                                                                 D3D12_SHADER_VISIBILITY_PIXEL);
 	rootParameters[RootParameters::Textures].InitAsDescriptorTable(1, &descriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
 	rootParameters[RootParameters::PointLights].InitAsShaderResourceView(
 		ModelMaps::TotalNumber, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
 		D3D12_SHADER_VISIBILITY_PIXEL);
 
-	CD3DX12_STATIC_SAMPLER_DESC linearRepeatSampler(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR);
+	CD3DX12_STATIC_SAMPLER_DESC samplers[] = {
+		// linear repeat
+		CD3DX12_STATIC_SAMPLER_DESC(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR),
+		// shadow map
+		CD3DX12_STATIC_SAMPLER_DESC(1, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+		                            D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 0, 0, D3D12_COMPARISON_FUNC_LESS),
+	};
 
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
-	rootSignatureDescription.Init_1_1(RootParameters::NumRootParameters, rootParameters, 1, &linearRepeatSampler,
+	rootSignatureDescription.Init_1_1(RootParameters::NumRootParameters, rootParameters, _countof(samplers), samplers,
 	                                  rootSignatureFlags);
 
 	m_RootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
@@ -437,6 +463,18 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 		commandList->ClearDepthStencilTexture(m_RenderTarget.GetTexture(DepthStencil), D3D12_CLEAR_FLAG_DEPTH);
 	}
 
+	// Shadow pass
+	{
+		m_DirectionalLightShadowPassPso->ClearShadowMap(*commandList);
+		m_DirectionalLightShadowPassPso->ComputePassParameters(m_Camera, m_DirectionalLight);
+		m_DirectionalLightShadowPassPso->SetContext(*commandList);
+
+		for (auto& gameObject : m_GameObjects)
+		{
+			m_DirectionalLightShadowPassPso->DrawToShadowMap(*commandList, gameObject);
+		}
+	}
+
 	commandList->SetViewport(m_Viewport);
 	commandList->SetScissorRect(m_ScissorRect);
 
@@ -491,13 +529,24 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 				commandList->SetGraphicsDynamicStructuredBuffer(RootParameters::PointLights, m_PointLights);
 			}
 
+			// Bind shadow maps
+			{
+				m_DirectionalLightShadowPassPso->SetShadowMapShaderResourceView(
+					*commandList, RootParameters::ShadowMaps);
+			}
+
 			for (const auto& go : m_GameObjects)
 			{
-				go.Draw([&viewMatrix, &viewProjectionMatrix, &projectionMatrix](auto& cmd, auto worldMatrix)
+				go.Draw([this, &viewMatrix, &viewProjectionMatrix, &projectionMatrix](auto& cmd, auto worldMatrix)
 				        {
 					        MatricesCb matrices;
 					        matrices.Compute(worldMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
 					        cmd.SetGraphicsDynamicConstantBuffer(RootParameters::MatricesCb, matrices);
+
+					        ShadowMatricesCb shadowMatrices;
+					        shadowMatrices.ModelViewProjection = m_DirectionalLightShadowPassPso->
+						        ComputeShadowModelViewProjectionMatrix(worldMatrix);
+					        cmd.SetGraphicsDynamicConstantBuffer(RootParameters::ShadowMatricesCb, shadowMatrices);
 				        },
 				        *commandList, RootParameters::MaterialCb, RootParameters::Textures);
 			}
