@@ -42,6 +42,8 @@
 #include <memory> // For std::unique_ptr
 #include <vector>
 
+#include "Aabb.h"
+
 struct VertexAttributes
 {
 	VertexAttributes()
@@ -106,7 +108,7 @@ public:
 	static std::shared_ptr<Mesh> CreatePlane(CommandList& commandList, float width = 1, float height = 1,
 	                                         bool rhCoords = false);
 	static std::shared_ptr<Mesh> CreateVerticalQuad(CommandList& commandList, float width = 1, float height = 1,
-		bool rhCoords = false);
+	                                                bool rhCoords = false);
 
 	static std::shared_ptr<Mesh> CreateMesh(CommandList& commandList, VertexCollectionType& vertices,
 	                                        IndexCollectionType& indices, bool rhCoords = false,
@@ -116,15 +118,16 @@ public:
 	virtual ~Mesh();
 	Mesh();
 
+	const Aabb& GetAabb() const;
+
 private:
-	
-
-
 	void Initialize(CommandList& commandList, VertexCollectionType& vertices, IndexCollectionType& indices,
 	                bool rhCoords);
+	void CalculateAabb(const VertexCollectionType& vertices);
 
 	VertexBuffer VertexBuffer;
 	IndexBuffer IndexBuffer;
 
+	Aabb m_Aabb{};
 	UINT IndexCount;
 };

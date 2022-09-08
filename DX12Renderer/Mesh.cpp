@@ -26,12 +26,12 @@ namespace
 			normals[j] = vertexAttributes.Normal;
 			texcoords[j] = vertexAttributes.Uv;
 		}
-		const auto tangents = std::make_unique<XMFLOAT3[]>(nVerts);;
+		const auto tangents = std::make_unique<XMFLOAT3[]>(nVerts);
 		const auto bitangents = std::make_unique<XMFLOAT3[]>(nVerts);
 
 		ThrowIfFailed(ComputeTangentFrame(indices.data(), nFaces,
-			pos.get(), normals.get(), texcoords.get(), nVerts,
-			tangents.get(), bitangents.get()));
+		                                  pos.get(), normals.get(), texcoords.get(), nVerts,
+		                                  tangents.get(), bitangents.get()));
 
 		for (size_t j = 0; j < nVerts; ++j)
 		{
@@ -67,6 +67,11 @@ const D3D12_INPUT_ELEMENT_DESC VertexAttributes::INPUT_ELEMENTS[] = {
 
 Mesh::Mesh() : IndexCount(0)
 {
+}
+
+const Aabb& Mesh::GetAabb() const
+{
+	return m_Aabb;
 }
 
 Mesh::~Mesh() = default;
@@ -448,8 +453,20 @@ void Mesh::Initialize(CommandList& commandList, VertexCollectionType& vertices, 
 	if (!rhCoords)
 		ReverseWinding(indices, vertices);
 
+	CalculateAabb(vertices);
 	commandList.CopyVertexBuffer(VertexBuffer, vertices);
 	commandList.CopyIndexBuffer(IndexBuffer, indices);
 
 	IndexCount = static_cast<UINT>(indices.size());
+}
+
+void Mesh::CalculateAabb(const VertexCollectionType& vertices)
+{
+	m_Aabb = {};
+
+	for (auto& vertex : vertices)
+	{
+		const XMVECTOR position = XMLoadFloat3(&vertex.Position);
+		m_Aabb.Encapsulate(position);
+	}
 }
