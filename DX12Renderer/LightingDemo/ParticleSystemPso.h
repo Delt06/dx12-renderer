@@ -25,7 +25,8 @@ public:
 	ParticleSystemPso(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList);
 
 	void SetContext(CommandList& commandList) const;
-	void UploadInstanceData(CommandList& commandList, const std::vector<ParticleInstanceData>& instanceData);
+	void UploadInstanceData(CommandList& commandList, const ParticleInstanceData* instanceData,
+	                        uint32_t instancesCount);
 	void Draw(CommandList& commandList, DirectX::XMMATRIX viewMatrix,
 	          DirectX::XMMATRIX viewProjectionMatrix, DirectX::XMMATRIX projectionMatrix) const;
 

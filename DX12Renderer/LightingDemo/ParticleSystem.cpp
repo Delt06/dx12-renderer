@@ -15,6 +15,11 @@ namespace
 		return r;
 	}
 
+	size_t RandomRange(const size_t from, const size_t toExc)
+	{
+		return rand() % (toExc - from) + from;
+	}
+
 	XMVECTOR RangeInsideUnitSphere()
 	{
 		const float x = RandomRange(-1.0f, 1.0f);
@@ -56,49 +61,93 @@ ParticleSystem::ParticleSystem(Microsoft::WRL::ComPtr<ID3D12Device2> device, Com
                                const XMVECTOR origin) :
 	m_Origin(origin)
 {
-	m_ParticleSystemPso = std::make_unique<ParticleSystemPso>(device, commandList);
+	m_Pso = std::make_unique<ParticleSystemPso>(device, commandList);
+
+	m_SimulationData = std::make_unique<ParticleSimulationData[]>(m_Capacity);
+	memset(m_SimulationData.get(), 0, m_Capacity * sizeof(ParticleSimulationData));
+	m_InstanceData = std::make_unique<ParticleInstanceData[]>(m_Capacity);
+	m_LiveInstancesCount = 0;
 }
 
 void ParticleSystem::Update(const double deltaTime)
 {
-	// TODO: add destruction
+	Emit(deltaTime);
+	Simulate(static_cast<float>(deltaTime));
+	CollectDeadParticles();
+}
+
+void ParticleSystem::Draw(CommandList& commandList, const XMMATRIX viewMatrix, const XMMATRIX viewProjectionMatrix,
+                          const XMMATRIX
+                          projectionMatrix) const
+{
+	if (m_LiveInstancesCount == 0) return;
+
+	m_Pso->SetContext(commandList);
+	m_Pso->UploadInstanceData(commandList, m_InstanceData.get(), m_LiveInstancesCount);
+	m_Pso->Draw(commandList, viewMatrix, viewProjectionMatrix, projectionMatrix);
+}
+
+void ParticleSystem::Emit(const double deltaTime)
+{
 	m_EmissionTimer += deltaTime;
 
 	const double emissionPeriod = 1 / m_EmissionRate;
 
 	while (m_EmissionTimer >= emissionPeriod)
 	{
-		const auto offset = RangeInsideUnitSphere() * m_EmissionRadius;
-
-		const auto velocity = RandomDirectionInCone(RandomRange(m_VelocityConeAngleRange.x, m_VelocityConeAngleRange.y))
-			*
-			RandomRange(0.5f, 1.0f);
-		const auto color = LerpColor(XMFLOAT4(0.9f, 0.9f, 0.9f, 0.5f), XMFLOAT4(0.6f, 0.6f, 0.6f, 0.25f),
-		                             RandomRange(0, 1));
-		m_ParticleSimulationData.push_back(ParticleSimulationData{
-			m_Origin + offset,
-			velocity,
-			color,
-			0.0f,
-			RandomRange(0.05f, 0.1f),
-			RandomRange(2.0f, 3.0f),
-		});
-		m_ParticleInstanceData.push_back(ParticleInstanceData{});
+		EmitOne();
 		m_EmissionTimer -= emissionPeriod;
 	}
+}
 
-	const auto fDeltaTime = static_cast<float>(deltaTime);
-
-	for (size_t i = 0; i < m_ParticleSimulationData.size(); ++i)
+void ParticleSystem::EmitOne()
+{
+	size_t index;
+	if (m_LiveInstancesCount == m_Capacity)
 	{
-		auto& simulationData = m_ParticleSimulationData[i];
-		simulationData.m_Time += fDeltaTime;
-		simulationData.m_Position += simulationData.m_Velocity * fDeltaTime;
-		simulationData.m_Velocity += m_Gravity * fDeltaTime;
+		index = RandomRange(0, m_Capacity);
+	}
+	else
+	{
+		index = m_LiveInstancesCount;
+		m_LiveInstancesCount++;
+	}
 
-		const float normalizedTime = min(1.0f, simulationData.m_Time / simulationData.m_Lifetime);
+	const auto offset = RangeInsideUnitSphere() * m_EmissionRadius;
 
-		auto& instanceData = m_ParticleInstanceData[i];
+	const auto velocity = RandomDirectionInCone(RandomRange(m_VelocityConeAngleRange.x, m_VelocityConeAngleRange.y))
+		*
+		RandomRange(0.5f, 1.0f);
+	const auto color = LerpColor(XMFLOAT4(0.9f, 0.9f, 0.9f, 0.35f), XMFLOAT4(0.6f, 0.6f, 0.6f, 0.1f),
+	                             RandomRange(0.0f, 1.0f));
+	m_SimulationData[index] = {
+		m_Origin + offset,
+		velocity,
+		color,
+		0.0f,
+		RandomRange(0.04f, 0.07f),
+		RandomRange(2.0f, 3.0f),
+		true
+	};
+}
+
+void ParticleSystem::Simulate(const float deltaTime)
+{
+	for (uint32_t i = 0; i < m_LiveInstancesCount; ++i)
+	{
+		auto& simulationData = m_SimulationData[i];
+		simulationData.m_Time += deltaTime;
+		simulationData.m_Position += simulationData.m_Velocity * deltaTime;
+		simulationData.m_Velocity += m_Gravity * deltaTime;
+
+		const float normalizedTime = simulationData.m_Time / simulationData.m_Lifetime;
+		if (normalizedTime > 1.0f)
+		{
+			m_DeadInstancesIndices.push_back(i);
+			continue;
+		}
+
+		auto& instanceData = m_InstanceData[i];
 		XMStoreFloat3(&instanceData.m_Pivot, simulationData.m_Position);
 		instanceData.m_Color = simulationData.m_Color;
 		instanceData.m_Color.w *= max(1.0f - normalizedTime, 0.0f);
@@ -106,13 +155,22 @@ void ParticleSystem::Update(const double deltaTime)
 	}
 }
 
-void ParticleSystem::Draw(CommandList& commandList, const XMMATRIX viewMatrix, const XMMATRIX viewProjectionMatrix,
-                          const XMMATRIX
-                          projectionMatrix) const
+void ParticleSystem::CollectDeadParticles()
 {
-	if (m_ParticleInstanceData.empty()) return;
+	for (long i = static_cast<long>(m_DeadInstancesIndices.size() - 1); i >= 0; --i)
+	{
+		const size_t deadIndex = m_DeadInstancesIndices[i];
+		const size_t lastLiveInstanceIndex = m_LiveInstancesCount - 1;
 
-	m_ParticleSystemPso->SetContext(commandList);
-	m_ParticleSystemPso->UploadInstanceData(commandList, m_ParticleInstanceData);
-	m_ParticleSystemPso->Draw(commandList, viewMatrix, viewProjectionMatrix, projectionMatrix);
+		if (deadIndex != lastLiveInstanceIndex)
+		{
+			m_SimulationData[deadIndex] = m_SimulationData[lastLiveInstanceIndex];
+			m_InstanceData[deadIndex] = m_InstanceData[lastLiveInstanceIndex];
+		}
+
+		m_SimulationData[lastLiveInstanceIndex].m_IsValid = false;
+		m_LiveInstancesCount--;
+	}
+
+	m_DeadInstancesIndices.clear();
 }

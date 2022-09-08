@@ -158,10 +158,11 @@ void ParticleSystemPso::SetContext(CommandList& commandList) const
 }
 
 void ParticleSystemPso::UploadInstanceData(CommandList& commandList,
-                                           const std::vector<ParticleInstanceData>& instanceData)
+                                           const ParticleInstanceData* instanceData, const uint32_t instancesCount)
 {
-	m_InstancesCount = static_cast<uint32_t>(instanceData.size());
-	commandList.CopyVertexBuffer(m_InstanceDataVertexBuffer, instanceData);
+	m_InstancesCount = instancesCount;
+	commandList.CopyVertexBuffer(m_InstanceDataVertexBuffer, instancesCount, sizeof(ParticleInstanceData),
+	                             instanceData);
 }
 
 void ParticleSystemPso::Draw(CommandList& commandList,
