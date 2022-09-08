@@ -4,6 +4,7 @@ struct ShadowPassParameters
 	matrix InverseTransposeModel;
 	matrix ViewProjection;
 	float4 LightDirectionWs;
+	float4 Bias; // x - depth bias, y - normal bias (should be negative)
 };
 
 ConstantBuffer<ShadowPassParameters> parametersCb : register(b0);
@@ -15,18 +16,15 @@ struct VertexAttributes
 	float2 Uv : TEXCOORD;
 };
 
-// x - depth bias, y - normal bias (should be negative)
-static const float2 SHADOW_BIAS = float2(-1.0f, -0.002f);
-
 // From Unity URP Shader Library
 // com.unity.render-pipelines.universal@12.1.6/ShaderLibrary/Shadows.hlsl
 float3 ApplyBias(float3 position, const float3 normal, const float3 lightDirection)
 {
 	float invNdotL = 1.0 - saturate(dot(lightDirection, normal));
-	float scale = invNdotL * SHADOW_BIAS.y;
+	float scale = invNdotL * parametersCb.Bias.y;
 
 	// normal bias is negative since we want to apply an inset normal offset
-	position = lightDirection * SHADOW_BIAS.xxx + position;
+	position = lightDirection * parametersCb.Bias.xxx + position;
 	position = normal * scale.xxx + position;
 	return position;
 }

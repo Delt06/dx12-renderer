@@ -19,6 +19,7 @@ public:
 	                              UINT resolution = 4096);
 	void SetContext(CommandList& commandList) const;
 	void ComputePassParameters(const Camera& camera, const DirectionalLight& directionalLight);
+	void SetBias(float depthBias, float normalBias);
 	void ClearShadowMap(CommandList& commandList) const;
 	void DrawToShadowMap(CommandList& commandList, const GameObject& gameObject) const;
 
@@ -36,6 +37,7 @@ private:
 		DirectX::XMMATRIX InverseTransposeModel;
 		DirectX::XMMATRIX ViewProjection;
 		DirectX::XMFLOAT4 LightDirectionWs;
+		DirectX::XMFLOAT4 Bias;
 	};
 
 	const Texture& GetShadowMapAsTexture() const;

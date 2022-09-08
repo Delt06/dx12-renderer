@@ -3,6 +3,10 @@
   "Id": "5edb09fc-1d61-4e9a-b556-a81bb2d6b766",
   "Items": [
     {
+      "Id": "c085de39-a160-4a8c-8efe-f59196d80220",
+      "Command": "--shadowResolution 512"
+    },
+    {
       "Id": "74a37891-476f-45ec-a8eb-b35eadb2b77e",
       "Command": "--demo Tutorial3"
     },

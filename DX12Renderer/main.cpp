@@ -8,6 +8,7 @@
 
 #include <dxgidebug.h>
 
+#include "GraphicsSettings.h"
 #include "Tutorial3/Tutorial3.h"
 #include "LightingDemo/LightingDemo.h"
 
@@ -22,9 +23,11 @@ void ReportLiveObjects()
 
 struct Parameters
 {
-	int ClientWidth = 1280;
-	int ClientHeight = 720;
-	std::string DemoName;
+	int m_ClientWidth = 1280;
+	int m_ClientHeight = 720;
+	std::string m_DemoName;
+
+	GraphicsSettings m_GraphicsSettings;
 };
 
 void ParseCommandLineArguments(Parameters& parameters)
@@ -36,22 +39,27 @@ void ParseCommandLineArguments(Parameters& parameters)
 	{
 		if (wcscmp(argv[i], L"-w") == 0 || wcscmp(argv[i], L"--width") == 0)
 		{
-			parameters.ClientWidth = wcstol(argv[++i], nullptr, 10);
+			parameters.m_ClientWidth = wcstol(argv[++i], nullptr, 10);
 		}
 
 		if (wcscmp(argv[i], L"-h") == 0 || wcscmp(argv[i], L"--height") == 0)
 		{
-			parameters.ClientHeight = wcstol(argv[++i], nullptr, 10);
+			parameters.m_ClientHeight = wcstol(argv[++i], nullptr, 10);
 		}
 
 		if (wcscmp(argv[i], L"-d") == 0 || wcscmp(argv[i], L"--demo") == 0)
 		{
 			std::wstring arg = argv[++i];
-			parameters.DemoName = std::string(arg.begin(), arg.end());
+			parameters.m_DemoName = std::string(arg.begin(), arg.end());
 		}
 		else
 		{
-			parameters.DemoName = "LightingDemo";
+			parameters.m_DemoName = "LightingDemo";
+		}
+
+		if (wcscmp(argv[i], L"--shadowResolution") == 0)
+		{
+			parameters.m_GraphicsSettings.m_ShadowsResolution = wcstol(argv[++i], nullptr, 10);
 		}
 	}
 
@@ -60,13 +68,13 @@ void ParseCommandLineArguments(Parameters& parameters)
 
 std::shared_ptr<Game> CreateGame(const Parameters& parameters)
 {
-	if (parameters.DemoName == "Tutorial3")
-		return std::make_shared<Tutorial3>(L"Learning DirectX 12 - Lesson 3", parameters.ClientWidth,
-		                                   parameters.ClientHeight);
-	if (parameters.DemoName == "LightingDemo")
-		return std::make_shared<LightingDemo>(L"Lighting Demo", parameters.ClientWidth, parameters.ClientHeight);
+	if (parameters.m_DemoName == "Tutorial3")
+		return std::make_shared<Tutorial3>(L"Learning DirectX 12 - Lesson 3", parameters.m_ClientWidth,
+		                                   parameters.m_ClientHeight);
+	if (parameters.m_DemoName == "LightingDemo")
+		return std::make_shared<LightingDemo>(L"Lighting Demo", parameters.m_ClientWidth, parameters.m_ClientHeight, parameters.m_GraphicsSettings);
 
-	const std::string message = "'" + std::string(parameters.DemoName) + "' is an unknown demo name";
+	const std::string message = "'" + std::string(parameters.m_DemoName) + "' is an unknown demo name";
 	throw std::exception(message.c_str());
 }
 

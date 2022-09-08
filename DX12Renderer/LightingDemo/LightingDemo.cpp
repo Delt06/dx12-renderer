@@ -11,6 +11,7 @@
 
 #include <wrl.h>
 
+#include "GraphicsSettings.h"
 #include "Model.h"
 #include "ModelLoader.h"
 #include "ParticleSystem.h"
@@ -111,13 +112,14 @@ namespace
 }
 
 
-LightingDemo::LightingDemo(const std::wstring& name, int width, int height, bool vSync)
-	: Base(name, width, height, vSync)
+LightingDemo::LightingDemo(const std::wstring& name, int width, int height, GraphicsSettings graphicsSettings)
+	: Base(name, width, height, graphicsSettings.m_VSync)
 	  , m_Viewport(CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height)))
 	  , m_ScissorRect(CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX))
 	  , m_CameraController{}
 	  , m_Width(0)
 	  , m_Height(0)
+	  , m_GraphicsSettings(graphicsSettings)
 {
 	XMVECTOR cameraPos = XMVectorSet(0, 5, -20, 1);
 	XMVECTOR cameraTarget = XMVectorSet(0, 5, 0, 1);
@@ -243,7 +245,8 @@ bool LightingDemo::LoadContent()
 
 	// Setup shadows
 	{
-		m_DirectionalLightShadowPassPso = std::make_unique<DirectionalLightShadowPassPso>(device, *commandList);
+		m_DirectionalLightShadowPassPso = std::make_unique<DirectionalLightShadowPassPso>(device, *commandList, m_GraphicsSettings.m_ShadowsResolution);
+		m_DirectionalLightShadowPassPso->SetBias(m_GraphicsSettings.m_ShadowsDepthBias, m_GraphicsSettings.m_ShadowsNormalBias);
 	}
 
 	// Setup particles
@@ -300,7 +303,7 @@ bool LightingDemo::LoadContent()
 		CD3DX12_STATIC_SAMPLER_DESC(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR),
 		// shadow map
 		CD3DX12_STATIC_SAMPLER_DESC(1, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-									D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 0, 16,
+		                            D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 0, 16,
 		                            D3D12_COMPARISON_FUNC_LESS_EQUAL),
 	};
 
@@ -455,7 +458,9 @@ void LightingDemo::OnUpdate(UpdateEventArgs& e)
 	if (m_AnimateLights)
 	{
 		XMVECTOR dirLightDirectionWs = XMLoadFloat4(&m_DirectionalLight.m_DirectionWs);
-		dirLightDirectionWs = XMVector4Transform(dirLightDirectionWs, XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), XMConvertToRadians(90.0f * dt)));
+		dirLightDirectionWs = XMVector4Transform(dirLightDirectionWs,
+		                                         XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
+		                                                              XMConvertToRadians(90.0f * dt)));
 		XMStoreFloat4(&m_DirectionalLight.m_DirectionWs, dirLightDirectionWs);
 	}
 }
@@ -593,6 +598,7 @@ void LightingDemo::OnKeyPressed(KeyEventArgs& e)
 		}
 	case KeyCode::V:
 		PWindow->ToggleVSync();
+		m_GraphicsSettings.m_VSync = !m_GraphicsSettings.m_VSync;
 		break;
 	case KeyCode::R:
 		// Reset camera transform

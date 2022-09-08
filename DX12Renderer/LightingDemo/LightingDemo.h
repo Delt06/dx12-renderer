@@ -13,6 +13,7 @@
 
 #include "DirectionalLightShadowPassPso.h"
 #include "GameObject.h"
+#include "GraphicsSettings.h"
 #include "ParticleSystemPso.h"
 #include "PointLightPso.h"
 
@@ -23,7 +24,7 @@ class LightingDemo final : public Game
 public:
 	using Base = Game;
 
-	LightingDemo(const std::wstring& name, int width, int height, bool vSync = false);
+	LightingDemo(const std::wstring& name, int width, int height, GraphicsSettings graphicsSettings);
 	~LightingDemo() override;
 
 	bool LoadContent() override;
@@ -59,6 +60,7 @@ private:
 	Camera m_Camera;
 
 	bool m_AnimateLights = false;
+	GraphicsSettings m_GraphicsSettings;
 
 	static constexpr size_t ALIGNMENT = 16;
 

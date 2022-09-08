@@ -176,6 +176,7 @@
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="GenerateMipsPso.cpp" />
+    <ClCompile Include="GraphicsSettings.cpp" />
     <ClCompile Include="HighResolutionClock.cpp" />
     <ClCompile Include="IndexBuffer.cpp" />
     <ClCompile Include="Light.cpp" />
@@ -218,6 +219,7 @@
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GenerateMipsPso.h" />
+    <ClInclude Include="GraphicsSettings.h" />
     <ClInclude Include="Helpers.h" />
     <ClInclude Include="HighResolutionClock.h" />
     <ClInclude Include="IndexBuffer.h" />

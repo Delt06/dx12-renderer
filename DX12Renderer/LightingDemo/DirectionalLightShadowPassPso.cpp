@@ -163,6 +163,12 @@ void DirectionalLightShadowPassPso::ComputePassParameters(const Camera& camera,
 	m_ShadowPassParameters.ViewProjection = viewProjection;
 }
 
+void DirectionalLightShadowPassPso::SetBias(const float depthBias, const float normalBias)
+{
+	m_ShadowPassParameters.Bias.x = -depthBias;
+	m_ShadowPassParameters.Bias.y = -normalBias;
+}
+
 void DirectionalLightShadowPassPso::ClearShadowMap(CommandList& commandList) const
 {
 	commandList.ClearDepthStencilTexture(GetShadowMapAsTexture(), D3D12_CLEAR_FLAG_DEPTH);
