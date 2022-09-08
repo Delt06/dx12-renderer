@@ -11,6 +11,10 @@
       "Command": "--demo Tutorial3"
     },
     {
+      "Id": "4fe8924a-0012-4e11-8e48-f42c217e25ce",
+      "Command": "--poissonSpread 250"
+    },
+    {
       "Id": "819bda52-1309-4824-b32e-c4a3e482c937",
       "Command": "--demo LightingDemo"
     },

@@ -47,9 +47,11 @@ namespace
 		XMFLOAT4 Color;
 	};
 
-	struct ShadowMatricesCb
+	struct ShadowReceiverParametersCb
 	{
 		XMMATRIX ViewProjection;
+		float PoissonSpreadInv;
+		float Padding[3];
 	};
 
 	namespace RootParameters
@@ -289,8 +291,8 @@ bool LightingDemo::LoadContent()
 	                                                                    D3D12_SHADER_VISIBILITY_PIXEL);
 	rootParameters[RootParameters::LightPropertiesCb].InitAsConstants(sizeof(LightPropertiesCb) / sizeof(float), 2, 0,
 	                                                                  D3D12_SHADER_VISIBILITY_PIXEL);
-	rootParameters[RootParameters::ShadowMatricesCb].InitAsConstantBufferView(1, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
-	                                                                          D3D12_SHADER_VISIBILITY_VERTEX);
+	rootParameters[RootParameters::ShadowMatricesCb].InitAsConstantBufferView(3, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
+	                                                                          D3D12_SHADER_VISIBILITY_ALL);
 	rootParameters[RootParameters::ShadowMaps].InitAsDescriptorTable(1, &descriptorRangeShadowMaps,
 	                                                                 D3D12_SHADER_VISIBILITY_PIXEL);
 	rootParameters[RootParameters::Textures].InitAsDescriptorTable(1, &descriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
@@ -550,9 +552,10 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 					*commandList, RootParameters::ShadowMaps);
 			}
 
-			ShadowMatricesCb shadowMatrices;
-			shadowMatrices.ViewProjection = m_DirectionalLightShadowPassPso->GetShadowViewProjectionMatrix();
-			commandList->SetGraphicsDynamicConstantBuffer(RootParameters::ShadowMatricesCb, shadowMatrices);
+			ShadowReceiverParametersCb shadowReceiverParametersCb;
+			shadowReceiverParametersCb.ViewProjection = m_DirectionalLightShadowPassPso->GetShadowViewProjectionMatrix();
+			shadowReceiverParametersCb.PoissonSpreadInv = 1.0f / m_GraphicsSettings.m_PoissonSpread;
+			commandList->SetGraphicsDynamicConstantBuffer(RootParameters::ShadowMatricesCb, shadowReceiverParametersCb);
 
 			for (const auto& go : m_GameObjects)
 			{

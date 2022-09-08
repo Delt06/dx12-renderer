@@ -6,13 +6,10 @@ struct Matrices
 	matrix ModelViewProjection;
 };
 
-struct ShadowMatrices
-{
-	matrix ViewProjection;
-};
+#include "Shadows.hlsli"
 
 ConstantBuffer<Matrices> matricesCb : register(b0);
-ConstantBuffer<ShadowMatrices> shadowMatricesCb : register(b1);
+ConstantBuffer<ShadowReceiverParameters> shadowReceiverParameters : register(b3);
 
 struct VertexAttributes
 {
@@ -47,7 +44,7 @@ VertexShaderOutput main(VertexAttributes IN)
 
 	// See http://www.opengl-tutorial.org/ru/intermediate-tutorials/tutorial-16-shadow-mapping/
 	// "Using the shadow map"
-	float4 shadowCoords = mul(shadowMatricesCb.ViewProjection, mul(matricesCb.Model, float4(IN.PositionOs, 1.0f)));
+	float4 shadowCoords = mul(shadowReceiverParameters.ViewProjection, mul(matricesCb.Model, float4(IN.PositionOs, 1.0f)));
 	shadowCoords.xy = shadowCoords.xyz * 0.5f + 0.5f; // [-1; 1] -> [0, 1]
 	shadowCoords.y = 1 - shadowCoords.y;
 	OUT.ShadowCoords = shadowCoords;

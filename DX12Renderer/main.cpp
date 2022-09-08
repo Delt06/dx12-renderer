@@ -61,6 +61,11 @@ void ParseCommandLineArguments(Parameters& parameters)
 		{
 			parameters.m_GraphicsSettings.m_ShadowsResolution = wcstol(argv[++i], nullptr, 10);
 		}
+
+		if (wcscmp(argv[i], L"--poissonSpread") == 0)
+		{
+			parameters.m_GraphicsSettings.m_PoissonSpread = wcstof(argv[++i], nullptr);
+		}
 	}
 
 	LocalFree(argv);

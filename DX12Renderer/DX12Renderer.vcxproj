@@ -262,6 +262,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="..\README.md" />
+    <None Include="Shaders\Shadows.hlsli">
+      <FileType>Document</FileType>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\GenerateMips_CS.hlsl">
