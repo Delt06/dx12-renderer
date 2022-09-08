@@ -85,8 +85,17 @@ Light GetMainLight(const float4 shadowCoords)
 	light.Color = dirLightCb.Color.rgb;
 	light.DirectionVs = dirLightCb.DirectionVs.xyz;
 	light.DistanceAttenuation = 1.0f;
-	light.ShadowAttenuation = directionalLightShadowMap.SampleCmpLevelZero(
-		shadowMapSampler, shadowCoords.xy, shadowCoords.z);
+
+	if (any(shadowCoords.xyz < 0) || any(shadowCoords.xyz > 1))
+	{
+		light.ShadowAttenuation = 1.0f;
+	}
+	else
+	{
+		light.ShadowAttenuation = directionalLightShadowMap.SampleCmpLevelZero(
+			shadowMapSampler, shadowCoords.xy, shadowCoords.z);
+	}
+
 	return light;
 }
 
