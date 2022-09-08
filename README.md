@@ -11,13 +11,13 @@
 
 ## Sources
 
-### Tutorials
-
 - https://www.3dgep.com/learning-directx-12-1/
 - https://www.3dgep.com/learning-directx-12-2/
 - https://www.3dgep.com/learning-directx-12-3/
 - https://www.3dgep.com/learning-directx-12-4/
 - https://wiki.ogre3d.org/tiki-index.php?page=-Point+Light+Attenuation
+- https://github.com/d3dcoder/d3d12book
+- http://www.opengl-tutorial.org/ru/intermediate-tutorials/tutorial-16-shadow-mapping/
 
 ### Libraries
 

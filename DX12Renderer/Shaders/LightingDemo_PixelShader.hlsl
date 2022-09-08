@@ -79,14 +79,14 @@ struct Light
 	float ShadowAttenuation;
 };
 
-Light GetMainLight(float4 shadowCoords)
+Light GetMainLight(const float4 shadowCoords)
 {
 	Light light;
 	light.Color = dirLightCb.Color.rgb;
 	light.DirectionVs = dirLightCb.DirectionVs.xyz;
 	light.DistanceAttenuation = 1.0f;
-	/*light.ShadowAttenuation = directionalLightShadowMap.SampleCmpLevelZero(
-		shadowMapSampler, shadowCoords.xy, shadowCoords.z);*/
+	light.ShadowAttenuation = directionalLightShadowMap.SampleCmpLevelZero(
+		shadowMapSampler, shadowCoords.xy, shadowCoords.z);
 	return light;
 }
 
@@ -221,6 +221,6 @@ float4 main(PixelShaderInput IN) : SV_Target
 		                        ? diffuseMap.Sample(defaultSampler, IN.Uv)
 		                        : float4(1.0f, 1.0f, 1.0f, 1.0f);
 
-	return directionalLightShadowMap.SampleCmpLevelZero(shadowMapSampler, IN.ShadowCoords.xy, IN.ShadowCoords.z);
+	//return directionalLightShadowMap.SampleCmpLevelZero(shadowMapSampler, IN.ShadowCoords.xy, IN.ShadowCoords.z);
 	return emissive + (ambient + diffuse + specular) * texColor;
 }

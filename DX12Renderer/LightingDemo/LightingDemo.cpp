@@ -48,7 +48,7 @@ namespace
 
 	struct ShadowMatricesCb
 	{
-		XMMATRIX ModelViewProjection;
+		XMMATRIX ViewProjection;
 	};
 
 	namespace RootParameters
@@ -204,7 +204,7 @@ bool LightingDemo::LoadContent()
 			}
 			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
-			XMMATRIX scaleMatrix = XMMatrixScaling(20.0f, 1.0f, 20.0f);
+			XMMATRIX scaleMatrix = XMMatrixScaling(80.0f, 1.0f, 80.0f);
 			XMMATRIX worldMatrix = scaleMatrix * translationMatrix * rotationMatrix;
 			m_GameObjects.push_back(GameObject(worldMatrix, model));
 		}
@@ -299,8 +299,9 @@ bool LightingDemo::LoadContent()
 		// linear repeat
 		CD3DX12_STATIC_SAMPLER_DESC(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR),
 		// shadow map
-		CD3DX12_STATIC_SAMPLER_DESC(1, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-		                            D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 0, 0, D3D12_COMPARISON_FUNC_LESS),
+		CD3DX12_STATIC_SAMPLER_DESC(1, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+		                            D3D12_TEXTURE_ADDRESS_MODE_BORDER, D3D12_TEXTURE_ADDRESS_MODE_BORDER, 0, 16,
+		                            D3D12_COMPARISON_FUNC_LESS_EQUAL, D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK),
 	};
 
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
@@ -535,6 +536,10 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 					*commandList, RootParameters::ShadowMaps);
 			}
 
+			ShadowMatricesCb shadowMatrices;
+			shadowMatrices.ViewProjection = m_DirectionalLightShadowPassPso->GetShadowViewProjectionMatrix();
+			commandList->SetGraphicsDynamicConstantBuffer(RootParameters::ShadowMatricesCb, shadowMatrices);
+
 			for (const auto& go : m_GameObjects)
 			{
 				go.Draw([this, &viewMatrix, &viewProjectionMatrix, &projectionMatrix](auto& cmd, auto worldMatrix)
@@ -542,11 +547,6 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 					        MatricesCb matrices;
 					        matrices.Compute(worldMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
 					        cmd.SetGraphicsDynamicConstantBuffer(RootParameters::MatricesCb, matrices);
-
-					        ShadowMatricesCb shadowMatrices;
-					        shadowMatrices.ModelViewProjection = m_DirectionalLightShadowPassPso->
-						        ComputeShadowModelViewProjectionMatrix(worldMatrix);
-					        cmd.SetGraphicsDynamicConstantBuffer(RootParameters::ShadowMatricesCb, shadowMatrices);
 				        },
 				        *commandList, RootParameters::MaterialCb, RootParameters::Textures);
 			}

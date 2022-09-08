@@ -65,10 +65,8 @@ DirectionalLightShadowPassPso::DirectionalLightShadowPassPso(ComPtr<ID3D12Device
 		0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
 		D3D12_SHADER_VISIBILITY_VERTEX);
 
-	CD3DX12_STATIC_SAMPLER_DESC linearRepeatSampler(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR);
-
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
-	rootSignatureDescription.Init_1_1(RootParameters::NumRootParameters, rootParameters, 1, &linearRepeatSampler,
+	rootSignatureDescription.Init_1_1(RootParameters::NumRootParameters, rootParameters, 0, nullptr,
 	                                  rootSignatureFlags);
 
 	m_RootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
@@ -155,10 +153,11 @@ void DirectionalLightShadowPassPso::ComputePassParameters(const Camera& camera,
                                                           const DirectionalLight& directionalLight)
 {
 	const XMVECTOR lightDirection = XMLoadFloat4(&directionalLight.m_DirectionWs);
-	const auto viewMatrix = XMMatrixLookToLH(XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), lightDirection,
+	const auto viewMatrix = XMMatrixLookToLH(lightDirection * 20.0f, -lightDirection,
 	                                         XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
-	const auto projectionMatrix = XMMatrixOrthographicLH(200.0f, 200.0f, -100.0f, 100.0f);
+	const auto projectionMatrix = XMMatrixOrthographicOffCenterLH(-100.0f, 100.0f, -100.0f, 100.0f, -10.0f, 100.0f);
 	const auto viewProjection = viewMatrix * projectionMatrix;
+
 
 	m_ShadowPassParameters.LightDirectionWs = directionalLight.m_DirectionWs;
 	m_ShadowPassParameters.ViewProjection = viewProjection;
@@ -206,6 +205,11 @@ XMMATRIX DirectionalLightShadowPassPso::ComputeShadowModelViewProjectionMatrix(
 	const XMMATRIX worldMatrix) const
 {
 	return worldMatrix * m_ShadowPassParameters.ViewProjection;
+}
+
+XMMATRIX DirectionalLightShadowPassPso::GetShadowViewProjectionMatrix() const
+{
+	return m_ShadowPassParameters.ViewProjection;
 }
 
 const Texture& DirectionalLightShadowPassPso::GetShadowMapAsTexture() const

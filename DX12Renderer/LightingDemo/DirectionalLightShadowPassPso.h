@@ -26,6 +26,8 @@ public:
 	                                    uint32_t descriptorOffset = 0) const;
 
 	[[nodiscard]] DirectX::XMMATRIX ComputeShadowModelViewProjectionMatrix(DirectX::XMMATRIX worldMatrix) const;
+	[[nodiscard]] DirectX::XMMATRIX GetShadowViewProjectionMatrix() const;
+
 
 private:
 	struct ShadowPassParameters
