@@ -9,6 +9,12 @@
 
 ![Lighting Demo Screenshot](./Screenshots/LightingDemo.jpg)
 
+### Controls
+
+- Use <kbd>WASD</kbd>/Arrow Keys to move the camera;
+- Hold <kbd>LMB</kbd> and move the mouse to orient the camera;
+- Press <kbd>L</kbd> to toggle light animation.
+
 ## Sources
 
 - https://www.3dgep.com/learning-directx-12-1/

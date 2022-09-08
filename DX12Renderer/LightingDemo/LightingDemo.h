@@ -58,6 +58,8 @@ private:
 
 	Camera m_Camera;
 
+	bool m_AnimateLights = false;
+
 	static constexpr size_t ALIGNMENT = 16;
 
 	struct alignas(ALIGNMENT) CameraData

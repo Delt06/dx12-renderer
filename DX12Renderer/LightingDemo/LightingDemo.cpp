@@ -449,6 +449,15 @@ void LightingDemo::OnUpdate(UpdateEventArgs& e)
 
 
 	m_ParticleSystem->Update(e.ElapsedTime);
+
+	auto dt = static_cast<float>(e.ElapsedTime);
+
+	if (m_AnimateLights)
+	{
+		XMVECTOR dirLightDirectionWs = XMLoadFloat4(&m_DirectionalLight.m_DirectionWs);
+		dirLightDirectionWs = XMVector4Transform(dirLightDirectionWs, XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), XMConvertToRadians(90.0f * dt)));
+		XMStoreFloat4(&m_DirectionalLight.m_DirectionWs, dirLightDirectionWs);
+	}
 }
 
 void LightingDemo::OnRender(RenderEventArgs& e)
@@ -613,6 +622,8 @@ void LightingDemo::OnKeyPressed(KeyEventArgs& e)
 		break;
 	case KeyCode::E:
 		m_CameraController.m_Up = 1.0f;
+	case KeyCode::L:
+		m_AnimateLights = !m_AnimateLights;
 		break;
 	case KeyCode::ShiftKey:
 		m_CameraController.m_Shift = true;
