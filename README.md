@@ -6,8 +6,9 @@
   - Models loaded from OBJ files;
   - Mipmapping
   - Phong lighting with a directional light and several point lights;
+    - Using diffuse, normal, gloss, and specular maps;
   - Particle system with CPU simulation (10000+ particles on screen) and instanced rendering;
-  - Shadow mapping for the directional light;
+  - Shadow mapping for the directional and point lights;
   - Soft shadows using 16x Poisson Sampling and Early Bail.
 
 ![Lighting Demo Screenshot](./Screenshots/LightingDemo.jpg)
@@ -27,6 +28,7 @@
 - https://wiki.ogre3d.org/tiki-index.php?page=-Point+Light+Attenuation
 - https://github.com/d3dcoder/d3d12book
 - http://www.opengl-tutorial.org/ru/intermediate-tutorials/tutorial-16-shadow-mapping/
+- https://learnopengl.com/Advanced-Lighting/Shadows/Point-Shadows
 
 ### Libraries
 
