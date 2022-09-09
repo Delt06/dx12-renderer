@@ -6,6 +6,9 @@
   - Models loaded from OBJ files;
   - Mipmapping
   - Phong lighting with a directional light and several point lights;
+  - Particle system with CPU simulation (10000+ particles on screen) and instanced rendering;
+  - Shadow mapping for the directional light;
+  - Soft shadows using 16x Poisson Sampling and Early Bail.
 
 ![Lighting Demo Screenshot](./Screenshots/LightingDemo.jpg)
 
