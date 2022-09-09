@@ -78,7 +78,9 @@ bool DescriptorAllocation::IsNull() const
 
 D3D12_CPU_DESCRIPTOR_HANDLE DescriptorAllocation::GetDescriptorHandle(const uint32_t offset) const
 {
-	assert(offset < NumHandles);
+	if (offset >= NumHandles)
+		throw std::exception("Descriptor offset out of range.");
+
 	return {Descriptor.ptr + static_cast<SIZE_T>(DescriptorSize) * offset};
 }
 

@@ -253,7 +253,7 @@ bool LightingDemo::LoadContent()
 		                                         m_GraphicsSettings.m_ShadowsNormalBias);
 		// Point Lights
 		m_PointLightShadowPassPso = std::make_unique<PointLightShadowPassPso>(
-			device, m_GraphicsSettings.m_ShadowsResolution);
+			device, m_GraphicsSettings.m_PointLightShadowsResolution);
 		m_PointLightShadowPassPso->SetBias(m_GraphicsSettings.m_ShadowsDepthBias,
 		                                   m_GraphicsSettings.m_ShadowsNormalBias);
 	}
@@ -489,14 +489,43 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 
 	// Shadow pass
 	{
-		m_DirectionalLightShadowPassPso->ClearShadowMap(*commandList);
-		m_DirectionalLightShadowPassPso->ComputePassParameters(m_Scene, m_Scene.m_DirectionalLight);
-		m_DirectionalLightShadowPassPso->SetContext(*commandList);
-		m_DirectionalLightShadowPassPso->SetRenderTarget(*commandList);
-
-		for (auto& gameObject : m_Scene.m_GameObjects)
+		// Directional Light
 		{
-			m_DirectionalLightShadowPassPso->DrawToShadowMap(*commandList, gameObject);
+			m_DirectionalLightShadowPassPso->SetContext(*commandList);
+			m_DirectionalLightShadowPassPso->ClearShadowMap(*commandList);
+			m_DirectionalLightShadowPassPso->ComputePassParameters(m_Scene, m_Scene.m_DirectionalLight);
+			m_DirectionalLightShadowPassPso->SetRenderTarget(*commandList);
+
+			for (auto& gameObject : m_Scene.m_GameObjects)
+			{
+				m_DirectionalLightShadowPassPso->DrawToShadowMap(*commandList, gameObject);
+			}
+		}
+
+		// Point Lights
+		{
+			const auto pointLightsCount = static_cast<uint32_t>(m_Scene.m_PointLights.size());
+			m_PointLightShadowPassPso->EnsureSufficientShadowMaps(pointLightsCount);
+			m_PointLightShadowPassPso->SetContext(*commandList);
+
+			for (uint32_t lightIndex = 0; lightIndex < pointLightsCount; ++lightIndex)
+			{
+				const PointLight& pointLight = m_Scene.m_PointLights[lightIndex];
+
+				for (uint32_t cubeMapSideIndex = 0; cubeMapSideIndex < PointLightShadowPassPso::TEXTURES_IN_CUBEMAP; ++
+				     cubeMapSideIndex)
+				{
+					m_PointLightShadowPassPso->SetCurrentShadowMap(lightIndex, cubeMapSideIndex);
+					m_PointLightShadowPassPso->ClearShadowMap(*commandList);
+					m_PointLightShadowPassPso->ComputePassParameters(pointLight);
+					m_PointLightShadowPassPso->SetRenderTarget(*commandList);
+
+					for (auto& gameObject : m_Scene.m_GameObjects)
+					{
+						m_PointLightShadowPassPso->DrawToShadowMap(*commandList, gameObject);
+					}
+				}
+			}
 		}
 	}
 

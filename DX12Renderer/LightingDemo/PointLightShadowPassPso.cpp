@@ -1,8 +1,12 @@
 ﻿#include "PointLightShadowPassPso.h"
 
 #include "CommandList.h"
+#include "Light.h"
 
-PointLightShadowPassPso::PointLightShadowPassPso(const Microsoft::WRL::ComPtr<ID3D12Device2>& device,
+using namespace Microsoft::WRL;
+using namespace DirectX;
+
+PointLightShadowPassPso::PointLightShadowPassPso(const ComPtr<ID3D12Device2>& device,
                                                  const UINT resolution)
 	: ShadowPassPsoBase(device, resolution)
 	  , m_CubeShadowMapsCount(0)
@@ -41,6 +45,23 @@ void PointLightShadowPassPso::SetShadowMapShaderResourceView(CommandList& comman
 	const uint32_t numSubresources = m_CubeShadowMapsCount * TEXTURES_IN_CUBEMAP;
 	commandList.SetShaderResourceView(rootParameterIndex, descriptorOffset, GetShadowMapsAsTexture(), stateAfter, 0,
 	                                  numSubresources, &srvDesc);
+}
+
+void PointLightShadowPassPso::ComputePassParameters(const PointLight& pointLight)
+{
+	const XMVECTOR eyePosition = XMLoadFloat4(&pointLight.m_PositionWs);
+	const auto& cubeSideOrientation = CUBE_SIDE_ORIENTATIONS[m_CurrentCubeMapSideIndex];
+	const auto viewMatrix = XMMatrixLookToLH(eyePosition, cubeSideOrientation.m_Forward, cubeSideOrientation.m_Up);
+
+	const float range = pointLight.m_Range;
+	const auto projectionMatrix = XMMatrixOrthographicOffCenterLH(-range, range,
+	                                                              -range, range,
+	                                                              0, range
+	);
+	const auto viewProjection = viewMatrix * projectionMatrix;
+
+	m_ShadowPassParameters.LightDirectionWs = pointLight.m_PositionWs;
+	m_ShadowPassParameters.ViewProjection = viewProjection;
 }
 
 void PointLightShadowPassPso::SetCurrentShadowMap(const uint32_t lightIndex, const uint32_t cubeMapSideIndex)
