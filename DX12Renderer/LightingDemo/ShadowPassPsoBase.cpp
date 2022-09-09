@@ -133,3 +133,8 @@ void ShadowPassPsoBase::DrawToShadowMap(CommandList& commandList, const GameObje
 		mesh->Draw(commandList);
 	}
 }
+
+XMMATRIX ShadowPassPsoBase::GetShadowViewProjectionMatrix() const
+{
+	return m_ShadowPassParameters.ViewProjection;
+}

@@ -162,28 +162,49 @@ void Texture::CreateViews()
 		const auto device = app.GetDevice();
 
 		const CD3DX12_RESOURCE_DESC desc(m_d3d12Resource->GetDesc());
-		const UINT16 numDescriptors = desc.ArraySize();
+		const UINT16 arraySize = desc.ArraySize();
+		const UINT16 numDescriptors = arraySize + 1;
+		// first descriptor is whole resource, other are individual pieces of the array
 
 		if ((desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET) != 0 &&
 			CheckRtvSupport())
 		{
 			m_RenderTargetView = app.AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, numDescriptors);
+			device->CreateRenderTargetView(m_d3d12Resource.Get(), nullptr,
+			                               m_RenderTargetView.GetDescriptorHandle(0));
 
-			for (UINT16 i = 0; i < numDescriptors; ++i)
+			for (UINT16 i = 0; i < arraySize; i++)
 			{
-				device->CreateRenderTargetView(m_d3d12Resource.Get(), nullptr,
-				                               m_RenderTargetView.GetDescriptorHandle(i));
+				D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
+				rtvDesc.Format = desc.Format;
+				rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+				rtvDesc.Texture2DArray.ArraySize = 1;
+				rtvDesc.Texture2DArray.PlaneSlice = 0;
+				rtvDesc.Texture2DArray.MipSlice = 0;
+				rtvDesc.Texture2DArray.FirstArraySlice = i;
+
+				device->CreateRenderTargetView(m_d3d12Resource.Get(), &rtvDesc,
+				                               m_RenderTargetView.GetDescriptorHandle(i + 1));
 			}
 		}
 		if ((desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) != 0 &&
 			CheckDsvSupport())
 		{
 			m_DepthStencilView = app.AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, numDescriptors);
+			device->CreateDepthStencilView(m_d3d12Resource.Get(), nullptr,
+			                               m_DepthStencilView.GetDescriptorHandle(0));
 
-			for (UINT16 i = 0; i < numDescriptors; ++i)
+			for (UINT16 i = 0; i < arraySize; ++i)
 			{
-				device->CreateDepthStencilView(m_d3d12Resource.Get(), nullptr,
-				                               m_DepthStencilView.GetDescriptorHandle(i));
+				D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
+				dsvDesc.Format = desc.Format;
+				dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
+				dsvDesc.Texture2DArray.ArraySize = 1;
+				dsvDesc.Texture2DArray.MipSlice = 0;
+				dsvDesc.Texture2DArray.FirstArraySlice = i;
+
+				device->CreateDepthStencilView(m_d3d12Resource.Get(), &dsvDesc,
+				                               m_DepthStencilView.GetDescriptorHandle(i + 1));
 			}
 		}
 	}
@@ -259,15 +280,26 @@ D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetUnorderedAccessView(const D3D12_UNORDERE
 	return iter->second.GetDescriptorHandle();
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetRenderTargetView(const uint32_t offset) const
+D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetRenderTargetView() const
 {
-	return m_RenderTargetView.GetDescriptorHandle(offset);
+	return m_RenderTargetView.GetDescriptorHandle();
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetDepthStencilView(const uint32_t offset) const
+D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetRenderTargetViewArray(const uint32_t index) const
 {
-	return m_DepthStencilView.GetDescriptorHandle(offset);
+	return m_RenderTargetView.GetDescriptorHandle(index + 1);
 }
+
+D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetDepthStencilView() const
+{
+	return m_DepthStencilView.GetDescriptorHandle();
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE Texture::GeDepthStencilViewArray(const uint32_t index) const
+{
+	return m_DepthStencilView.GetDescriptorHandle(index + 1);
+}
+
 
 bool Texture::IsUavCompatibleFormat(DXGI_FORMAT format)
 {

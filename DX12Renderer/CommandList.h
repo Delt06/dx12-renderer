@@ -96,7 +96,7 @@ public:
 	void TransitionBarrier(const Resource& resource, D3D12_RESOURCE_STATES stateAfter,
 	                       UINT subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, bool flushBarriers = false);
 	void TransitionBarrier(Microsoft::WRL::ComPtr<ID3D12Resource> resource, D3D12_RESOURCE_STATES stateAfter,
-		UINT subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, bool flushBarriers = false);
+	                       UINT subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, bool flushBarriers = false);
 
 	/**
 	 * Add a UAV barrier to ensure that any writes to a resource have completed
@@ -117,7 +117,8 @@ public:
 	 * @param afterResource The resource that will occupy the space in the heap.
 	 */
 	void AliasingBarrier(const Resource& beforeResource, const Resource& afterResource, bool flushBarriers = false);
-	void AliasingBarrier(Microsoft::WRL::ComPtr<ID3D12Resource> beforeResource, Microsoft::WRL::ComPtr<ID3D12Resource> afterResource, bool flushBarriers = false);
+	void AliasingBarrier(Microsoft::WRL::ComPtr<ID3D12Resource> beforeResource,
+	                     Microsoft::WRL::ComPtr<ID3D12Resource> afterResource, bool flushBarriers = false);
 
 	/**
 	 * Flush any barriers that have been pushed to the command list.
@@ -206,7 +207,7 @@ public:
 	 * Clear depth/stencil texture.
 	 */
 	void ClearDepthStencilTexture(const Texture& texture, D3D12_CLEAR_FLAGS clearFlags, float depth = 1.0f,
-	                              uint8_t stencil = 0, uint32_t subresource = 0);
+	                              uint8_t stencil = 0);
 
 	/**
 	 * Generate mips for the texture.
@@ -364,7 +365,7 @@ public:
 	/**
 	 * Set the render targets for the graphics rendering pipeline.
 	 */
-	void SetRenderTarget(const RenderTarget& renderTarget, UINT subresource = 0);
+	void SetRenderTarget(const RenderTarget& renderTarget, UINT texArrayIndex = -1);
 
 	/**
 	 * Draw geometry.

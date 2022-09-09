@@ -101,12 +101,14 @@ public:
 	/**
 	 * Get the RTV for the texture.
 	 */
-	virtual D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetView(uint32_t offset = 0) const;
+	virtual D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetView() const;
+	virtual D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetViewArray(uint32_t index) const;
 
 	/**
 	 * Get the DSV for the texture.
 	 */
-	virtual D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilView(uint32_t offset = 0) const;
+	virtual D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilView() const;
+	virtual D3D12_CPU_DESCRIPTOR_HANDLE GeDepthStencilViewArray(uint32_t index) const;
 
 	bool CheckSrvSupport() const
 	{

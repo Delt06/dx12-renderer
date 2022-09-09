@@ -6,7 +6,6 @@
 
 #include "GameObject.h"
 #include "RenderTarget.h"
-#include "RootSignature.h"
 #include "Scene.h"
 #include "ShadowPassPsoBase.h"
 
@@ -20,15 +19,12 @@ public:
 	explicit DirectionalLightShadowPassPso(Microsoft::WRL::ComPtr<ID3D12Device2> device, UINT resolution = 4096);
 	void ComputePassParameters(const Scene& scene, const DirectionalLight& directionalLight);
 
-	
-
 	[[nodiscard]] DirectX::XMMATRIX ComputeShadowModelViewProjectionMatrix(DirectX::XMMATRIX worldMatrix) const;
-	[[nodiscard]] DirectX::XMMATRIX GetShadowViewProjectionMatrix() const;
 
 	void SetRenderTarget(CommandList& commandList) const override;
 	void ClearShadowMap(CommandList& commandList) const override;
 	void SetShadowMapShaderResourceView(CommandList& commandList, uint32_t rootParameterIndex,
-		uint32_t descriptorOffset = 0) const override;
+	                                    uint32_t descriptorOffset = 0) const override;
 
 private:
 	[[nodiscard]] const Texture& GetShadowMapAsTexture() const;

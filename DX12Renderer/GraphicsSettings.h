@@ -3,10 +3,17 @@
 
 struct GraphicsSettings
 {
+	struct ShadowsSettings
+	{
+		uint32_t m_Resolution;
+		float m_DepthBias;
+		float m_NormalBias;
+		float m_PoissonSpread;
+	};
+
 	bool m_VSync = false;
-	uint32_t m_ShadowsResolution = 4096;
-	uint32_t m_PointLightShadowsResolution = 1024;
-	float m_ShadowsDepthBias = 1.0;
-	float m_ShadowsNormalBias = 0.002f;
-	float m_PoissonSpread = 750.0f;
+
+	ShadowsSettings m_DirectionalLightShadows{4096, 1.0f, 0.002f, 750.0f};
+	// resolution is only a single cubemap side
+	ShadowsSettings m_PointLightShadows{1024, 0.5f, 0.001f, 250.0f};
 };

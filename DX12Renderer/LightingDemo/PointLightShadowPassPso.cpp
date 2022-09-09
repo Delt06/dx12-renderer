@@ -2,6 +2,7 @@
 
 #include "CommandList.h"
 #include "Light.h"
+#include "ShadowPassPsoBase.h"
 
 using namespace Microsoft::WRL;
 using namespace DirectX;
@@ -9,11 +10,13 @@ using namespace DirectX;
 PointLightShadowPassPso::PointLightShadowPassPso(const ComPtr<ID3D12Device2>& device,
                                                  const UINT resolution)
 	: ShadowPassPsoBase(device, resolution)
+	  , m_CubeShadowMapsCapacity(0)
 	  , m_CubeShadowMapsCount(0)
 	  , m_CurrentLightIndex(0)
 	  , m_CurrentCubeMapSideIndex(0)
 {
-	EnsureSufficientShadowMaps(DEFAULT_CUBE_SHADOW_MAPS_COUNT);
+	m_ShadowPassParameters.LightType = ShadowPassParameters::PointLight;
+	SetShadowMapsCount(DEFAULT_CUBE_SHADOW_MAPS_COUNT);
 }
 
 void PointLightShadowPassPso::SetRenderTarget(CommandList& commandList) const
@@ -23,8 +26,7 @@ void PointLightShadowPassPso::SetRenderTarget(CommandList& commandList) const
 
 void PointLightShadowPassPso::ClearShadowMap(CommandList& commandList) const
 {
-	commandList.ClearDepthStencilTexture(GetShadowMapsAsTexture(), D3D12_CLEAR_FLAG_DEPTH, 1, 0,
-	                                     GetCurrentSubresource());
+	commandList.ClearDepthStencilTexture(GetShadowMapsAsTexture(), D3D12_CLEAR_FLAG_DEPTH, 1, 0);
 }
 
 void PointLightShadowPassPso::SetShadowMapShaderResourceView(CommandList& commandList, uint32_t rootParameterIndex,
@@ -32,17 +34,19 @@ void PointLightShadowPassPso::SetShadowMapShaderResourceView(CommandList& comman
 {
 	constexpr auto stateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 
+	const uint32_t numSubresources = m_CubeShadowMapsCapacity * TEXTURES_IN_CUBEMAP;
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
-	srvDesc.TextureCubeArray.MipLevels = 1;
-	srvDesc.TextureCubeArray.MostDetailedMip = 0;
-	srvDesc.TextureCubeArray.NumCubes = m_CubeShadowMapsCount;
-	srvDesc.TextureCubeArray.ResourceMinLODClamp = 0.0f;
-	srvDesc.TextureCubeArray.First2DArrayFace = 0;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+	srvDesc.Texture2DArray.ArraySize = numSubresources;
+	srvDesc.Texture2DArray.MipLevels = 1;
+	srvDesc.Texture2DArray.FirstArraySlice = 0;
+	srvDesc.Texture2DArray.MostDetailedMip = 0;
+	srvDesc.Texture2DArray.PlaneSlice = 0;
+	srvDesc.Texture2DArray.ResourceMinLODClamp = 0.0f;
 
-	const uint32_t numSubresources = m_CubeShadowMapsCount * TEXTURES_IN_CUBEMAP;
+
 	commandList.SetShaderResourceView(rootParameterIndex, descriptorOffset, GetShadowMapsAsTexture(), stateAfter, 0,
 	                                  numSubresources, &srvDesc);
 }
@@ -53,11 +57,12 @@ void PointLightShadowPassPso::ComputePassParameters(const PointLight& pointLight
 	const auto& cubeSideOrientation = CUBE_SIDE_ORIENTATIONS[m_CurrentCubeMapSideIndex];
 	const auto viewMatrix = XMMatrixLookToLH(eyePosition, cubeSideOrientation.m_Forward, cubeSideOrientation.m_Up);
 
-	const float range = pointLight.m_Range;
-	const auto projectionMatrix = XMMatrixOrthographicOffCenterLH(-range, range,
-	                                                              -range, range,
-	                                                              0, range
-	);
+	float rangeMultiplier = 1.0f;
+	rangeMultiplier = max(rangeMultiplier, pointLight.m_Color.x);
+	rangeMultiplier = max(rangeMultiplier, pointLight.m_Color.y);
+	rangeMultiplier = max(rangeMultiplier, pointLight.m_Color.z);
+	const float range = pointLight.m_Range * rangeMultiplier * 2.0f;
+	const auto projectionMatrix = XMMatrixPerspectiveFovLH(XMConvertToRadians(90.0f), 1, 0.1f, range);
 	const auto viewProjection = viewMatrix * projectionMatrix;
 
 	m_ShadowPassParameters.LightDirectionWs = pointLight.m_PositionWs;
@@ -66,31 +71,34 @@ void PointLightShadowPassPso::ComputePassParameters(const PointLight& pointLight
 
 void PointLightShadowPassPso::SetCurrentShadowMap(const uint32_t lightIndex, const uint32_t cubeMapSideIndex)
 {
-	if (lightIndex >= m_CubeShadowMapsCount)
+	if (lightIndex >= m_CubeShadowMapsCapacity)
 		throw std::exception("Light index out of range");
 
 	m_CurrentLightIndex = lightIndex;
 	m_CurrentCubeMapSideIndex = cubeMapSideIndex;
 }
 
-void PointLightShadowPassPso::EnsureSufficientShadowMaps(const uint32_t count)
+void PointLightShadowPassPso::SetShadowMapsCount(const uint32_t count)
 {
-	if (count < m_CubeShadowMapsCount) return;
+	if (count >= m_CubeShadowMapsCapacity && count > 0)
+	{
+		const uint32_t arraySize = count * TEXTURES_IN_CUBEMAP;
+		const auto shadowMapDesc = CD3DX12_RESOURCE_DESC::Tex2D(SHADOW_MAP_FORMAT,
+		                                                        m_Resolution, m_Resolution,
+		                                                        arraySize, 1,
+		                                                        1, 0,
+		                                                        D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+		D3D12_CLEAR_VALUE depthClearValue;
+		depthClearValue.Format = shadowMapDesc.Format;
+		depthClearValue.DepthStencil = {1.0f, 0};
 
-	const uint32_t arraySize = count * TEXTURES_IN_CUBEMAP;
-	const auto shadowMapDesc = CD3DX12_RESOURCE_DESC::Tex2D(SHADOW_MAP_FORMAT,
-	                                                        m_Resolution, m_Resolution,
-	                                                        arraySize, 1,
-	                                                        1, 0,
-	                                                        D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
-	D3D12_CLEAR_VALUE depthClearValue;
-	depthClearValue.Format = shadowMapDesc.Format;
-	depthClearValue.DepthStencil = {1.0f, 0};
+		const auto shadowMap = Texture(shadowMapDesc, &depthClearValue,
+		                               TextureUsageType::Depth,
+		                               L"Point Light Shadow Map Array");
+		m_ShadowMapArray.AttachTexture(DepthStencil, shadowMap);
+		m_CubeShadowMapsCapacity = count;
+	}
 
-	const auto shadowMap = Texture(shadowMapDesc, &depthClearValue,
-	                               TextureUsageType::Depth,
-	                               L"Point Light Shadow Map Array");
-	m_ShadowMapArray.AttachTexture(DepthStencil, shadowMap);
 	m_CubeShadowMapsCount = count;
 }
 

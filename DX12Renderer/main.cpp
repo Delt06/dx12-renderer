@@ -59,12 +59,12 @@ void ParseCommandLineArguments(Parameters& parameters)
 
 		if (wcscmp(argv[i], L"--shadowResolution") == 0)
 		{
-			parameters.m_GraphicsSettings.m_ShadowsResolution = wcstol(argv[++i], nullptr, 10);
+			parameters.m_GraphicsSettings.m_DirectionalLightShadows.m_Resolution = wcstol(argv[++i], nullptr, 10);
 		}
 
 		if (wcscmp(argv[i], L"--poissonSpread") == 0)
 		{
-			parameters.m_GraphicsSettings.m_PoissonSpread = wcstof(argv[++i], nullptr);
+			parameters.m_GraphicsSettings.m_DirectionalLightShadows.m_PoissonSpread = wcstof(argv[++i], nullptr);
 		}
 	}
 
@@ -77,7 +77,8 @@ std::shared_ptr<Game> CreateGame(const Parameters& parameters)
 		return std::make_shared<Tutorial3>(L"Learning DirectX 12 - Lesson 3", parameters.m_ClientWidth,
 		                                   parameters.m_ClientHeight);
 	if (parameters.m_DemoName == "LightingDemo")
-		return std::make_shared<LightingDemo>(L"Lighting Demo", parameters.m_ClientWidth, parameters.m_ClientHeight, parameters.m_GraphicsSettings);
+		return std::make_shared<LightingDemo>(L"Lighting Demo", parameters.m_ClientWidth, parameters.m_ClientHeight,
+		                                      parameters.m_GraphicsSettings);
 
 	const std::string message = "'" + std::string(parameters.m_DemoName) + "' is an unknown demo name";
 	throw std::exception(message.c_str());

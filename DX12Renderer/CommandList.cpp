@@ -375,10 +375,10 @@ void CommandList::ClearTexture(const Texture& texture, const float clearColor[4]
 }
 
 void CommandList::ClearDepthStencilTexture(const Texture& texture, const D3D12_CLEAR_FLAGS clearFlags,
-                                           const float depth, const uint8_t stencil, const uint32_t subresource)
+                                           const float depth, const uint8_t stencil)
 {
 	TransitionBarrier(texture, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-	m_D3d12CommandList->ClearDepthStencilView(texture.GetDepthStencilView(subresource), clearFlags, depth, stencil, 0, nullptr);
+	m_D3d12CommandList->ClearDepthStencilView(texture.GetDepthStencilView(), clearFlags, depth, stencil, 0, nullptr);
 
 	TrackResource(texture);
 }
@@ -721,12 +721,14 @@ void CommandList::SetUnorderedAccessView(const uint32_t rootParameterIndex, cons
 	TrackResource(resource);
 }
 
-void CommandList::SetRenderTarget(const RenderTarget& renderTarget, UINT subresource)
+void CommandList::SetRenderTarget(const RenderTarget& renderTarget, const UINT texArrayIndex)
 {
 	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> renderTargetDescriptors;
 	renderTargetDescriptors.reserve(NumAttachmentPoints);
 
 	const auto& textures = renderTarget.GetTextures();
+	const bool isArrayItem = texArrayIndex != -1;
+	const UINT subresource = isArrayItem ? texArrayIndex : D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
 	// Bind color targets (max of 8 render targets can be bound to the rendering pipeline.
 	for (int i = 0; i < 8; ++i)
@@ -736,7 +738,9 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, UINT subreso
 		if (texture.IsValid())
 		{
 			TransitionBarrier(texture, D3D12_RESOURCE_STATE_RENDER_TARGET, subresource);
-			renderTargetDescriptors.push_back(texture.GetRenderTargetView(subresource));
+			renderTargetDescriptors.push_back(isArrayItem
+				                                  ? texture.GetRenderTargetViewArray(texArrayIndex)
+				                                  : texture.GetRenderTargetView());
 
 			TrackResource(texture);
 		}
@@ -748,7 +752,9 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, UINT subreso
 	if (depthTexture.GetD3D12Resource())
 	{
 		TransitionBarrier(depthTexture, D3D12_RESOURCE_STATE_DEPTH_WRITE, subresource);
-		depthStencilDescriptor = depthTexture.GetDepthStencilView(subresource);
+		depthStencilDescriptor = isArrayItem
+			                         ? depthTexture.GeDepthStencilViewArray(texArrayIndex)
+			                         : depthTexture.GetDepthStencilView();
 
 		TrackResource(depthTexture);
 	}

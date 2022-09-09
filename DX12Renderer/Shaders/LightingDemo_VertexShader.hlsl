@@ -27,6 +27,7 @@ struct VertexShaderOutput
 	float3 TangentVs : TANGENT;
 	float3 BitangentVs : BINORMAL;
 	float2 Uv : TEXCOORD0;
+	float3 PositionWs : POSITION_WS;
 	float4 ShadowCoords : SHADOW_COORD;
 	float4 PositionCs : SV_POSITION;
 };
@@ -42,12 +43,12 @@ VertexShaderOutput main(VertexAttributes IN)
 	OUT.BitangentVs = mul((float3x3)matricesCb.InverseTransposeModelView, IN.BitangentOs);
 	OUT.Uv = IN.Uv;
 
+	const float4 positionWs = mul(matricesCb.Model, float4(IN.PositionOs, 1.0f));
+	OUT.PositionWs = positionWs.xyz;
+
 	// See http://www.opengl-tutorial.org/ru/intermediate-tutorials/tutorial-16-shadow-mapping/
 	// "Using the shadow map"
-	float4 shadowCoords = mul(shadowReceiverParameters.ViewProjection, mul(matricesCb.Model, float4(IN.PositionOs, 1.0f)));
-	shadowCoords.xy = shadowCoords.xyz * 0.5f + 0.5f; // [-1; 1] -> [0, 1]
-	shadowCoords.y = 1 - shadowCoords.y;
-	OUT.ShadowCoords = shadowCoords;
+	OUT.ShadowCoords = HClipToShadowCoords(mul(shadowReceiverParameters.ViewProjection, positionWs));
 
 	return OUT;
 }

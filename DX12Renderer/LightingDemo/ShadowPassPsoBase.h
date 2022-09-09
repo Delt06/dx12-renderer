@@ -19,6 +19,7 @@ public:
 	void SetContext(CommandList& commandList) const;
 	void SetBias(float depthBias, float normalBias);
 	void DrawToShadowMap(CommandList& commandList, const GameObject& gameObject) const;
+	[[nodiscard]] DirectX::XMMATRIX GetShadowViewProjectionMatrix() const;
 
 	virtual void SetRenderTarget(CommandList& commandList) const = 0;
 	virtual void ClearShadowMap(CommandList& commandList) const = 0;
@@ -36,6 +37,14 @@ protected:
 		DirectX::XMMATRIX ViewProjection;
 		DirectX::XMFLOAT4 LightDirectionWs;
 		DirectX::XMFLOAT4 Bias;
+		uint32_t LightType;
+		float Padding[3];
+
+		enum : uint32_t
+		{
+			DirectionalLight = 0,
+			PointLight
+		};
 	};
 
 	ShadowPassParameters m_ShadowPassParameters;

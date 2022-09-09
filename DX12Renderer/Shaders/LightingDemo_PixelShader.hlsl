@@ -7,6 +7,7 @@ struct PixelShaderInput
 	float3 TangentVs : TANGENT;
 	float3 BitangentVs : BINORMAL;
 	float2 Uv : TEXCOORD;
+	float3 PositionWs : POSITION_WS;
 	float4 ShadowCoords : SHADOW_COORD;
 };
 
@@ -68,6 +69,8 @@ ConstantBuffer<ShadowReceiverParameters> shadowReceiverParameters : register(b3)
 
 Texture2D directionalLightShadowMap : register(t5);
 SamplerComparisonState shadowMapSampler : register(s1);
+Texture2DArray pointLightShadowMaps : register(t6);
+StructuredBuffer<matrix> pointLightViewProjectionMatrices : register(t7);
 
 Texture2D diffuseMap : register(t0);
 Texture2D normalMap : register(t1);
@@ -83,33 +86,11 @@ struct Light
 	float ShadowAttenuation;
 };
 
-#define POISSON_DISK_SIZE 16
-#define POISSON_EARLY_BAIL_SIZE 4
+#include "ShadowsPoissonSampling.hlsli"
 
-static const float2 POISSON_DISK[] = {
-	float2(0.94558609, -0.76890725),
-	float2(-0.81544232, -0.87912464),
-	float2(0.97484398, 0.75648379),
-	float2(-0.91588581, 0.45771432),
-	float2(-0.94201624, -0.39906216),
-	float2(-0.094184101, -0.92938870),
-	float2(0.34495938, 0.29387760),
-	float2(-0.38277543, 0.27676845),
-	float2(0.44323325, -0.97511554),
-	float2(0.53742981, -0.47373420),
-	float2(-0.26496911, -0.41893023),
-	float2(0.79197514, 0.19090188),
-	float2(-0.24188840, 0.99706507),
-	float2(-0.81409955, 0.91437590),
-	float2(0.19984126, 0.78641367),
-	float2(0.14383161, -0.14100790)
-};
-
-float SampleShadowMap(Texture2D shadowMapName, float3 shadowCoords)
-{
-	return shadowMapName.SampleCmpLevelZero(
-		shadowMapSampler, shadowCoords.xy, shadowCoords.z).x;
-}
+#define POISSON_SAMPLING_POINT_LIGHT
+#include "ShadowsPoissonSampling.hlsli"
+#undef POISSON_SAMPLING_POINT_LIGHT
 
 Light GetMainLight(const float4 shadowCoords)
 {
@@ -117,70 +98,74 @@ Light GetMainLight(const float4 shadowCoords)
 	light.Color = dirLightCb.Color.rgb;
 	light.DirectionVs = dirLightCb.DirectionVs.xyz;
 	light.DistanceAttenuation = 1.0f;
-
-	if (any(shadowCoords.xyz < 0) || any(shadowCoords.xyz > 1))
-	{
-		light.ShadowAttenuation = 1.0f;
-	}
-	else
-	{
-		float attenuation = 0.0f;
-
-		[unroll]
-		for (int i = 0; i < POISSON_DISK_SIZE; i++)
-		{
-			const float2 poissonDiskSample = POISSON_DISK[i];
-			const float3 sampleShadowCoords = shadowCoords.xyz + float3(
-				poissonDiskSample * shadowReceiverParameters.PoissonSpreadInv, 0);
-			attenuation += SampleShadowMap(directionalLightShadowMap, sampleShadowCoords);
-
-			if (i != POISSON_EARLY_BAIL_SIZE - 1)
-			{
-				continue;
-			}
-
-			// try early bail
-
-			// all were in shadow
-			if (attenuation == 0.0f)
-			{
-				break;
-			}
-
-			// none were in shadow
-			if (attenuation == POISSON_EARLY_BAIL_SIZE)
-			{
-				attenuation = POISSON_DISK_SIZE;
-				break;
-			}
-
-			// penumbra
-		}
-
-		light.ShadowAttenuation = attenuation / POISSON_DISK_SIZE;
-	}
-
+	light.ShadowAttenuation = PoissonSampling_MainLight(shadowCoords);
 	return light;
 }
 
-float ComputeAttenuation(const float cConstant, const float cLinear, const float cQuadratic, const float distance)
+float ComputeDistanceAttenuation(const float cConstant, const float cLinear, const float cQuadratic,
+                                 const float distance)
 {
 	return 1.0f / (cConstant + cLinear * distance + cQuadratic * distance * distance);
 }
 
-Light GetPointLight(const uint index, const float3 positionVs)
+// Unity URP
+// com.unity.render-pipelines.core@12.1.6\ShaderLibrary\Common.hlsl
+
+#define CUBEMAPFACE_POSITIVE_X 0
+#define CUBEMAPFACE_NEGATIVE_X 1
+#define CUBEMAPFACE_POSITIVE_Y 2
+#define CUBEMAPFACE_NEGATIVE_Y 3
+#define CUBEMAPFACE_POSITIVE_Z 4
+#define CUBEMAPFACE_NEGATIVE_Z 5
+
+float CubeMapFaceId(float3 dir)
+{
+	float faceId;
+
+	if (abs(dir.z) >= abs(dir.x) && abs(dir.z) >= abs(dir.y))
+	{
+		faceId = (dir.z < 0.0) ? CUBEMAPFACE_NEGATIVE_Z : CUBEMAPFACE_POSITIVE_Z;
+	}
+	else if (abs(dir.y) >= abs(dir.x))
+	{
+		faceId = (dir.y < 0.0) ? CUBEMAPFACE_NEGATIVE_Y : CUBEMAPFACE_POSITIVE_Y;
+	}
+	else
+	{
+		faceId = (dir.x < 0.0) ? CUBEMAPFACE_NEGATIVE_X : CUBEMAPFACE_POSITIVE_X;
+	}
+
+	return faceId;
+}
+
+float PointLightShadowAttenuation(const uint lightIndex, const float3 positionWs, const half3 lightDirection)
+{
+	// This is a point light, we have to find out which shadow slice to sample from
+	const float cubemapFaceId = CubeMapFaceId(-lightDirection);
+	const uint shadowSliceIndex = lightIndex * 6 + cubemapFaceId;
+
+	float4 shadowHClip = mul(pointLightViewProjectionMatrices[shadowSliceIndex],
+	                         float4(positionWs, 1.0));
+	// point light shadows use perspective projection!
+	shadowHClip.xyz /= shadowHClip.w;
+	const float4 shadowCoords = HClipToShadowCoords(shadowHClip);
+	return PoissonSampling_PointLight(shadowCoords, shadowSliceIndex);
+}
+
+Light GetPointLight(const uint index, const float3 positionVs, const float3 positionWs)
 {
 	Light light;
 
 	const PointLight pointLight = pointLights[index];
-	const float3 offset = pointLight.PositionVS.xyz - positionVs;
-	const float distance = length(offset);
+	const float3 offsetVs = pointLight.PositionVS.xyz - positionVs;
+	const float distance = length(offsetVs);
 
 	light.Color = pointLight.Color.rgb;
-	light.DirectionVs = offset / distance;
-	light.DistanceAttenuation = ComputeAttenuation(pointLight.ConstantAttenuation, pointLight.LinearAttenuation,
-	                                               pointLight.QuadraticAttenuation, distance);
-	light.ShadowAttenuation = 1.0f; // TODO: implement point light shadows
+	light.DirectionVs = offsetVs / distance;
+	light.DistanceAttenuation = ComputeDistanceAttenuation(pointLight.ConstantAttenuation, pointLight.LinearAttenuation,
+	                                                       pointLight.QuadraticAttenuation, distance);
+	const float3 directionWs = (pointLight.PositionWS.xyz - positionWs) / distance;
+	light.ShadowAttenuation = PointLightShadowAttenuation(index, positionWs, directionWs);
 
 	return light;
 }
@@ -230,7 +215,7 @@ void Combine(inout LightingResult destination, const in LightingResult source)
 }
 
 LightingResult ComputeLighting(const float3 positionVs, const float3 normalVs, const float specularPower,
-                               const float4 shadowCoords)
+                               const float4 shadowCoords, const float3 positionWs)
 {
 	LightingResult totalLightingResult;
 	totalLightingResult.Diffuse = 0;
@@ -246,7 +231,7 @@ LightingResult ComputeLighting(const float3 positionVs, const float3 normalVs, c
 	// point lights
 	for (uint i = 0; i < lightPropertiesCb.NumPointLights; ++i)
 	{
-		const Light light = GetPointLight(i, positionVs);
+		const Light light = GetPointLight(i, positionVs, positionWs);
 		const LightingResult lightingResult = Phong(light, positionVs, normalVs, specularPower);
 		Combine(totalLightingResult, lightingResult);
 	}
@@ -280,7 +265,8 @@ float4 main(PixelShaderInput IN) : SV_Target
 		specularPower *= saturate(1 - glossMap.Sample(defaultSampler, IN.Uv).x);
 	}
 
-	const LightingResult lightingResult = ComputeLighting(IN.PositionVs.xyz, normalVs, specularPower, IN.ShadowCoords);
+	const LightingResult lightingResult = ComputeLighting(IN.PositionVs.xyz, normalVs, specularPower, IN.ShadowCoords,
+	                                                      IN.PositionWs);
 
 	const float4 emissive = materialCb.Emissive;
 	const float4 ambient = materialCb.Ambient;
@@ -294,6 +280,5 @@ float4 main(PixelShaderInput IN) : SV_Target
 		                        ? diffuseMap.Sample(defaultSampler, IN.Uv)
 		                        : float4(1.0f, 1.0f, 1.0f, 1.0f);
 
-	//return directionalLightShadowMap.SampleCmpLevelZero(shadowMapSampler, IN.ShadowCoords.xy, IN.ShadowCoords.z);
 	return emissive + (ambient + diffuse + specular) * texColor;
 }

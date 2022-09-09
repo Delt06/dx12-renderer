@@ -12,11 +12,11 @@ public:
 	void SetRenderTarget(CommandList& commandList) const override;
 	void ClearShadowMap(CommandList& commandList) const override;
 	void SetShadowMapShaderResourceView(CommandList& commandList, uint32_t rootParameterIndex,
-	                                    uint32_t descriptorOffset) const override;
+	                                    uint32_t descriptorOffset = 0) const override;
 
 	void ComputePassParameters(const PointLight& pointLight);
 	void SetCurrentShadowMap(uint32_t lightIndex, uint32_t cubeMapSideIndex);
-	void EnsureSufficientShadowMaps(uint32_t count);
+	void SetShadowMapsCount(uint32_t count);
 
 	static constexpr uint32_t TEXTURES_IN_CUBEMAP = 6;
 
@@ -27,8 +27,8 @@ private:
 		DirectX::XMVECTOR m_Forward;
 		DirectX::XMVECTOR m_Up;
 	};
-	
-	static constexpr uint32_t DEFAULT_CUBE_SHADOW_MAPS_COUNT = 4;
+
+	static constexpr uint32_t DEFAULT_CUBE_SHADOW_MAPS_COUNT = 0;
 
 	inline static const CubeSideOrientation CUBE_SIDE_ORIENTATIONS[TEXTURES_IN_CUBEMAP] =
 	{
@@ -50,6 +50,7 @@ private:
 	[[nodiscard]] const Texture& GetShadowMapsAsTexture() const;
 
 	RenderTarget m_ShadowMapArray;
+	uint32_t m_CubeShadowMapsCapacity;
 	uint32_t m_CubeShadowMapsCount;
 	uint32_t m_CurrentLightIndex;
 	uint32_t m_CurrentCubeMapSideIndex;

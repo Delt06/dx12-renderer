@@ -20,6 +20,8 @@ DirectionalLightShadowPassPso::DirectionalLightShadowPassPso(const ComPtr<ID3D12
                                                              const UINT resolution) :
 	ShadowPassPsoBase(device, resolution)
 {
+	m_ShadowPassParameters.LightType = ShadowPassParameters::DirectionalLight;
+
 	const auto shadowMapDesc = CD3DX12_RESOURCE_DESC::Tex2D(SHADOW_MAP_FORMAT,
 	                                                        m_Resolution, m_Resolution,
 	                                                        1, 1,
@@ -92,11 +94,6 @@ XMMATRIX DirectionalLightShadowPassPso::ComputeShadowModelViewProjectionMatrix(
 	const XMMATRIX worldMatrix) const
 {
 	return worldMatrix * m_ShadowPassParameters.ViewProjection;
-}
-
-XMMATRIX DirectionalLightShadowPassPso::GetShadowViewProjectionMatrix() const
-{
-	return m_ShadowPassParameters.ViewProjection;
 }
 
 void DirectionalLightShadowPassPso::SetRenderTarget(CommandList& commandList) const

@@ -52,7 +52,8 @@ namespace
 	{
 		XMMATRIX ViewProjection;
 		float PoissonSpreadInv;
-		float Padding[3];
+		float PointLightPoissonSpreadInv;
+		float Padding[2];
 	};
 
 	namespace RootParameters
@@ -74,6 +75,10 @@ namespace
 			ShadowMatricesCb,
 			// Texture2D register(t5);
 			ShadowMaps,
+			// Texture2D register(t6);
+			PointLightShadowMaps,
+			// StructuredBuffer<XMMATRIX> register(t7);
+			PointLightMatrices,
 			// Texture2D register(t0-t3);
 			Textures,
 			// StructuredBuffer PointLights : register( t4 );
@@ -209,7 +214,24 @@ bool LightingDemo::LoadContent()
 			}
 			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
-			XMMATRIX scaleMatrix = XMMatrixScaling(80.0f, 1.0f, 80.0f);
+			XMMATRIX scaleMatrix = XMMatrixScaling(100.0f, 1.0f, 100.0f);
+			XMMATRIX worldMatrix = scaleMatrix * translationMatrix * rotationMatrix;
+			m_Scene.m_GameObjects.push_back(GameObject(worldMatrix, model));
+		}
+
+		{
+			auto model = modelLoader.LoadExisting(Mesh::CreateCube(*commandList, 1.0f));
+			{
+				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
+				                    L"Assets/Textures/PavingStones/PavingStones_1K_Color.jpg");
+				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
+				                    L"Assets/Textures/PavingStones/PavingStones_1K_Normal.jpg");
+				modelLoader.LoadMap(*model, *commandList, ModelMaps::Gloss,
+				                    L"Assets/Textures/PavingStones/PavingStones_1K_Roughness.jpg");
+			}
+			XMMATRIX translationMatrix = XMMatrixTranslation(7.0f, 2.5f, 11.0f);
+			XMMATRIX rotationMatrix = XMMatrixIdentity();
+			XMMATRIX scaleMatrix = XMMatrixScaling(1.0f, 5.0f, 1.0f);
 			XMMATRIX worldMatrix = scaleMatrix * translationMatrix * rotationMatrix;
 			m_Scene.m_GameObjects.push_back(GameObject(worldMatrix, model));
 		}
@@ -221,6 +243,7 @@ bool LightingDemo::LoadContent()
 
 		m_Scene.m_DirectionalLight.m_DirectionWs = XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f);
 		m_Scene.m_DirectionalLight.m_Color = XMFLOAT4(0.9f, 0.9f, 0.7f, 0.0f);
+		m_Scene.m_DirectionalLight.m_Color = XMFLOAT4(0.5f, 0.5f, 0.4f, 0.0f);
 
 		// magenta
 		{
@@ -238,8 +261,8 @@ bool LightingDemo::LoadContent()
 
 		// cyan-ish
 		{
-			PointLight pointLight(XMFLOAT4(6, 2, 10, 1), 32.0f);
-			pointLight.m_Color = XMFLOAT4(0.0f, 4.0f, 1.5f, 1.0f);
+			PointLight pointLight(XMFLOAT4(6, 2, 10, 1), 25.0f);
+			pointLight.m_Color = XMFLOAT4(0.0f, 5.0f, 2.0f, 1.0f);
 			m_Scene.m_PointLights.push_back(pointLight);
 		}
 	}
@@ -247,15 +270,18 @@ bool LightingDemo::LoadContent()
 	// Setup shadows
 	{
 		// Directional Light
+		const auto& directionalLightShadows = m_GraphicsSettings.m_DirectionalLightShadows;
 		m_DirectionalLightShadowPassPso = std::make_unique<DirectionalLightShadowPassPso>(
-			device, m_GraphicsSettings.m_ShadowsResolution);
-		m_DirectionalLightShadowPassPso->SetBias(m_GraphicsSettings.m_ShadowsDepthBias,
-		                                         m_GraphicsSettings.m_ShadowsNormalBias);
+			device, directionalLightShadows.m_Resolution);
+		m_DirectionalLightShadowPassPso->SetBias(directionalLightShadows.m_DepthBias,
+		                                         directionalLightShadows.m_NormalBias);
+
+		const auto& pointLightShadows = m_GraphicsSettings.m_PointLightShadows;
 		// Point Lights
 		m_PointLightShadowPassPso = std::make_unique<PointLightShadowPassPso>(
-			device, m_GraphicsSettings.m_PointLightShadowsResolution);
-		m_PointLightShadowPassPso->SetBias(m_GraphicsSettings.m_ShadowsDepthBias,
-		                                   m_GraphicsSettings.m_ShadowsNormalBias);
+			device, pointLightShadows.m_Resolution);
+		m_PointLightShadowPassPso->SetBias(pointLightShadows.m_DepthBias,
+		                                   pointLightShadows.m_NormalBias);
 	}
 
 	// Setup particles
@@ -288,6 +314,8 @@ bool LightingDemo::LoadContent()
 
 	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, ModelMaps::TotalNumber, 0);
 	CD3DX12_DESCRIPTOR_RANGE1 descriptorRangeShadowMaps(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, ModelMaps::TotalNumber + 1);
+	CD3DX12_DESCRIPTOR_RANGE1 descriptorRangePointLightShadowMaps(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1,
+	                                                              ModelMaps::TotalNumber + 2);
 
 	CD3DX12_ROOT_PARAMETER1 rootParameters[RootParameters::NumRootParameters];
 	rootParameters[RootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
@@ -302,6 +330,11 @@ bool LightingDemo::LoadContent()
 	                                                                          D3D12_SHADER_VISIBILITY_ALL);
 	rootParameters[RootParameters::ShadowMaps].InitAsDescriptorTable(1, &descriptorRangeShadowMaps,
 	                                                                 D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[RootParameters::PointLightShadowMaps].InitAsDescriptorTable(1, &descriptorRangePointLightShadowMaps,
+	                                                                           D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[RootParameters::PointLightMatrices].InitAsShaderResourceView(
+		ModelMaps::TotalNumber + 3, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
+		D3D12_SHADER_VISIBILITY_PIXEL);
 	rootParameters[RootParameters::Textures].InitAsDescriptorTable(1, &descriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
 	rootParameters[RootParameters::PointLights].InitAsShaderResourceView(
 		ModelMaps::TotalNumber, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
@@ -487,6 +520,8 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 		commandList->ClearDepthStencilTexture(m_RenderTarget.GetTexture(DepthStencil), D3D12_CLEAR_FLAG_DEPTH);
 	}
 
+	std::vector<XMMATRIX> pointLightMatrices;
+
 	// Shadow pass
 	{
 		// Directional Light
@@ -505,7 +540,8 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 		// Point Lights
 		{
 			const auto pointLightsCount = static_cast<uint32_t>(m_Scene.m_PointLights.size());
-			m_PointLightShadowPassPso->EnsureSufficientShadowMaps(pointLightsCount);
+			m_PointLightShadowPassPso->SetShadowMapsCount(pointLightsCount);
+			m_PointLightShadowPassPso->ClearShadowMap(*commandList);
 			m_PointLightShadowPassPso->SetContext(*commandList);
 
 			for (uint32_t lightIndex = 0; lightIndex < pointLightsCount; ++lightIndex)
@@ -516,7 +552,6 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 				     cubeMapSideIndex)
 				{
 					m_PointLightShadowPassPso->SetCurrentShadowMap(lightIndex, cubeMapSideIndex);
-					m_PointLightShadowPassPso->ClearShadowMap(*commandList);
 					m_PointLightShadowPassPso->ComputePassParameters(pointLight);
 					m_PointLightShadowPassPso->SetRenderTarget(*commandList);
 
@@ -524,6 +559,8 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 					{
 						m_PointLightShadowPassPso->DrawToShadowMap(*commandList, gameObject);
 					}
+
+					pointLightMatrices.push_back(m_PointLightShadowPassPso->GetShadowViewProjectionMatrix());
 				}
 			}
 		}
@@ -585,17 +622,26 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 				commandList->SetGraphicsDynamicStructuredBuffer(RootParameters::PointLights, m_Scene.m_PointLights);
 			}
 
-			// Bind shadow maps
+			// Bind shadow parameters
 			{
 				m_DirectionalLightShadowPassPso->SetShadowMapShaderResourceView(
 					*commandList, RootParameters::ShadowMaps);
-			}
 
-			ShadowReceiverParametersCb shadowReceiverParametersCb;
-			shadowReceiverParametersCb.ViewProjection = m_DirectionalLightShadowPassPso->
-				GetShadowViewProjectionMatrix();
-			shadowReceiverParametersCb.PoissonSpreadInv = 1.0f / m_GraphicsSettings.m_PoissonSpread;
-			commandList->SetGraphicsDynamicConstantBuffer(RootParameters::ShadowMatricesCb, shadowReceiverParametersCb);
+				m_PointLightShadowPassPso->SetShadowMapShaderResourceView(
+					*commandList, RootParameters::PointLightShadowMaps);
+
+				ShadowReceiverParametersCb shadowReceiverParametersCb;
+				shadowReceiverParametersCb.ViewProjection = m_DirectionalLightShadowPassPso->
+					GetShadowViewProjectionMatrix();
+				shadowReceiverParametersCb.PoissonSpreadInv = 1.0f / m_GraphicsSettings.m_DirectionalLightShadows.
+					m_PoissonSpread;
+				shadowReceiverParametersCb.PointLightPoissonSpreadInv = 1.0f / m_GraphicsSettings.m_PointLightShadows.
+					m_PoissonSpread;
+				commandList->SetGraphicsDynamicConstantBuffer(RootParameters::ShadowMatricesCb,
+				                                              shadowReceiverParametersCb);
+
+				commandList->SetGraphicsDynamicStructuredBuffer(RootParameters::PointLightMatrices, pointLightMatrices);
+			}
 
 			for (const auto& go : m_Scene.m_GameObjects)
 			{

@@ -95,17 +95,14 @@ void ResourceStateTracker::TransitionResource(const ResourceWrapper& resource, c
 void ResourceStateTracker::UavBarrier(const ResourceWrapper* resource)
 {
 	ID3D12Resource* pResource = resource != nullptr ? resource->GetD3D12Resource().Get() : nullptr;
-	const auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(pResource);
-	ResourceBarrier(barrier);
+	ResourceBarrier(CD3DX12_RESOURCE_BARRIER::UAV(pResource));
 }
 
 void ResourceStateTracker::AliasBarrier(const ResourceWrapper* beforeResource, const ResourceWrapper* afterResource)
 {
 	ID3D12Resource* pResourceBefore = beforeResource != nullptr ? beforeResource->GetD3D12Resource().Get() : nullptr;
 	ID3D12Resource* pResourceAfter = afterResource != nullptr ? afterResource->GetD3D12Resource().Get() : nullptr;
-
-	const auto barrier = CD3DX12_RESOURCE_BARRIER::Aliasing(pResourceBefore, pResourceAfter);
-	ResourceBarrier(barrier);
+	ResourceBarrier(CD3DX12_RESOURCE_BARRIER::Aliasing(pResourceBefore, pResourceAfter));
 }
 
 void ResourceStateTracker::FlushResourceBarriers(const CommandList& commandList)
@@ -121,7 +118,7 @@ void ResourceStateTracker::FlushResourceBarriers(const CommandList& commandList)
 	ResourceBarriers.clear();
 }
 
-uint32_t ResourceStateTracker::FlushPendingResourceBarriers(CommandList& commandList)
+uint32_t ResourceStateTracker::FlushPendingResourceBarriers(const CommandList& commandList)
 {
 	assert(IsLocked);
 

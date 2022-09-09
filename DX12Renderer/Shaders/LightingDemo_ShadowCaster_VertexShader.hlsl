@@ -5,6 +5,8 @@ struct ShadowPassParameters
 	matrix ViewProjection;
 	float4 LightDirectionWs;
 	float4 Bias; // x - depth bias, y - normal bias (should be negative)
+	uint LightType; // 0 - directional, 1 - point
+	float3 Padding;
 };
 
 ConstantBuffer<ShadowPassParameters> parametersCb : register(b0);
@@ -34,7 +36,9 @@ float4 main(VertexAttributes IN) : SV_POSITION
 	float3 positionWs = mul(parametersCb.Model, float4(IN.PositionOs, 1.0f)).xyz;
 	const float3 normalWs = normalize(mul((float3x3)parametersCb.InverseTransposeModel, IN.Normal));
 
-	// TODO: handle light direction for point lights correctly. Otherwise, it will cause incorrect bias application.
-	positionWs = ApplyBias(positionWs, normalWs, parametersCb.LightDirectionWs.xyz);
+	const float3 lightDirectionWs = parametersCb.LightType == 0
+		                                ? parametersCb.LightDirectionWs.xyz
+		                                : normalize(parametersCb.LightDirectionWs.xyz - positionWs);
+	positionWs = ApplyBias(positionWs, normalWs, lightDirectionWs);
 	return mul(parametersCb.ViewProjection, float4(positionWs, 1.0f));
 }
