@@ -246,7 +246,7 @@ bool LightingDemo::LoadContent()
 	// Setup shadows
 	{
 		m_DirectionalLightShadowPassPso = std::make_unique<DirectionalLightShadowPassPso>(
-			device, *commandList, m_GraphicsSettings.m_ShadowsResolution);
+			device, m_GraphicsSettings.m_ShadowsResolution);
 		m_DirectionalLightShadowPassPso->SetBias(m_GraphicsSettings.m_ShadowsDepthBias,
 		                                         m_GraphicsSettings.m_ShadowsNormalBias);
 	}
@@ -483,8 +483,9 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 	// Shadow pass
 	{
 		m_DirectionalLightShadowPassPso->ClearShadowMap(*commandList);
-		m_DirectionalLightShadowPassPso->ComputePassParameters(m_Scene.m_Camera, m_Scene.m_DirectionalLight, m_Scene);
+		m_DirectionalLightShadowPassPso->ComputePassParameters(m_Scene, m_Scene.m_DirectionalLight);
 		m_DirectionalLightShadowPassPso->SetContext(*commandList);
+		m_DirectionalLightShadowPassPso->SetRenderTarget(*commandList);
 
 		for (auto& gameObject : m_Scene.m_GameObjects)
 		{

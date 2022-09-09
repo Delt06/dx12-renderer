@@ -8,57 +8,30 @@
 #include "RenderTarget.h"
 #include "RootSignature.h"
 #include "Scene.h"
+#include "ShadowPassPsoBase.h"
 
 class Camera;
 struct DirectionalLight;
 class CommandList;
 
-class DirectionalLightShadowPassPso
+class DirectionalLightShadowPassPso final : public ShadowPassPsoBase
 {
 public:
-	DirectionalLightShadowPassPso(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList,
-	                              UINT resolution = 4096);
-	void SetContext(CommandList& commandList) const;
-	void ComputePassParameters(const Camera& camera, const DirectionalLight& directionalLight, const Scene& scene);
-	void SetBias(float depthBias, float normalBias);
-	void ClearShadowMap(CommandList& commandList) const;
-	void DrawToShadowMap(CommandList& commandList, const GameObject& gameObject) const;
+	explicit DirectionalLightShadowPassPso(Microsoft::WRL::ComPtr<ID3D12Device2> device, UINT resolution = 4096);
+	void ComputePassParameters(const Scene& scene, const DirectionalLight& directionalLight);
 
-	void SetShadowMapShaderResourceView(CommandList& commandList, uint32_t rootParameterIndex,
-	                                    uint32_t descriptorOffset = 0) const;
+	
 
 	[[nodiscard]] DirectX::XMMATRIX ComputeShadowModelViewProjectionMatrix(DirectX::XMMATRIX worldMatrix) const;
 	[[nodiscard]] DirectX::XMMATRIX GetShadowViewProjectionMatrix() const;
 
+	void SetRenderTarget(CommandList& commandList) const override;
+	void ClearShadowMap(CommandList& commandList) const override;
+	void SetShadowMapShaderResourceView(CommandList& commandList, uint32_t rootParameterIndex,
+		uint32_t descriptorOffset = 0) const override;
 
 private:
-	struct ShadowPassParameters
-	{
-		DirectX::XMMATRIX Model;
-		DirectX::XMMATRIX InverseTransposeModel;
-		DirectX::XMMATRIX ViewProjection;
-		DirectX::XMFLOAT4 LightDirectionWs;
-		DirectX::XMFLOAT4 Bias;
-	};
-
-	struct RootParameter
-	{
-		enum RootParameters
-		{
-			ShadowPassParametersCb,
-			NumRootParameters,
-		};
-	};
-
 	[[nodiscard]] const Texture& GetShadowMapAsTexture() const;
 
-	UINT m_Resolution;
-
 	RenderTarget m_ShadowMap;
-	RootSignature m_RootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineState;
-	D3D12_VIEWPORT m_Viewport;
-	D3D12_RECT m_ScissorRect;
-
-	ShadowPassParameters m_ShadowPassParameters;;
 };
