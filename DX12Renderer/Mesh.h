@@ -42,7 +42,7 @@
 #include <memory> // For std::unique_ptr
 #include <vector>
 
-#include "Aabb.h"
+#include "Geometry/Aabb.h"
 
 struct VertexAttributes
 {

@@ -162,8 +162,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Aabb.cpp" />
+    <ClCompile Include="Geometry\Aabb.cpp" />
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="Geometry\BoundingSphere.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="ByteAddressBuffer.cpp" />
     <ClCompile Include="CommandList.cpp" />
@@ -195,6 +196,7 @@
     <ClCompile Include="ResourceStateTracker.cpp" />
     <ClCompile Include="ResourceWrapper.cpp" />
     <ClCompile Include="RootSignature.cpp" />
+    <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Tutorial3\Tutorial3.cpp" />
@@ -204,8 +206,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\DirectXMesh\Utilities\WaveFrontReader.h" />
-    <ClInclude Include="Aabb.h" />
+    <ClInclude Include="Geometry\Aabb.h" />
     <ClInclude Include="Application.h" />
+    <ClInclude Include="Geometry\BoundingSphere.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="ByteAddressBuffer.h" />
     <ClInclude Include="CommandList.h" />
@@ -242,6 +245,7 @@
     <ClInclude Include="ResourceStateTracker.h" />
     <ClInclude Include="ResourceWrapper.h" />
     <ClInclude Include="RootSignature.h" />
+    <ClInclude Include="Scene.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureUsageType.h" />
     <ClInclude Include="Camera.h" />

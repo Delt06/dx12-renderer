@@ -118,21 +118,21 @@ LightingDemo::LightingDemo(const std::wstring& name, int width, int height, Grap
 	: Base(name, width, height, graphicsSettings.m_VSync)
 	  , m_Viewport(CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height)))
 	  , m_ScissorRect(CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX))
+	  , m_GraphicsSettings(graphicsSettings)
 	  , m_CameraController{}
 	  , m_Width(0)
 	  , m_Height(0)
-	  , m_GraphicsSettings(graphicsSettings)
 {
-	XMVECTOR cameraPos = XMVectorSet(0, 5, -20, 1);
-	XMVECTOR cameraTarget = XMVectorSet(0, 5, 0, 1);
-	XMVECTOR cameraUp = XMVectorSet(0, 1, 0, 0);
+	const XMVECTOR cameraPos = XMVectorSet(0, 5, -20, 1);
+	const XMVECTOR cameraTarget = XMVectorSet(0, 5, 0, 1);
+	const XMVECTOR cameraUp = XMVectorSet(0, 1, 0, 0);
 
-	m_Camera.SetLookAt(cameraPos, cameraTarget, cameraUp);
+	m_Scene.m_Camera.SetLookAt(cameraPos, cameraTarget, cameraUp);
 
 	m_PAlignedCameraData = static_cast<CameraData*>(_aligned_malloc(sizeof(CameraData), 16));
 
-	m_PAlignedCameraData->m_InitialPosition = m_Camera.GetTranslation();
-	m_PAlignedCameraData->m_InitialQRotation = m_Camera.GetRotation();
+	m_PAlignedCameraData->m_InitialPosition = m_Scene.m_Camera.GetTranslation();
+	m_PAlignedCameraData->m_InitialQRotation = m_Scene.m_Camera.GetRotation();
 }
 
 LightingDemo::~LightingDemo()
@@ -171,7 +171,7 @@ bool LightingDemo::LoadContent()
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
 			XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
 			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-			m_GameObjects.push_back(GameObject(worldMatrix, model));
+			m_Scene.m_GameObjects.push_back(GameObject(worldMatrix, model));
 		}
 
 		{
@@ -192,7 +192,7 @@ bool LightingDemo::LoadContent()
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
 			XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
 			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-			m_GameObjects.push_back(GameObject(worldMatrix, model));
+			m_Scene.m_GameObjects.push_back(GameObject(worldMatrix, model));
 		}
 
 		{
@@ -210,7 +210,7 @@ bool LightingDemo::LoadContent()
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
 			XMMATRIX scaleMatrix = XMMatrixScaling(80.0f, 1.0f, 80.0f);
 			XMMATRIX worldMatrix = scaleMatrix * translationMatrix * rotationMatrix;
-			m_GameObjects.push_back(GameObject(worldMatrix, model));
+			m_Scene.m_GameObjects.push_back(GameObject(worldMatrix, model));
 		}
 	}
 
@@ -218,21 +218,21 @@ bool LightingDemo::LoadContent()
 	{
 		m_PointLightPso = std::make_unique<PointLightPso>(device, *commandList);
 
-		m_DirectionalLight.m_DirectionWs = XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f);
-		m_DirectionalLight.m_Color = XMFLOAT4(0.9f, 0.9f, 0.7f, 0.0f);
+		m_Scene.m_DirectionalLight.m_DirectionWs = XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f);
+		m_Scene.m_DirectionalLight.m_Color = XMFLOAT4(0.9f, 0.9f, 0.7f, 0.0f);
 
 		// magenta
 		{
 			PointLight pointLight(XMFLOAT4(-8, 2, -2, 1));
 			pointLight.m_Color = XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f);
-			m_PointLights.push_back(pointLight);
+			m_Scene.m_PointLights.push_back(pointLight);
 		}
 
 		// yellow-ish
 		{
 			PointLight pointLight(XMFLOAT4(0, 2, -6, 1));
 			pointLight.m_Color = XMFLOAT4(3.0f, 2.0f, 0.25f, 1.0f);
-			m_PointLights.push_back(pointLight);
+			m_Scene.m_PointLights.push_back(pointLight);
 		}
 
 		// cyan-ish
@@ -241,14 +241,16 @@ bool LightingDemo::LoadContent()
 			pointLight.m_Color = XMFLOAT4(0.0f, 4.0f, 1.5f, 1.0f);
 			pointLight.m_LinearAttenuation = 0.14f;
 			pointLight.m_QuadraticAttenuation = 0.07f;
-			m_PointLights.push_back(pointLight);
+			m_Scene.m_PointLights.push_back(pointLight);
 		}
 	}
 
 	// Setup shadows
 	{
-		m_DirectionalLightShadowPassPso = std::make_unique<DirectionalLightShadowPassPso>(device, *commandList, m_GraphicsSettings.m_ShadowsResolution);
-		m_DirectionalLightShadowPassPso->SetBias(m_GraphicsSettings.m_ShadowsDepthBias, m_GraphicsSettings.m_ShadowsNormalBias);
+		m_DirectionalLightShadowPassPso = std::make_unique<DirectionalLightShadowPassPso>(
+			device, *commandList, m_GraphicsSettings.m_ShadowsResolution);
+		m_DirectionalLightShadowPassPso->SetBias(m_GraphicsSettings.m_ShadowsDepthBias,
+		                                         m_GraphicsSettings.m_ShadowsNormalBias);
 	}
 
 	// Setup particles
@@ -256,8 +258,8 @@ bool LightingDemo::LoadContent()
 		m_ParticleSystem = std::make_unique<ParticleSystem>(device, *commandList, XMVectorSet(7.25f, 5.6f, 0.0f, 1.0f));
 	}
 
-	XMVECTOR lightDir = XMLoadFloat4(&m_DirectionalLight.m_DirectionWs);
-	XMStoreFloat4(&m_DirectionalLight.m_DirectionWs, XMVector4Normalize(lightDir));
+	XMVECTOR lightDir = XMLoadFloat4(&m_Scene.m_DirectionalLight.m_DirectionWs);
+	XMStoreFloat4(&m_Scene.m_DirectionalLight.m_DirectionWs, XMVector4Normalize(lightDir));
 
 	ComPtr<ID3DBlob> vertexShaderBlob;
 	ThrowIfFailed(D3DReadFileToBlob(L"LightingDemo_VertexShader.cso", &vertexShaderBlob));
@@ -398,7 +400,7 @@ void LightingDemo::OnResize(ResizeEventArgs& e)
 		m_Height = std::max(1, e.Height);
 
 		const float aspectRatio = static_cast<float>(m_Width) / static_cast<float>(m_Height);
-		m_Camera.SetProjection(45.0f, aspectRatio, 0.1f, 1000.0f);
+		m_Scene.m_Camera.SetProjection(45.0f, aspectRatio, 0.1f, 1000.0f);
 
 		m_Viewport = CD3DX12_VIEWPORT(0.0f, 0.0f,
 		                              static_cast<float>(m_Width), static_cast<float>(m_Height));
@@ -445,12 +447,12 @@ void LightingDemo::OnUpdate(UpdateEventArgs& e)
 	XMVECTOR cameraPan = XMVectorSet(0.0f, m_CameraController.m_Up - m_CameraController.m_Down, 0.0f, 1.0f) *
 		speedMultiplier *
 		static_cast<float>(e.ElapsedTime);
-	m_Camera.Translate(cameraTranslate, Space::Local);
-	m_Camera.Translate(cameraPan, Space::Local);
+	m_Scene.m_Camera.Translate(cameraTranslate, Space::Local);
+	m_Scene.m_Camera.Translate(cameraPan, Space::Local);
 
 	XMVECTOR cameraRotation = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(m_CameraController.m_Pitch),
 	                                                           XMConvertToRadians(m_CameraController.m_Yaw), 0.0f);
-	m_Camera.SetRotation(cameraRotation);
+	m_Scene.m_Camera.SetRotation(cameraRotation);
 
 
 	m_ParticleSystem->Update(e.ElapsedTime);
@@ -459,11 +461,11 @@ void LightingDemo::OnUpdate(UpdateEventArgs& e)
 
 	if (m_AnimateLights)
 	{
-		XMVECTOR dirLightDirectionWs = XMLoadFloat4(&m_DirectionalLight.m_DirectionWs);
+		XMVECTOR dirLightDirectionWs = XMLoadFloat4(&m_Scene.m_DirectionalLight.m_DirectionWs);
 		dirLightDirectionWs = XMVector4Transform(dirLightDirectionWs,
 		                                         XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
 		                                                              XMConvertToRadians(90.0f * dt)));
-		XMStoreFloat4(&m_DirectionalLight.m_DirectionWs, dirLightDirectionWs);
+		XMStoreFloat4(&m_Scene.m_DirectionalLight.m_DirectionWs, dirLightDirectionWs);
 	}
 }
 
@@ -483,10 +485,10 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 	// Shadow pass
 	{
 		m_DirectionalLightShadowPassPso->ClearShadowMap(*commandList);
-		m_DirectionalLightShadowPassPso->ComputePassParameters(m_Camera, m_DirectionalLight);
+		m_DirectionalLightShadowPassPso->ComputePassParameters(m_Scene.m_Camera, m_Scene.m_DirectionalLight, m_Scene);
 		m_DirectionalLightShadowPassPso->SetContext(*commandList);
 
-		for (auto& gameObject : m_GameObjects)
+		for (auto& gameObject : m_Scene.m_GameObjects)
 		{
 			m_DirectionalLightShadowPassPso->DrawToShadowMap(*commandList, gameObject);
 		}
@@ -498,15 +500,15 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 	commandList->SetRenderTarget(m_RenderTarget);
 
 	{
-		const XMMATRIX viewMatrix = m_Camera.GetViewMatrix();
-		const XMMATRIX projectionMatrix = m_Camera.GetProjectionMatrix();
+		const XMMATRIX viewMatrix = m_Scene.m_Camera.GetViewMatrix();
+		const XMMATRIX projectionMatrix = m_Scene.m_Camera.GetProjectionMatrix();
 		const XMMATRIX viewProjectionMatrix = viewMatrix * projectionMatrix;
 
 		// Draw point lights
 		{
 			m_PointLightPso->Set(*commandList);
 
-			for (const auto& pointLight : m_PointLights)
+			for (const auto& pointLight : m_Scene.m_PointLights)
 			{
 				m_PointLightPso->Draw(*commandList, pointLight, viewMatrix, viewProjectionMatrix, projectionMatrix,
 				                      1.0f);
@@ -520,22 +522,24 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 
 			// Update directional light
 			{
-				XMVECTOR lightDirVs = XMLoadFloat4(&m_DirectionalLight.m_DirectionWs);
+				auto& directionalLight = m_Scene.m_DirectionalLight;
+
+				XMVECTOR lightDirVs = XMLoadFloat4(&directionalLight.m_DirectionWs);
 				lightDirVs = XMVector4Transform(lightDirVs, viewMatrix);
-				XMStoreFloat4(&m_DirectionalLight.m_DirectionVs, lightDirVs);
+				XMStoreFloat4(&directionalLight.m_DirectionVs, lightDirVs);
 
 				DirectionalLightCb directionalLightCb;
-				directionalLightCb.Color = m_DirectionalLight.m_Color;
-				directionalLightCb.DirectionVs = m_DirectionalLight.m_DirectionVs;
+				directionalLightCb.Color = directionalLight.m_Color;
+				directionalLightCb.DirectionVs = directionalLight.m_DirectionVs;
 				commandList->SetGraphicsDynamicConstantBuffer(RootParameters::DirLightCb, directionalLightCb);
 			}
 
 			// Update point lights
 			{
 				LightPropertiesCb lightPropertiesCb;
-				lightPropertiesCb.NumPointLights = static_cast<uint32_t>(m_PointLights.size());
+				lightPropertiesCb.NumPointLights = static_cast<uint32_t>(m_Scene.m_PointLights.size());
 
-				for (auto& pointLight : m_PointLights)
+				for (auto& pointLight : m_Scene.m_PointLights)
 				{
 					XMVECTOR lightPosVs = XMLoadFloat4(&pointLight.m_PositionWs);
 					lightPosVs = XMVector4Transform(lightPosVs, viewMatrix);
@@ -543,7 +547,7 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 				}
 
 				commandList->SetGraphics32BitConstants(RootParameters::LightPropertiesCb, lightPropertiesCb);
-				commandList->SetGraphicsDynamicStructuredBuffer(RootParameters::PointLights, m_PointLights);
+				commandList->SetGraphicsDynamicStructuredBuffer(RootParameters::PointLights, m_Scene.m_PointLights);
 			}
 
 			// Bind shadow maps
@@ -553,11 +557,12 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 			}
 
 			ShadowReceiverParametersCb shadowReceiverParametersCb;
-			shadowReceiverParametersCb.ViewProjection = m_DirectionalLightShadowPassPso->GetShadowViewProjectionMatrix();
+			shadowReceiverParametersCb.ViewProjection = m_DirectionalLightShadowPassPso->
+				GetShadowViewProjectionMatrix();
 			shadowReceiverParametersCb.PoissonSpreadInv = 1.0f / m_GraphicsSettings.m_PoissonSpread;
 			commandList->SetGraphicsDynamicConstantBuffer(RootParameters::ShadowMatricesCb, shadowReceiverParametersCb);
 
-			for (const auto& go : m_GameObjects)
+			for (const auto& go : m_Scene.m_GameObjects)
 			{
 				go.Draw([this, &viewMatrix, &viewProjectionMatrix, &projectionMatrix](auto& cmd, auto worldMatrix)
 				        {
@@ -605,8 +610,8 @@ void LightingDemo::OnKeyPressed(KeyEventArgs& e)
 		break;
 	case KeyCode::R:
 		// Reset camera transform
-		m_Camera.SetTranslation(m_PAlignedCameraData->m_InitialPosition);
-		m_Camera.SetRotation(m_PAlignedCameraData->m_InitialQRotation);
+		m_Scene.m_Camera.SetTranslation(m_PAlignedCameraData->m_InitialPosition);
+		m_Scene.m_Camera.SetRotation(m_PAlignedCameraData->m_InitialQRotation);
 		m_CameraController.m_Pitch = 0.0f;
 		m_CameraController.m_Yaw = 0.0f;
 		break;
@@ -701,12 +706,12 @@ void LightingDemo::OnMouseMoved(MouseMotionEventArgs& e)
 void LightingDemo::OnMouseWheel(MouseWheelEventArgs& e)
 {
 	{
-		auto fov = m_Camera.GetFov();
+		auto fov = m_Scene.m_Camera.GetFov();
 
 		fov -= e.WheelDelta;
 		fov = Clamp(fov, 12.0f, 90.0f);
 
-		m_Camera.SetFov(fov);
+		m_Scene.m_Camera.SetFov(fov);
 
 		char buffer[256];
 		sprintf_s(buffer, "FoV: %f\n", fov);

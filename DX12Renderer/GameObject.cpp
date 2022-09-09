@@ -28,6 +28,11 @@ std::shared_ptr<const Model> GameObject::GetModel() const
 	return m_Model;
 }
 
+const Aabb& GameObject::GetAabb() const
+{
+	return m_Aabb;
+}
+
 void GameObject::RecalculateAabb()
 {
 	m_Aabb = {};

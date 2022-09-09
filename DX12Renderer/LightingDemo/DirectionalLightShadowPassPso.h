@@ -7,6 +7,7 @@
 #include "GameObject.h"
 #include "RenderTarget.h"
 #include "RootSignature.h"
+#include "Scene.h"
 
 class Camera;
 struct DirectionalLight;
@@ -18,7 +19,7 @@ public:
 	DirectionalLightShadowPassPso(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList,
 	                              UINT resolution = 4096);
 	void SetContext(CommandList& commandList) const;
-	void ComputePassParameters(const Camera& camera, const DirectionalLight& directionalLight);
+	void ComputePassParameters(const Camera& camera, const DirectionalLight& directionalLight, const Scene& scene);
 	void SetBias(float depthBias, float normalBias);
 	void ClearShadowMap(CommandList& commandList) const;
 	void DrawToShadowMap(CommandList& commandList, const GameObject& gameObject) const;

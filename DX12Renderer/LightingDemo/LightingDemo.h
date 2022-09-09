@@ -16,6 +16,7 @@
 #include "GraphicsSettings.h"
 #include "ParticleSystemPso.h"
 #include "PointLightPso.h"
+#include "Scene.h"
 
 class ParticleSystem;
 
@@ -40,24 +41,21 @@ protected:
 	void OnResize(ResizeEventArgs& e) override;
 
 private:
-	std::vector<GameObject> m_GameObjects;
 	std::shared_ptr<Texture> m_WhiteTexture2d;
 
 	RenderTarget m_RenderTarget;
 	RootSignature m_RootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineState;
 
-	DirectionalLight m_DirectionalLight{};
-	std::vector<PointLight> m_PointLights;
+	
 	std::unique_ptr<PointLightPso> m_PointLightPso;
 	std::unique_ptr<DirectionalLightShadowPassPso> m_DirectionalLightShadowPassPso;
 
+	Scene m_Scene;
 	std::unique_ptr<ParticleSystem> m_ParticleSystem;
 
 	D3D12_VIEWPORT m_Viewport;
 	D3D12_RECT m_ScissorRect;
-
-	Camera m_Camera;
 
 	bool m_AnimateLights = false;
 	GraphicsSettings m_GraphicsSettings;

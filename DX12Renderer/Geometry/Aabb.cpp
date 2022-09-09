@@ -22,6 +22,11 @@ void Aabb::Encapsulate(const Aabb other)
 	}
 }
 
+XMVECTOR Aabb::GetCenter() const
+{
+	return (m_Min + m_Max) * 0.5f;
+}
+
 Aabb Aabb::Transform(const XMMATRIX transform, const Aabb& aabb)
 {
 	XMVECTOR localPositions[POINTS_COUNT];

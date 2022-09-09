@@ -4,7 +4,7 @@
 #include <functional>
 #include <memory>
 
-#include "Aabb.h"
+#include "Geometry/Aabb.h"
 
 class Model;
 class CommandList;
@@ -20,6 +20,7 @@ public:
 
 	[[nodiscard]] const DirectX::XMMATRIX& GetWorldMatrix() const;
 	[[nodiscard]] std::shared_ptr<const Model> GetModel() const;
+	[[nodiscard]] const Aabb& GetAabb() const;
 private:
 	void RecalculateAabb();
 

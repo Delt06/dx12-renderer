@@ -150,14 +150,30 @@ void DirectionalLightShadowPassPso::SetContext(CommandList& commandList) const
 }
 
 void DirectionalLightShadowPassPso::ComputePassParameters(const Camera& camera,
-                                                          const DirectionalLight& directionalLight)
+                                                          const DirectionalLight& directionalLight, const Scene& scene)
 {
 	const XMVECTOR lightDirection = XMLoadFloat4(&directionalLight.m_DirectionWs);
-	const auto viewMatrix = XMMatrixLookToLH(lightDirection * 20.0f, -lightDirection,
-	                                         XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
-	const auto projectionMatrix = XMMatrixOrthographicOffCenterLH(-100.0f, 100.0f, -100.0f, 100.0f, -10.0f, 50.0f);
-	const auto viewProjection = viewMatrix * projectionMatrix;
+	const auto sceneBounds = scene.ComputeBoundingSphere();
+	const float radius = sceneBounds.GetRadius();
 
+
+	const auto viewMatrix = XMMatrixLookToLH(2.0f * radius * lightDirection, -lightDirection,
+	                                         XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+	XMFLOAT3 sceneCenterVs{};
+	XMStoreFloat3(&sceneCenterVs, XMVector3TransformCoord(sceneBounds.GetCenter(), viewMatrix));
+
+	const float projLeft = sceneCenterVs.x - radius;
+	const float projRight = sceneCenterVs.x + radius;
+	const float projBottom = sceneCenterVs.y - radius;
+	const float projTop = sceneCenterVs.y + radius;
+	const float projNear = sceneCenterVs.z - radius;
+	const float projFar = sceneCenterVs.z + radius;
+
+	const auto projectionMatrix = XMMatrixOrthographicOffCenterLH(projLeft, projRight,
+	                                                              projBottom, projTop,
+	                                                              projNear, projFar
+	);
+	const auto viewProjection = viewMatrix * projectionMatrix;
 
 	m_ShadowPassParameters.LightDirectionWs = directionalLight.m_DirectionWs;
 	m_ShadowPassParameters.ViewProjection = viewProjection;
