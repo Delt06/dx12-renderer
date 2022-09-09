@@ -165,11 +165,9 @@ float PointLightShadowAttenuation(const uint lightIndex, const float3 positionWs
 	const float cubemapFaceId = CubeMapFaceId(-lightDirection);
 	const uint shadowSliceIndex = lightIndex * 6 + cubemapFaceId;
 
-	float4 shadowHClip = mul(pointLightViewProjectionMatrices[shadowSliceIndex],
-	                         float4(positionWs, 1.0));
-	// point light shadows use perspective projection!
-	shadowHClip.xyz /= shadowHClip.w;
-	const float4 shadowCoords = HClipToShadowCoords(shadowHClip);
+	const float4 shadowHClip = mul(pointLightViewProjectionMatrices[shadowSliceIndex],
+	                               float4(positionWs, 1.0));
+	const float4 shadowCoords = HClipToShadowCoords(shadowHClip, true);
 	return PoissonSampling_PointLight(shadowCoords, shadowSliceIndex);
 }
 
@@ -218,7 +216,7 @@ Light GetSpotLight(const uint index, const float3 positionVs, const float3 posit
 	light.DirectionVs = directionTowardsLightVs;
 
 	const float attenuation = GetSpotLightDistanceAttenuation(spotLight.m_Attenuation, distance) *
-		GetSpotLightConeAttenuation(spotLight.DirectionVS, directionTowardsLightVs, spotLight.m_SpotAngle);
+		GetSpotLightConeAttenuation(spotLight.DirectionVS.xyz, directionTowardsLightVs, spotLight.m_SpotAngle);
 	light.DistanceAttenuation = attenuation;
 	light.ShadowAttenuation = 1.0f; // TODO: spot light shadows
 
@@ -284,20 +282,26 @@ LightingResult ComputeLighting(const float3 positionVs, const float3 normalVs, c
 	}
 
 	// point lights
-	for (uint i = 0; i < lightPropertiesCb.NumPointLights; ++i)
 	{
-		const Light light = GetPointLight(i, positionVs, positionWs);
-		const LightingResult lightingResult = Phong(light, positionVs, normalVs, specularPower);
-		Combine(totalLightingResult, lightingResult);
+		for (uint i = 0; i < lightPropertiesCb.NumPointLights; ++i)
+		{
+			const Light light = GetPointLight(i, positionVs, positionWs);
+			const LightingResult lightingResult = Phong(light, positionVs, normalVs, specularPower);
+			Combine(totalLightingResult, lightingResult);
+		}
 	}
 
 	// spot lights
-	for (uint i = 0; i < lightPropertiesCb.NumSpotLights; ++i)
 	{
-		const Light light = GetSpotLight(i, positionVs, positionWs);
-		const LightingResult lightingResult = Phong(light, positionVs, normalVs, specularPower);
-		Combine(totalLightingResult, lightingResult);
+		for (uint i = 0; i < lightPropertiesCb.NumSpotLights; ++i)
+		{
+			const Light light = GetSpotLight(i, positionVs, positionWs);
+			const LightingResult lightingResult = Phong(light, positionVs, normalVs, specularPower);
+			Combine(totalLightingResult, lightingResult);
+		}
 	}
+
+	
 
 	return totalLightingResult;
 }

@@ -9,9 +9,15 @@ struct ShadowReceiverParameters
 	float2 Padding;
 };
 
-float4 HClipToShadowCoords(const float4 positionCs)
+float4 HClipToShadowCoords(const float4 positionCs, bool perspectiveProjection = false)
 {
 	float4 shadowCoords = positionCs;
+
+	if (perspectiveProjection)
+	{
+		shadowCoords.xyz /= shadowCoords.w;
+	}
+
 	shadowCoords.xy = shadowCoords.xy * 0.5f + 0.5f; // [-1; 1] -> [0, 1]
 	shadowCoords.y = 1 - shadowCoords.y;
 	return shadowCoords;
