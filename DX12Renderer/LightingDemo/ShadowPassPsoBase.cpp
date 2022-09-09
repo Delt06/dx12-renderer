@@ -13,10 +13,10 @@ using namespace Microsoft::WRL;
 
 ShadowPassPsoBase::ShadowPassPsoBase(ComPtr<ID3D12Device2> device, UINT resolution)
 
-	: m_Resolution(resolution)
+	: m_ShadowPassParameters{}
+	  , m_Resolution(resolution)
 	  , m_Viewport(CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(m_Resolution), static_cast<float>(m_Resolution)))
 	  , m_ScissorRect(CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX))
-	  , m_ShadowPassParameters{}
 {
 	ComPtr<ID3DBlob> vertexShaderBlob;
 	ThrowIfFailed(D3DReadFileToBlob(L"LightingDemo_ShadowCaster_VertexShader.cso", &vertexShaderBlob));

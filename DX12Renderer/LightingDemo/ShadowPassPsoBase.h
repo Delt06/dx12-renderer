@@ -42,7 +42,6 @@ protected:
 	const UINT m_Resolution;
 
 private:
-
 	struct RootParameter
 	{
 		enum RootParameters
@@ -51,8 +50,6 @@ private:
 			NumRootParameters,
 		};
 	};
-
-	
 
 	RootSignature m_RootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineState;
