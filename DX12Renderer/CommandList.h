@@ -206,7 +206,7 @@ public:
 	 * Clear depth/stencil texture.
 	 */
 	void ClearDepthStencilTexture(const Texture& texture, D3D12_CLEAR_FLAGS clearFlags, float depth = 1.0f,
-	                              uint8_t stencil = 0);
+	                              uint8_t stencil = 0, uint32_t subresource = 0);
 
 	/**
 	 * Generate mips for the texture.
@@ -364,7 +364,7 @@ public:
 	/**
 	 * Set the render targets for the graphics rendering pipeline.
 	 */
-	void SetRenderTarget(const RenderTarget& renderTarget);
+	void SetRenderTarget(const RenderTarget& renderTarget, UINT subresource = 0);
 
 	/**
 	 * Draw geometry.

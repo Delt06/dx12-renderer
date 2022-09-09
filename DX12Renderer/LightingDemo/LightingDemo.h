@@ -18,6 +18,7 @@
 #include "PointLightPso.h"
 #include "Scene.h"
 
+class PointLightShadowPassPso;
 class ParticleSystem;
 
 class LightingDemo final : public Game
@@ -50,6 +51,7 @@ private:
 	
 	std::unique_ptr<PointLightPso> m_PointLightPso;
 	std::unique_ptr<DirectionalLightShadowPassPso> m_DirectionalLightShadowPassPso;
+	std::unique_ptr<PointLightShadowPassPso> m_PointLightShadowPassPso;
 
 	Scene m_Scene;
 	std::unique_ptr<ParticleSystem> m_ParticleSystem;

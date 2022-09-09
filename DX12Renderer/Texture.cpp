@@ -245,14 +245,14 @@ D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetUnorderedAccessView(const D3D12_UNORDERE
     return iter->second.GetDescriptorHandle();
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetRenderTargetView() const
+D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetRenderTargetView(const uint32_t offset) const
 {
-    return m_RenderTargetView.GetDescriptorHandle();
+    return m_RenderTargetView.GetDescriptorHandle(offset);
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetDepthStencilView() const
+D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetDepthStencilView(const uint32_t offset) const
 {
-    return m_DepthStencilView.GetDescriptorHandle();
+    return m_DepthStencilView.GetDescriptorHandle(offset);
 }
 
 bool Texture::IsUavCompatibleFormat(DXGI_FORMAT format)

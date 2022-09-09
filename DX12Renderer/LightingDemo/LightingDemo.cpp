@@ -15,6 +15,7 @@
 #include "Model.h"
 #include "ModelLoader.h"
 #include "ParticleSystem.h"
+#include "PointLightShadowPassPso.h"
 using namespace Microsoft::WRL;
 
 #include <d3d12.h>
@@ -245,10 +246,16 @@ bool LightingDemo::LoadContent()
 
 	// Setup shadows
 	{
+		// Directional Light
 		m_DirectionalLightShadowPassPso = std::make_unique<DirectionalLightShadowPassPso>(
 			device, m_GraphicsSettings.m_ShadowsResolution);
 		m_DirectionalLightShadowPassPso->SetBias(m_GraphicsSettings.m_ShadowsDepthBias,
 		                                         m_GraphicsSettings.m_ShadowsNormalBias);
+		// Point Lights
+		m_PointLightShadowPassPso = std::make_unique<PointLightShadowPassPso>(
+			device, m_GraphicsSettings.m_ShadowsResolution);
+		m_PointLightShadowPassPso->SetBias(m_GraphicsSettings.m_ShadowsDepthBias,
+		                                   m_GraphicsSettings.m_ShadowsNormalBias);
 	}
 
 	// Setup particles

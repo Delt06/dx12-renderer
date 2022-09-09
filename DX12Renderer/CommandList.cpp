@@ -375,10 +375,10 @@ void CommandList::ClearTexture(const Texture& texture, const float clearColor[4]
 }
 
 void CommandList::ClearDepthStencilTexture(const Texture& texture, const D3D12_CLEAR_FLAGS clearFlags,
-                                           const float depth, const uint8_t stencil)
+                                           const float depth, const uint8_t stencil, const uint32_t subresource)
 {
 	TransitionBarrier(texture, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-	m_D3d12CommandList->ClearDepthStencilView(texture.GetDepthStencilView(), clearFlags, depth, stencil, 0, nullptr);
+	m_D3d12CommandList->ClearDepthStencilView(texture.GetDepthStencilView(subresource), clearFlags, depth, stencil, 0, nullptr);
 
 	TrackResource(texture);
 }
@@ -721,7 +721,7 @@ void CommandList::SetUnorderedAccessView(const uint32_t rootParameterIndex, cons
 	TrackResource(resource);
 }
 
-void CommandList::SetRenderTarget(const RenderTarget& renderTarget)
+void CommandList::SetRenderTarget(const RenderTarget& renderTarget, UINT subresource)
 {
 	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> renderTargetDescriptors;
 	renderTargetDescriptors.reserve(NumAttachmentPoints);
@@ -735,8 +735,8 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget)
 
 		if (texture.IsValid())
 		{
-			TransitionBarrier(texture, D3D12_RESOURCE_STATE_RENDER_TARGET);
-			renderTargetDescriptors.push_back(texture.GetRenderTargetView());
+			TransitionBarrier(texture, D3D12_RESOURCE_STATE_RENDER_TARGET, subresource);
+			renderTargetDescriptors.push_back(texture.GetRenderTargetView(subresource));
 
 			TrackResource(texture);
 		}
@@ -747,8 +747,8 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget)
 	CD3DX12_CPU_DESCRIPTOR_HANDLE depthStencilDescriptor(D3D12_DEFAULT);
 	if (depthTexture.GetD3D12Resource())
 	{
-		TransitionBarrier(depthTexture, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-		depthStencilDescriptor = depthTexture.GetDepthStencilView();
+		TransitionBarrier(depthTexture, D3D12_RESOURCE_STATE_DEPTH_WRITE, subresource);
+		depthStencilDescriptor = depthTexture.GetDepthStencilView(subresource);
 
 		TrackResource(depthTexture);
 	}

@@ -10,7 +10,6 @@
 
 #include <DirectXMath.h>
 
-#include "Camera.h"
 #include "Light.h"
 #include "Model.h"
 
