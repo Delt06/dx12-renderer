@@ -33,6 +33,8 @@ float4 main(VertexAttributes IN) : SV_POSITION
 {
 	float3 positionWs = mul(parametersCb.Model, float4(IN.PositionOs, 1.0f)).xyz;
 	const float3 normalWs = normalize(mul((float3x3)parametersCb.InverseTransposeModel, IN.Normal));
+
+	// TODO: handle light direction for point lights correctly. Otherwise, it will cause incorrect bias application.
 	positionWs = ApplyBias(positionWs, normalWs, parametersCb.LightDirectionWs.xyz);
 	return mul(parametersCb.ViewProjection, float4(positionWs, 1.0f));
 }

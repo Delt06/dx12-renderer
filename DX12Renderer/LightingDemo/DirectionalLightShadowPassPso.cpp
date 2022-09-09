@@ -19,18 +19,6 @@
 using namespace Microsoft::WRL;
 using namespace DirectX;
 
-namespace
-{
-	namespace RootParameters
-	{
-		enum RootParameters
-		{
-			ShadowPassParametersCb,
-			NumRootParameters,
-		};
-	}
-}
-
 DirectionalLightShadowPassPso::DirectionalLightShadowPassPso(ComPtr<ID3D12Device2> device,
                                                              CommandList& commandList, UINT resolution)
 
@@ -60,13 +48,13 @@ DirectionalLightShadowPassPso::DirectionalLightShadowPassPso(ComPtr<ID3D12Device
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
 
-	CD3DX12_ROOT_PARAMETER1 rootParameters[RootParameters::NumRootParameters];
-	rootParameters[RootParameters::ShadowPassParametersCb].InitAsConstantBufferView(
+	CD3DX12_ROOT_PARAMETER1 rootParameters[RootParameter::NumRootParameters];
+	rootParameters[RootParameter::ShadowPassParametersCb].InitAsConstantBufferView(
 		0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
 		D3D12_SHADER_VISIBILITY_VERTEX);
 
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
-	rootSignatureDescription.Init_1_1(RootParameters::NumRootParameters, rootParameters, 0, nullptr,
+	rootSignatureDescription.Init_1_1(RootParameter::NumRootParameters, rootParameters, 0, nullptr,
 	                                  rootSignatureFlags);
 
 	m_RootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
@@ -197,7 +185,7 @@ void DirectionalLightShadowPassPso::DrawToShadowMap(CommandList& commandList, co
 	parameters.InverseTransposeModel = XMMatrixTranspose(XMMatrixInverse(nullptr, worldMatrix));
 	parameters.Model = worldMatrix;
 
-	commandList.SetGraphicsDynamicConstantBuffer(RootParameters::ShadowPassParametersCb, parameters);
+	commandList.SetGraphicsDynamicConstantBuffer(RootParameter::ShadowPassParametersCb, parameters);
 
 	for (auto& mesh : gameObject.GetModel()->GetMeshes())
 	{

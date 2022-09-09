@@ -41,7 +41,16 @@ private:
 		DirectX::XMFLOAT4 Bias;
 	};
 
-	const Texture& GetShadowMapAsTexture() const;
+	struct RootParameter
+	{
+		enum RootParameters
+		{
+			ShadowPassParametersCb,
+			NumRootParameters,
+		};
+	};
+
+	[[nodiscard]] const Texture& GetShadowMapAsTexture() const;
 
 	UINT m_Resolution;
 
