@@ -54,7 +54,8 @@ namespace
 		XMMATRIX ViewProjection;
 		float PoissonSpreadInv;
 		float PointLightPoissonSpreadInv;
-		float Padding[2];
+		float SpotLightPoissonSpreadInv;
+		float Padding;
 	};
 
 	namespace RootParameters
@@ -86,6 +87,10 @@ namespace
 			PointLights,
 			// StructuredBuffer SpotLights : register(t8);
 			SpotLights,
+			// Texture2DArray : register(9)
+			SpotLightShadowMaps,
+			// StructuredBuffer<XMMATRIX> register(t10);
+			SpotLightMatrices,
 			NumRootParameters
 		};
 	}
@@ -275,9 +280,9 @@ bool LightingDemo::LoadContent()
 			spotLight.m_PositionWs = XMFLOAT4(0, 5.0f, 55.0f, 1.0f);
 			spotLight.m_DirectionWs = XMFLOAT4(0, 0.0f, -1.0f, 0.0f);
 			spotLight.m_Color = XMFLOAT4(1, 1, 1, 1);
-			spotLight.m_Intensity = 2.5f;
+			spotLight.m_Intensity = 5.0f;
 			spotLight.m_SpotAngle = XMConvertToRadians(45.0f);
-			spotLight.m_Attenuation = 0.0f;
+			spotLight.m_Attenuation = 0.0005f;
 			m_Scene.m_SpotLights.push_back(spotLight);
 		}
 	}
@@ -297,6 +302,12 @@ bool LightingDemo::LoadContent()
 			device, pointLightShadows.m_Resolution);
 		m_PointLightShadowPassPso->SetBias(pointLightShadows.m_DepthBias,
 		                                   pointLightShadows.m_NormalBias);
+
+		// Spot Lights
+		m_SpotLightShadowPassPso = std::make_unique<SpotLightShadowPassPso>(
+			device, pointLightShadows.m_Resolution);
+		m_SpotLightShadowPassPso->SetBias(pointLightShadows.m_DepthBias,
+		                                  pointLightShadows.m_NormalBias);
 	}
 
 	// Setup particles
@@ -331,6 +342,8 @@ bool LightingDemo::LoadContent()
 	CD3DX12_DESCRIPTOR_RANGE1 descriptorRangeShadowMaps(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, ModelMaps::TotalNumber + 1);
 	CD3DX12_DESCRIPTOR_RANGE1 descriptorRangePointLightShadowMaps(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1,
 	                                                              ModelMaps::TotalNumber + 2);
+	CD3DX12_DESCRIPTOR_RANGE1 descriptorRangeSpotLightShadowMaps(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1,
+	                                                             ModelMaps::TotalNumber + 5);
 
 	CD3DX12_ROOT_PARAMETER1 rootParameters[RootParameters::NumRootParameters];
 	rootParameters[RootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
@@ -356,6 +369,10 @@ bool LightingDemo::LoadContent()
 	rootParameters[RootParameters::SpotLights].InitAsShaderResourceView(
 		ModelMaps::TotalNumber + 4, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
 		D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[RootParameters::SpotLightShadowMaps].InitAsDescriptorTable(1, &descriptorRangeSpotLightShadowMaps,
+	                                                                          D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[RootParameters::SpotLightMatrices].InitAsShaderResourceView(
+		ModelMaps::TotalNumber + 6, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	CD3DX12_STATIC_SAMPLER_DESC samplers[] = {
 		// linear repeat
@@ -538,6 +555,7 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 	}
 
 	std::vector<XMMATRIX> pointLightMatrices;
+	std::vector<XMMATRIX> spotLightMatrices;
 
 	// Shadow pass
 	{
@@ -579,6 +597,30 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 
 					pointLightMatrices.push_back(m_PointLightShadowPassPso->GetShadowViewProjectionMatrix());
 				}
+			}
+		}
+
+		// Spot Lights
+		{
+			const auto spotLightsCount = static_cast<uint32_t>(m_Scene.m_SpotLights.size());
+			m_SpotLightShadowPassPso->SetShadowMapsCount(spotLightsCount);
+			m_SpotLightShadowPassPso->ClearShadowMap(*commandList);
+			m_SpotLightShadowPassPso->SetContext(*commandList);
+
+			for (uint32_t lightIndex = 0; lightIndex < spotLightsCount; ++lightIndex)
+			{
+				const SpotLight& spotLight = m_Scene.m_SpotLights[lightIndex];
+
+				m_SpotLightShadowPassPso->SetCurrentShadowMap(lightIndex);
+				m_SpotLightShadowPassPso->ComputePassParameters(spotLight);
+				m_SpotLightShadowPassPso->SetRenderTarget(*commandList);
+
+				for (auto& gameObject : m_Scene.m_GameObjects)
+				{
+					m_SpotLightShadowPassPso->DrawToShadowMap(*commandList, gameObject);
+				}
+
+				spotLightMatrices.push_back(m_SpotLightShadowPassPso->GetShadowViewProjectionMatrix());
 			}
 		}
 	}
@@ -673,10 +715,17 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 					m_PoissonSpread;
 				shadowReceiverParametersCb.PointLightPoissonSpreadInv = 1.0f / m_GraphicsSettings.m_PointLightShadows.
 					m_PoissonSpread;
+				shadowReceiverParametersCb.SpotLightPoissonSpreadInv = 1.0f / m_GraphicsSettings.m_PointLightShadows.
+					m_PoissonSpread;
 				commandList->SetGraphicsDynamicConstantBuffer(RootParameters::ShadowMatricesCb,
 				                                              shadowReceiverParametersCb);
 
 				commandList->SetGraphicsDynamicStructuredBuffer(RootParameters::PointLightMatrices, pointLightMatrices);
+
+				m_SpotLightShadowPassPso->SetShadowMapShaderResourceView(
+					*commandList, RootParameters::SpotLightShadowMaps);
+
+				commandList->SetGraphicsDynamicStructuredBuffer(RootParameters::SpotLightMatrices, spotLightMatrices);
 			}
 
 			for (const auto& go : m_Scene.m_GameObjects)

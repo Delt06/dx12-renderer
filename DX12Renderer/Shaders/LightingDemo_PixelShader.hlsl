@@ -93,6 +93,8 @@ Texture2D directionalLightShadowMap : register(t5);
 SamplerComparisonState shadowMapSampler : register(s1);
 Texture2DArray pointLightShadowMaps : register(t6);
 StructuredBuffer<matrix> pointLightViewProjectionMatrices : register(t7);
+Texture2DArray spotLightShadowMaps : register(t9);
+StructuredBuffer<matrix> spotLightLightViewProjectionMatrices : register(t10);
 
 Texture2D diffuseMap : register(t0);
 Texture2D normalMap : register(t1);
@@ -113,6 +115,10 @@ struct Light
 #define POISSON_SAMPLING_POINT_LIGHT
 #include "ShadowsPoissonSampling.hlsli"
 #undef POISSON_SAMPLING_POINT_LIGHT
+
+#define POISSON_SAMPLING_SPOT_LIGHT
+#include "ShadowsPoissonSampling.hlsli"
+#undef POISSON_SAMPLING_SPOT_LIGHT
 
 Light GetMainLight(const float4 shadowCoords)
 {
@@ -218,7 +224,10 @@ Light GetSpotLight(const uint index, const float3 positionVs, const float3 posit
 	const float attenuation = GetSpotLightDistanceAttenuation(spotLight.m_Attenuation, distance) *
 		GetSpotLightConeAttenuation(spotLight.DirectionVS.xyz, directionTowardsLightVs, spotLight.m_SpotAngle);
 	light.DistanceAttenuation = attenuation;
-	light.ShadowAttenuation = 1.0f; // TODO: spot light shadows
+
+	const float4 shadowCoordsCs = mul(spotLightLightViewProjectionMatrices[index], float4(positionWs, 1.0f));
+	const float4 shadowCoords = HClipToShadowCoords(shadowCoordsCs, true);
+	light.ShadowAttenuation = PoissonSampling_SpotLight(shadowCoords, index);
 
 	return light;
 }
@@ -301,7 +310,6 @@ LightingResult ComputeLighting(const float3 positionVs, const float3 normalVs, c
 		}
 	}
 
-	
 
 	return totalLightingResult;
 }

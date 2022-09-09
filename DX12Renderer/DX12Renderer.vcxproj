@@ -189,6 +189,7 @@
     <ClCompile Include="LightingDemo\PointLightPso.cpp" />
     <ClCompile Include="LightingDemo\PointLightShadowPassPso.cpp" />
     <ClCompile Include="LightingDemo\ShadowPassPsoBase.cpp" />
+    <ClCompile Include="LightingDemo\SpotLightShadowPassPso.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MatricesCb.cpp" />
     <ClCompile Include="Mesh.cpp" />
@@ -239,6 +240,7 @@
     <ClInclude Include="LightingDemo\PointLightPso.h" />
     <ClInclude Include="LightingDemo\PointLightShadowPassPso.h" />
     <ClInclude Include="LightingDemo\ShadowPassPsoBase.h" />
+    <ClInclude Include="LightingDemo\SpotLightShadowPassPso.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="MatricesCb.h" />
     <ClInclude Include="Mesh.h" />

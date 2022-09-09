@@ -26,6 +26,8 @@ static const float2 POISSON_DISK[] = {
 
 #ifdef POISSON_SAMPLING_POINT_LIGHT
 float PoissonSampling_PointLight(const float4 shadowCoords, const uint shadowSliceIndex)
+#elif defined(POISSON_SAMPLING_SPOT_LIGHT)
+float PoissonSampling_SpotLight(const float4 shadowCoords, const uint shadowSliceIndex)
 #else
 float PoissonSampling_MainLight(const float4 shadowCoords)
 #endif
@@ -38,6 +40,8 @@ float PoissonSampling_MainLight(const float4 shadowCoords)
 	float attenuation = 0.0f;
 #ifdef POISSON_SAMPLING_POINT_LIGHT
 	const float poissonSpreadInv = shadowReceiverParameters.PointLightPoissonSpreadInv;
+#elif defined(POISSON_SAMPLING_SPOT_LIGHT)
+	const float poissonSpreadInv = shadowReceiverParameters.SpotLightPoissonSpreadInv;
 #else
 	const float poissonSpreadInv = shadowReceiverParameters.PoissonSpreadInv;
 #endif
@@ -51,6 +55,9 @@ float PoissonSampling_MainLight(const float4 shadowCoords)
 
 #ifdef POISSON_SAMPLING_POINT_LIGHT
 		attenuation += pointLightShadowMaps.SampleCmpLevelZero(shadowMapSampler, float3(sampleShadowCoords.xy, shadowSliceIndex),
+			sampleShadowCoords.z).x;
+#elif defined(POISSON_SAMPLING_SPOT_LIGHT)
+		attenuation += spotLightShadowMaps.SampleCmpLevelZero(shadowMapSampler, float3(sampleShadowCoords.xy, shadowSliceIndex),
 			sampleShadowCoords.z).x;
 #else
 		attenuation += directionalLightShadowMap.SampleCmpLevelZero(

@@ -5,7 +5,7 @@ struct ShadowPassParameters
 	matrix ViewProjection;
 	float4 LightDirectionWs;
 	float4 Bias; // x - depth bias, y - normal bias (should be negative)
-	uint LightType; // 0 - directional, 1 - point
+	uint LightType; // 0 - directional, 1 - point, 2 - spot
 	float3 Padding;
 };
 

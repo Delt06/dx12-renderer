@@ -6,7 +6,8 @@ struct ShadowReceiverParameters
 	matrix ViewProjection;
 	float PoissonSpreadInv;
 	float PointLightPoissonSpreadInv;
-	float2 Padding;
+	float SpotLightPoissonSpreadInv;
+	float Padding;
 };
 
 float4 HClipToShadowCoords(const float4 positionCs, bool perspectiveProjection = false)

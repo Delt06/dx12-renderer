@@ -43,7 +43,8 @@ protected:
 		enum : uint32_t
 		{
 			DirectionalLight = 0,
-			PointLight
+			PointLight,
+			SpotLight,
 		};
 	};
 

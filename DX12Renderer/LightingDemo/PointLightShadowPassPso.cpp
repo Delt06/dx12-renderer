@@ -26,7 +26,7 @@ void PointLightShadowPassPso::SetRenderTarget(CommandList& commandList) const
 
 void PointLightShadowPassPso::ClearShadowMap(CommandList& commandList) const
 {
-	commandList.ClearDepthStencilTexture(GetShadowMapsAsTexture(), D3D12_CLEAR_FLAG_DEPTH, 1, 0);
+	commandList.ClearDepthStencilTexture(GetShadowMapsAsTexture(), D3D12_CLEAR_FLAG_DEPTH);
 }
 
 void PointLightShadowPassPso::SetShadowMapShaderResourceView(CommandList& commandList, uint32_t rootParameterIndex,
@@ -34,7 +34,7 @@ void PointLightShadowPassPso::SetShadowMapShaderResourceView(CommandList& comman
 {
 	constexpr auto stateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 
-	const uint32_t numSubresources = m_CubeShadowMapsCapacity * TEXTURES_IN_CUBEMAP;
+	const uint32_t numSubresources = m_CubeShadowMapsCount * TEXTURES_IN_CUBEMAP;
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
@@ -71,7 +71,7 @@ void PointLightShadowPassPso::ComputePassParameters(const PointLight& pointLight
 
 void PointLightShadowPassPso::SetCurrentShadowMap(const uint32_t lightIndex, const uint32_t cubeMapSideIndex)
 {
-	if (lightIndex >= m_CubeShadowMapsCapacity)
+	if (lightIndex >= m_CubeShadowMapsCount)
 		throw std::exception("Light index out of range");
 
 	m_CurrentLightIndex = lightIndex;
