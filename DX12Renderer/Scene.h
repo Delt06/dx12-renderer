@@ -13,6 +13,7 @@ struct Scene
 	std::vector<GameObject> m_GameObjects;
 	DirectionalLight m_DirectionalLight{};
 	std::vector<PointLight> m_PointLights;
+	std::vector<SpotLight> m_SpotLights;
 
 	[[nodiscard]] BoundingSphere ComputeBoundingSphere() const;
 };

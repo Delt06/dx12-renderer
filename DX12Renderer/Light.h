@@ -77,3 +77,35 @@ private:
 
 	void ApplyAttenuationCoefficients(const AttenuationCoefficientsRecord& coefficientsRecord);
 };
+
+struct SpotLight
+{
+	SpotLight()
+		: m_PositionWs(0.0f, 0.0f, 0.0f, 1.0f)
+		  , m_PositionVs(0.0f, 0.0f, 0.0f, 1.0f)
+		  , m_DirectionWs(0.0f, 0.0f, 1.0f, 0.0f)
+		  , m_DirectionVs(0.0f, 0.0f, 1.0f, 0.0f)
+		  , m_Color(1.0f, 1.0f, 1.0f, 1.0f)
+		  , m_Intensity(1.0f)
+		  , m_SpotAngle(DirectX::XM_PIDIV2)
+		  , m_Attenuation(0.0f)
+	{
+	}
+
+	DirectX::XMFLOAT4 m_PositionWs; // Light position in world space.
+	//----------------------------------- (16 byte boundary)
+	DirectX::XMFLOAT4 m_PositionVs; // Light position in view space.
+	//----------------------------------- (16 byte boundary)
+	DirectX::XMFLOAT4 m_DirectionWs; // Light direction in world space.
+	//----------------------------------- (16 byte boundary)
+	DirectX::XMFLOAT4 m_DirectionVs; // Light direction in view space.
+	//----------------------------------- (16 byte boundary)
+	DirectX::XMFLOAT4 m_Color;
+	//----------------------------------- (16 byte boundary)
+	float m_Intensity;
+	float m_SpotAngle;
+	float m_Attenuation;
+	float m_Padding{}; // Pad to 16 bytes.
+	//----------------------------------- (16 byte boundary)
+	// Total:                              16 * 6 = 96 bytes
+};

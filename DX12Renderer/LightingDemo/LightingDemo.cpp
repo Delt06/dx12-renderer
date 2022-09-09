@@ -40,6 +40,7 @@ namespace
 	struct LightPropertiesCb
 	{
 		uint32_t NumPointLights;
+		uint32_t NumSpotLights;
 	};
 
 	struct DirectionalLightCb
@@ -81,8 +82,10 @@ namespace
 			PointLightMatrices,
 			// Texture2D register(t0-t3);
 			Textures,
-			// StructuredBuffer PointLights : register( t4 );
+			// StructuredBuffer PointLights : register(t4);
 			PointLights,
+			// StructuredBuffer SpotLights : register(t8);
+			SpotLights,
 			NumRootParameters
 		};
 	}
@@ -265,6 +268,18 @@ bool LightingDemo::LoadContent()
 			pointLight.m_Color = XMFLOAT4(0.0f, 5.0f, 2.0f, 1.0f);
 			m_Scene.m_PointLights.push_back(pointLight);
 		}
+
+		// spotlight
+		{
+			SpotLight spotLight;
+			spotLight.m_PositionWs = XMFLOAT4(0, 5.0f, 55.0f, 1.0f);
+			spotLight.m_DirectionWs = XMFLOAT4(0, 0.0f, -1.0f, 0.0f);
+			spotLight.m_Color = XMFLOAT4(1, 1, 1, 1);
+			spotLight.m_Intensity = 2.5f;
+			spotLight.m_SpotAngle = XMConvertToRadians(45.0f);
+			spotLight.m_Attenuation = 0.0f;
+			m_Scene.m_SpotLights.push_back(spotLight);
+		}
 	}
 
 	// Setup shadows
@@ -337,7 +352,9 @@ bool LightingDemo::LoadContent()
 		D3D12_SHADER_VISIBILITY_PIXEL);
 	rootParameters[RootParameters::Textures].InitAsDescriptorTable(1, &descriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
 	rootParameters[RootParameters::PointLights].InitAsShaderResourceView(
-		ModelMaps::TotalNumber, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
+		ModelMaps::TotalNumber, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[RootParameters::SpotLights].InitAsShaderResourceView(
+		ModelMaps::TotalNumber + 4, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
 		D3D12_SHADER_VISIBILITY_PIXEL);
 
 	CD3DX12_STATIC_SAMPLER_DESC samplers[] = {
@@ -576,6 +593,35 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 		const XMMATRIX projectionMatrix = m_Scene.m_Camera.GetProjectionMatrix();
 		const XMMATRIX viewProjectionMatrix = viewMatrix * projectionMatrix;
 
+		// Update directional light
+		{
+			auto& directionalLight = m_Scene.m_DirectionalLight;
+
+			XMVECTOR lightDirVs = XMLoadFloat4(&directionalLight.m_DirectionWs);
+			lightDirVs = XMVector4Transform(lightDirVs, viewMatrix);
+			XMStoreFloat4(&directionalLight.m_DirectionVs, lightDirVs);
+		}
+
+		// Update point lights
+		for (auto& pointLight : m_Scene.m_PointLights)
+		{
+			XMVECTOR lightPosVs = XMLoadFloat4(&pointLight.m_PositionWs);
+			lightPosVs = XMVector4Transform(lightPosVs, viewMatrix);
+			XMStoreFloat4(&pointLight.m_PositionVs, lightPosVs);
+		}
+
+		// Update spot lights
+		for (auto& spotLight : m_Scene.m_SpotLights)
+		{
+			XMVECTOR lightPosVs = XMLoadFloat4(&spotLight.m_PositionWs);
+			lightPosVs = XMVector4Transform(lightPosVs, viewMatrix);
+			XMStoreFloat4(&spotLight.m_PositionVs, lightPosVs);
+
+			XMVECTOR lightDirVs = XMLoadFloat4(&spotLight.m_DirectionWs);
+			lightDirVs = XMVector4Transform(lightDirVs, viewMatrix);
+			XMStoreFloat4(&spotLight.m_DirectionVs, lightDirVs);
+		}
+
 		// Draw point lights
 		{
 			m_PointLightPso->Set(*commandList);
@@ -592,34 +638,24 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 			commandList->SetPipelineState(m_PipelineState);
 			commandList->SetGraphicsRootSignature(m_RootSignature);
 
-			// Update directional light
+			// Update directional light cbuffer
 			{
-				auto& directionalLight = m_Scene.m_DirectionalLight;
-
-				XMVECTOR lightDirVs = XMLoadFloat4(&directionalLight.m_DirectionWs);
-				lightDirVs = XMVector4Transform(lightDirVs, viewMatrix);
-				XMStoreFloat4(&directionalLight.m_DirectionVs, lightDirVs);
-
+				const auto& directionalLight = m_Scene.m_DirectionalLight;
 				DirectionalLightCb directionalLightCb;
 				directionalLightCb.Color = directionalLight.m_Color;
 				directionalLightCb.DirectionVs = directionalLight.m_DirectionVs;
 				commandList->SetGraphicsDynamicConstantBuffer(RootParameters::DirLightCb, directionalLightCb);
 			}
 
-			// Update point lights
+			// Update other light buffers
 			{
 				LightPropertiesCb lightPropertiesCb;
 				lightPropertiesCb.NumPointLights = static_cast<uint32_t>(m_Scene.m_PointLights.size());
-
-				for (auto& pointLight : m_Scene.m_PointLights)
-				{
-					XMVECTOR lightPosVs = XMLoadFloat4(&pointLight.m_PositionWs);
-					lightPosVs = XMVector4Transform(lightPosVs, viewMatrix);
-					XMStoreFloat4(&pointLight.m_PositionVs, lightPosVs);
-				}
+				lightPropertiesCb.NumSpotLights = static_cast<uint32_t>(m_Scene.m_SpotLights.size());
 
 				commandList->SetGraphics32BitConstants(RootParameters::LightPropertiesCb, lightPropertiesCb);
 				commandList->SetGraphicsDynamicStructuredBuffer(RootParameters::PointLights, m_Scene.m_PointLights);
+				commandList->SetGraphicsDynamicStructuredBuffer(RootParameters::SpotLights, m_Scene.m_SpotLights);
 			}
 
 			// Bind shadow parameters

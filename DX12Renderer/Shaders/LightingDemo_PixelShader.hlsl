@@ -49,6 +49,26 @@ struct PointLight
 	// Total:                              16 * 4 = 64 bytes
 };
 
+struct SpotLight
+{
+	float4 PositionWS; // Light position in world space.
+	//----------------------------------- (16 byte boundary)
+	float4 PositionVS; // Light position in view space.
+	//----------------------------------- (16 byte boundary)
+	float4 DirectionWS; // Light direction in world space.
+	//----------------------------------- (16 byte boundary)
+	float4 DirectionVS; // Light direction in view space.
+	//----------------------------------- (16 byte boundary)
+	float4 Color;
+	//----------------------------------- (16 byte boundary)
+	float m_Intensity;
+	float m_SpotAngle;
+	float m_Attenuation;
+	float m_Padding; // Pad to 16 bytes.
+	//----------------------------------- (16 byte boundary)
+	// Total:                              16 * 6 = 96 bytes
+};
+
 struct LightingResult
 {
 	float3 Diffuse;
@@ -58,12 +78,14 @@ struct LightingResult
 struct LightPropertiesCb
 {
 	uint NumPointLights;
+	uint NumSpotLights;
 };
 
 ConstantBuffer<Material> materialCb : register(b0, space1);
 ConstantBuffer<DirectionalLight> dirLightCb : register(b1, space1);
 ConstantBuffer<LightPropertiesCb> lightPropertiesCb : register(b2);
 StructuredBuffer<PointLight> pointLights : register(t4);
+StructuredBuffer<SpotLight> spotLights : register(t8);
 
 ConstantBuffer<ShadowReceiverParameters> shadowReceiverParameters : register(b3);
 
@@ -110,7 +132,6 @@ float ComputeDistanceAttenuation(const float cConstant, const float cLinear, con
 
 // Unity URP
 // com.unity.render-pipelines.core@12.1.6\ShaderLibrary\Common.hlsl
-
 #define CUBEMAPFACE_POSITIVE_X 0
 #define CUBEMAPFACE_NEGATIVE_X 1
 #define CUBEMAPFACE_POSITIVE_Y 2
@@ -166,6 +187,40 @@ Light GetPointLight(const uint index, const float3 positionVs, const float3 posi
 	                                                       pointLight.QuadraticAttenuation, distance);
 	const float3 directionWs = (pointLight.PositionWS.xyz - positionWs) / distance;
 	light.ShadowAttenuation = PointLightShadowAttenuation(index, positionWs, directionWs);
+
+	return light;
+}
+
+float GetSpotLightDistanceAttenuation(const float attenuation, const float distance)
+{
+	return 1.0f / (1.0f + attenuation * distance * distance);
+}
+
+float GetSpotLightConeAttenuation(const float3 lightDirection, const float3 directionTowardsLight,
+                                  const float spotAngle)
+{
+	const float minCos = cos(spotAngle);
+	const float maxCos = (minCos + 1.0f) / 2.0f;
+	const float cosAngle = dot(lightDirection, -directionTowardsLight);
+	return smoothstep(minCos, maxCos, cosAngle);
+}
+
+Light GetSpotLight(const uint index, const float3 positionVs, const float3 positionWs)
+{
+	Light light;
+
+	const SpotLight spotLight = spotLights[index];
+	const float3 offsetVs = spotLight.PositionVS.xyz - positionVs;
+	const float distance = length(offsetVs);
+	const float3 directionTowardsLightVs = offsetVs / distance;
+
+	light.Color = spotLight.Color.rgb * spotLight.m_Intensity;
+	light.DirectionVs = directionTowardsLightVs;
+
+	const float attenuation = GetSpotLightDistanceAttenuation(spotLight.m_Attenuation, distance) *
+		GetSpotLightConeAttenuation(spotLight.DirectionVS, directionTowardsLightVs, spotLight.m_SpotAngle);
+	light.DistanceAttenuation = attenuation;
+	light.ShadowAttenuation = 1.0f; // TODO: spot light shadows
 
 	return light;
 }
@@ -232,6 +287,14 @@ LightingResult ComputeLighting(const float3 positionVs, const float3 normalVs, c
 	for (uint i = 0; i < lightPropertiesCb.NumPointLights; ++i)
 	{
 		const Light light = GetPointLight(i, positionVs, positionWs);
+		const LightingResult lightingResult = Phong(light, positionVs, normalVs, specularPower);
+		Combine(totalLightingResult, lightingResult);
+	}
+
+	// spot lights
+	for (uint i = 0; i < lightPropertiesCb.NumSpotLights; ++i)
+	{
+		const Light light = GetSpotLight(i, positionVs, positionWs);
 		const LightingResult lightingResult = Phong(light, positionVs, normalVs, specularPower);
 		Combine(totalLightingResult, lightingResult);
 	}
