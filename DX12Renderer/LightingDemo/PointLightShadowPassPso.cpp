@@ -1,13 +1,13 @@
 ﻿#include "PointLightShadowPassPso.h"
 
 #include "CommandList.h"
-#include "CommandQueue.h"
 
 PointLightShadowPassPso::PointLightShadowPassPso(const Microsoft::WRL::ComPtr<ID3D12Device2>& device,
-                                                 const UINT resolution): ShadowPassPsoBase(device, resolution),
-                                                                         m_CubeShadowMapsCount(0),
-                                                                         m_CurrentLightIndex(0),
-                                                                         m_CurrentCubeMapSideIndex(0)
+                                                 const UINT resolution)
+	: ShadowPassPsoBase(device, resolution)
+	  , m_CubeShadowMapsCount(0)
+	  , m_CurrentLightIndex(0)
+	  , m_CurrentCubeMapSideIndex(0)
 {
 	EnsureSufficientShadowMaps(DEFAULT_CUBE_SHADOW_MAPS_COUNT);
 }
@@ -26,6 +26,21 @@ void PointLightShadowPassPso::ClearShadowMap(CommandList& commandList) const
 void PointLightShadowPassPso::SetShadowMapShaderResourceView(CommandList& commandList, uint32_t rootParameterIndex,
                                                              uint32_t descriptorOffset) const
 {
+	constexpr auto stateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
+	srvDesc.TextureCubeArray.MipLevels = 1;
+	srvDesc.TextureCubeArray.MostDetailedMip = 0;
+	srvDesc.TextureCubeArray.NumCubes = m_CubeShadowMapsCount;
+	srvDesc.TextureCubeArray.ResourceMinLODClamp = 0.0f;
+	srvDesc.TextureCubeArray.First2DArrayFace = 0;
+
+	const uint32_t numSubresources = m_CubeShadowMapsCount * TEXTURES_IN_CUBEMAP;
+	commandList.SetShaderResourceView(rootParameterIndex, descriptorOffset, GetShadowMapsAsTexture(), stateAfter, 0,
+	                                  numSubresources, &srvDesc);
 }
 
 void PointLightShadowPassPso::SetCurrentShadowMap(const uint32_t lightIndex, const uint32_t cubeMapSideIndex)
