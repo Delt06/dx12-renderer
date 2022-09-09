@@ -43,7 +43,7 @@ struct PointLight
 	float ConstantAttenuation;
 	float LinearAttenuation;
 	float QuadraticAttenuation;
-	float Padding;
+	float Range;
 	//----------------------------------- (16 byte boundary)
 	// Total:                              16 * 4 = 64 bytes
 };

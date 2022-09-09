@@ -237,10 +237,8 @@ bool LightingDemo::LoadContent()
 
 		// cyan-ish
 		{
-			PointLight pointLight(XMFLOAT4(6, 2, 10, 1));
+			PointLight pointLight(XMFLOAT4(6, 2, 10, 1), 32.0f);
 			pointLight.m_Color = XMFLOAT4(0.0f, 4.0f, 1.5f, 1.0f);
-			pointLight.m_LinearAttenuation = 0.14f;
-			pointLight.m_QuadraticAttenuation = 0.07f;
 			m_Scene.m_PointLights.push_back(pointLight);
 		}
 	}
