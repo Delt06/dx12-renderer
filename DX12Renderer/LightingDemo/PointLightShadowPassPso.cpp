@@ -83,11 +83,12 @@ void PointLightShadowPassPso::SetShadowMapsCount(const uint32_t count)
 	if (count >= m_CubeShadowMapsCapacity && count > 0)
 	{
 		const uint32_t arraySize = count * TEXTURES_IN_CUBEMAP;
-		const auto shadowMapDesc = CD3DX12_RESOURCE_DESC::Tex2D(SHADOW_MAP_FORMAT,
-		                                                        m_Resolution, m_Resolution,
-		                                                        arraySize, 1,
-		                                                        1, 0,
-		                                                        D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+		const auto shadowMapDesc = CD3DX12_RESOURCE_DESC::Tex2D(
+			SHADOW_MAP_FORMAT,
+			m_Resolution, m_Resolution,
+			arraySize, 1,
+			1, 0,
+			D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 		D3D12_CLEAR_VALUE depthClearValue;
 		depthClearValue.Format = shadowMapDesc.Format;
 		depthClearValue.DepthStencil = {1.0f, 0};
