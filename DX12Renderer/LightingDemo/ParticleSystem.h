@@ -31,6 +31,7 @@ private:
 	size_t m_Capacity = 20000;
 
 	double m_EmissionTimer = 0.0f;
+	mutable bool m_GpuBufferIsDirty = true;
 
 	static constexpr size_t ALIGNMENT = 16;
 

@@ -74,6 +74,8 @@ void ParticleSystem::Update(const double deltaTime)
 	Emit(deltaTime);
 	Simulate(static_cast<float>(deltaTime));
 	CollectDeadParticles();
+
+	m_GpuBufferIsDirty = true;
 }
 
 void ParticleSystem::Draw(CommandList& commandList, const XMMATRIX viewMatrix, const XMMATRIX viewProjectionMatrix,
@@ -83,7 +85,13 @@ void ParticleSystem::Draw(CommandList& commandList, const XMMATRIX viewMatrix, c
 	if (m_LiveInstancesCount == 0) return;
 
 	m_Pso->SetContext(commandList);
-	m_Pso->UploadInstanceData(commandList, m_InstanceData.get(), m_LiveInstancesCount);
+
+	if (m_GpuBufferIsDirty)
+	{
+		m_Pso->UploadInstanceData(commandList, m_InstanceData.get(), m_LiveInstancesCount);
+		m_GpuBufferIsDirty = false;
+	}
+	
 	m_Pso->Draw(commandList, viewMatrix, viewProjectionMatrix, projectionMatrix);
 }
 
