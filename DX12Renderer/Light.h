@@ -5,14 +5,11 @@ struct DirectionalLight
 {
 	DirectionalLight()
 		: m_DirectionWs(1.0f, 0.0f, 1.0f, 0.0f)
-		, m_DirectionVs(0.0f, 0.0f, 1.0f, 0.0f)
 		, m_Color(1.0f, 1.0f, 1.0f, 1.0f)
 	{
 	}
 
 	DirectX::XMFLOAT4 m_DirectionWs; // Light direction in world space.
-	//----------------------------------- (16 byte boundary)
-	DirectX::XMFLOAT4 m_DirectionVs; // Light direction in view space.
 	//----------------------------------- (16 byte boundary)
 	DirectX::XMFLOAT4 m_Color;
 	//----------------------------------- (16 byte boundary)

@@ -9,7 +9,6 @@
 #include <dxgidebug.h>
 
 #include "GraphicsSettings.h"
-#include "Tutorial3/Tutorial3.h"
 #include "LightingDemo/LightingDemo.h"
 
 void ReportLiveObjects()
@@ -73,9 +72,6 @@ void ParseCommandLineArguments(Parameters& parameters)
 
 std::shared_ptr<Game> CreateGame(const Parameters& parameters)
 {
-	if (parameters.m_DemoName == "Tutorial3")
-		return std::make_shared<Tutorial3>(L"Learning DirectX 12 - Lesson 3", parameters.m_ClientWidth,
-		                                   parameters.m_ClientHeight);
 	if (parameters.m_DemoName == "LightingDemo")
 		return std::make_shared<LightingDemo>(L"Lighting Demo", parameters.m_ClientWidth, parameters.m_ClientHeight,
 		                                      parameters.m_GraphicsSettings);

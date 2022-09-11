@@ -3,13 +3,12 @@
 struct PixelShaderInput
 {
     float4 PositionVs : POSITION;
-    float3 NormalVs : NORMAL;
-    float3 TangentVs : TANGENT;
-    float3 BitangentVs : BINORMAL;
+    float3 NormalWs : NORMAL;
+    float3 TangentWs : TANGENT;
+    float3 BitangentWs : BINORMAL;
     float2 Uv : TEXCOORD;
     float3 PositionWs : POSITION_WS;
     float4 ShadowCoords : SHADOW_COORD;
-    float3 NormalWs : NORMAL_WS;
     float3 EyeWs : EYE_WS;
 };
 
@@ -32,7 +31,7 @@ struct Material
 
 struct DirectionalLight
 {
-    float4 DirectionVs;
+    float4 DirectionWs; // update on CPU
     float4 Color;
 };
 
@@ -110,7 +109,7 @@ SamplerState defaultSampler : register(s0);
 struct Light
 {
     float3 Color;
-    float3 DirectionVs;
+    float3 DirectionWs;
     float DistanceAttenuation;
     float ShadowAttenuation;
 };
@@ -129,7 +128,7 @@ Light GetMainLight(const float4 shadowCoords)
 {
     Light light;
     light.Color = dirLightCb.Color.rgb;
-    light.DirectionVs = dirLightCb.DirectionVs.xyz;
+    light.DirectionWs = dirLightCb.DirectionWs.xyz;
     light.DistanceAttenuation = 1.0f;
     light.ShadowAttenuation = PoissonSampling_MainLight(shadowCoords);
     return light;
@@ -182,16 +181,16 @@ float PointLightShadowAttenuation(const uint lightIndex, const float3 positionWs
     return PoissonSampling_PointLight(shadowCoords, shadowSliceIndex);
 }
 
-Light GetPointLight(const uint index, const float3 positionVs, const float3 positionWs)
+Light GetPointLight(const uint index, const float3 positionWs)
 {
     Light light;
 
     const PointLight pointLight = pointLights[index];
-    const float3 offsetVs = pointLight.PositionVS.xyz - positionVs;
-    const float distance = length(offsetVs);
+    const float3 offsetWs = pointLight.PositionWS.xyz - positionWs;
+    const float distance = length(offsetWs);
 
     light.Color = pointLight.Color.rgb;
-    light.DirectionVs = offsetVs / distance;
+    light.DirectionWs = offsetWs / distance;
     light.DistanceAttenuation = ComputeDistanceAttenuation(pointLight.ConstantAttenuation, pointLight.LinearAttenuation,
 	                                                       pointLight.QuadraticAttenuation, distance);
     const float3 directionWs = (pointLight.PositionWS.xyz - positionWs) / distance;
@@ -214,20 +213,20 @@ float GetSpotLightConeAttenuation(const float3 lightDirection, const float3 dire
     return smoothstep(minCos, maxCos, cosAngle);
 }
 
-Light GetSpotLight(const uint index, const float3 positionVs, const float3 positionWs)
+Light GetSpotLight(const uint index, const float3 positionWs)
 {
     Light light;
 
     const SpotLight spotLight = spotLights[index];
-    const float3 offsetVs = spotLight.PositionVS.xyz - positionVs;
-    const float distance = length(offsetVs);
-    const float3 directionTowardsLightVs = offsetVs / distance;
+    const float3 offsetWs = spotLight.PositionWS.xyz - positionWs;
+    const float distance = length(offsetWs);
+    const float3 directionTowardsLightWs = offsetWs / distance;
 
     light.Color = spotLight.Color.rgb * spotLight.m_Intensity;
-    light.DirectionVs = directionTowardsLightVs;
+    light.DirectionWs = directionTowardsLightWs;
 
     const float attenuation = GetSpotLightDistanceAttenuation(spotLight.m_Attenuation, distance) *
-		GetSpotLightConeAttenuation(spotLight.DirectionVS.xyz, directionTowardsLightVs, spotLight.m_SpotAngle);
+		GetSpotLightConeAttenuation(spotLight.DirectionWS.xyz, directionTowardsLightWs, spotLight.m_SpotAngle);
     light.DistanceAttenuation = attenuation;
 
     const float4 shadowCoordsCs = mul(spotLightLightViewProjectionMatrices[index], float4(positionWs, 1.0f));
@@ -261,16 +260,15 @@ float Specular(const float3 v, const float3 n, const float3 l, const float specu
     return pow(rDotV, specularPower);
 }
 
-LightingResult Phong(const in Light light, const float3 positionVs, const float3 normalVs, const float specularPower)
+LightingResult Phong(const in Light light, const float3 normalWs, const float3 eyeWs, const float specularPower)
 {
     LightingResult lightResult;
-
-    const float3 viewDir = normalize(-positionVs);
-    const float3 lightDir = light.DirectionVs.xyz;
+    
+    const float3 lightDir = light.DirectionWs.xyz;
     const float3 attenuatedColor = light.Color * light.DistanceAttenuation * light.ShadowAttenuation;
 
-    lightResult.Diffuse = Diffuse(normalVs, lightDir) * attenuatedColor;
-    lightResult.Specular = Specular(viewDir, normalVs, lightDir, specularPower) * attenuatedColor;
+    lightResult.Diffuse = Diffuse(normalWs, lightDir) * attenuatedColor;
+    lightResult.Specular = Specular(-eyeWs, normalWs, lightDir, specularPower) * attenuatedColor;
 
     return lightResult;
 }
@@ -281,8 +279,8 @@ void Combine(inout LightingResult destination, const in LightingResult source)
     destination.Specular += source.Specular;
 }
 
-LightingResult ComputeLighting(const float3 positionVs, const float3 normalVs, const float specularPower,
-                               const float4 shadowCoords, const float3 positionWs)
+LightingResult ComputeLighting(const float3 positionWs, const float3 normalWs, const float specularPower,
+                               const float4 shadowCoords, const float3 eyeWs)
 {
     LightingResult totalLightingResult;
     totalLightingResult.Diffuse = 0;
@@ -291,7 +289,7 @@ LightingResult ComputeLighting(const float3 positionVs, const float3 normalVs, c
 	// main light
 	{
         const Light light = GetMainLight(shadowCoords);
-        const LightingResult lightingResult = Phong(light, positionVs, normalVs, specularPower);
+        const LightingResult lightingResult = Phong(light, normalWs, eyeWs, specularPower);
         Combine(totalLightingResult, lightingResult);
     }
 
@@ -299,8 +297,8 @@ LightingResult ComputeLighting(const float3 positionVs, const float3 normalVs, c
 	{
         for (uint i = 0; i < lightPropertiesCb.NumPointLights; ++i)
         {
-            const Light light = GetPointLight(i, positionVs, positionWs);
-            const LightingResult lightingResult = Phong(light, positionVs, normalVs, specularPower);
+            const Light light = GetPointLight(i, positionWs);
+            const LightingResult lightingResult = Phong(light, normalWs, eyeWs, specularPower);
             Combine(totalLightingResult, lightingResult);
         }
     }
@@ -309,8 +307,8 @@ LightingResult ComputeLighting(const float3 positionVs, const float3 normalVs, c
 	{
         for (uint i = 0; i < lightPropertiesCb.NumSpotLights; ++i)
         {
-            const Light light = GetSpotLight(i, positionVs, positionWs);
-            const LightingResult lightingResult = Phong(light, positionVs, normalVs, specularPower);
+            const Light light = GetSpotLight(i, positionWs);
+            const LightingResult lightingResult = Phong(light, normalWs, eyeWs, specularPower);
             Combine(totalLightingResult, lightingResult);
         }
     }
@@ -321,21 +319,22 @@ LightingResult ComputeLighting(const float3 positionVs, const float3 normalVs, c
 
 float4 main(PixelShaderInput IN) : SV_Target
 {
-    float3 normalVs;
+    float3 normalWs;
     if (materialCb.HasNormalMap)
     {
-        const float3 tangent = normalize(IN.TangentVs);
-        const float3 bitangent = normalize(IN.BitangentVs);
-        const float3 normal = normalize(IN.NormalVs);
+        // move to WS
+        const float3 tangent = normalize(IN.TangentWs);
+        const float3 bitangent = normalize(IN.BitangentWs);
+        const float3 normal = normalize(IN.NormalWs);
 
         const float3x3 tbn = float3x3(tangent,
 		                              bitangent,
 		                              normal);
-        normalVs = ApplyNormalMap(tbn, normalMap, IN.Uv);
+        normalWs = ApplyNormalMap(tbn, normalMap, IN.Uv);
     }
     else
     {
-        normalVs = normalize(IN.NormalVs);
+        normalWs = normalize(IN.NormalWs);
     }
 
 
@@ -345,8 +344,8 @@ float4 main(PixelShaderInput IN) : SV_Target
         specularPower *= saturate(1 - glossMap.Sample(defaultSampler, IN.Uv).x);
     }
 
-    const LightingResult lightingResult = ComputeLighting(IN.PositionVs.xyz, normalVs, specularPower, IN.ShadowCoords,
-	                                                      IN.PositionWs);
+    const float3 eyeWs = normalize(IN.EyeWs);
+    const LightingResult lightingResult = ComputeLighting(IN.PositionWs, normalWs, specularPower, IN.ShadowCoords, eyeWs);
 
     const float4 emissive = materialCb.Emissive;
     const float4 ambient = materialCb.Ambient;
@@ -360,7 +359,7 @@ float4 main(PixelShaderInput IN) : SV_Target
 		                        ? diffuseMap.Sample(defaultSampler, IN.Uv)
 		                        : float4(1.0f, 1.0f, 1.0f, 1.0f);
 
-    float3 reflectWs = reflect(IN.EyeWs, normalize(IN.NormalWs));
+    float3 reflectWs = reflect(eyeWs, normalWs);
     float4 reflection = float4(envrironmentReflectionsCubemap.Sample(defaultSampler, reflectWs).rgb * materialCb.Reflectivity, 1);
     return emissive + (ambient + diffuse + specular + reflection) * texColor;
 }

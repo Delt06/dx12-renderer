@@ -18,12 +18,6 @@ namespace
 		uint32_t NumSpotLights;
 	};
 
-	struct DirectionalLightCb
-	{
-		XMFLOAT4 DirectionVs;
-		XMFLOAT4 Color;
-	};
-
 	struct ShadowReceiverParametersCb
 	{
 		XMMATRIX ViewProjection;
@@ -331,15 +325,6 @@ void SceneRenderer::MainPass(CommandList& commandList)
 	const XMMATRIX projectionMatrix = m_ProjectionMatrix;
 	const XMMATRIX viewProjectionMatrix = viewMatrix * projectionMatrix;
 
-	// Update directional light
-	{
-		auto& directionalLight = m_Scene->MainDirectionalLight;
-
-		XMVECTOR lightDirVs = XMLoadFloat4(&directionalLight.m_DirectionWs);
-		lightDirVs = XMVector4Transform(lightDirVs, viewMatrix);
-		XMStoreFloat4(&directionalLight.m_DirectionVs, lightDirVs);
-	}
-
 	// Update point lights
 	for (auto& pointLight : m_Scene->PointLights)
 	{
@@ -385,11 +370,7 @@ void SceneRenderer::MainPass(CommandList& commandList)
 
 		// Update directional light cbuffer
 		{
-			const auto& directionalLight = m_Scene->MainDirectionalLight;
-			DirectionalLightCb directionalLightCb;
-			directionalLightCb.Color = directionalLight.m_Color;
-			directionalLightCb.DirectionVs = directionalLight.m_DirectionVs;
-			commandList.SetGraphicsDynamicConstantBuffer(RootParameters::DirLightCb, directionalLightCb);
+			commandList.SetGraphicsDynamicConstantBuffer(RootParameters::DirLightCb, m_Scene->MainDirectionalLight);
 		}
 
 		// Update other light buffers
