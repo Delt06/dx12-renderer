@@ -207,7 +207,7 @@ SceneRenderer::SceneRenderer(Microsoft::WRL::ComPtr<ID3D12Device2> device, Comma
 	}
 }
 
-void SceneRenderer::Clear()
+void SceneRenderer::ResetShadowMatrices()
 {
 	m_DirectionalLightShadowMatrix = XMMatrixIdentity();
 	m_PointLightShadowMatrices.clear();
@@ -227,6 +227,8 @@ void SceneRenderer::SetMatrices(DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX 
 
 void SceneRenderer::ShadowPass(CommandList& commandList)
 {
+	ResetShadowMatrices();
+
 	// Directional Light
 	{
 		m_DirectionalLightShadowPassPso->SetContext(commandList);
