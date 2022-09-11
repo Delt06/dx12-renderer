@@ -3,8 +3,8 @@
 
 struct Aabb
 {
-	DirectX::XMVECTOR m_Min;
-	DirectX::XMVECTOR m_Max;
+	DirectX::XMVECTOR Min;
+	DirectX::XMVECTOR Max;
 
 	void Encapsulate(DirectX::XMVECTOR point);
 	void Encapsulate(Aabb other);
