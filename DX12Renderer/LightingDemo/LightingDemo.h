@@ -21,6 +21,7 @@
 
 class PointLightShadowPassPso;
 class ParticleSystem;
+class SceneRenderer;
 
 class LightingDemo final : public Game
 {
@@ -46,17 +47,9 @@ private:
 	std::shared_ptr<Texture> m_WhiteTexture2d;
 
 	RenderTarget m_RenderTarget;
-	RootSignature m_RootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineState;
 
-	
-	std::unique_ptr<PointLightPso> m_PointLightPso;
-	std::unique_ptr<DirectionalLightShadowPassPso> m_DirectionalLightShadowPassPso;
-	std::unique_ptr<PointLightShadowPassPso> m_PointLightShadowPassPso;
-	std::unique_ptr<SpotLightShadowPassPso> m_SpotLightShadowPassPso;
-
-	Scene m_Scene;
-	std::unique_ptr<ParticleSystem> m_ParticleSystem;
+	std::shared_ptr<Scene> m_Scene;
+	std::shared_ptr<SceneRenderer> m_SceneRenderer;
 
 	D3D12_VIEWPORT m_Viewport;
 	D3D12_RECT m_ScissorRect;

@@ -9,7 +9,7 @@ BoundingSphere Scene::ComputeBoundingSphere() const
 	// a very native approach to find a bounding sphere (not ideal)
 	Aabb sceneAabb{};
 
-	for (auto& gameObject : m_GameObjects)
+	for (auto& gameObject : GameObjects)
 	{
 		sceneAabb.Encapsulate(gameObject.GetAabb());
 	}
@@ -24,7 +24,7 @@ BoundingSphere Scene::ComputeBoundingSphere() const
 	{
 		const XMVECTOR point = sceneAabbPoints[i];
 		float distance = XMVectorGetX(XMVector3Length(point - center));
-		radius = std::max(distance, radius);
+		radius = max(distance, radius);
 	}
 
 	return {radius, center};

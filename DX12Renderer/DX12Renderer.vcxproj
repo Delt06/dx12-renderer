@@ -199,7 +199,8 @@
     <ClCompile Include="ResourceStateTracker.cpp" />
     <ClCompile Include="ResourceWrapper.cpp" />
     <ClCompile Include="RootSignature.cpp" />
-    <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="LightingDemo\Scene.cpp" />
+    <ClCompile Include="LightingDemo\SceneRenderer.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Tutorial3\Tutorial3.cpp" />
@@ -251,7 +252,8 @@
     <ClInclude Include="ResourceStateTracker.h" />
     <ClInclude Include="ResourceWrapper.h" />
     <ClInclude Include="RootSignature.h" />
-    <ClInclude Include="Scene.h" />
+    <ClInclude Include="LightingDemo\Scene.h" />
+    <ClInclude Include="LightingDemo\SceneRenderer.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureUsageType.h" />
     <ClInclude Include="Camera.h" />
