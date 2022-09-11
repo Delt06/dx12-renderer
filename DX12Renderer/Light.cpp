@@ -26,23 +26,23 @@ void PointLight::RecalculateAttenuationCoefficients()
 		const auto& record1 = ATTENUATION_COEFFICIENTS_RECORDS[i - 1];
 		const auto& record2 = ATTENUATION_COEFFICIENTS_RECORDS[i];
 
-		if (m_Range < record1.m_Range)
+		if (Range < record1.Range)
 		{
 			ApplyAttenuationCoefficients(ATTENUATION_COEFFICIENTS_RECORDS[i - 1]);
 			return;
 		}
 
-		if (m_Range > record2.m_Range)
+		if (Range > record2.Range)
 		{
 			continue;
 		}
 
-		const float t = InverseLerp(record1.m_Range, record2.m_Range, m_Range);
+		const float t = InverseLerp(record1.Range, record2.Range, Range);
 		AttenuationCoefficientsRecord intermediateCoefficients = {
-			m_Range,
-			Lerp(record1.m_ConstantAttenuation, record2.m_ConstantAttenuation, t),
-			Lerp(record1.m_LinearAttenuation, record2.m_LinearAttenuation, t),
-			Lerp(record1.m_QuadraticAttenuation, record2.m_QuadraticAttenuation, t),
+			Range,
+			Lerp(record1.ConstantAttenuation, record2.ConstantAttenuation, t),
+			Lerp(record1.LinearAttenuation, record2.LinearAttenuation, t),
+			Lerp(record1.QuadraticAttenuation, record2.QuadraticAttenuation, t),
 		};
 		ApplyAttenuationCoefficients(intermediateCoefficients);
 	}
@@ -52,7 +52,7 @@ void PointLight::RecalculateAttenuationCoefficients()
 
 void PointLight::ApplyAttenuationCoefficients(const AttenuationCoefficientsRecord& coefficientsRecord)
 {
-	m_ConstantAttenuation = coefficientsRecord.m_ConstantAttenuation;
-	m_LinearAttenuation = coefficientsRecord.m_LinearAttenuation;
-	m_QuadraticAttenuation = coefficientsRecord.m_QuadraticAttenuation;
+	ConstantAttenuation = coefficientsRecord.ConstantAttenuation;
+	LinearAttenuation = coefficientsRecord.LinearAttenuation;
+	QuadraticAttenuation = coefficientsRecord.QuadraticAttenuation;
 }

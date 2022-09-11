@@ -8,25 +8,25 @@
 
 Texture::Texture(TextureUsageType textureUsage, const std::wstring& name)
 	: ResourceWrapper(name)
-	  , m_TextureUsage(textureUsage)
+	, m_TextureUsage(textureUsage)
 {
 }
 
 Texture::Texture(const D3D12_RESOURCE_DESC& resourceDesc,
-                 const D3D12_CLEAR_VALUE* clearValue,
-                 TextureUsageType textureUsage,
-                 const std::wstring& name)
+	const D3D12_CLEAR_VALUE* clearValue,
+	TextureUsageType textureUsage,
+	const std::wstring& name)
 	: ResourceWrapper(resourceDesc, clearValue, name)
-	  , m_TextureUsage(textureUsage)
+	, m_TextureUsage(textureUsage)
 {
 	CreateViews();
 }
 
 Texture::Texture(ComPtr<ID3D12Resource> resource,
-                 TextureUsageType textureUsage,
-                 const std::wstring& name)
+	TextureUsageType textureUsage,
+	const std::wstring& name)
 	: ResourceWrapper(resource, name)
-	  , m_TextureUsage(textureUsage)
+	, m_TextureUsage(textureUsage)
 {
 	CreateViews();
 }
@@ -104,7 +104,7 @@ void Texture::Resize(uint32_t width, uint32_t height, uint32_t depthOrArraySize)
 
 // Get a UAV description that matches the resource description.
 D3D12_UNORDERED_ACCESS_VIEW_DESC GetUAVDesc(const D3D12_RESOURCE_DESC& resDesc, UINT mipSlice, UINT arraySlice = 0,
-                                            UINT planeSlice = 0)
+	UINT planeSlice = 0)
 {
 	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 	uavDesc.Format = resDesc.Format;
@@ -171,7 +171,7 @@ void Texture::CreateViews()
 		{
 			m_RenderTargetView = app.AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, numDescriptors);
 			device->CreateRenderTargetView(m_d3d12Resource.Get(), nullptr,
-			                               m_RenderTargetView.GetDescriptorHandle(0));
+				m_RenderTargetView.GetDescriptorHandle(0));
 
 			for (UINT16 i = 0; i < arraySize; i++)
 			{
@@ -184,7 +184,7 @@ void Texture::CreateViews()
 				rtvDesc.Texture2DArray.FirstArraySlice = i;
 
 				device->CreateRenderTargetView(m_d3d12Resource.Get(), &rtvDesc,
-				                               m_RenderTargetView.GetDescriptorHandle(i + 1));
+					m_RenderTargetView.GetDescriptorHandle(i + 1));
 			}
 		}
 		if ((desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) != 0 &&
@@ -192,7 +192,7 @@ void Texture::CreateViews()
 		{
 			m_DepthStencilView = app.AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, numDescriptors);
 			device->CreateDepthStencilView(m_d3d12Resource.Get(), nullptr,
-			                               m_DepthStencilView.GetDescriptorHandle(0));
+				m_DepthStencilView.GetDescriptorHandle(0));
 
 			for (UINT16 i = 0; i < arraySize; ++i)
 			{
@@ -204,7 +204,7 @@ void Texture::CreateViews()
 				dsvDesc.Texture2DArray.FirstArraySlice = i;
 
 				device->CreateDepthStencilView(m_d3d12Resource.Get(), &dsvDesc,
-				                               m_DepthStencilView.GetDescriptorHandle(i + 1));
+					m_DepthStencilView.GetDescriptorHandle(i + 1));
 			}
 		}
 	}
@@ -254,7 +254,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetShaderResourceView(const D3D12_SHADER_RE
 	if (iter == m_ShaderResourceViews.end())
 	{
 		auto srv = CreateShaderResourceView(srvDesc);
-		iter = m_ShaderResourceViews.insert({hash, std::move(srv)}).first;
+		iter = m_ShaderResourceViews.insert({ hash, std::move(srv) }).first;
 	}
 
 	return iter->second.GetDescriptorHandle();
@@ -274,7 +274,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetUnorderedAccessView(const D3D12_UNORDERE
 	if (iter == m_UnorderedAccessViews.end())
 	{
 		auto uav = CreateUnorderedAccessView(uavDesc);
-		iter = m_UnorderedAccessViews.insert({hash, std::move(uav)}).first;
+		iter = m_UnorderedAccessViews.insert({ hash, std::move(uav) }).first;
 	}
 
 	return iter->second.GetDescriptorHandle();

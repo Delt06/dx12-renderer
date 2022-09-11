@@ -32,7 +32,7 @@ CommandList::CommandList(D3D12_COMMAND_LIST_TYPE type) : m_D3d12CommandListType(
 	ThrowIfFailed(device->CreateCommandAllocator(m_D3d12CommandListType, IID_PPV_ARGS(&m_D3d12CommandAllocator)));
 
 	ThrowIfFailed(device->CreateCommandList(0, m_D3d12CommandListType, m_D3d12CommandAllocator.Get(),
-	                                        nullptr, IID_PPV_ARGS(&m_D3d12CommandList)));
+		nullptr, IID_PPV_ARGS(&m_D3d12CommandList)));
 
 	m_PUploadBuffer = std::make_unique<UploadBuffer>();
 
@@ -49,20 +49,20 @@ CommandList::CommandList(D3D12_COMMAND_LIST_TYPE type) : m_D3d12CommandListType(
 CommandList::~CommandList() = default;
 
 void CommandList::TransitionBarrier(const Resource& resource, const D3D12_RESOURCE_STATES stateAfter,
-                                    const UINT subresource,
-                                    const bool flushBarriers)
+	const UINT subresource,
+	const bool flushBarriers)
 {
 	TransitionBarrier(resource.GetD3D12Resource(), stateAfter, subresource, flushBarriers);
 }
 
 void CommandList::TransitionBarrier(const ComPtr<ID3D12Resource> resource, const D3D12_RESOURCE_STATES stateAfter,
-                                    const UINT subresource,
-                                    const bool flushBarriers)
+	const UINT subresource,
+	const bool flushBarriers)
 {
 	if (resource)
 	{
 		const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(resource.Get(), D3D12_RESOURCE_STATE_COMMON,
-		                                                          stateAfter, subresource);
+			stateAfter, subresource);
 		m_PResourceStateTracker->ResourceBarrier(barrier);
 	}
 
@@ -86,14 +86,14 @@ void CommandList::UavBarrier(const Resource& resource, const bool flushBarriers)
 }
 
 void CommandList::AliasingBarrier(const Resource& beforeResource, const Resource& afterResource,
-                                  const bool flushBarriers)
+	const bool flushBarriers)
 {
 	AliasingBarrier(beforeResource.GetD3D12Resource(), afterResource.GetD3D12Resource(), flushBarriers);
 }
 
 void CommandList::AliasingBarrier(const ComPtr<ID3D12Resource> beforeResource,
-                                  const ComPtr<ID3D12Resource> afterResource,
-                                  const bool flushBarriers)
+	const ComPtr<ID3D12Resource> afterResource,
+	const bool flushBarriers)
 {
 	const auto barrier = CD3DX12_RESOURCE_BARRIER::Aliasing(beforeResource.Get(), afterResource.Get());
 
@@ -130,7 +130,7 @@ void CommandList::CopyResource(const ComPtr<ID3D12Resource> dstRes, const ComPtr
 }
 
 void CommandList::ResolveSubresource(const Resource& dstRes, const Resource& srcRes, const uint32_t dstSubresource,
-                                     const uint32_t srcSubresource)
+	const uint32_t srcSubresource)
 {
 	TransitionBarrier(dstRes, D3D12_RESOURCE_STATE_RESOLVE_DEST, dstSubresource);
 	TransitionBarrier(srcRes, D3D12_RESOURCE_STATE_RESOLVE_SOURCE, srcSubresource);
@@ -138,15 +138,15 @@ void CommandList::ResolveSubresource(const Resource& dstRes, const Resource& src
 	FlushResourceBarriers();
 
 	m_D3d12CommandList->ResolveSubresource(dstRes.GetD3D12Resource().Get(), dstSubresource,
-	                                       srcRes.GetD3D12Resource().Get(), srcSubresource,
-	                                       dstRes.GetD3D12ResourceDesc().Format);
+		srcRes.GetD3D12Resource().Get(), srcSubresource,
+		dstRes.GetD3D12ResourceDesc().Format);
 
 	TrackResource(srcRes);
 	TrackResource(dstRes);
 }
 
 void CommandList::CopyBuffer(Buffer& buffer, const size_t numElements, const size_t elementSize, const void* bufferData,
-                             const D3D12_RESOURCE_FLAGS flags)
+	const D3D12_RESOURCE_FLAGS flags)
 {
 	const auto device = Application::Get().GetDevice();
 
@@ -200,7 +200,7 @@ void CommandList::CopyBuffer(Buffer& buffer, const size_t numElements, const siz
 		FlushResourceBarriers();
 
 		UpdateSubresources(m_D3d12CommandList.Get(), d3d12Resource.Get(),
-		                   uploadResource.Get(), 0, 0, 1, &subresourceData);
+			uploadResource.Get(), 0, 0, 1, &subresourceData);
 
 		// Add references to resources so they stay in scope until the command list is reset.
 		TrackObject(uploadResource);
@@ -212,20 +212,20 @@ void CommandList::CopyBuffer(Buffer& buffer, const size_t numElements, const siz
 }
 
 void CommandList::CopyVertexBuffer(VertexBuffer& vertexBuffer, const size_t numVertices, const size_t vertexStride,
-                                   const void* vertexBufferData)
+	const void* vertexBufferData)
 {
 	CopyBuffer(vertexBuffer, numVertices, vertexStride, vertexBufferData);
 }
 
 void CommandList::CopyIndexBuffer(IndexBuffer& indexBuffer, const size_t numIndices, const DXGI_FORMAT indexFormat,
-                                  const void* indexBufferData)
+	const void* indexBufferData)
 {
 	const size_t indexSizeInBytes = indexFormat == DXGI_FORMAT_R16_UINT ? 2 : 4;
 	CopyBuffer(indexBuffer, numIndices, indexSizeInBytes, indexBufferData);
 }
 
 void CommandList::CopyByteAddressBuffer(ByteAddressBuffer& byteAddressBuffer, const size_t bufferSize,
-                                        const void* bufferData)
+	const void* bufferData)
 {
 	CopyBuffer(byteAddressBuffer, 1, bufferSize, bufferData, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 }
@@ -238,7 +238,7 @@ void CommandList::SetPrimitiveTopology(const D3D_PRIMITIVE_TOPOLOGY primitiveTop
 namespace
 {
 	DirectX::ScratchImage LoadScratchImage(const fs::path& filePath, DirectX::TexMetadata* pMetadata,
-	                                       const bool builtInMipMapGeneration = true)
+		const bool builtInMipMapGeneration = true)
 	{
 		DirectX::ScratchImage scratchImage;
 
@@ -263,7 +263,7 @@ namespace
 		{
 			DirectX::ScratchImage mipChain;
 			ThrowIfFailed(GenerateMipMaps(scratchImage.GetImages(), scratchImage.GetImageCount(), *pMetadata,
-			                              DirectX::TEX_FILTER_DEFAULT, 0, mipChain));
+				DirectX::TEX_FILTER_DEFAULT, 0, mipChain));
 			return mipChain;
 		}
 
@@ -272,7 +272,7 @@ namespace
 }
 
 void CommandList::LoadTextureFromFile(Texture& texture, const std::wstring& fileName,
-                                      const TextureUsageType textureUsage)
+	const TextureUsageType textureUsage)
 {
 	const fs::path filePath(fileName);
 	if (!exists(filePath))
@@ -375,7 +375,7 @@ void CommandList::ClearTexture(const Texture& texture, const float clearColor[4]
 }
 
 void CommandList::ClearDepthStencilTexture(const Texture& texture, const D3D12_CLEAR_FLAGS clearFlags,
-                                           const float depth, const uint8_t stencil)
+	const float depth, const uint8_t stencil)
 {
 	TransitionBarrier(texture, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 	m_D3d12CommandList->ClearDepthStencilView(texture.GetDepthStencilView(), clearFlags, depth, stencil, 0, nullptr);
@@ -390,7 +390,7 @@ void CommandList::GenerateMips(Texture& texture)
 		if (!m_ComputeCommandList)
 		{
 			m_ComputeCommandList = Application::Get().GetCommandQueue(D3D12_COMMAND_LIST_TYPE_COMPUTE)->
-			                                          GetCommandList();
+				GetCommandList();
 		}
 		m_ComputeCommandList->GenerateMips(texture);
 		return;
@@ -518,8 +518,8 @@ void CommandList::GenerateMips(Texture& texture)
 }
 
 void CommandList::CopyTextureSubresource(const Texture& texture, const uint32_t firstSubresource,
-                                         const uint32_t numSubresources,
-                                         const D3D12_SUBRESOURCE_DATA* subresourceData)
+	const uint32_t numSubresources,
+	const D3D12_SUBRESOURCE_DATA* subresourceData)
 {
 	const auto device = Application::Get().GetDevice();
 	const auto destinationResource = texture.GetD3D12Resource();
@@ -532,7 +532,7 @@ void CommandList::CopyTextureSubresource(const Texture& texture, const uint32_t 
 	FlushResourceBarriers();
 
 	const UINT64 requiredSize = GetRequiredIntermediateSize(destinationResource.Get(), firstSubresource,
-	                                                        numSubresources);
+		numSubresources);
 
 	ComPtr<ID3D12Resource> intermediateResource;
 	{
@@ -549,7 +549,7 @@ void CommandList::CopyTextureSubresource(const Texture& texture, const uint32_t 
 	}
 
 	UpdateSubresources(m_D3d12CommandList.Get(), destinationResource.Get(), intermediateResource.Get(), 0,
-	                   firstSubresource, numSubresources, subresourceData);
+		firstSubresource, numSubresources, subresourceData);
 
 	TrackObject(intermediateResource);
 	TrackObject(destinationResource);
@@ -557,7 +557,7 @@ void CommandList::CopyTextureSubresource(const Texture& texture, const uint32_t 
 
 
 void CommandList::SetGraphicsDynamicConstantBuffer(const uint32_t rootParameterIndex, const size_t sizeInBytes,
-                                                   const void* bufferData) const
+	const void* bufferData) const
 {
 	const auto heapAllocation = m_PUploadBuffer->Allocate(sizeInBytes, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
 	memcpy(heapAllocation.Cpu, bufferData, sizeInBytes);
@@ -566,13 +566,13 @@ void CommandList::SetGraphicsDynamicConstantBuffer(const uint32_t rootParameterI
 }
 
 void CommandList::SetGraphics32BitConstants(const uint32_t rootParameterIndex, const uint32_t numConstants,
-                                            const void* constants)
+	const void* constants)
 {
 	m_D3d12CommandList->SetGraphicsRoot32BitConstants(rootParameterIndex, numConstants, constants, 0);
 }
 
 void CommandList::SetCompute32BitConstants(const uint32_t rootParameterIndex, const uint32_t numConstants,
-                                           const void* constants)
+	const void* constants)
 {
 	m_D3d12CommandList->SetComputeRoot32BitConstants(rootParameterIndex, numConstants, constants, 0);
 }
@@ -600,8 +600,8 @@ void CommandList::SetIndexBuffer(const IndexBuffer& indexBuffer)
 }
 
 void CommandList::SetGraphicsDynamicStructuredBuffer(const uint32_t slot, const size_t numElements,
-                                                     const size_t elementSize,
-                                                     const void* bufferData) const
+	const size_t elementSize,
+	const void* bufferData) const
 {
 	const size_t bufferSize = numElements * elementSize;
 	const auto heapAllocation = m_PUploadBuffer->Allocate(bufferSize, elementSize);
@@ -611,26 +611,26 @@ void CommandList::SetGraphicsDynamicStructuredBuffer(const uint32_t slot, const 
 
 void CommandList::SetViewport(const D3D12_VIEWPORT& viewport)
 {
-	SetViewports({viewport});
+	SetViewports({ viewport });
 }
 
 void CommandList::SetViewports(const std::vector<D3D12_VIEWPORT>& viewports)
 {
 	assert(viewports.size() < D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE);
 	m_D3d12CommandList->RSSetViewports(static_cast<UINT>(viewports.size()),
-	                                   viewports.data());
+		viewports.data());
 }
 
 void CommandList::SetScissorRect(const D3D12_RECT& scissorRect)
 {
-	SetScissorRects({scissorRect});
+	SetScissorRects({ scissorRect });
 }
 
 void CommandList::SetScissorRects(const std::vector<D3D12_RECT>& scissorRects)
 {
 	assert(scissorRects.size() < D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE);
 	m_D3d12CommandList->RSSetScissorRects(static_cast<UINT>(scissorRects.size()),
-	                                      scissorRects.data());
+		scissorRects.data());
 }
 
 void CommandList::SetPipelineState(const ComPtr<ID3D12PipelineState> pipelineState)
@@ -677,9 +677,9 @@ void CommandList::SetComputeRootSignature(const RootSignature& rootSignature)
 }
 
 void CommandList::SetShaderResourceView(const uint32_t rootParameterIndex, const uint32_t descriptorOffset,
-                                        const Resource& resource, const D3D12_RESOURCE_STATES stateAfter,
-                                        const UINT firstSubresource, const UINT numSubresources,
-                                        const D3D12_SHADER_RESOURCE_VIEW_DESC* srv)
+	const Resource& resource, const D3D12_RESOURCE_STATES stateAfter,
+	const UINT firstSubresource, const UINT numSubresources,
+	const D3D12_SHADER_RESOURCE_VIEW_DESC* srv)
 {
 	if (numSubresources < D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
 	{
@@ -699,9 +699,9 @@ void CommandList::SetShaderResourceView(const uint32_t rootParameterIndex, const
 }
 
 void CommandList::SetUnorderedAccessView(const uint32_t rootParameterIndex, const uint32_t descriptorOffset,
-                                         const Resource& resource, const D3D12_RESOURCE_STATES stateAfter,
-                                         const UINT firstSubresource, const UINT numSubresources,
-                                         const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc)
+	const Resource& resource, const D3D12_RESOURCE_STATES stateAfter,
+	const UINT firstSubresource, const UINT numSubresources,
+	const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc)
 {
 	if (numSubresources < D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
 	{
@@ -739,8 +739,8 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, const UINT t
 		{
 			TransitionBarrier(texture, D3D12_RESOURCE_STATE_RENDER_TARGET, subresource);
 			renderTargetDescriptors.push_back(isArrayItem
-				                                  ? texture.GetRenderTargetViewArray(texArrayIndex)
-				                                  : texture.GetRenderTargetView());
+				? texture.GetRenderTargetViewArray(texArrayIndex)
+				: texture.GetRenderTargetView());
 
 			TrackResource(texture);
 		}
@@ -753,8 +753,8 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, const UINT t
 	{
 		TransitionBarrier(depthTexture, D3D12_RESOURCE_STATE_DEPTH_WRITE, subresource);
 		depthStencilDescriptor = isArrayItem
-			                         ? depthTexture.GeDepthStencilViewArray(texArrayIndex)
-			                         : depthTexture.GetDepthStencilView();
+			? depthTexture.GeDepthStencilViewArray(texArrayIndex)
+			: depthTexture.GetDepthStencilView();
 
 		TrackResource(depthTexture);
 	}
@@ -762,11 +762,11 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, const UINT t
 	const D3D12_CPU_DESCRIPTOR_HANDLE* pDsv = depthStencilDescriptor.ptr != 0 ? &depthStencilDescriptor : nullptr;
 
 	m_D3d12CommandList->OMSetRenderTargets(static_cast<UINT>(renderTargetDescriptors.size()),
-	                                       renderTargetDescriptors.data(), FALSE, pDsv);
+		renderTargetDescriptors.data(), FALSE, pDsv);
 }
 
 void CommandList::Draw(const uint32_t vertexCount, const uint32_t instanceCount, const uint32_t startVertex,
-                       const uint32_t startInstance)
+	const uint32_t startInstance)
 {
 	FlushResourceBarriers();
 
@@ -779,8 +779,8 @@ void CommandList::Draw(const uint32_t vertexCount, const uint32_t instanceCount,
 }
 
 void CommandList::DrawIndexed(const uint32_t indexCount, const uint32_t instanceCount, const uint32_t startIndex,
-                              const int32_t baseVertex,
-                              const uint32_t startInstance)
+	const int32_t baseVertex,
+	const uint32_t startInstance)
 {
 	FlushResourceBarriers();
 
@@ -902,7 +902,7 @@ void CommandList::GenerateMipsUav(Texture& texture, DXGI_FORMAT format)
 		// The case where either the width or the height is exactly 1 is handled
 		// as a special case (as the dimension does not require reduction).
 		_BitScanForward(&mipCount, (dstWidth == 1 ? dstHeight : dstWidth) |
-		                (dstHeight == 1 ? dstWidth : dstHeight));
+			(dstHeight == 1 ? dstWidth : dstHeight));
 		// Maximum number of mips to generate is 4.
 		mipCount = std::min<DWORD>(GenerateMipsPso::MAX_MIP_LEVELS_AT_ONCE, mipCount + 1);
 		// Clamp to total number of mips left over.
@@ -921,7 +921,7 @@ void CommandList::GenerateMipsUav(Texture& texture, DXGI_FORMAT format)
 		SetCompute32BitConstants(GenerateMips::GenerateMipsCb, generateMipsCB);
 
 		SetShaderResourceView(GenerateMips::SrcMip, 0, texture, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, srcMip,
-		                      1, &srvDesc);
+			1, &srvDesc);
 
 		for (uint32_t mip = 0; mip < mipCount; ++mip)
 		{
@@ -931,7 +931,7 @@ void CommandList::GenerateMipsUav(Texture& texture, DXGI_FORMAT format)
 			uavDesc.Texture2D.MipSlice = srcMip + mip + 1;
 
 			SetUnorderedAccessView(GenerateMips::OutMip, mip, texture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-			                       uavDesc.Texture2D.MipSlice, 1, &uavDesc);
+				uavDesc.Texture2D.MipSlice, 1, &uavDesc);
 		}
 
 		// Pad any unused mip levels with a default UAV. Doing this keeps the DX12 runtime happy.

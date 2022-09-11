@@ -8,12 +8,12 @@ using namespace Microsoft::WRL;
 using namespace DirectX;
 
 PointLightShadowPassPso::PointLightShadowPassPso(const ComPtr<ID3D12Device2>& device,
-                                                 const UINT resolution)
+	const UINT resolution)
 	: ShadowPassPsoBase(device, resolution)
-	  , m_CubeShadowMapsCapacity(0)
-	  , m_CubeShadowMapsCount(0)
-	  , m_CurrentLightIndex(0)
-	  , m_CurrentCubeMapSideIndex(0)
+	, m_CubeShadowMapsCapacity(0)
+	, m_CubeShadowMapsCount(0)
+	, m_CurrentLightIndex(0)
+	, m_CurrentCubeMapSideIndex(0)
 {
 	m_ShadowPassParameters.LightType = ShadowPassParameters::PointLight;
 	SetShadowMapsCount(DEFAULT_CUBE_SHADOW_MAPS_COUNT);
@@ -30,7 +30,7 @@ void PointLightShadowPassPso::ClearShadowMap(CommandList& commandList) const
 }
 
 void PointLightShadowPassPso::SetShadowMapShaderResourceView(CommandList& commandList, uint32_t rootParameterIndex,
-                                                             uint32_t descriptorOffset) const
+	uint32_t descriptorOffset) const
 {
 	constexpr auto stateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 
@@ -48,24 +48,24 @@ void PointLightShadowPassPso::SetShadowMapShaderResourceView(CommandList& comman
 
 
 	commandList.SetShaderResourceView(rootParameterIndex, descriptorOffset, GetShadowMapsAsTexture(), stateAfter, 0,
-	                                  numSubresources, &srvDesc);
+		numSubresources, &srvDesc);
 }
 
 void PointLightShadowPassPso::ComputePassParameters(const PointLight& pointLight)
 {
-	const XMVECTOR eyePosition = XMLoadFloat4(&pointLight.m_PositionWs);
+	const XMVECTOR eyePosition = XMLoadFloat4(&pointLight.PositionWs);
 	const auto& cubeSideOrientation = CUBE_SIDE_ORIENTATIONS[m_CurrentCubeMapSideIndex];
 	const auto viewMatrix = XMMatrixLookToLH(eyePosition, cubeSideOrientation.m_Forward, cubeSideOrientation.m_Up);
 
 	float rangeMultiplier = 1.0f;
-	rangeMultiplier = max(rangeMultiplier, pointLight.m_Color.x);
-	rangeMultiplier = max(rangeMultiplier, pointLight.m_Color.y);
-	rangeMultiplier = max(rangeMultiplier, pointLight.m_Color.z);
-	const float range = pointLight.m_Range * rangeMultiplier * 2.0f;
+	rangeMultiplier = max(rangeMultiplier, pointLight.Color.x);
+	rangeMultiplier = max(rangeMultiplier, pointLight.Color.y);
+	rangeMultiplier = max(rangeMultiplier, pointLight.Color.z);
+	const float range = pointLight.Range * rangeMultiplier * 2.0f;
 	const auto projectionMatrix = XMMatrixPerspectiveFovLH(XMConvertToRadians(90.0f), 1, 0.1f, range);
 	const auto viewProjection = viewMatrix * projectionMatrix;
 
-	m_ShadowPassParameters.LightDirectionWs = pointLight.m_PositionWs;
+	m_ShadowPassParameters.LightDirectionWs = pointLight.PositionWs;
 	m_ShadowPassParameters.ViewProjection = viewProjection;
 }
 
@@ -91,11 +91,11 @@ void PointLightShadowPassPso::SetShadowMapsCount(const uint32_t count)
 			D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 		D3D12_CLEAR_VALUE depthClearValue;
 		depthClearValue.Format = shadowMapDesc.Format;
-		depthClearValue.DepthStencil = {1.0f, 0};
+		depthClearValue.DepthStencil = { 1.0f, 0 };
 
 		const auto shadowMap = Texture(shadowMapDesc, &depthClearValue,
-		                               TextureUsageType::Depth,
-		                               L"Point Light Shadow Map Array");
+			TextureUsageType::Depth,
+			L"Point Light Shadow Map Array");
 		m_ShadowMapArray.AttachTexture(DepthStencil, shadowMap);
 		m_CubeShadowMapsCapacity = count;
 	}

@@ -24,13 +24,13 @@
  *  IN THE SOFTWARE.
  */
 
-/**
- *  @file Texture.h
- *  @date October 24, 2018
- *  @author Jeremiah van Oosten
- *
- *  @brief A wrapper for a DX12 Texture object.
- */
+ /**
+  *  @file Texture.h
+  *  @date October 24, 2018
+  *  @author Jeremiah van Oosten
+  *
+  *  @brief A wrapper for a DX12 Texture object.
+  */
 
 
 #include "ResourceWrapper.h"
@@ -49,14 +49,14 @@ class Texture : public ResourceWrapper
 {
 public:
 	explicit Texture(TextureUsageType textureUsage = TextureUsageType::Albedo,
-	                 const std::wstring& name = L"");
+		const std::wstring& name = L"");
 	explicit Texture(const D3D12_RESOURCE_DESC& resourceDesc,
-	                 const D3D12_CLEAR_VALUE* clearValue = nullptr,
-	                 TextureUsageType textureUsage = TextureUsageType::Albedo,
-	                 const std::wstring& name = L"");
+		const D3D12_CLEAR_VALUE* clearValue = nullptr,
+		TextureUsageType textureUsage = TextureUsageType::Albedo,
+		const std::wstring& name = L"");
 	explicit Texture(Microsoft::WRL::ComPtr<ID3D12Resource> resource,
-	                 TextureUsageType textureUsage = TextureUsageType::Albedo,
-	                 const std::wstring& name = L"");
+		TextureUsageType textureUsage = TextureUsageType::Albedo,
+		const std::wstring& name = L"");
 
 	Texture(const Texture& copy);
 	Texture(Texture&& copy);

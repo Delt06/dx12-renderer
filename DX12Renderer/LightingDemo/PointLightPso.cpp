@@ -42,14 +42,14 @@ void PointLightPso::Set(CommandList& commandList) const
 void PointLightPso::Draw(CommandList& commandList, const PointLight& pointLight, const XMMATRIX viewMatrix,
                          const XMMATRIX viewProjectionMatrix, const XMMATRIX projectionMatrix, const float scale) const
 {
-	XMMATRIX worldMatrix = XMMatrixTranslation(pointLight.m_PositionWs.x, pointLight.m_PositionWs.y,
-	                                           pointLight.m_PositionWs.z);
+	XMMATRIX worldMatrix = XMMatrixTranslation(pointLight.PositionWs.x, pointLight.PositionWs.y,
+	                                           pointLight.PositionWs.z);
 	worldMatrix = XMMatrixMultiply(XMMatrixScaling(scale, scale, scale), worldMatrix);
 	MatricesCb matricesCb;
 	matricesCb.Compute(worldMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
 
 	MaterialCb materialCb;
-	materialCb.m_Color = pointLight.m_Color;
+	materialCb.m_Color = pointLight.Color;
 
 	commandList.SetGraphicsDynamicConstantBuffer(RootParameters::MatricesCb, matricesCb);
 	commandList.SetGraphics32BitConstants(RootParameters::MaterialCb, sizeof(MaterialCb) / sizeof(float), &materialCb);

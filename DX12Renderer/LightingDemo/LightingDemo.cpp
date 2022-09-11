@@ -256,33 +256,33 @@ bool LightingDemo::LoadContent()
 		// magenta
 		{
 			PointLight pointLight(XMFLOAT4(-8, 2, -2, 1));
-			pointLight.m_Color = XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f);
+			pointLight.Color = XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f);
 			m_Scene.m_PointLights.push_back(pointLight);
 		}
 
 		// yellow-ish
 		{
 			PointLight pointLight(XMFLOAT4(0, 2, -6, 1));
-			pointLight.m_Color = XMFLOAT4(3.0f, 2.0f, 0.25f, 1.0f);
+			pointLight.Color = XMFLOAT4(3.0f, 2.0f, 0.25f, 1.0f);
 			m_Scene.m_PointLights.push_back(pointLight);
 		}
 
 		// cyan-ish
 		{
 			PointLight pointLight(XMFLOAT4(6, 2, 10, 1), 25.0f);
-			pointLight.m_Color = XMFLOAT4(0.0f, 5.0f, 2.0f, 1.0f);
+			pointLight.Color = XMFLOAT4(0.0f, 5.0f, 2.0f, 1.0f);
 			m_Scene.m_PointLights.push_back(pointLight);
 		}
 
 		// spotlight
 		{
 			SpotLight spotLight;
-			spotLight.m_PositionWs = XMFLOAT4(0, 5.0f, 55.0f, 1.0f);
-			spotLight.m_DirectionWs = XMFLOAT4(0, 0.0f, -1.0f, 0.0f);
-			spotLight.m_Color = XMFLOAT4(1, 1, 1, 1);
-			spotLight.m_Intensity = 5.0f;
-			spotLight.m_SpotAngle = XMConvertToRadians(45.0f);
-			spotLight.m_Attenuation = 0.0005f;
+			spotLight.PositionWs = XMFLOAT4(0, 5.0f, 55.0f, 1.0f);
+			spotLight.DirectionWs = XMFLOAT4(0, 0.0f, -1.0f, 0.0f);
+			spotLight.Color = XMFLOAT4(1, 1, 1, 1);
+			spotLight.Intensity = 5.0f;
+			spotLight.SpotAngle = XMConvertToRadians(45.0f);
+			spotLight.Attenuation = 0.0005f;
 			m_Scene.m_SpotLights.push_back(spotLight);
 		}
 	}
@@ -647,21 +647,21 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 		// Update point lights
 		for (auto& pointLight : m_Scene.m_PointLights)
 		{
-			XMVECTOR lightPosVs = XMLoadFloat4(&pointLight.m_PositionWs);
+			XMVECTOR lightPosVs = XMLoadFloat4(&pointLight.PositionWs);
 			lightPosVs = XMVector4Transform(lightPosVs, viewMatrix);
-			XMStoreFloat4(&pointLight.m_PositionVs, lightPosVs);
+			XMStoreFloat4(&pointLight.PositionVs, lightPosVs);
 		}
 
 		// Update spot lights
 		for (auto& spotLight : m_Scene.m_SpotLights)
 		{
-			XMVECTOR lightPosVs = XMLoadFloat4(&spotLight.m_PositionWs);
+			XMVECTOR lightPosVs = XMLoadFloat4(&spotLight.PositionWs);
 			lightPosVs = XMVector4Transform(lightPosVs, viewMatrix);
-			XMStoreFloat4(&spotLight.m_PositionVs, lightPosVs);
+			XMStoreFloat4(&spotLight.PositionVs, lightPosVs);
 
-			XMVECTOR lightDirVs = XMLoadFloat4(&spotLight.m_DirectionWs);
+			XMVECTOR lightDirVs = XMLoadFloat4(&spotLight.DirectionWs);
 			lightDirVs = XMVector4Transform(lightDirVs, viewMatrix);
-			XMStoreFloat4(&spotLight.m_DirectionVs, lightDirVs);
+			XMStoreFloat4(&spotLight.DirectionVs, lightDirVs);
 		}
 
 		// Draw point lights

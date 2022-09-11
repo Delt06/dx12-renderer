@@ -48,14 +48,14 @@ void SpotLightShadowPassPso::SetShadowMapShaderResourceView(CommandList& command
 
 void SpotLightShadowPassPso::ComputePassParameters(const SpotLight& spotLight)
 {
-	const XMVECTOR eyePosition = XMLoadFloat4(&spotLight.m_PositionWs);
-	const XMVECTOR eyeDirection = XMLoadFloat4(&spotLight.m_DirectionWs);
+	const XMVECTOR eyePosition = XMLoadFloat4(&spotLight.PositionWs);
+	const XMVECTOR eyeDirection = XMLoadFloat4(&spotLight.DirectionWs);
 	const auto viewMatrix = XMMatrixLookToLH(eyePosition, eyeDirection, XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
 
-	const auto projectionMatrix = XMMatrixPerspectiveFovLH(spotLight.m_SpotAngle * 2, 1, 0.1f, 100.0f);
+	const auto projectionMatrix = XMMatrixPerspectiveFovLH(spotLight.SpotAngle * 2, 1, 0.1f, 100.0f);
 	const auto viewProjection = viewMatrix * projectionMatrix;
 
-	m_ShadowPassParameters.LightDirectionWs = spotLight.m_PositionWs;
+	m_ShadowPassParameters.LightDirectionWs = spotLight.PositionWs;
 	m_ShadowPassParameters.ViewProjection = viewProjection;
 }
 

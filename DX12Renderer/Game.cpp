@@ -7,9 +7,9 @@
 
 Game::Game(const std::wstring& name, const int width, const int height, const bool vSync)
 	: Name(name)
-	  , Width(width)
-	  , Height(height)
-	  , VSync(vSync)
+	, Width(width)
+	, Height(height)
+	, VSync(vSync)
 {
 }
 
