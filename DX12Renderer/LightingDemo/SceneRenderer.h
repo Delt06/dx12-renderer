@@ -19,7 +19,6 @@ class SceneRenderer
 public:
 	SceneRenderer(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, const GraphicsSettings& graphicsSettings, DXGI_FORMAT backBufferFormat, DXGI_FORMAT depthBufferFormat);
 
-	void Clear();
 	void SetScene(const std::shared_ptr<Scene> scene);
 	void SetMatrices(DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX projectionMatrix);
 
@@ -27,6 +26,8 @@ public:
 	void MainPass(CommandList& commandList);
 
 private:
+	void ResetShadowMatrices();
+
 	GraphicsSettings m_GraphicsSettings;
 
 	RootSignature m_RootSignature;
