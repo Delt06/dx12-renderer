@@ -13,6 +13,7 @@
 #include <LightingDemo/SpotLightShadowPassPso.h>
 #include <GraphicsSettings.h>
 #include "PointLightPso.h"
+#include <Cubemap.h>
 
 class SceneRenderer
 {
@@ -20,6 +21,9 @@ public:
 	SceneRenderer(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, const GraphicsSettings& graphicsSettings, DXGI_FORMAT backBufferFormat, DXGI_FORMAT depthBufferFormat);
 
 	void SetScene(const std::shared_ptr<Scene> scene);
+	void SetEnvironmentReflectionsCubemap(const std::shared_ptr<Cubemap> cubemap);
+
+	void ToggleEnvironmentReflections(bool enabled);
 	void SetMatrices(DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX projectionMatrix);
 
 	void ShadowPass(CommandList& commandList);
@@ -27,6 +31,9 @@ public:
 
 private:
 	void ResetShadowMatrices();
+
+	void SetEnvironmentReflectionsCubemapSrv(CommandList& commandList, Cubemap& cubemap);
+	void SetEmptyEnvironmentReflectionsCubemapSrv(CommandList& commandList, Cubemap& cubemap);
 
 	GraphicsSettings m_GraphicsSettings;
 
@@ -39,6 +46,8 @@ private:
 	std::unique_ptr<SpotLightShadowPassPso> m_SpotLightShadowPassPso;
 
 	std::shared_ptr<Scene> m_Scene;
+	std::shared_ptr<Cubemap> m_EnvironmentReflectionsCubemap;
+	bool m_AreEnvironmentReflectionsEnabled;
 	DirectX::XMMATRIX m_ViewMatrix;
 	DirectX::XMMATRIX m_ProjectionMatrix;
 

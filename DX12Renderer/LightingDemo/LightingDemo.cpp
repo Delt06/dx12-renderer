@@ -72,7 +72,7 @@ namespace
 
 
 LightingDemo::LightingDemo(const std::wstring& name, int width, int height, GraphicsSettings graphicsSettings)
-	: Base(name, width, height, graphicsSettings.m_VSync)
+	: Base(name, width, height, graphicsSettings.VSync)
 	, m_Viewport(CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height)))
 	, m_ScissorRect(CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX))
 	, m_GraphicsSettings(graphicsSettings)
@@ -107,9 +107,15 @@ bool LightingDemo::LoadContent()
 	// sRGB formats provide free gamma correction!
 	constexpr DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 	constexpr DXGI_FORMAT depthBufferFormat = DXGI_FORMAT_D32_FLOAT;
+	D3D12_CLEAR_VALUE colorClearValue;
+	colorClearValue.Format = backBufferFormat;
+	memcpy(colorClearValue.Color, CLEAR_COLOR, sizeof CLEAR_COLOR);
 
 	m_SceneRenderer = std::make_shared<SceneRenderer>(device, *commandList, m_GraphicsSettings, backBufferFormat, depthBufferFormat);
 	m_SceneRenderer->SetScene(m_Scene);
+
+	m_ReflectionCubemap = std::make_shared<Cubemap>(m_GraphicsSettings.DynamicReflectionsResolution, XMVectorSet(0, 5, 25, 1), *commandList, backBufferFormat, depthBufferFormat, colorClearValue);
+	m_SceneRenderer->SetEnvironmentReflectionsCubemap(m_ReflectionCubemap);
 
 	// Generate default texture
 	{
@@ -143,6 +149,7 @@ bool LightingDemo::LoadContent()
 			auto model = modelLoader.LoadObj(*commandList, L"Assets/Models/sphere/sphere-cylcoords-1k.obj", true);
 			{
 				model->GetMaterial().SpecularPower = 100.0f;
+				model->GetMaterial().Reflectivity = 1.0f;
 				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
 					L"Assets/Textures/Metal/Metal_1K_Color.jpg");
 				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
@@ -153,7 +160,7 @@ bool LightingDemo::LoadContent()
 					L"Assets/Textures/Metal/Metal_1K_Roughness.jpg");
 			}
 
-			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 25.0f);
+			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 5.0f, 25.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
 			XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
 			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
@@ -249,9 +256,6 @@ bool LightingDemo::LoadContent()
 		1, 1,
 		1, 0,
 		D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
-	D3D12_CLEAR_VALUE colorClearValue;
-	colorClearValue.Format = colorDesc.Format;
-	memcpy(colorClearValue.Color, CLEAR_COLOR, sizeof CLEAR_COLOR);
 
 	auto colorTexture = Texture(colorDesc, &colorClearValue,
 		TextureUsageType::RenderTarget,
@@ -375,16 +379,39 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 
 	m_SceneRenderer->ShadowPass(*commandList);
 
-	commandList->SetViewport(m_Viewport);
-	commandList->SetScissorRect(m_ScissorRect);
+
 
 	{
+		PIXScope(*commandList, "Reflection Cubemap");
+		
+		m_SceneRenderer->ToggleEnvironmentReflections(false);
+		m_ReflectionCubemap->Clear(*commandList);
+		m_ReflectionCubemap->SetViewportScissorRect(*commandList);
+
+		for (uint32_t i = 0; i < Cubemap::SIDES_COUNT; ++i)
+		{
+			PIXScope(*commandList, "Reflection Cubemap Side");
+			XMMATRIX cubemapSideView, cubemapSideProjection;
+			m_ReflectionCubemap->ComputeViewProjectionMatrices(*commandList, i, &cubemapSideView, &cubemapSideProjection);
+			m_SceneRenderer->SetMatrices(cubemapSideView, cubemapSideProjection);
+
+			m_ReflectionCubemap->SetRenderTarget(*commandList, i);
+
+			m_SceneRenderer->MainPass(*commandList);
+		}
+	}
+
+	{
+		PIXScope(*commandList, "Main Pass");
 		commandList->SetRenderTarget(m_RenderTarget);
+		commandList->SetViewport(m_Viewport);
+		commandList->SetScissorRect(m_ScissorRect);
 
 		const XMMATRIX viewMatrix = m_Scene->MainCamera.GetViewMatrix();
 		const XMMATRIX projectionMatrix = m_Scene->MainCamera.GetProjectionMatrix();
 
 		m_SceneRenderer->SetMatrices(viewMatrix, projectionMatrix);
+		m_SceneRenderer->ToggleEnvironmentReflections(true);
 		m_SceneRenderer->MainPass(*commandList);
 	}
 
@@ -414,7 +441,7 @@ void LightingDemo::OnKeyPressed(KeyEventArgs& e)
 		}
 	case KeyCode::V:
 		PWindow->ToggleVSync();
-		m_GraphicsSettings.m_VSync = !m_GraphicsSettings.m_VSync;
+		m_GraphicsSettings.VSync = !m_GraphicsSettings.VSync;
 		break;
 	case KeyCode::R:
 		// Reset camera transform

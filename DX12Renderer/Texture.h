@@ -108,7 +108,7 @@ public:
 	 * Get the DSV for the texture.
 	 */
 	virtual D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilView() const;
-	virtual D3D12_CPU_DESCRIPTOR_HANDLE GeDepthStencilViewArray(uint32_t index) const;
+	virtual D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilViewArray(uint32_t index) const;
 
 	bool CheckSrvSupport() const
 	{

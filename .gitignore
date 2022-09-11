@@ -12,3 +12,5 @@
 *.vcxproj.user
 
 *.sln.DotSettings.user
+
+packages/*

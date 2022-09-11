@@ -5,6 +5,7 @@
 #include <Model.h>
 #include <Mesh.h>
 #include <MatricesCb.h>
+#include <Cubemap.h>
 
 using namespace DirectX;
 using namespace Microsoft::WRL;
@@ -61,10 +62,12 @@ namespace
 			PointLights,
 			// StructuredBuffer SpotLights : register(t8);
 			SpotLights,
-			// Texture2DArray : register(9)
+			// Texture2DArray : register(t9)
 			SpotLightShadowMaps,
 			// StructuredBuffer<XMMATRIX> register(t10);
 			SpotLightMatrices,
+			// Texture2DCube : register(t11)
+			EnvironmentReflectionsCubemap,
 			NumRootParameters
 		};
 	}
@@ -101,6 +104,8 @@ SceneRenderer::SceneRenderer(Microsoft::WRL::ComPtr<ID3D12Device2> device, Comma
 			ModelMaps::TotalNumber + 2);
 		CD3DX12_DESCRIPTOR_RANGE1 descriptorRangeSpotLightShadowMaps(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1,
 			ModelMaps::TotalNumber + 5);
+		CD3DX12_DESCRIPTOR_RANGE1 environmentReflectionsCubemap(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1,
+			ModelMaps::TotalNumber + 7);
 
 		CD3DX12_ROOT_PARAMETER1 rootParameters[RootParameters::NumRootParameters];
 		rootParameters[RootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
@@ -130,6 +135,8 @@ SceneRenderer::SceneRenderer(Microsoft::WRL::ComPtr<ID3D12Device2> device, Comma
 			D3D12_SHADER_VISIBILITY_PIXEL);
 		rootParameters[RootParameters::SpotLightMatrices].InitAsShaderResourceView(
 			ModelMaps::TotalNumber + 6, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
+		rootParameters[RootParameters::EnvironmentReflectionsCubemap].InitAsDescriptorTable(
+			1, &environmentReflectionsCubemap, D3D12_SHADER_VISIBILITY_PIXEL);
 
 		CD3DX12_STATIC_SAMPLER_DESC samplers[] = {
 			// linear repeat
@@ -186,13 +193,13 @@ SceneRenderer::SceneRenderer(Microsoft::WRL::ComPtr<ID3D12Device2> device, Comma
 	// Setup shadows
 	{
 		// Directional Light
-		const auto& directionalLightShadows = graphicsSettings.m_DirectionalLightShadows;
+		const auto& directionalLightShadows = graphicsSettings.DirectionalLightShadows;
 		m_DirectionalLightShadowPassPso = std::make_unique<DirectionalLightShadowPassPso>(
 			device, directionalLightShadows.m_Resolution);
 		m_DirectionalLightShadowPassPso->SetBias(directionalLightShadows.m_DepthBias,
 			directionalLightShadows.m_NormalBias);
 
-		const auto& pointLightShadows = graphicsSettings.m_PointLightShadows;
+		const auto& pointLightShadows = graphicsSettings.PointLightShadows;
 		// Point Lights
 		m_PointLightShadowPassPso = std::make_unique<PointLightShadowPassPso>(
 			device, pointLightShadows.m_Resolution);
@@ -219,18 +226,40 @@ void SceneRenderer::SetScene(const std::shared_ptr<Scene> scene)
 	m_Scene = scene;
 }
 
+void SceneRenderer::SetEnvironmentReflectionsCubemap(const std::shared_ptr<Cubemap> cubemap)
+{
+	m_EnvironmentReflectionsCubemap = cubemap;
+}
+
+void SceneRenderer::ToggleEnvironmentReflections(bool enabled)
+{
+	m_AreEnvironmentReflectionsEnabled = enabled;
+}
+
 void SceneRenderer::SetMatrices(DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX projectionMatrix)
 {
 	m_ViewMatrix = viewMatrix;
 	m_ProjectionMatrix = projectionMatrix;
 }
 
+void SceneRenderer::SetEnvironmentReflectionsCubemapSrv(CommandList& commandList, Cubemap& cubemap)
+{
+	cubemap.SetShaderResourceView(commandList, RootParameters::EnvironmentReflectionsCubemap);
+}
+
+void SceneRenderer::SetEmptyEnvironmentReflectionsCubemapSrv(CommandList& commandList, Cubemap& cubemap)
+{
+	cubemap.SetEmptyShaderResourceView(commandList, RootParameters::EnvironmentReflectionsCubemap);
+}
+
 void SceneRenderer::ShadowPass(CommandList& commandList)
 {
+	PIXScope(commandList, "Shadow Pass");
 	ResetShadowMatrices();
 
-	// Directional Light
 	{
+		PIXScope(commandList, "Directional Light Shadows");
+
 		m_DirectionalLightShadowPassPso->SetContext(commandList);
 		m_DirectionalLightShadowPassPso->ClearShadowMap(commandList);
 		m_DirectionalLightShadowPassPso->ComputePassParameters(*m_Scene, m_Scene->MainDirectionalLight);
@@ -242,8 +271,9 @@ void SceneRenderer::ShadowPass(CommandList& commandList)
 		}
 	}
 
-	// Point Lights
 	{
+		PIXScope(commandList, "Point Light Shadows");
+
 		const auto pointLightsCount = static_cast<uint32_t>(m_Scene->PointLights.size());
 		m_PointLightShadowPassPso->SetShadowMapsCount(pointLightsCount);
 		m_PointLightShadowPassPso->ClearShadowMap(commandList);
@@ -253,7 +283,7 @@ void SceneRenderer::ShadowPass(CommandList& commandList)
 		{
 			const PointLight& pointLight = m_Scene->PointLights[lightIndex];
 
-			for (uint32_t cubeMapSideIndex = 0; cubeMapSideIndex < PointLightShadowPassPso::TEXTURES_IN_CUBEMAP; ++
+			for (uint32_t cubeMapSideIndex = 0; cubeMapSideIndex < Cubemap::SIDES_COUNT; ++
 				cubeMapSideIndex)
 			{
 				m_PointLightShadowPassPso->SetCurrentShadowMap(lightIndex, cubeMapSideIndex);
@@ -269,9 +299,9 @@ void SceneRenderer::ShadowPass(CommandList& commandList)
 			}
 		}
 	}
-
-	// Spot Lights
 	{
+		PIXScope(commandList, "Spot Light Shadows");
+
 		const auto spotLightsCount = static_cast<uint32_t>(m_Scene->SpotLights.size());
 		m_SpotLightShadowPassPso->SetShadowMapsCount(spotLightsCount);
 		m_SpotLightShadowPassPso->ClearShadowMap(commandList);
@@ -293,7 +323,6 @@ void SceneRenderer::ShadowPass(CommandList& commandList)
 			m_SpotLightShadowMatrices.push_back(m_SpotLightShadowPassPso->GetShadowViewProjectionMatrix());
 		}
 	}
-
 }
 
 void SceneRenderer::MainPass(CommandList& commandList)
@@ -331,8 +360,9 @@ void SceneRenderer::MainPass(CommandList& commandList)
 		XMStoreFloat4(&spotLight.DirectionVs, lightDirVs);
 	}
 
-	// Draw point lights
 	{
+		PIXScope(commandList, "Draw Point Lights");
+
 		m_PointLightPso->Set(commandList);
 
 		for (const auto& pointLight : m_Scene->PointLights)
@@ -342,10 +372,16 @@ void SceneRenderer::MainPass(CommandList& commandList)
 		}
 	}
 
-	// Opaque pass
 	{
+		PIXScope(commandList, "Opaque Pass");
+
 		commandList.SetPipelineState(m_PipelineState);
 		commandList.SetGraphicsRootSignature(m_RootSignature);
+
+		if (m_AreEnvironmentReflectionsEnabled)
+			SetEnvironmentReflectionsCubemapSrv(commandList, *m_EnvironmentReflectionsCubemap);
+		else
+			SetEmptyEnvironmentReflectionsCubemapSrv(commandList, *m_EnvironmentReflectionsCubemap);
 
 		// Update directional light cbuffer
 		{
@@ -378,11 +414,11 @@ void SceneRenderer::MainPass(CommandList& commandList)
 			ShadowReceiverParametersCb shadowReceiverParametersCb;
 			shadowReceiverParametersCb.ViewProjection = m_DirectionalLightShadowPassPso->
 				GetShadowViewProjectionMatrix();
-			shadowReceiverParametersCb.PoissonSpreadInv = 1.0f / m_GraphicsSettings.m_DirectionalLightShadows.
+			shadowReceiverParametersCb.PoissonSpreadInv = 1.0f / m_GraphicsSettings.DirectionalLightShadows.
 				m_PoissonSpread;
-			shadowReceiverParametersCb.PointLightPoissonSpreadInv = 1.0f / m_GraphicsSettings.m_PointLightShadows.
+			shadowReceiverParametersCb.PointLightPoissonSpreadInv = 1.0f / m_GraphicsSettings.PointLightShadows.
 				m_PoissonSpread;
-			shadowReceiverParametersCb.SpotLightPoissonSpreadInv = 1.0f / m_GraphicsSettings.m_PointLightShadows.
+			shadowReceiverParametersCb.SpotLightPoissonSpreadInv = 1.0f / m_GraphicsSettings.PointLightShadows.
 				m_PoissonSpread;
 			commandList.SetGraphicsDynamicConstantBuffer(RootParameters::ShadowMatricesCb,
 				shadowReceiverParametersCb);
@@ -407,8 +443,9 @@ void SceneRenderer::MainPass(CommandList& commandList)
 		}
 	}
 
-	// Particle Systems
 	{
+		PIXScope(commandList, "Particle Systems");
+
 		for (auto& ps : m_Scene->ParticleSystems)
 		{
 			ps.Draw(commandList, viewMatrix, viewProjectionMatrix, projectionMatrix);

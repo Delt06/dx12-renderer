@@ -59,12 +59,12 @@ void ParseCommandLineArguments(Parameters& parameters)
 
 		if (wcscmp(argv[i], L"--shadowResolution") == 0)
 		{
-			parameters.m_GraphicsSettings.m_DirectionalLightShadows.m_Resolution = wcstol(argv[++i], nullptr, 10);
+			parameters.m_GraphicsSettings.DirectionalLightShadows.m_Resolution = wcstol(argv[++i], nullptr, 10);
 		}
 
 		if (wcscmp(argv[i], L"--poissonSpread") == 0)
 		{
-			parameters.m_GraphicsSettings.m_DirectionalLightShadows.m_PoissonSpread = wcstof(argv[++i], nullptr);
+			parameters.m_GraphicsSettings.DirectionalLightShadows.m_PoissonSpread = wcstof(argv[++i], nullptr);
 		}
 	}
 

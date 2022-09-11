@@ -3,6 +3,7 @@
 #include "CommandList.h"
 #include "Light.h"
 #include "ShadowPassPsoBase.h"
+#include "Cubemap.h"
 
 using namespace Microsoft::WRL;
 using namespace DirectX;
@@ -34,7 +35,7 @@ void PointLightShadowPassPso::SetShadowMapShaderResourceView(CommandList& comman
 {
 	constexpr auto stateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 
-	const uint32_t numSubresources = m_CubeShadowMapsCount * TEXTURES_IN_CUBEMAP;
+	const uint32_t numSubresources = m_CubeShadowMapsCount * Cubemap::SIDES_COUNT;
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
@@ -54,8 +55,8 @@ void PointLightShadowPassPso::SetShadowMapShaderResourceView(CommandList& comman
 void PointLightShadowPassPso::ComputePassParameters(const PointLight& pointLight)
 {
 	const XMVECTOR eyePosition = XMLoadFloat4(&pointLight.PositionWs);
-	const auto& cubeSideOrientation = CUBE_SIDE_ORIENTATIONS[m_CurrentCubeMapSideIndex];
-	const auto viewMatrix = XMMatrixLookToLH(eyePosition, cubeSideOrientation.m_Forward, cubeSideOrientation.m_Up);
+	const auto& cubeSideOrientation = Cubemap::SIDE_ORIENTATIONS[m_CurrentCubeMapSideIndex];
+	const auto viewMatrix = XMMatrixLookToLH(eyePosition, cubeSideOrientation.Forward, cubeSideOrientation.Up);
 
 	float rangeMultiplier = 1.0f;
 	rangeMultiplier = max(rangeMultiplier, pointLight.Color.x);
@@ -82,7 +83,7 @@ void PointLightShadowPassPso::SetShadowMapsCount(const uint32_t count)
 {
 	if (count >= m_CubeShadowMapsCapacity && count > 0)
 	{
-		const uint32_t arraySize = count * TEXTURES_IN_CUBEMAP;
+		const uint32_t arraySize = count * Cubemap::SIDES_COUNT;
 		const auto shadowMapDesc = CD3DX12_RESOURCE_DESC::Tex2D(
 			SHADOW_MAP_FORMAT,
 			m_Resolution, m_Resolution,
@@ -105,7 +106,7 @@ void PointLightShadowPassPso::SetShadowMapsCount(const uint32_t count)
 
 uint32_t PointLightShadowPassPso::GetCurrentSubresource() const
 {
-	return m_CurrentLightIndex * TEXTURES_IN_CUBEMAP + m_CurrentCubeMapSideIndex;
+	return m_CurrentLightIndex * Cubemap::SIDES_COUNT + m_CurrentCubeMapSideIndex;
 }
 
 const Texture& PointLightShadowPassPso::GetShadowMapsAsTexture() const

@@ -18,6 +18,7 @@
 #include "PointLightPso.h"
 #include "Scene.h"
 #include "SpotLightShadowPassPso.h"
+#include <Cubemap.h>
 
 class PointLightShadowPassPso;
 class ParticleSystem;
@@ -50,6 +51,7 @@ private:
 
 	std::shared_ptr<Scene> m_Scene;
 	std::shared_ptr<SceneRenderer> m_SceneRenderer;
+	std::shared_ptr<Cubemap> m_ReflectionCubemap;
 
 	D3D12_VIEWPORT m_Viewport;
 	D3D12_RECT m_ScissorRect;

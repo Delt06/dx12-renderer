@@ -18,33 +18,9 @@ public:
 	void SetCurrentShadowMap(uint32_t lightIndex, uint32_t cubeMapSideIndex);
 	void SetShadowMapsCount(uint32_t count);
 
-	static constexpr uint32_t TEXTURES_IN_CUBEMAP = 6;
-
 
 private:
-	struct CubeSideOrientation
-	{
-		DirectX::XMVECTOR m_Forward;
-		DirectX::XMVECTOR m_Up;
-	};
-
 	static constexpr uint32_t DEFAULT_CUBE_SHADOW_MAPS_COUNT = 0;
-
-	inline static const CubeSideOrientation CUBE_SIDE_ORIENTATIONS[TEXTURES_IN_CUBEMAP] =
-	{
-		// +X
-		{DirectX::XMVectorSet(1, 0, 0, 0), DirectX::XMVectorSet(0, 1, 0, 0)},
-		// -X
-		{DirectX::XMVectorSet(-1, 0, 0, 0), DirectX::XMVectorSet(0, 1, 0, 0)},
-		// +Y
-		{DirectX::XMVectorSet(0, 1, 0, 0), DirectX::XMVectorSet(1, 0, 0, 0)},
-		// -Y
-		{DirectX::XMVectorSet(0, -1, 0, 0), DirectX::XMVectorSet(1, 0, 0, 0)},
-		// +Z
-		{DirectX::XMVectorSet(0, 0, 1, 0), DirectX::XMVectorSet(0, 1, 0, 0)},
-		// -Z
-		{DirectX::XMVectorSet(0, 0, -1, 0), DirectX::XMVectorSet(0, 1, 0, 0)},
-	};
 
 	[[nodiscard]] uint32_t GetCurrentSubresource() const;
 	[[nodiscard]] const Texture& GetShadowMapsAsTexture() const;

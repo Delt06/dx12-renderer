@@ -3,6 +3,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <exception>
 #include <Windows.h> // For HRESULT
+#include <pix3.h>
 
 // From DXSampleHelper.h 
 // Source: https://github.com/Microsoft/DirectX-Graphics-Samples
@@ -22,6 +23,8 @@ inline void ThrowIfNegative(const int value)
 		throw std::exception();
 	}
 }
+
+#define PIXScope(commandList, eventName) PIXScopedEvent((commandList).GetGraphicsCommandList().Get(), PIX_COLOR_DEFAULT, eventName)
 
 // Hashers for view descriptions.
 namespace std

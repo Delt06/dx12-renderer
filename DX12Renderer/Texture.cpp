@@ -177,7 +177,7 @@ void Texture::CreateViews()
 			{
 				D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
 				rtvDesc.Format = desc.Format;
-				rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+				rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
 				rtvDesc.Texture2DArray.ArraySize = 1;
 				rtvDesc.Texture2DArray.PlaneSlice = 0;
 				rtvDesc.Texture2DArray.MipSlice = 0;
@@ -295,7 +295,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetDepthStencilView() const
 	return m_DepthStencilView.GetDescriptorHandle();
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE Texture::GeDepthStencilViewArray(const uint32_t index) const
+D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetDepthStencilViewArray(const uint32_t index) const
 {
 	return m_DepthStencilView.GetDescriptorHandle(index + 1);
 }

@@ -754,7 +754,7 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, const UINT t
 	{
 		TransitionBarrier(depthTexture, D3D12_RESOURCE_STATE_DEPTH_WRITE, subresource);
 		depthStencilDescriptor = isArrayItem
-			? depthTexture.GeDepthStencilViewArray(texArrayIndex)
+			? depthTexture.GetDepthStencilViewArray(texArrayIndex)
 			: depthTexture.GetDepthStencilView();
 
 		TrackResource(depthTexture);

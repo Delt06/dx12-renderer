@@ -1,9 +1,13 @@
 struct Matrices
 {
-	matrix Model;
-	matrix ModelView;
-	matrix InverseTransposeModelView;
-	matrix ModelViewProjection;
+    matrix Model;
+    matrix ModelView;
+    matrix InverseTransposeModelView;
+    matrix ModelViewProjection;
+    matrix View;
+    matrix Projection;
+    matrix InverseTransposeModel;
+    float4 CameraPosition;
 };
 
 #include "Shadows.hlsli"
@@ -29,6 +33,8 @@ struct VertexShaderOutput
 	float2 Uv : TEXCOORD0;
 	float3 PositionWs : POSITION_WS;
 	float4 ShadowCoords : SHADOW_COORD;
+    float3 NormalWs : NORMAL_WS;
+    float3 EyeWs : EYE_WS;
 	float4 PositionCs : SV_POSITION;
 };
 
@@ -49,6 +55,9 @@ VertexShaderOutput main(VertexAttributes IN)
 	// See http://www.opengl-tutorial.org/ru/intermediate-tutorials/tutorial-16-shadow-mapping/
 	// "Using the shadow map"
 	OUT.ShadowCoords = HClipToShadowCoords(mul(shadowReceiverParameters.ViewProjection, positionWs));
+	
+    OUT.NormalWs = mul((float3x3) matricesCb.InverseTransposeModel, IN.Normal);
+    OUT.EyeWs = normalize(positionWs.xyz - matricesCb.CameraPosition.xyz);
 
 	return OUT;
 }
