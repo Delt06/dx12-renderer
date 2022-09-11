@@ -46,7 +46,7 @@ public:
 
     size_t GetBufferSize() const
     {
-        return BufferSize;
+        return m_BufferSize;
     }
 
     /**
@@ -61,7 +61,7 @@ public:
     D3D12_CPU_DESCRIPTOR_HANDLE
     GetShaderResourceView(const D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc = nullptr) const override
     {
-        return Srv.GetDescriptorHandle();
+        return m_Srv.GetDescriptorHandle();
     }
 
     /**
@@ -71,12 +71,12 @@ public:
     GetUnorderedAccessView(const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc = nullptr) const override
     {
         // Buffers only have a single subresource.
-        return Uav.GetDescriptorHandle();
+        return m_Uav.GetDescriptorHandle();
     }
 
 private:
-    size_t BufferSize;
+    size_t m_BufferSize = 0;
 
-    DescriptorAllocation Srv;
-    DescriptorAllocation Uav;
+    DescriptorAllocation m_Srv;
+    DescriptorAllocation m_Uav;
 };

@@ -349,10 +349,11 @@ void CommandList::LoadTextureFromFile(Texture& texture, const std::wstring& file
 			subresourceData.pData = pImages[i].pixels;
 		}
 
+		auto numSubresources = static_cast<uint32_t>(subresources.size());
 		CopyTextureSubresource(
 			texture,
 			0,
-			subresources.size(),
+			numSubresources,
 			subresources.data()
 		);
 
