@@ -325,26 +325,6 @@ void SceneRenderer::MainPass(CommandList& commandList)
 	const XMMATRIX projectionMatrix = m_ProjectionMatrix;
 	const XMMATRIX viewProjectionMatrix = viewMatrix * projectionMatrix;
 
-	// Update point lights
-	for (auto& pointLight : m_Scene->PointLights)
-	{
-		XMVECTOR lightPosVs = XMLoadFloat4(&pointLight.PositionWs);
-		lightPosVs = XMVector4Transform(lightPosVs, viewMatrix);
-		XMStoreFloat4(&pointLight.PositionVs, lightPosVs);
-	}
-
-	// Update spot lights
-	for (auto& spotLight : m_Scene->SpotLights)
-	{
-		XMVECTOR lightPosVs = XMLoadFloat4(&spotLight.PositionWs);
-		lightPosVs = XMVector4Transform(lightPosVs, viewMatrix);
-		XMStoreFloat4(&spotLight.PositionVs, lightPosVs);
-
-		XMVECTOR lightDirVs = XMLoadFloat4(&spotLight.DirectionWs);
-		lightDirVs = XMVector4Transform(lightDirVs, viewMatrix);
-		XMStoreFloat4(&spotLight.DirectionVs, lightDirVs);
-	}
-
 	{
 		PIXScope(commandList, "Draw Point Lights");
 

@@ -2,12 +2,11 @@
 
 struct PixelShaderInput
 {
-    float4 PositionVs : POSITION;
+    float3 PositionWs : POSITION;
     float3 NormalWs : NORMAL;
     float3 TangentWs : TANGENT;
     float3 BitangentWs : BINORMAL;
     float2 Uv : TEXCOORD;
-    float3 PositionWs : POSITION_WS;
     float4 ShadowCoords : SHADOW_COORD;
     float3 EyeWs : EYE_WS;
 };
@@ -37,38 +36,23 @@ struct DirectionalLight
 
 struct PointLight
 {
-    float4 PositionWS; // Light position in world space.
-	//----------------------------------- (16 byte boundary)
-    float4 PositionVS; // Light position in view space.
-	//----------------------------------- (16 byte boundary)
+    float4 PositionWS;
     float4 Color;
-	//----------------------------------- (16 byte boundary)
     float ConstantAttenuation;
     float LinearAttenuation;
     float QuadraticAttenuation;
     float Range;
-	//----------------------------------- (16 byte boundary)
-	// Total:                              16 * 4 = 64 bytes
 };
 
 struct SpotLight
 {
-    float4 PositionWS; // Light position in world space.
-	//----------------------------------- (16 byte boundary)
-    float4 PositionVS; // Light position in view space.
-	//----------------------------------- (16 byte boundary)
-    float4 DirectionWS; // Light direction in world space.
-	//----------------------------------- (16 byte boundary)
-    float4 DirectionVS; // Light direction in view space.
-	//----------------------------------- (16 byte boundary)
+    float4 PositionWS;
+    float4 DirectionWS;
     float4 Color;
-	//----------------------------------- (16 byte boundary)
-    float m_Intensity;
-    float m_SpotAngle;
-    float m_Attenuation;
-    float m_Padding; // Pad to 16 bytes.
-	//----------------------------------- (16 byte boundary)
-	// Total:                              16 * 6 = 96 bytes
+    float Intensity;
+    float SpotAngle;
+    float Attenuation;
+    float _Padding;
 };
 
 struct LightingResult
@@ -222,11 +206,11 @@ Light GetSpotLight(const uint index, const float3 positionWs)
     const float distance = length(offsetWs);
     const float3 directionTowardsLightWs = offsetWs / distance;
 
-    light.Color = spotLight.Color.rgb * spotLight.m_Intensity;
+    light.Color = spotLight.Color.rgb * spotLight.Intensity;
     light.DirectionWs = directionTowardsLightWs;
 
-    const float attenuation = GetSpotLightDistanceAttenuation(spotLight.m_Attenuation, distance) *
-		GetSpotLightConeAttenuation(spotLight.DirectionWS.xyz, directionTowardsLightWs, spotLight.m_SpotAngle);
+    const float attenuation = GetSpotLightDistanceAttenuation(spotLight.Attenuation, distance) *
+		GetSpotLightConeAttenuation(spotLight.DirectionWS.xyz, directionTowardsLightWs, spotLight.SpotAngle);
     light.DistanceAttenuation = attenuation;
 
     const float4 shadowCoordsCs = mul(spotLightLightViewProjectionMatrices[index], float4(positionWs, 1.0f));

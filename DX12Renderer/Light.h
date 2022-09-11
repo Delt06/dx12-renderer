@@ -30,18 +30,12 @@ struct PointLight
 		RecalculateAttenuationCoefficients();
 	}
 
-	DirectX::XMFLOAT4 PositionWs; // Light position in world space.
-	//----------------------------------- (16 byte boundary)
-	DirectX::XMFLOAT4 PositionVs = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f); // Light position in view space.
-	//----------------------------------- (16 byte boundary)
+	DirectX::XMFLOAT4 PositionWs;
 	DirectX::XMFLOAT4 Color = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	//----------------------------------- (16 byte boundary)
 	float ConstantAttenuation = 1.0f;
 	float LinearAttenuation = 0.22f;
 	float QuadraticAttenuation = 0.2f;
 	float Range = 20.0f;
-	//----------------------------------- (16 byte boundary)
-	// Total:                              16 * 4 = 64 bytes
 
 	void RecalculateAttenuationCoefficients();
 
@@ -79,9 +73,7 @@ struct SpotLight
 {
 	SpotLight()
 		: PositionWs(0.0f, 0.0f, 0.0f, 1.0f)
-		, PositionVs(0.0f, 0.0f, 0.0f, 1.0f)
 		, DirectionWs(0.0f, 0.0f, 1.0f, 0.0f)
-		, DirectionVs(0.0f, 0.0f, 1.0f, 0.0f)
 		, Color(1.0f, 1.0f, 1.0f, 1.0f)
 		, Intensity(1.0f)
 		, SpotAngle(DirectX::XM_PIDIV2)
@@ -89,20 +81,11 @@ struct SpotLight
 	{
 	}
 
-	DirectX::XMFLOAT4 PositionWs; // Light position in world space.
-	//----------------------------------- (16 byte boundary)
-	DirectX::XMFLOAT4 PositionVs; // Light position in view space.
-	//----------------------------------- (16 byte boundary)
-	DirectX::XMFLOAT4 DirectionWs; // Light direction in world space.
-	//----------------------------------- (16 byte boundary)
-	DirectX::XMFLOAT4 DirectionVs; // Light direction in view space.
-	//----------------------------------- (16 byte boundary)
+	DirectX::XMFLOAT4 PositionWs;
+	DirectX::XMFLOAT4 DirectionWs;
 	DirectX::XMFLOAT4 Color;
-	//----------------------------------- (16 byte boundary)
 	float Intensity;
 	float SpotAngle;
 	float Attenuation;
-	float _Padding{}; // Pad to 16 bytes.
-	//----------------------------------- (16 byte boundary)
-	// Total:                              16 * 6 = 96 bytes
+	float _Padding{};
 };
