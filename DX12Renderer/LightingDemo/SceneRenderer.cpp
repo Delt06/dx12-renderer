@@ -187,24 +187,26 @@ SceneRenderer::SceneRenderer(Microsoft::WRL::ComPtr<ID3D12Device2> device, Comma
 	// Setup shadows
 	{
 		// Directional Light
-		const auto& directionalLightShadows = graphicsSettings.DirectionalLightShadows;
+		const auto& directionalLightShadowsQuality = graphicsSettings.DirectionalLightShadows;
 		m_DirectionalLightShadowPassPso = std::make_unique<DirectionalLightShadowPassPso>(
-			device, directionalLightShadows.m_Resolution);
-		m_DirectionalLightShadowPassPso->SetBias(directionalLightShadows.m_DepthBias,
-			directionalLightShadows.m_NormalBias);
+			device, directionalLightShadowsQuality.m_Resolution);
+		m_DirectionalLightShadowPassPso->SetBias(directionalLightShadowsQuality.m_DepthBias,
+			directionalLightShadowsQuality.m_NormalBias);
 
-		const auto& pointLightShadows = graphicsSettings.PointLightShadows;
+		
 		// Point Lights
+		const auto& pointLightShadowsQuality = graphicsSettings.PointLightShadows;
 		m_PointLightShadowPassPso = std::make_unique<PointLightShadowPassPso>(
-			device, pointLightShadows.m_Resolution);
-		m_PointLightShadowPassPso->SetBias(pointLightShadows.m_DepthBias,
-			pointLightShadows.m_NormalBias);
+			device, pointLightShadowsQuality.m_Resolution);
+		m_PointLightShadowPassPso->SetBias(pointLightShadowsQuality.m_DepthBias,
+			pointLightShadowsQuality.m_NormalBias);
 
 		// Spot Lights
+		const auto& spotLightShadowsQuality = graphicsSettings.SpotLightShadows;
 		m_SpotLightShadowPassPso = std::make_unique<SpotLightShadowPassPso>(
-			device, pointLightShadows.m_Resolution);
-		m_SpotLightShadowPassPso->SetBias(pointLightShadows.m_DepthBias,
-			pointLightShadows.m_NormalBias);
+			device, spotLightShadowsQuality.m_Resolution);
+		m_SpotLightShadowPassPso->SetBias(spotLightShadowsQuality.m_DepthBias,
+			spotLightShadowsQuality.m_NormalBias);
 	}
 }
 
