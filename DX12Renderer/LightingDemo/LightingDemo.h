@@ -20,6 +20,8 @@
 #include "SpotLightShadowPassPso.h"
 #include <Cubemap.h>
 
+#include "PostFxPso.h"
+
 class PointLightShadowPassPso;
 class ParticleSystem;
 class SceneRenderer;
@@ -48,10 +50,12 @@ private:
 	std::shared_ptr<Texture> m_WhiteTexture2d;
 
 	RenderTarget m_RenderTarget;
+	RenderTarget m_PostFxRenderTarget;
 
 	std::shared_ptr<Scene> m_Scene;
 	std::shared_ptr<SceneRenderer> m_SceneRenderer;
 	std::shared_ptr<Cubemap> m_ReflectionCubemap;
+	std::unique_ptr<PostFxPso> m_PostFxPso;
 
 	D3D12_VIEWPORT m_Viewport;
 	D3D12_RECT m_ScissorRect;

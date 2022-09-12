@@ -277,6 +277,15 @@ bool LightingDemo::LoadContent()
 	m_RenderTarget.AttachTexture(Color0, colorTexture);
 	m_RenderTarget.AttachTexture(DepthStencil, depthTexture);
 
+	// PostFX
+	{
+		auto postFxColorTexture = Texture(colorDesc, &colorClearValue, TextureUsageType::RenderTarget, L"PostFX Render Target");
+		m_PostFxRenderTarget.AttachTexture(Color0, postFxColorTexture);
+
+		m_PostFxPso = std::make_unique<PostFxPso>(device, *commandList, backBufferFormat);
+	}
+
+
 	auto fenceValue = commandQueue->ExecuteCommandList(commandList);
 	commandQueue->WaitForFenceValue(fenceValue);
 
@@ -299,6 +308,7 @@ void LightingDemo::OnResize(ResizeEventArgs& e)
 			static_cast<float>(m_Width), static_cast<float>(m_Height));
 
 		m_RenderTarget.Resize(m_Width, m_Height);
+		m_PostFxRenderTarget.Resize(m_Width, m_Height);
 	}
 }
 
@@ -383,7 +393,7 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 
 	{
 		PIXScope(*commandList, "Reflection Cubemap");
-		
+
 		m_SceneRenderer->ToggleEnvironmentReflections(false);
 		m_ReflectionCubemap->Clear(*commandList);
 		m_ReflectionCubemap->SetViewportScissorRect(*commandList);
@@ -415,8 +425,29 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 		m_SceneRenderer->MainPass(*commandList);
 	}
 
+	{
+		PIXScope(*commandList, "PostFX");
+
+		commandList->SetRenderTarget(m_PostFxRenderTarget);
+		commandList->SetViewport(m_Viewport);
+		commandList->SetScissorRect(m_ScissorRect);
+
+		m_PostFxPso->SetContext(*commandList);
+		m_PostFxPso->SetSourceColorTexture(*commandList, m_RenderTarget.GetTexture(Color0));
+		m_PostFxPso->SetSourceDepthTexture(*commandList, m_RenderTarget.GetTexture(DepthStencil));
+
+		PostFxPso::PostFxParameters parameters;
+		parameters.ProjectionInverse = m_Scene->MainCamera.GetInverseProjectionMatrix();
+		parameters.FogColor = XMFLOAT3(CLEAR_COLOR);
+		parameters.FogDensity = 0.01f;
+		m_PostFxPso->SetParameters(*commandList, parameters);
+
+		m_PostFxPso->Blit(*commandList);
+	}
+
 	commandQueue->ExecuteCommandList(commandList);
-	PWindow->Present(m_RenderTarget.GetTexture(Color0));
+	//PWindow->Present(m_RenderTarget.GetTexture(Color0));
+	PWindow->Present(m_PostFxRenderTarget.GetTexture(Color0));
 }
 
 void LightingDemo::OnKeyPressed(KeyEventArgs& e)
