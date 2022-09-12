@@ -30,8 +30,8 @@ namespace
 		const auto bitangents = std::make_unique<XMFLOAT3[]>(nVerts);
 
 		ThrowIfFailed(ComputeTangentFrame(indices.data(), nFaces,
-		                                  pos.get(), normals.get(), texcoords.get(), nVerts,
-		                                  tangents.get(), bitangents.get()));
+			pos.get(), normals.get(), texcoords.get(), nVerts,
+			tangents.get(), bitangents.get()));
 
 		for (size_t j = 0; j < nVerts; ++j)
 		{
@@ -216,7 +216,7 @@ static inline XMVECTOR GetCircleVector(size_t i, size_t tessellation)
 
 	XMScalarSinCos(&dx, &dz, angle);
 
-	XMVECTORF32 v = {dx, 0, dz, 0};
+	XMVECTORF32 v = { dx, 0, dz, 0 };
 	return v;
 }
 
@@ -227,13 +227,13 @@ static inline XMVECTOR GetCircleTangent(size_t i, size_t tessellation)
 
 	XMScalarSinCos(&dx, &dz, angle);
 
-	XMVECTORF32 v = {dx, 0, dz, 0};
+	XMVECTORF32 v = { dx, 0, dz, 0 };
 	return v;
 }
 
 // Helper creates a triangle fan to close the end of a cylinder / cone
 static void CreateCylinderCap(VertexCollectionType& vertices, IndexCollectionType& indices, size_t tessellation,
-                              float height, float radius, bool isTop)
+	float height, float radius, bool isTop)
 {
 	// Create cap indices.
 	for (size_t i = 0; i < tessellation - 2; i++)
@@ -270,14 +270,14 @@ static void CreateCylinderCap(VertexCollectionType& vertices, IndexCollectionTyp
 		XMVECTOR position = (circleVector * radius) + (normal * height);
 
 		XMVECTOR textureCoordinate = XMVectorMultiplyAdd(XMVectorSwizzle<0, 2, 3, 3>(circleVector), textureScale,
-		                                                 g_XMOneHalf);
+			g_XMOneHalf);
 
 		vertices.push_back(VertexAttributes(position, normal, textureCoordinate));
 	}
 }
 
 std::shared_ptr<Mesh> Mesh::CreateCone(CommandList& commandList, float diameter, float height, size_t tessellation,
-                                       bool rhcoords)
+	bool rhcoords)
 {
 	VertexCollectionType vertices;
 	IndexCollectionType indices;
@@ -324,7 +324,7 @@ std::shared_ptr<Mesh> Mesh::CreateCone(CommandList& commandList, float diameter,
 }
 
 std::shared_ptr<Mesh> Mesh::CreateTorus(CommandList& commandList, float diameter, float thickness, size_t tessellation,
-                                        bool rhcoords)
+	bool rhcoords)
 {
 	VertexCollectionType vertices;
 	IndexCollectionType indices;
@@ -418,8 +418,28 @@ std::shared_ptr<Mesh> Mesh::CreateVerticalQuad(CommandList& commandList, float w
 	return CreateMesh(commandList, vertices, indices, rhCoords);
 }
 
+std::shared_ptr<Mesh> Mesh::CreateBlitTriangle(CommandList& commandList)
+{
+	VertexCollectionType vertices;
+	XMVECTOR normal = XMVectorSet(0, 0, -1, 0);
+
+	// left-bottom
+	vertices.push_back(VertexAttributes(XMVectorSet(-1, -1, 0, 1), normal, XMVectorSet(0, 1, 0, 0)));
+	// left-top
+	vertices.push_back(VertexAttributes(XMVectorSet(-1, 3, 0, 1), normal, XMVectorSet(0, -1, 0, 0)));
+	// right-bottom
+	vertices.push_back(VertexAttributes(XMVectorSet(3, -1, 0, 1), normal, XMVectorSet(2, 1, 0, 0)));
+
+	IndexCollectionType indices;
+	indices.push_back(0);
+	indices.push_back(1);
+	indices.push_back(2);
+
+	return CreateMesh(commandList, vertices, indices, true);
+}
+
 std::shared_ptr<Mesh> Mesh::CreateMesh(CommandList& commandList, VertexCollectionType& vertices,
-                                       IndexCollectionType& indices, const bool rhCoords, const bool generateTangents)
+	IndexCollectionType& indices, const bool rhCoords, const bool generateTangents)
 {
 	auto mesh = std::make_shared<Mesh>();
 	if (generateTangents)
@@ -445,7 +465,7 @@ static void ReverseWinding(IndexCollectionType& indices, VertexCollectionType& v
 }
 
 void Mesh::Initialize(CommandList& commandList, VertexCollectionType& vertices, IndexCollectionType& indices,
-                      bool rhCoords)
+	bool rhCoords)
 {
 	if (vertices.size() >= USHRT_MAX)
 		throw std::exception("Too many vertices for 16-bit index buffer");

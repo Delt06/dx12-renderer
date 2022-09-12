@@ -22,13 +22,13 @@
  *  IN THE SOFTWARE.
  */
 
-/**
- *  @file Mesh.h
- *  @date October 24, 2018
- *  @author Jeremiah van Oosten
- *
- *  @brief A mesh class encapsulates the index and vertex buffers for a geometric primitive.
- */
+ /**
+  *  @file Mesh.h
+  *  @date October 24, 2018
+  *  @author Jeremiah van Oosten
+  *
+  *  @brief A mesh class encapsulates the index and vertex buffers for a geometric primitive.
+  */
 
 #include <CommandList.h>
 #include <VertexBuffer.h>
@@ -48,27 +48,27 @@ struct VertexAttributes
 {
 	VertexAttributes()
 		: Position()
-		  , Normal()
-		  , Uv()
+		, Normal()
+		, Uv()
 	{
 	}
 
 	VertexAttributes(const DirectX::XMFLOAT3& position, const DirectX::XMFLOAT3& normal,
-	                 const DirectX::XMFLOAT2& textureCoordinate)
+		const DirectX::XMFLOAT2& textureCoordinate)
 		: Position(position),
-		  Normal(normal),
-		  Uv(textureCoordinate)
+		Normal(normal),
+		Uv(textureCoordinate)
 	{
 	}
 
 	VertexAttributes(const DirectX::XMFLOAT3& position, const DirectX::XMFLOAT3& normal,
-	                 const DirectX::XMFLOAT2& textureCoordinate, const DirectX::XMFLOAT3& tangent,
-	                 const DirectX::XMFLOAT3& bitangent)
+		const DirectX::XMFLOAT2& textureCoordinate, const DirectX::XMFLOAT3& tangent,
+		const DirectX::XMFLOAT3& bitangent)
 		: Position(position),
-		  Normal(normal),
-		  Uv(textureCoordinate),
-		  Tangent(tangent),
-		  Bitangent(bitangent)
+		Normal(normal),
+		Uv(textureCoordinate),
+		Tangent(tangent),
+		Bitangent(bitangent)
 	{
 	}
 
@@ -100,19 +100,21 @@ public:
 
 	static std::shared_ptr<Mesh> CreateCube(CommandList& commandList, float size = 1, bool rhCoords = false);
 	static std::shared_ptr<Mesh> CreateSphere(CommandList& commandList, float diameter = 1, size_t tessellation = 16,
-	                                          bool rhCoords = false);
+		bool rhCoords = false);
 	static std::shared_ptr<Mesh> CreateCone(CommandList& commandList, float diameter = 1, float height = 1,
-	                                        size_t tessellation = 32, bool rhCoords = false);
+		size_t tessellation = 32, bool rhCoords = false);
 	static std::shared_ptr<Mesh> CreateTorus(CommandList& commandList, float diameter = 1, float thickness = 0.333f,
-	                                         size_t tessellation = 32, bool rhCoords = false);
+		size_t tessellation = 32, bool rhCoords = false);
 	static std::shared_ptr<Mesh> CreatePlane(CommandList& commandList, float width = 1, float height = 1,
-	                                         bool rhCoords = false);
+		bool rhCoords = false);
 	static std::shared_ptr<Mesh> CreateVerticalQuad(CommandList& commandList, float width = 1, float height = 1,
-	                                                bool rhCoords = false);
+		bool rhCoords = false);
+
+	static std::shared_ptr<Mesh> CreateBlitTriangle(CommandList& commandList);
 
 	static std::shared_ptr<Mesh> CreateMesh(CommandList& commandList, VertexCollectionType& vertices,
-	                                        IndexCollectionType& indices, bool rhCoords = false,
-	                                        bool generateTangents = false);
+		IndexCollectionType& indices, bool rhCoords = false,
+		bool generateTangents = false);
 
 	Mesh(const Mesh& copy) = delete;
 	virtual ~Mesh();
@@ -122,7 +124,7 @@ public:
 
 private:
 	void Initialize(CommandList& commandList, VertexCollectionType& vertices, IndexCollectionType& indices,
-	                bool rhCoords);
+		bool rhCoords);
 	void CalculateAabb(const VertexCollectionType& vertices);
 
 	VertexBuffer VertexBuffer;

@@ -1,7 +1,6 @@
 ﻿#include "PostFxPso.h"
 #include <Mesh.h>
 #include <DirectXMath.h>
-#include <Mesh.h>
 #include <CommandList.h>
 #include <Helpers.h>
 #include <d3dcompiler.h>
@@ -28,25 +27,7 @@ namespace
 PostFxPso::PostFxPso(ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT backBufferFormat)
 	: m_BackBufferFormat(backBufferFormat)
 {
-	// Init mesh
-	{
-		VertexCollectionType vertices;
-		XMVECTOR normal = XMVectorSet(0, 0, -1, 0);
-
-		// left-bottom
-		vertices.push_back(VertexAttributes(XMVectorSet(-1, -1, 0, 1), normal, XMVectorSet(0, 1, 0, 0)));
-		// left-top
-		vertices.push_back(VertexAttributes(XMVectorSet(-1, 3, 0, 1), normal, XMVectorSet(0, -1, 0, 0)));
-		// right-bottom
-		vertices.push_back(VertexAttributes(XMVectorSet(3, -1, 0, 1), normal, XMVectorSet(2, 1, 0, 0)));
-
-		IndexCollectionType indices;
-		indices.push_back(0);
-		indices.push_back(1);
-		indices.push_back(2);
-
-		m_BlitTriangle = Mesh::CreateMesh(commandList, vertices, indices, true);
-	}
+	m_BlitTriangle = Mesh::CreateBlitTriangle(commandList);
 
 	// Setup RS and PSO
 	{
