@@ -17,6 +17,8 @@
 
 ![Lighting Demo Screenshot](./Screenshots/LightingDemo.jpg)
 
+![Lighting Demo Screenshot 2](./Screenshots/LightingDemo2.jpg)
+
 ### Controls
 
 - Use <kbd>WASD</kbd>/Arrow Keys to move the camera;
