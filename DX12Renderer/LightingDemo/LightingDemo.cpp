@@ -518,6 +518,7 @@ void LightingDemo::OnKeyPressed(KeyEventArgs& e)
 		break;
 	case KeyCode::E:
 		m_CameraController.m_Up = 1.0f;
+		break;
 	case KeyCode::L:
 		m_AnimateLights = !m_AnimateLights;
 		break;
