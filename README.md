@@ -9,7 +9,11 @@
     - Using diffuse, normal, gloss, and specular maps;
   - Particle system with CPU simulation (10000+ particles on screen) and instanced rendering;
   - Shadow mapping for the directional, point, and spot lights;
-  - Soft shadows using 16x Poisson Sampling and Early Bail.
+  - Soft shadows using 16x Poisson Sampling and Early Bail;
+  - Dynamic environment reflections - see the sphere;
+  - Post-processing:
+    - Screen-space fog;
+    - Bloom.
 
 ![Lighting Demo Screenshot](./Screenshots/LightingDemo.jpg)
 
@@ -29,6 +33,7 @@
 - https://github.com/d3dcoder/d3d12book
 - http://www.opengl-tutorial.org/ru/intermediate-tutorials/tutorial-16-shadow-mapping/
 - https://learnopengl.com/Advanced-Lighting/Shadows/Point-Shadows
+- https://catlikecoding.com/unity/tutorials/advanced-rendering/bloom/
 
 ### Libraries
 

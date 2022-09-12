@@ -21,7 +21,15 @@ public:
 	explicit BloomPso(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, uint32_t width, uint32_t height, DXGI_FORMAT backBufferFormat);
 
 	void Resize(uint32_t width, uint32_t height);
-	void Draw(CommandList& commandList, Texture source, RenderTarget destination);
+
+	struct Parameters
+	{
+		float Intensity;
+		float Threshold;
+		float SoftThreshold;
+	};
+
+	void Draw(CommandList& commandList, const Texture& source, const RenderTarget& destination, const Parameters& parameters);
 
 private:
 	static void GetIntermediateTextureSize(uint32_t width, uint32_t height, size_t index, uint32_t& outWidth, uint32_t& outHeight);

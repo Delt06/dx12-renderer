@@ -448,14 +448,18 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 		PostFxPso::PostFxParameters parameters;
 		parameters.ProjectionInverse = m_Scene->MainCamera.GetInverseProjectionMatrix();
 		parameters.FogColor = XMFLOAT3(CLEAR_COLOR);
-		parameters.FogDensity = 0.015f;
+		parameters.FogDensity = 0.017f;
 		m_PostFxPso->SetParameters(*commandList, parameters);
 
 		m_PostFxPso->Blit(*commandList);
 	}
 
 	{
-		m_BloomPso->Draw(*commandList, m_PostFxRenderTarget.GetTexture(Color0), m_PostFxRenderTarget);
+		BloomPso::Parameters parameters;
+		parameters.Threshold = 1.25f;
+		parameters.SoftThreshold = 0.3f;
+		parameters.Intensity = 1.5f;
+		m_BloomPso->Draw(*commandList, m_PostFxRenderTarget.GetTexture(Color0), m_PostFxRenderTarget, parameters);
 	}
 
 	commandQueue->ExecuteCommandList(commandList);

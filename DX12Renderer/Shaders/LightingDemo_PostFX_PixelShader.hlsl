@@ -30,7 +30,7 @@ float GetDepthLinear(float nonLinearDepth)
 
 float4 main(PixelShaderInput IN) : SV_TARGET
 {
-    const float nonLinearDepth = sourceDepthTexture.Sample(sourceSampler, IN.Uv);
+    const float nonLinearDepth = sourceDepthTexture.Sample(sourceSampler, IN.Uv).x;
     
     float fogFactor;
     if (nonLinearDepth == 1.0)

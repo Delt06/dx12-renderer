@@ -261,14 +261,14 @@ void BloomPso::Resize(uint32_t width, uint32_t height)
 	}
 }
 
-void BloomPso::Draw(CommandList& commandList, Texture source, RenderTarget destination)
+void BloomPso::Draw(CommandList& commandList, const Texture& source, const RenderTarget& destination, const Parameters& parameters)
 {
 	PIXScope(commandList, "Bloom");
 	commandList.SetScissorRect(m_ScissorRect);
 
-	const float threshold = 0.99f;
-	const float softThreshold = 0.1f;
-	const float intensity = 1.2f;
+	const float threshold = parameters.Threshold;
+	const float softThreshold = parameters.SoftThreshold;
+	const float intensity = parameters.Intensity;
 
 	{
 		PIXScope(commandList, "Bloom Prefilter");
