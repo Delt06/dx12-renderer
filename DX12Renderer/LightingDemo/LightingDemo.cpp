@@ -171,7 +171,9 @@ bool LightingDemo::LoadContent()
 			auto model = modelLoader.LoadExisting(Mesh::CreatePlane(*commandList));
 			{
 				model->GetMaterial().SpecularPower = 10.0f;
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
+				model->GetMaterial().TilingOffset = { 10, 10, 0, 0 };
+
+;				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
 					L"Assets/Textures/Moss/Moss_1K_Color.jpg");
 				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
 					L"Assets/Textures/Moss/Moss_1K_Normal.jpg");
@@ -180,7 +182,7 @@ bool LightingDemo::LoadContent()
 			}
 			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
-			XMMATRIX scaleMatrix = XMMatrixScaling(100.0f, 1.0f, 100.0f);
+			XMMATRIX scaleMatrix = XMMatrixScaling(200.0f, 200.0f, 200.0f);
 			XMMATRIX worldMatrix = scaleMatrix * translationMatrix * rotationMatrix;
 			m_Scene->GameObjects.push_back(GameObject(worldMatrix, model));
 		}

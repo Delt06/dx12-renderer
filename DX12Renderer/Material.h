@@ -64,4 +64,6 @@ public:
 	uint32_t HasNormalMap{};
 	uint32_t HasSpecularMap{};
 	uint32_t HasGlossMap{};
+
+	DirectX::XMFLOAT4 TilingOffset{ 1, 1, 0, 0 };
 };

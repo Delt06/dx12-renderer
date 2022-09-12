@@ -26,6 +26,8 @@ struct Material
     bool HasNormalMap;
     bool HasSpecularMap;
     bool HasGlossMap;
+    
+    float4 TilingOffset;
 };
 
 struct DirectionalLight
@@ -303,6 +305,8 @@ LightingResult ComputeLighting(const float3 positionWs, const float3 normalWs, c
 
 float4 main(PixelShaderInput IN) : SV_Target
 {
+    float2 uv = IN.Uv * materialCb.TilingOffset.xy + materialCb.TilingOffset.zw;
+    
     float3 normalWs;
     if (materialCb.HasNormalMap)
     {
@@ -314,7 +318,7 @@ float4 main(PixelShaderInput IN) : SV_Target
         const float3x3 tbn = float3x3(tangent,
 		                              bitangent,
 		                              normal);
-        normalWs = ApplyNormalMap(tbn, normalMap, IN.Uv);
+        normalWs = ApplyNormalMap(tbn, normalMap, uv);
     }
     else
     {
@@ -325,7 +329,7 @@ float4 main(PixelShaderInput IN) : SV_Target
     float specularPower = materialCb.SpecularPower;
     if (materialCb.HasGlossMap)
     {
-        specularPower *= saturate(1 - glossMap.Sample(defaultSampler, IN.Uv).x);
+        specularPower *= saturate(1 - glossMap.Sample(defaultSampler, uv).x);
     }
 
     const float3 eyeWs = normalize(IN.EyeWs);
@@ -337,10 +341,10 @@ float4 main(PixelShaderInput IN) : SV_Target
     float4 specular = materialCb.Specular * float4(lightingResult.Specular, 1);
     if (materialCb.HasSpecularMap)
     {
-        specular *= specularMap.Sample(defaultSampler, IN.Uv).x;
+        specular *= specularMap.Sample(defaultSampler, uv).x;
     }
     const float4 texColor = materialCb.HasDiffuseMap
-		                        ? diffuseMap.Sample(defaultSampler, IN.Uv)
+		                        ? diffuseMap.Sample(defaultSampler, uv)
 		                        : float4(1.0f, 1.0f, 1.0f, 1.0f);
 
     float3 reflectWs = reflect(eyeWs, normalWs);
