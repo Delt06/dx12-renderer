@@ -173,7 +173,7 @@ bool LightingDemo::LoadContent()
 				model->GetMaterial().SpecularPower = 10.0f;
 				model->GetMaterial().TilingOffset = { 10, 10, 0, 0 };
 
-;				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
+				;				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
 					L"Assets/Textures/Moss/Moss_1K_Color.jpg");
 				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
 					L"Assets/Textures/Moss/Moss_1K_Normal.jpg");
@@ -287,6 +287,10 @@ bool LightingDemo::LoadContent()
 		m_PostFxPso = std::make_unique<PostFxPso>(device, *commandList, backBufferFormat);
 	}
 
+	// Bloom
+	{
+		m_BloomPso = std::make_unique<BloomPso>(device, *commandList, m_Width, m_Height, backBufferFormat);
+	}
 
 	auto fenceValue = commandQueue->ExecuteCommandList(commandList);
 	commandQueue->WaitForFenceValue(fenceValue);
@@ -311,6 +315,9 @@ void LightingDemo::OnResize(ResizeEventArgs& e)
 
 		m_RenderTarget.Resize(m_Width, m_Height);
 		m_PostFxRenderTarget.Resize(m_Width, m_Height);
+
+		if (m_BloomPso != nullptr)
+			m_BloomPso->Resize(m_Width, m_Height);
 	}
 }
 
@@ -441,14 +448,17 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 		PostFxPso::PostFxParameters parameters;
 		parameters.ProjectionInverse = m_Scene->MainCamera.GetInverseProjectionMatrix();
 		parameters.FogColor = XMFLOAT3(CLEAR_COLOR);
-		parameters.FogDensity = 0.01f;
+		parameters.FogDensity = 0.015f;
 		m_PostFxPso->SetParameters(*commandList, parameters);
 
 		m_PostFxPso->Blit(*commandList);
 	}
 
+	{
+		m_BloomPso->Draw(*commandList, m_PostFxRenderTarget.GetTexture(Color0), m_PostFxRenderTarget);
+	}
+
 	commandQueue->ExecuteCommandList(commandList);
-	//PWindow->Present(m_RenderTarget.GetTexture(Color0));
 	PWindow->Present(m_PostFxRenderTarget.GetTexture(Color0));
 }
 

@@ -162,6 +162,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="LightingDemo\BloomPso.cpp" />
     <ClCompile Include="Cubemap.cpp" />
     <ClCompile Include="Geometry\Aabb.cpp" />
     <ClCompile Include="Application.cpp" />
@@ -211,6 +212,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\DirectXMesh\Utilities\WaveFrontReader.h" />
+    <ClInclude Include="LightingDemo\BloomPso.h" />
     <ClInclude Include="Cubemap.h" />
     <ClInclude Include="Geometry\Aabb.h" />
     <ClInclude Include="Application.h" />
@@ -279,6 +281,7 @@
     </None>
     <None Include="..\README.md" />
     <None Include="packages.config" />
+    <None Include="Shaders\PostFX.hlsli" />
     <None Include="Shaders\Shadows.hlsli">
       <FileType>Document</FileType>
     </None>
@@ -296,7 +299,13 @@
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">generateMips_Cs</VariableName>
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">GenerateMips_CS.h</HeaderFileOutput>
     </FxCompile>
-    <FxCompile Include="Shaders\LightingDemo_Blit_PixelShader.hlsl">
+    <FxCompile Include="Shaders\LightingDemo_Bloom_Downsample_PixelShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\LightingDemo_PostFX_PixelShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
@@ -307,6 +316,12 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\LightingDemo_Bloom_Prefilter_PixelShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Shaders\LightingDemo_ParticleSystem_PixelShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>

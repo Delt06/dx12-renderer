@@ -31,12 +31,11 @@ PostFxPso::PostFxPso(ComPtr<ID3D12Device2> device, CommandList& commandList, DXG
 
 	// Setup RS and PSO
 	{
-
 		ComPtr<ID3DBlob> vertexShaderBlob;
 		ThrowIfFailed(D3DReadFileToBlob(L"LightingDemo_Blit_VertexShader.cso", &vertexShaderBlob));
 
 		ComPtr<ID3DBlob> pixelShaderBlob;
-		ThrowIfFailed(D3DReadFileToBlob(L"LightingDemo_Blit_PixelShader.cso", &pixelShaderBlob));
+		ThrowIfFailed(D3DReadFileToBlob(L"LightingDemo_PostFX_PixelShader.cso", &pixelShaderBlob));
 
 		// Create a root signature.
 		D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData;

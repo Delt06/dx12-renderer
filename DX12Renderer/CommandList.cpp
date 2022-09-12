@@ -722,7 +722,7 @@ void CommandList::SetUnorderedAccessView(const uint32_t rootParameterIndex, cons
 	TrackResource(resource);
 }
 
-void CommandList::SetRenderTarget(const RenderTarget& renderTarget, const UINT texArrayIndex)
+void CommandList::SetRenderTarget(const RenderTarget& renderTarget, const UINT texArrayIndex, bool useDepth)
 {
 	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> renderTargetDescriptors;
 	renderTargetDescriptors.reserve(NumAttachmentPoints);
@@ -750,7 +750,7 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, const UINT t
 	const auto& depthTexture = renderTarget.GetTexture(DepthStencil);
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE depthStencilDescriptor(D3D12_DEFAULT);
-	if (depthTexture.GetD3D12Resource())
+	if (useDepth && depthTexture.GetD3D12Resource())
 	{
 		TransitionBarrier(depthTexture, D3D12_RESOURCE_STATE_DEPTH_WRITE, subresource);
 		depthStencilDescriptor = isArrayItem

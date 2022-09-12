@@ -7,12 +7,12 @@
 
 ResourceWrapper::ResourceWrapper(const std::wstring& name)
 	: m_FormatSupport({})
-	  , m_ResourceName(name)
+	, m_ResourceName(name)
 {
 }
 
 ResourceWrapper::ResourceWrapper(const D3D12_RESOURCE_DESC& resourceDesc, const D3D12_CLEAR_VALUE* clearValue,
-                                 const std::wstring& name)
+	const std::wstring& name)
 {
 	if (clearValue)
 	{
@@ -39,7 +39,7 @@ ResourceWrapper::ResourceWrapper(const D3D12_RESOURCE_DESC& resourceDesc, const 
 
 ResourceWrapper::ResourceWrapper(ComPtr<ID3D12Resource> resource, const std::wstring& name)
 	: m_d3d12Resource(resource)
-	  , m_FormatSupport({})
+	, m_FormatSupport({})
 {
 	CheckFeatureSupport();
 	SetName(name);
@@ -47,17 +47,18 @@ ResourceWrapper::ResourceWrapper(ComPtr<ID3D12Resource> resource, const std::wst
 
 ResourceWrapper::ResourceWrapper(const ResourceWrapper& copy)
 	: m_d3d12Resource(copy.m_d3d12Resource)
-	  , m_FormatSupport(copy.m_FormatSupport)
-	  , m_d3d12ClearValue(std::make_unique<D3D12_CLEAR_VALUE>(*copy.m_d3d12ClearValue))
-	  , m_ResourceName(copy.m_ResourceName)
+	, m_FormatSupport(copy.m_FormatSupport)
+	, m_ResourceName(copy.m_ResourceName)
 {
+	if (copy.m_d3d12ClearValue)
+		m_d3d12ClearValue = std::make_unique<D3D12_CLEAR_VALUE>(*copy.m_d3d12ClearValue);
 }
 
 ResourceWrapper::ResourceWrapper(ResourceWrapper&& copy)
 	: m_d3d12Resource(std::move(copy.m_d3d12Resource))
-	  , m_FormatSupport(copy.m_FormatSupport)
-	  , m_d3d12ClearValue(std::move(copy.m_d3d12ClearValue))
-	  , m_ResourceName(std::move(copy.m_ResourceName))
+	, m_FormatSupport(copy.m_FormatSupport)
+	, m_d3d12ClearValue(std::move(copy.m_d3d12ClearValue))
+	, m_ResourceName(std::move(copy.m_ResourceName))
 {
 }
 

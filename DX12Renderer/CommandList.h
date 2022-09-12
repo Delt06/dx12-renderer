@@ -365,7 +365,7 @@ public:
 	/**
 	 * Set the render targets for the graphics rendering pipeline.
 	 */
-	void SetRenderTarget(const RenderTarget& renderTarget, UINT texArrayIndex = -1);
+	void SetRenderTarget(const RenderTarget& renderTarget, UINT texArrayIndex = -1, bool useDepth = true);
 
 	/**
 	 * Draw geometry.
