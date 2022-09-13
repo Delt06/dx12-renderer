@@ -220,26 +220,6 @@ bool AnimationsDemo::LoadContent()
 			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
 			m_GameObjects.push_back(GameObject(worldMatrix, model));
 		}
-
-		{
-			auto model = modelLoader.LoadExisting(Mesh::CreatePlane(*commandList));
-			{
-				model->GetMaterial().SpecularPower = 10.0f;
-				model->GetMaterial().TilingOffset = { 10, 10, 0, 0 };
-
-				;				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
-					L"Assets/Textures/Moss/Moss_1K_Color.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
-					L"Assets/Textures/Moss/Moss_1K_Normal.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Gloss,
-					L"Assets/Textures/Moss/Moss_1K_Roughness.jpg");
-			}
-			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
-			XMMATRIX rotationMatrix = XMMatrixIdentity();
-			XMMATRIX scaleMatrix = XMMatrixScaling(200.0f, 200.0f, 200.0f);
-			XMMATRIX worldMatrix = scaleMatrix * translationMatrix * rotationMatrix;
-			m_GameObjects.push_back(GameObject(worldMatrix, model));
-		}
 	}
 
 	auto colorDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat,
