@@ -6,5 +6,7 @@
 struct Bone
 {
 	std::string Name;
-	DirectX::XMMATRIX Transform;
+	DirectX::XMMATRIX LocalTransform;
+	DirectX::XMMATRIX GlobalTransform;
+	bool IsDirty;
 };

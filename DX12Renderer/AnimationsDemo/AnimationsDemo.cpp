@@ -9,6 +9,7 @@
 #include <Window.h>
 #include <GameObject.h>
 #include <Bone.h>
+#include <Animation.h>
 
 #include <wrl.h>
 
@@ -289,7 +290,7 @@ bool AnimationsDemo::LoadContent()
 		commandList->LoadTextureFromFile(*m_WhiteTexture2d, L"Assets/Textures/white.png");
 	}
 
-	// Load models
+	// Load models and animations
 	{
 		ModelLoader modelLoader(m_WhiteTexture2d);
 
@@ -307,6 +308,10 @@ bool AnimationsDemo::LoadContent()
 		}
 
 		m_BoneMesh = Mesh::CreateCube(*commandList);
+
+		{
+			m_Animation = modelLoader.LoadAnimation("Assets/Models/archer/fast_run.fbx", "mixamo.com");
+		}
 	}
 
 	auto colorDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat,
@@ -406,6 +411,15 @@ void AnimationsDemo::OnUpdate(UpdateEventArgs& e)
 	m_Camera.SetRotation(cameraRotation);
 
 	auto dt = static_cast<float>(e.ElapsedTime);
+
+	for (const auto& go : m_GameObjects)
+	{
+		for (auto& mesh : go.GetModel()->GetMeshes())
+		{
+			m_Animation->Play(*mesh, 0);
+			mesh->UpdateBoneGlobalTransforms();
+		}
+	}
 }
 
 void AnimationsDemo::OnRender(RenderEventArgs& e)
@@ -468,7 +482,7 @@ void AnimationsDemo::OnRender(RenderEventArgs& e)
 				for (const auto& bone : mesh->GetBones())
 				{
 					MatricesCb matricesCb;
-					XMMATRIX worldMatrix = bone.Transform * go.GetWorldMatrix();
+					XMMATRIX worldMatrix = bone.GlobalTransform * go.GetWorldMatrix();
 					matricesCb.Compute(worldMatrix, viewMatrix, viewProjection, projectionMatrix);
 					commandList->SetGraphicsDynamicConstantBuffer(RootParametersBones::MatricesCb, matricesCb);
 

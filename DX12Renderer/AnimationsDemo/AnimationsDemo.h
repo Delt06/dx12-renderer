@@ -14,6 +14,8 @@
 #include "GameObject.h"
 #include "GraphicsSettings.h"
 
+class Animation;
+
 class AnimationsDemo final : public Game
 {
 public:
@@ -41,6 +43,7 @@ private:
 
 	Camera m_Camera;
 	std::vector<GameObject> m_GameObjects;
+	std::shared_ptr<Animation> m_Animation;
 
 	RootSignature m_RootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineState;

@@ -7,12 +7,14 @@
 #include "Texture.h"
 #include "Bone.h"
 #include "DirectXMesh/DirectXMesh.h"
+#include "Animation.h"
 
 #include <assimp/Importer.hpp>      // C++ importer interface
 #include <assimp/scene.h>           // Output data structure
 #include <assimp/postprocess.h>     // Post processing flags
 
 #include <filesystem>
+#include <memory>
 
 using namespace DirectX;
 namespace fs = std::filesystem;
@@ -39,6 +41,31 @@ namespace
 			matrix.a4, matrix.b4, matrix.c4, matrix.d4
 		);
 	}
+
+	XMVECTOR ToXMVECTOR(aiVector3D vector)
+	{
+		return XMVectorSet(vector.x, vector.y, vector.z, 0.0);
+	}
+
+	XMVECTOR ToXMVECTOR(aiQuaternion quaternion)
+	{
+		return XMVectorSet(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
+	}
+
+	constexpr auto AI_FLAGS = aiProcess_ConvertToLeftHanded;
+
+	template<typename TKey>
+	void BuildKeyFrames(unsigned int numKeys, const TKey* keys, std::vector<Animation::KeyFrame>& result)
+	{
+		for (unsigned int keyIndex = 0; keyIndex < numKeys; ++keyIndex)
+		{
+			Animation::KeyFrame keyFrame;
+			auto key = keys[keyIndex];
+			keyFrame.Value = ToXMVECTOR(key.mValue);
+			keyFrame.NormalizedTime = key.mTime;
+			result.push_back(keyFrame);
+		}
+	}
 }
 
 ModelLoader::ModelLoader(const std::shared_ptr<Texture> emptyTexture2d) :
@@ -50,13 +77,13 @@ std::shared_ptr<Model> ModelLoader::Load(CommandList& commandList, const std::st
 {
 	Assimp::Importer importer;
 
-	auto flags =
+	auto flags = AI_FLAGS |
 		aiProcess_CalcTangentSpace |
 		aiProcess_Triangulate |
 		aiProcess_JoinIdenticalVertices |
 		aiProcess_SortByPType |
 		aiProcess_GenSmoothNormals |
-		aiProcess_ConvertToLeftHanded
+		aiProcess_PopulateArmatureData
 		;
 
 	const aiScene* scene = importer.ReadFile(path.c_str(), flags);
@@ -133,12 +160,30 @@ std::shared_ptr<Model> ModelLoader::Load(CommandList& commandList, const std::st
 
 				auto meshBone = mesh->mBones[boneIndex];
 				bone.Name = meshBone->mName.C_Str();
-				bone.Transform = XMMatrixInverse(nullptr, ToXMATRIX(meshBone->mOffsetMatrix));
+				bone.IsDirty = true;
 
 				bones.push_back(bone);
 			}
 
 			outputMesh->SetBones(bones);
+
+			for (unsigned int boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
+			{
+				std::vector<size_t> childrenIndices;
+
+				const auto meshBoneNode = mesh->mBones[boneIndex]->mNode;
+				auto& bone = outputMesh->GetBone(boneIndex);
+				bone.LocalTransform = ToXMATRIX(meshBoneNode->mTransformation);
+
+				for (unsigned int childIndex = 0; childIndex < meshBoneNode->mNumChildren; ++childIndex)
+				{
+					const auto child = meshBoneNode->mChildren[childIndex];
+					size_t boneIndex = outputMesh->GetBoneIndex(child->mName.C_Str());
+					childrenIndices.push_back(boneIndex);
+				}
+
+				outputMesh->SetBoneChildren(boneIndex, childrenIndices);
+			}
 		}
 
 		outputMeshes.push_back(outputMesh);
@@ -220,4 +265,54 @@ void ModelLoader::LoadMap(Model& model, CommandList& commandList, ModelMaps::Map
 
 	if (commandList.LoadTextureFromFile(*map, path, textureUsage, throwOnNotFound))
 		model.SetMap(mapType, map);
+}
+
+std::shared_ptr<Animation> ModelLoader::LoadAnimation(const std::string& path, const std::string& animationName) const
+{
+	Assimp::Importer importer;
+
+	auto flags = AI_FLAGS;
+
+	const aiScene* scene = importer.ReadFile(path.c_str(), flags);
+
+	if (scene == nullptr)
+	{
+		std::string errorString = importer.GetErrorString();
+		throw std::exception(errorString.c_str());
+	}
+
+	if (!scene->HasAnimations())
+	{
+		throw std::exception("Specified file does not contain animations");
+	}
+
+	for (unsigned int i = 0; i < scene->mNumAnimations; ++i)
+	{
+		auto animation = scene->mAnimations[i];
+		if (strcmp(animation->mName.C_Str(), animationName.c_str()) != 0) continue;
+
+		auto duration = static_cast<float>(animation->mDuration);
+		auto ticksPerSecond = static_cast<float>(animation->mTicksPerSecond);
+
+		std::vector<Animation::Channel> resultingChannels;
+
+		for (unsigned int channelIndex = 0; channelIndex < animation->mNumChannels; ++channelIndex)
+		{
+			auto channel = animation->mChannels[channelIndex];
+
+			Animation::Channel resultingChannel;
+			resultingChannel.NodeName = channel->mNodeName.C_Str();
+
+			BuildKeyFrames(channel->mNumPositionKeys, channel->mPositionKeys, resultingChannel.PositionKeyFrames);
+			BuildKeyFrames(channel->mNumRotationKeys, channel->mRotationKeys, resultingChannel.RotationKeyFrames);
+			BuildKeyFrames(channel->mNumScalingKeys, channel->mScalingKeys, resultingChannel.ScalingKeyFrames);
+
+			resultingChannels.push_back(resultingChannel);
+		}
+
+		auto resultingAnimation = std::make_shared<Animation>(duration, ticksPerSecond, resultingChannels);
+		return resultingAnimation;
+	}
+
+	throw std::exception("The requested animation was not found.");
 }

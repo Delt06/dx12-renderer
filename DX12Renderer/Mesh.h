@@ -33,6 +33,7 @@
 #include <CommandList.h>
 #include <VertexBuffer.h>
 #include <IndexBuffer.h>
+#include <Bone.h>
 
 #include <DirectXMath.h>
 #include <d3d12.h>
@@ -41,6 +42,8 @@
 
 #include <memory> // For std::unique_ptr
 #include <vector>
+#include <map>
+#include <string>
 
 #include "Geometry/Aabb.h"
 
@@ -121,22 +124,32 @@ public:
 	Mesh(const Mesh& copy) = delete;
 	virtual ~Mesh();
 	Mesh();
-
-	void SetBones(const std::vector<Bone>& bones);
-
 	const Aabb& GetAabb() const;
 
+	void SetBones(const std::vector<Bone>& bones);
+	void SetBoneChildren(size_t boneIndex, const std::vector<size_t>& childrenIndices);
+	bool HasBones() const;
 	const std::vector<Bone>& GetBones() const;
+	Bone& GetBone(const std::string& name);
+	Bone& GetBone(size_t index);
+	size_t GetBoneIndex(const std::string& name) const;
+
+	void MarkBonesDirty();
+	void UpdateBoneGlobalTransforms();
 
 private:
 	void Initialize(CommandList& commandList, VertexCollectionType& vertices, IndexCollectionType& indices,
 		bool rhCoords);
 	void CalculateAabb(const VertexCollectionType& vertices);
 
+	void UpdateBoneGlobalTransforms(size_t rootIndex, DirectX::XMMATRIX parentTransform);
+
 	VertexBuffer m_VertexBuffer;
 	IndexBuffer m_IndexBuffer;
 
 	std::vector<Bone> m_Bones;
+	std::map<std::string, size_t> m_BoneIndicesByNames;
+	std::vector<std::vector<size_t>> m_BoneChildrenByIndex;
 
 	Aabb m_Aabb{};
 	UINT m_IndexCount;

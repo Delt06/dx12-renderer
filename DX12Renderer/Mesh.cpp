@@ -496,10 +496,83 @@ void Mesh::SetBones(const std::vector<Bone>& bones)
 {
 	m_Bones.resize(bones.size());
 	std::copy(bones.begin(), bones.end(), m_Bones.begin());
+
+	for (size_t i = 0; i < m_Bones.size(); ++i)
+	{
+		auto& bone = m_Bones[i];
+		m_BoneIndicesByNames[bone.Name] = i;
+	}
+
+	m_BoneChildrenByIndex.resize(bones.size());
 }
 
+void Mesh::SetBoneChildren(size_t boneIndex, const std::vector<size_t>& childrenIndices)
+{
+	auto& children = m_BoneChildrenByIndex[boneIndex];
+	children.resize(childrenIndices.size());
+	std::copy(childrenIndices.begin(), childrenIndices.end(), children.begin());
+}
+
+bool Mesh::HasBones() const
+{
+	return m_Bones.size() > 0;
+}
 
 const std::vector<Bone>& Mesh::GetBones() const
 {
 	return m_Bones;
+}
+
+Bone& Mesh::GetBone(const std::string& name)
+{
+	return m_Bones[GetBoneIndex(name)];
+}
+
+Bone& Mesh::GetBone(size_t index)
+{
+	return m_Bones[index];
+}
+
+size_t Mesh::GetBoneIndex(const std::string& name) const
+{
+	auto findResult = m_BoneIndicesByNames.find(name);
+	if (findResult != m_BoneIndicesByNames.end())
+	{
+		return findResult->second;
+	}
+
+	throw std::exception("Bone not found.");
+}
+
+void Mesh::UpdateBoneGlobalTransforms()
+{
+	for (size_t i = 0; i < m_Bones.size(); ++i)
+	{
+		UpdateBoneGlobalTransforms(i, XMMatrixIdentity());
+	}
+}
+
+void Mesh::MarkBonesDirty()
+{
+	for (auto& bone : m_Bones)
+	{
+		bone.IsDirty = true;
+	}
+}
+
+void Mesh::UpdateBoneGlobalTransforms(size_t rootIndex, XMMATRIX parentTransform)
+{
+	auto& bone = m_Bones[rootIndex];
+	if (!bone.IsDirty)
+	{
+		return;
+	}
+
+	bone.GlobalTransform = bone.LocalTransform * parentTransform;
+	bone.IsDirty = false;
+
+	for (size_t childIndex : m_BoneChildrenByIndex[rootIndex])
+	{
+		UpdateBoneGlobalTransforms(childIndex, bone.GlobalTransform);
+	}
 }
