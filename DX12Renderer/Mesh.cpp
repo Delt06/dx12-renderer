@@ -65,7 +65,7 @@ const D3D12_INPUT_ELEMENT_DESC VertexAttributes::INPUT_ELEMENTS[] = {
 	},
 };
 
-Mesh::Mesh() : IndexCount(0)
+Mesh::Mesh() : m_IndexCount(0)
 {
 }
 
@@ -79,9 +79,9 @@ Mesh::~Mesh() = default;
 void Mesh::Draw(CommandList& commandList, const uint32_t instanceCount) const
 {
 	commandList.SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	commandList.SetVertexBuffer(0, VertexBuffer);
-	commandList.SetIndexBuffer(IndexBuffer);
-	commandList.DrawIndexed(IndexCount, instanceCount);
+	commandList.SetVertexBuffer(0, m_VertexBuffer);
+	commandList.SetIndexBuffer(m_IndexBuffer);
+	commandList.DrawIndexed(m_IndexCount, instanceCount);
 }
 
 std::shared_ptr<Mesh> Mesh::CreateSphere(CommandList& commandList, float diameter, size_t tessellation, bool rhcoords)
@@ -474,10 +474,10 @@ void Mesh::Initialize(CommandList& commandList, VertexCollectionType& vertices, 
 		ReverseWinding(indices, vertices);
 
 	CalculateAabb(vertices);
-	commandList.CopyVertexBuffer(VertexBuffer, vertices);
-	commandList.CopyIndexBuffer(IndexBuffer, indices);
+	commandList.CopyVertexBuffer(m_VertexBuffer, vertices);
+	commandList.CopyIndexBuffer(m_IndexBuffer, indices);
 
-	IndexCount = static_cast<UINT>(indices.size());
+	m_IndexCount = static_cast<UINT>(indices.size());
 }
 
 void Mesh::CalculateAabb(const VertexCollectionType& vertices)

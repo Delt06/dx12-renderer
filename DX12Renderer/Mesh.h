@@ -127,9 +127,11 @@ private:
 		bool rhCoords);
 	void CalculateAabb(const VertexCollectionType& vertices);
 
-	VertexBuffer VertexBuffer;
-	IndexBuffer IndexBuffer;
+	VertexBuffer m_VertexBuffer;
+	IndexBuffer m_IndexBuffer;
+
+	VertexBuffer m_WeightsVertexBuffer;
 
 	Aabb m_Aabb{};
-	UINT IndexCount;
+	UINT m_IndexCount;
 };
