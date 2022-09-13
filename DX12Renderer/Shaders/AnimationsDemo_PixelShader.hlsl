@@ -4,7 +4,7 @@ struct PixelShaderInput
     float2 Uv : TEXCOORD;
 };
 
-Texture2D diffuseMap : register(t0);
+Texture2D diffuseMap : register(t0, space1);
 SamplerState defaultSampler : register(s0);
 
 

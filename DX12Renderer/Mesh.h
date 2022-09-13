@@ -90,12 +90,27 @@ struct VertexAttributes
 	DirectX::XMFLOAT3 Tangent{};
 	DirectX::XMFLOAT3 Bitangent{};
 
-
+	static constexpr uint32_t VERTEX_BUFFER_SLOT_INDEX = 0;
 	static constexpr int INPUT_ELEMENT_COUNT = 5;
 	static const D3D12_INPUT_ELEMENT_DESC INPUT_ELEMENTS[INPUT_ELEMENT_COUNT];
 };
 
+struct SkinningVertexAttributes
+{
+	static constexpr uint32_t BONES_PER_VERTEX = 4;
+
+	uint32_t BoneIds[BONES_PER_VERTEX];
+	float Weights[BONES_PER_VERTEX];
+
+	void NormalizeWeights();
+
+	static constexpr uint32_t VERTEX_BUFFER_SLOT_INDEX = 1;
+	static constexpr int INPUT_ELEMENT_COUNT = 2;
+	static const D3D12_INPUT_ELEMENT_DESC INPUT_ELEMENTS[INPUT_ELEMENT_COUNT];
+};
+
 using VertexCollectionType = std::vector<VertexAttributes>;
+using SkinningVertexCollectionType = std::vector<SkinningVertexAttributes>;
 using IndexCollectionType = std::vector<uint16_t>;
 
 class Mesh final
@@ -126,12 +141,15 @@ public:
 	Mesh();
 	const Aabb& GetAabb() const;
 
+	void SetSkinningVertexAttributes(CommandList& commandList, const SkinningVertexCollectionType& vertexAttributes);
+
 	void SetBones(const std::vector<Bone>& bones);
 	void SetBoneChildren(size_t boneIndex, const std::vector<size_t>& childrenIndices);
 	bool HasBones() const;
 	const std::vector<Bone>& GetBones() const;
 	Bone& GetBone(const std::string& name);
 	Bone& GetBone(size_t index);
+	bool HasBone(const std::string& name) const;
 	size_t GetBoneIndex(const std::string& name) const;
 
 	void MarkBonesDirty();
@@ -150,6 +168,7 @@ private:
 	std::vector<Bone> m_Bones;
 	std::map<std::string, size_t> m_BoneIndicesByNames;
 	std::vector<std::vector<size_t>> m_BoneChildrenByIndex;
+	VertexBuffer m_SkinningVertexBuffer;
 
 	Aabb m_Aabb{};
 	UINT m_IndexCount;

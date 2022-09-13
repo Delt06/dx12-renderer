@@ -70,13 +70,27 @@ namespace
 		return M;
 	}
 
+	struct BonesPropertiesCb
+	{
+		uint32_t NumBones;
+	};
+
+	struct BoneSbItem
+	{
+		XMMATRIX Transform;
+	};
+
 	namespace RootParameters
 	{
 		enum RootParameters
 		{
-			// ConstantBuffer register(b0);
+			// ConstantBuffer : register(b0);
 			MatricesCb,
-			// Texture2D register(t0);
+			// ConstantBuffer : register(b1);
+			BonesPropertiesCb,
+			// StructuredBuffer : register(t0);
+			Bones,
+			// Texture2D register(t0, space1);
 			Diffuse,
 			NumRootParameters
 		};
@@ -156,10 +170,12 @@ bool AnimationsDemo::LoadContent()
 				D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 				D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
-			CD3DX12_DESCRIPTOR_RANGE1 descriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+			CD3DX12_DESCRIPTOR_RANGE1 descriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 1);
 
 			CD3DX12_ROOT_PARAMETER1 rootParameters[RootParameters::NumRootParameters];
 			rootParameters[RootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
+			rootParameters[RootParameters::BonesPropertiesCb].InitAsConstants(sizeof(BonesPropertiesCb) / sizeof(float), 1, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+			rootParameters[RootParameters::Bones].InitAsShaderResourceView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
 			rootParameters[RootParameters::Diffuse].InitAsDescriptorTable(1, &descriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
 
 			CD3DX12_STATIC_SAMPLER_DESC samplers[] = {
@@ -191,7 +207,12 @@ bool AnimationsDemo::LoadContent()
 			rtvFormats.RTFormats[0] = backBufferFormat;
 
 			pipelineStateStream.RootSignature = m_RootSignature.GetRootSignature().Get();
-			pipelineStateStream.InputLayout = { VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT };
+
+			std::vector<D3D12_INPUT_ELEMENT_DESC> inputElements;
+			inputElements.insert(inputElements.end(), std::begin(VertexAttributes::INPUT_ELEMENTS), std::end(VertexAttributes::INPUT_ELEMENTS));
+			inputElements.insert(inputElements.end(), std::begin(SkinningVertexAttributes::INPUT_ELEMENTS), std::end(SkinningVertexAttributes::INPUT_ELEMENTS));
+
+			pipelineStateStream.InputLayout = { inputElements.data(), static_cast<uint32_t>(inputElements.size()) };
 			pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 			pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
 			pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
@@ -415,7 +436,7 @@ void AnimationsDemo::OnUpdate(UpdateEventArgs& e)
 	{
 		for (auto& mesh : go.GetModel()->GetMeshes())
 		{
-			m_Animation->Play(*mesh, m_Time * 0.25f);
+			m_Animation->Play(*mesh, m_Time * 0.0f);
 			mesh->UpdateBoneGlobalTransforms();
 		}
 	}
@@ -461,6 +482,21 @@ void AnimationsDemo::OnRender(RenderEventArgs& e)
 
 			for (const auto& mesh : model->GetMeshes())
 			{
+				BonesPropertiesCb bonesPropertiesCb;
+				auto& bones = mesh->GetBones();
+				bonesPropertiesCb.NumBones = bones.size();
+				commandList->SetGraphics32BitConstants(RootParameters::BonesPropertiesCb, bonesPropertiesCb);
+
+				std::vector<BoneSbItem> bonesSb;
+				bonesSb.reserve(bones.size());
+
+				for (const auto& bone : bones)
+				{
+					bonesSb.push_back({ bone.Offset * bone.GlobalTransform });
+				}
+
+				commandList->SetGraphicsDynamicStructuredBuffer(RootParameters::Bones, bonesSb);
+
 				mesh->Draw(*commandList);
 			}
 		}

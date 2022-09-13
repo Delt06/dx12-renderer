@@ -83,7 +83,8 @@ std::shared_ptr<Model> ModelLoader::Load(CommandList& commandList, const std::st
 		aiProcess_JoinIdenticalVertices |
 		aiProcess_SortByPType |
 		aiProcess_GenSmoothNormals |
-		aiProcess_PopulateArmatureData
+		aiProcess_PopulateArmatureData |
+		aiProcess_LimitBoneWeights
 		;
 
 	const aiScene* scene = importer.ReadFile(path.c_str(), flags);
@@ -154,15 +155,42 @@ std::shared_ptr<Model> ModelLoader::Load(CommandList& commandList, const std::st
 			std::vector<Bone> bones;
 			bones.reserve(mesh->mNumBones);
 
+			SkinningVertexCollectionType outputSkinningVertices;
+			outputSkinningVertices.resize(mesh->mNumVertices);
+
 			for (unsigned int boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
 			{
 				Bone bone;
 
 				auto meshBone = mesh->mBones[boneIndex];
+				bone.Offset = ToXMATRIX(meshBone->mOffsetMatrix);
 				bone.Name = meshBone->mName.C_Str();
 				bone.IsDirty = true;
 
 				bones.push_back(bone);
+
+				for (unsigned int weightIndex = 0; weightIndex < meshBone->mNumWeights; ++weightIndex)
+				{
+					auto& weight = meshBone->mWeights[weightIndex];
+					auto& vertexAttributes = outputSkinningVertices[weight.mVertexId];
+
+					// try put the weight into any of the available slots of the vertex
+					for (uint32_t vertexAttributeId = 0; vertexAttributeId < SkinningVertexAttributes::BONES_PER_VERTEX; vertexAttributeId++)
+					{
+						// search for the first 0 weight and fill it
+						if (vertexAttributes.Weights[vertexAttributeId] == 0.0)
+						{
+							vertexAttributes.BoneIds[vertexAttributeId] = boneIndex;
+							vertexAttributes.Weights[vertexAttributeId] = weight.mWeight;
+							break;
+						}
+					}
+				}
+			}
+
+			for (auto& vertexAttributes : outputSkinningVertices)
+			{
+				vertexAttributes.NormalizeWeights();
 			}
 
 			outputMesh->SetBones(bones);
@@ -178,12 +206,20 @@ std::shared_ptr<Model> ModelLoader::Load(CommandList& commandList, const std::st
 				for (unsigned int childIndex = 0; childIndex < meshBoneNode->mNumChildren; ++childIndex)
 				{
 					const auto child = meshBoneNode->mChildren[childIndex];
-					size_t boneIndex = outputMesh->GetBoneIndex(child->mName.C_Str());
+					auto childName = std::string(child->mName.C_Str());
+					if (!outputMesh->HasBone(childName))
+					{
+						continue;
+					}
+
+					size_t boneIndex = outputMesh->GetBoneIndex(childName);
 					childrenIndices.push_back(boneIndex);
 				}
 
 				outputMesh->SetBoneChildren(boneIndex, childrenIndices);
 			}
+
+			outputMesh->SetSkinningVertexAttributes(commandList, outputSkinningVertices);
 		}
 
 		outputMeshes.push_back(outputMesh);

@@ -45,29 +45,65 @@ namespace
 
 const D3D12_INPUT_ELEMENT_DESC VertexAttributes::INPUT_ELEMENTS[] = {
 	{
-		"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT,
+		"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, VERTEX_BUFFER_SLOT_INDEX, D3D12_APPEND_ALIGNED_ELEMENT,
 		D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0
 	},
 	{
-		"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT,
+		"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, VERTEX_BUFFER_SLOT_INDEX, D3D12_APPEND_ALIGNED_ELEMENT,
 		D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0
 	},
 	{
-		"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT,
+		"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, VERTEX_BUFFER_SLOT_INDEX, D3D12_APPEND_ALIGNED_ELEMENT,
 		D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0
 	},
 	{
-		"TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT,
+		"TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, VERTEX_BUFFER_SLOT_INDEX, D3D12_APPEND_ALIGNED_ELEMENT,
 		D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0
 	},
 	{
-		"BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT,
+		"BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, VERTEX_BUFFER_SLOT_INDEX, D3D12_APPEND_ALIGNED_ELEMENT,
+		D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0
+	},
+};
+
+void SkinningVertexAttributes::NormalizeWeights()
+{
+	float totalWeight = 0.0f;
+
+	for (uint32_t i = 0; i < BONES_PER_VERTEX; ++i)
+	{
+		totalWeight += Weights[i];
+	}
+
+	if (totalWeight == 0.0) return;
+
+	for (uint32_t i = 0; i < BONES_PER_VERTEX; ++i)
+	{
+		Weights[i] /= totalWeight;
+	}
+}
+
+const D3D12_INPUT_ELEMENT_DESC SkinningVertexAttributes::INPUT_ELEMENTS[] = {
+	{
+		"BONE_IDS", 0, DXGI_FORMAT_R32G32B32_UINT, VERTEX_BUFFER_SLOT_INDEX, D3D12_APPEND_ALIGNED_ELEMENT,
+		D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0
+	},
+	{
+		"BONE_WEIGHTS", 0, DXGI_FORMAT_R32G32B32_FLOAT, VERTEX_BUFFER_SLOT_INDEX, D3D12_APPEND_ALIGNED_ELEMENT,
 		D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0
 	},
 };
 
 Mesh::Mesh() : m_IndexCount(0)
 {
+}
+
+void Mesh::SetSkinningVertexAttributes(CommandList& commandList, const SkinningVertexCollectionType& vertexAttributes)
+{
+	if (vertexAttributes.size() != m_VertexBuffer.GetNumVertices())
+		throw std::exception("Sizes of vertex buffers should be equal.");
+
+	commandList.CopyVertexBuffer(m_SkinningVertexBuffer, vertexAttributes);
 }
 
 const Aabb& Mesh::GetAabb() const
@@ -80,7 +116,11 @@ Mesh::~Mesh() = default;
 void Mesh::Draw(CommandList& commandList, const uint32_t instanceCount) const
 {
 	commandList.SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	commandList.SetVertexBuffer(0, m_VertexBuffer);
+	commandList.SetVertexBuffer(VertexAttributes::VERTEX_BUFFER_SLOT_INDEX, m_VertexBuffer);
+
+	if (m_SkinningVertexBuffer.GetNumVertices() > 0)
+		commandList.SetVertexBuffer(SkinningVertexAttributes::VERTEX_BUFFER_SLOT_INDEX, m_SkinningVertexBuffer);
+
 	commandList.SetIndexBuffer(m_IndexBuffer);
 	commandList.DrawIndexed(m_IndexCount, instanceCount);
 }
@@ -531,6 +571,11 @@ Bone& Mesh::GetBone(const std::string& name)
 Bone& Mesh::GetBone(size_t index)
 {
 	return m_Bones[index];
+}
+
+bool Mesh::HasBone(const std::string& name) const
+{
+	return m_BoneIndicesByNames.find(name) != m_BoneIndicesByNames.end();
 }
 
 size_t Mesh::GetBoneIndex(const std::string& name) const
