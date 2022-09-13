@@ -66,6 +66,11 @@ void Animation::Play(Mesh& mesh, double time)
 
 	for (const auto& channel : m_Channels)
 	{
+		if (!mesh.HasBone(channel.NodeName))
+		{
+			continue;
+		}
+
 		auto& bone = mesh.GetBone(channel.NodeName);
 
 		const auto positionKfs = GetInterpolatedKeyFrame(channel.PositionKeyFrames, normalizedTime);
