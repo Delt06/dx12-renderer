@@ -206,7 +206,7 @@
     <ClCompile Include="RootSignature.cpp" />
     <ClCompile Include="LightingDemo\Scene.cpp" />
     <ClCompile Include="LightingDemo\SceneRenderer.cpp" />
-    <ClCompile Include="Shaders\Animation.cpp" />
+    <ClCompile Include="Animation.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="UploadBuffer.cpp" />
