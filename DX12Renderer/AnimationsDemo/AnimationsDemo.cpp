@@ -47,6 +47,19 @@ namespace
 		return val < min ? min : val > max ? max : val;
 	}
 
+	template<typename T>
+	constexpr const T& Remap(const T& low1, const T& high1, const T& low2, const T& high2, const T& value)
+	{
+		return low2 + (value - low1) * (high2 - low2) / (high1 - low1);
+	}
+
+	template<typename T>
+	constexpr T Smoothstep(const T& edge0, const T& edge1, const T& x)
+	{
+		auto t = Clamp<T>((x - edge0) / (edge1 - edge0), 0, 1);
+		return t * t * (3 - 2 * t);
+	}
+
 	bool allowFullscreenToggle = true;
 	constexpr FLOAT CLEAR_COLOR[] = { 0.4f, 0.6f, 0.9f, 1.0f };
 
@@ -331,7 +344,8 @@ bool AnimationsDemo::LoadContent()
 		m_BoneMesh = Mesh::CreateCube(*commandList);
 
 		{
-			m_Animation = modelLoader.LoadAnimation("Assets/Models/archer/fast_run.fbx", "mixamo.com");
+			m_RunAnimation = modelLoader.LoadAnimation("Assets/Models/archer/fast_run.fbx", "mixamo.com");
+			m_IdleAnimation = modelLoader.LoadAnimation("Assets/Models/archer/idle.fbx", "mixamo.com");
 		}
 	}
 
@@ -432,11 +446,17 @@ void AnimationsDemo::OnUpdate(UpdateEventArgs& e)
 		XMConvertToRadians(m_CameraController.m_Yaw), 0.0f);
 	m_Camera.SetRotation(cameraRotation);
 
+	// oscillate between 0 and 1 while spending some time on exact values of 0 and 1
+	auto weight = static_cast<float>(Smoothstep(0.25, 0.75, (sin(m_Time * 2) + 1) * 0.5));
+
 	for (const auto& go : m_GameObjects)
 	{
 		for (auto& mesh : go.GetModel()->GetMeshes())
 		{
-			m_Animation->Play(*mesh, m_Time);
+			auto runTransforms = m_RunAnimation->GetBonesTranforms(*mesh, m_Time);
+			auto idleTransforms = m_IdleAnimation->GetBonesTranforms(*mesh, m_Time);
+			auto transforms = Animation::Blend(runTransforms, idleTransforms, weight);
+			Animation::Apply(*mesh, transforms);
 			mesh->UpdateBoneGlobalTransforms();
 		}
 	}

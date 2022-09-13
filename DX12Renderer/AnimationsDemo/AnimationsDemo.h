@@ -43,7 +43,8 @@ private:
 
 	Camera m_Camera;
 	std::vector<GameObject> m_GameObjects;
-	std::shared_ptr<Animation> m_Animation;
+	std::shared_ptr<Animation> m_RunAnimation;
+	std::shared_ptr<Animation> m_IdleAnimation;
 
 	RootSignature m_RootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineState;

@@ -3,6 +3,8 @@
 #include <Bone.h>
 #include <DirectXMath.h>
 
+#include <set>
+
 using namespace DirectX;
 
 namespace
@@ -56,13 +58,18 @@ Animation::Animation(float duration, float ticksPerSecond, const std::vector<Cha
 
 }
 
-void Animation::Play(Mesh& mesh, double time)
+std::vector<Animation::BoneTransform> Animation::GetBonesTranforms(Mesh& mesh, double time) const
 {
 	if (!mesh.HasBones())
 		throw std::exception("Can't play an animation on a mesh without bones.");
 
 	double timeInTicks = time * m_TicksPerSecond;
 	float normalizedTime = static_cast<float>(fmod(timeInTicks, m_Duration));
+
+	std::vector<BoneTransform> tranforms;
+	tranforms.resize(mesh.GetBones().size());
+
+	std::set<size_t> affectedBones;
 
 	for (const auto& channel : m_Channels)
 	{
@@ -72,6 +79,8 @@ void Animation::Play(Mesh& mesh, double time)
 		}
 
 		auto& bone = mesh.GetBone(channel.NodeName);
+		size_t boneIndex = mesh.GetBoneIndex(channel.NodeName);
+		affectedBones.insert(boneIndex);
 
 		const auto positionKfs = GetInterpolatedKeyFrame(channel.PositionKeyFrames, normalizedTime);
 		const auto position = Interpolate(positionKfs.first, positionKfs.second, normalizedTime);
@@ -82,11 +91,62 @@ void Animation::Play(Mesh& mesh, double time)
 		const auto scalingKfs = GetInterpolatedKeyFrame(channel.ScalingKeyFrames, normalizedTime);
 		const auto scaling = Interpolate(scalingKfs.first, scalingKfs.second, normalizedTime);
 
-		auto translationMatrix = XMMatrixTranslationFromVector(position);
-		auto rotationMatrix = XMMatrixRotationQuaternion(rotation);
-		auto scalingMatrix = XMMatrixScalingFromVector(scaling);
-		bone.LocalTransform = scalingMatrix * rotationMatrix * translationMatrix;
+		tranforms[boneIndex] = { position, rotation, scaling };
+	}
+
+	for (size_t i = 0; i < mesh.GetBones().size(); ++i)
+	{
+		if (affectedBones.contains(i))
+		{
+			continue;
+		}
+
+		tranforms[i] = { XMVECTOR(), XMQuaternionIdentity(), XMVectorSet(1, 1, 1, 0) };
+	}
+
+	return tranforms;
+}
+
+void Animation::Apply(Mesh& mesh, const std::vector<BoneTransform>& transforms)
+{
+	if (mesh.GetBones().size() != transforms.size())
+	{
+		throw std::exception("Sizes are different.");
+	}
+
+	for (size_t i = 0; i < transforms.size(); ++i)
+	{
+		const auto& transform = transforms[i];
+		auto translationMatrix = XMMatrixTranslationFromVector(transform.Position);
+		auto rotationMatrix = XMMatrixRotationQuaternion(transform.Rotation);
+		auto scalingMatrix = XMMatrixScalingFromVector(transform.Scaling);
+
+		mesh.GetBone(i).LocalTransform = scalingMatrix * rotationMatrix * translationMatrix;
 	}
 
 	mesh.MarkBonesDirty();
+}
+
+std::vector<Animation::BoneTransform> Animation::Blend(const std::vector<BoneTransform>& transforms1, const std::vector<BoneTransform>& transforms2, float weight)
+{
+	if (transforms1.size() != transforms2.size())
+	{
+		throw std::exception("Sizes are different.");
+	}
+
+	std::vector<Animation::BoneTransform> result;
+	result.resize(transforms1.size());
+
+	for (size_t i = 0; i < transforms1.size(); ++i)
+	{
+		const auto& t1 = transforms1[i];
+		const auto& t2 = transforms2[i];
+
+		auto& tr = result[i];
+		tr.Position = XMVectorLerp(t1.Position, t2.Position, weight);
+		tr.Rotation = XMQuaternionSlerp(t1.Rotation, t2.Rotation, weight);
+		tr.Scaling = XMVectorLerp(t1.Scaling, t2.Scaling, weight);
+	}
+
+	return result;
 }

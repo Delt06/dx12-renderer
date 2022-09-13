@@ -27,7 +27,18 @@ public:
 
 	explicit Animation(float duration, float ticksPerSecond, const std::vector<Channel>& channels);
 
-	void Play(Mesh& mesh, double time);
+	struct BoneTransform
+	{
+		DirectX::XMVECTOR Position;
+		DirectX::XMVECTOR Rotation;
+		DirectX::XMVECTOR Scaling;
+	};
+
+	std::vector<BoneTransform> GetBonesTranforms(Mesh& mesh, double time) const;
+
+	static void Apply(Mesh& mesh, const std::vector<BoneTransform>& transforms);
+
+	static std::vector<BoneTransform> Blend(const std::vector<BoneTransform>& transforms1, const std::vector<BoneTransform>& transforms2, float weight);
 
 private:
 	float m_Duration;
