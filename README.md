@@ -41,6 +41,7 @@
 
 - https://github.com/microsoft/DirectXTex
 - https://github.com/microsoft/DirectXMesh
+- https://github.com/assimp/assimp
 
 ### Assets
 

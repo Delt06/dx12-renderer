@@ -128,7 +128,7 @@ bool LightingDemo::LoadContent()
 		ModelLoader modelLoader(m_WhiteTexture2d);
 
 		{
-			auto model = modelLoader.LoadObj(*commandList, L"Assets/Models/teapot/teapot.obj", true);
+			auto model = modelLoader.Load(*commandList, "Assets/Models/teapot/teapot.obj");
 			{
 				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
 					L"Assets/Textures/PavingStones/PavingStones_1K_Color.jpg");
@@ -146,7 +146,7 @@ bool LightingDemo::LoadContent()
 		}
 
 		{
-			auto model = modelLoader.LoadObj(*commandList, L"Assets/Models/sphere/sphere-cylcoords-1k.obj", true);
+			auto model = modelLoader.Load(*commandList, "Assets/Models/sphere/sphere-cylcoords-1k.obj");
 			{
 				model->GetMaterial().SpecularPower = 100.0f;
 				model->GetMaterial().Reflectivity = 1.0f;

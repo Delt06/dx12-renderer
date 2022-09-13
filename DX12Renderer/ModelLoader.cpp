@@ -7,84 +7,106 @@
 #include "Texture.h"
 #include "DirectXMesh/DirectXMesh.h"
 
+#include <assimp/Importer.hpp>      // C++ importer interface
+#include <assimp/scene.h>           // Output data structure
+#include <assimp/postprocess.h>     // Post processing flags
+
 using namespace DirectX;
+
+namespace
+{
+	XMFLOAT3 ToXMFloat3(aiVector3D vector)
+	{
+		return { vector.x, vector.y, vector.z };
+	}
+
+	XMFLOAT2 ToXMFloat2(aiVector3D vector)
+	{
+		return { vector.x, vector.y };
+	}
+}
 
 ModelLoader::ModelLoader(const std::shared_ptr<Texture> emptyTexture2d) :
 	m_EmptyTexture2d(emptyTexture2d)
 {
 }
 
-
-std::shared_ptr<Model> ModelLoader::LoadObj(CommandList& commandList, const std::wstring& path,
-                                            const bool rhCoords) const
+std::shared_ptr<Model> ModelLoader::Load(CommandList& commandList, const std::string& path) const
 {
-	const auto mesh = std::make_unique<WaveFrontReader<uint16_t>>();
-	ThrowIfFailed(mesh->Load(path.c_str()));
+	Assimp::Importer importer;
 
-	const size_t nIndices = mesh->indices.size();
-	const size_t nFaces = nIndices / 3;
-	const size_t nVerts = mesh->vertices.size();
+	auto flags =
+		aiProcess_CalcTangentSpace |
+		aiProcess_Triangulate |
+		aiProcess_JoinIdenticalVertices |
+		aiProcess_SortByPType |
+		aiProcess_GenSmoothNormals |
+		aiProcess_ConvertToLeftHanded
+		;
 
+	const aiScene* scene = importer.ReadFile(path.c_str(), flags);
 
-	auto pos = std::make_unique<XMFLOAT3[]>(nVerts);
-	for (size_t j = 0; j < nVerts; ++j)
-		pos[j] = mesh->vertices[j].position;
-
-	auto normals = std::make_unique<XMFLOAT3[]>(nVerts);
-
-	if (mesh->hasNormals)
+	if (scene == nullptr)
 	{
-		for (size_t j = 0; j < nVerts; ++j)
-			normals[j] = mesh->vertices[j].normal;
-	}
-	else
-	{
-		ThrowIfFailed(ComputeNormals(mesh->indices.data(), nFaces,
-		                             pos.get(), nVerts, CNORM_DEFAULT, normals.get()));
-	}
-
-	std::unique_ptr<XMFLOAT2[]> texcoords;
-	std::unique_ptr<XMFLOAT3[]> tangents;
-	std::unique_ptr<XMFLOAT3[]> bitangents;
-
-	if (mesh->hasTexcoords)
-	{
-		texcoords = std::make_unique<XMFLOAT2[]>(nVerts);
-		tangents = std::make_unique<XMFLOAT3[]>(nVerts);
-		bitangents = std::make_unique<XMFLOAT3[]>(nVerts);
-
-		for (size_t j = 0; j < nVerts; ++j)
-			texcoords[j] = mesh->vertices[j].textureCoordinate;
-
-		ThrowIfFailed(ComputeTangentFrame(mesh->indices.data(), nFaces,
-		                                  pos.get(), normals.get(), texcoords.get(), nVerts,
-		                                  tangents.get(), bitangents.get()));
-	}
-
-
-	VertexCollectionType outputVertices;
-	outputVertices.reserve(nVerts);
-
-	for (uint16_t i = 0; i < nVerts; ++i)
-	{
-		VertexAttributes vertexAttributes;
-		if (mesh->hasTexcoords)
-			vertexAttributes = VertexAttributes(pos[i], normals[i], texcoords[i], tangents[i], bitangents[i]);
-		else
-			vertexAttributes = VertexAttributes(pos[i], normals[i], {}, {}, {});
-		outputVertices.push_back(vertexAttributes);
-	}
-
-	IndexCollectionType outputIndices;
-	outputVertices.reserve(nIndices);
-
-	for (uint16_t i = 0; i < nIndices; ++i)
-	{
-		outputIndices.push_back(mesh->indices[i]);
+		throw std::exception(importer.GetErrorString());
 	}
 
 	std::vector<std::shared_ptr<Mesh>> outputMeshes;
-	outputMeshes.push_back(Mesh::CreateMesh(commandList, outputVertices, outputIndices, rhCoords, false));
+
+
+	for (unsigned int meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex)
+	{
+		auto mesh = scene->mMeshes[meshIndex];
+
+		VertexCollectionType outputVertices;
+		outputVertices.reserve(mesh->mNumVertices);
+
+		for (unsigned int vertexIndex = 0; vertexIndex < mesh->mNumVertices; ++vertexIndex)
+		{
+			VertexAttributes vertexAttributes;
+
+			if (mesh->HasPositions())
+			{
+				vertexAttributes.Position = ToXMFloat3(mesh->mVertices[vertexIndex]);
+			}
+
+			if (mesh->HasNormals())
+			{
+				vertexAttributes.Normal = ToXMFloat3(mesh->mNormals[vertexIndex]);
+			}
+
+			constexpr unsigned int uvIndex = 0;
+			if (mesh->HasTextureCoords(uvIndex))
+			{
+				vertexAttributes.Uv = ToXMFloat2(mesh->mTextureCoords[uvIndex][vertexIndex]);
+			}
+
+			if (mesh->HasTangentsAndBitangents())
+			{
+				vertexAttributes.Tangent = ToXMFloat3(mesh->mTangents[vertexIndex]);
+				vertexAttributes.Bitangent = ToXMFloat3(mesh->mBitangents[vertexIndex]);
+			}
+
+			outputVertices.push_back(vertexAttributes);
+		}
+
+		IndexCollectionType outputIndices;
+		constexpr unsigned int indicesInTriangle = 3;
+		outputVertices.reserve(mesh->mNumFaces * indicesInTriangle);
+
+		for (unsigned int faceIndex = 0; faceIndex < mesh->mNumFaces; ++faceIndex)
+		{
+			const auto face = mesh->mFaces[faceIndex];
+			assert(face.mNumIndices == indicesInTriangle);
+
+			outputIndices.push_back(face.mIndices[0]);
+			outputIndices.push_back(face.mIndices[1]);
+			outputIndices.push_back(face.mIndices[2]);
+		}
+
+		outputMeshes.push_back(Mesh::CreateMesh(commandList, outputVertices, outputIndices, true, false));
+	}
+
 	auto model = std::make_shared<Model>(outputMeshes);
 	model->SetMapsEmpty(m_EmptyTexture2d);
 	return model;
@@ -98,7 +120,7 @@ std::shared_ptr<Model> ModelLoader::LoadExisting(std::shared_ptr<Mesh> mesh) con
 }
 
 void ModelLoader::LoadMap(Model& model, CommandList& commandList, ModelMaps::MapType mapType,
-                          const std::wstring& path) const
+	const std::wstring& path) const
 {
 	const auto map = std::make_shared<Texture>();
 	TextureUsageType textureUsage;
