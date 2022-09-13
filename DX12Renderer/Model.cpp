@@ -10,7 +10,7 @@ Model::Model(const MeshCollectionType& meshes)
 }
 
 Model::Model(std::shared_ptr<Mesh> mesh)
-	: m_Meshes({mesh})
+	: m_Meshes({ mesh })
 {
 }
 
@@ -65,7 +65,7 @@ Model::~Model() = default;
 
 
 void Model::Draw(CommandList& commandList, const uint32_t materialRootParameterIndex,
-                 const uint32_t mapsRootParameterIndex) const
+	const uint32_t mapsRootParameterIndex) const
 {
 	commandList.SetGraphicsDynamicConstantBuffer(materialRootParameterIndex, m_Material);
 
@@ -80,5 +80,13 @@ void Model::Draw(CommandList& commandList, const uint32_t materialRootParameterI
 	for (const auto& mesh : m_Meshes)
 	{
 		mesh->Draw(commandList);
+	}
+}
+
+void Model::GetMaps(std::shared_ptr<Texture> mapsDestination[ModelMaps::TotalNumber]) const
+{
+	for (uint32_t i = 0; i < ModelMaps::TotalNumber; ++i)
+	{
+		mapsDestination[i] = m_Maps[i];
 	}
 }

@@ -1,4 +1,4 @@
-#include "LightingDemo.h"
+#include "AnimationsDemo.h"
 
 #include <Application.h>
 #include <CommandQueue.h>
@@ -14,8 +14,7 @@
 #include "GraphicsSettings.h"
 #include "Model.h"
 #include "ModelLoader.h"
-#include "ParticleSystem.h"
-#include "PointLightShadowPassPso.h"
+
 using namespace Microsoft::WRL;
 
 #include <d3d12.h>
@@ -68,10 +67,22 @@ namespace
 
 		return M;
 	}
+
+	namespace RootParameters
+	{
+		enum RootParameters
+		{
+			// ConstantBuffer register(b0);
+			MatricesCb,
+			// Texture2D register(t0);
+			Diffuse,
+			NumRootParameters
+		};
+	}
 }
 
 
-LightingDemo::LightingDemo(const std::wstring& name, int width, int height, GraphicsSettings graphicsSettings)
+AnimationsDemo::AnimationsDemo(const std::wstring& name, int width, int height, GraphicsSettings graphicsSettings)
 	: Base(name, width, height, graphicsSettings.VSync)
 	, m_Viewport(CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height)))
 	, m_ScissorRect(CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX))
@@ -79,26 +90,25 @@ LightingDemo::LightingDemo(const std::wstring& name, int width, int height, Grap
 	, m_CameraController{}
 	, m_Width(0)
 	, m_Height(0)
-	, m_Scene(std::make_shared<Scene>())
 {
 	const XMVECTOR cameraPos = XMVectorSet(0, 5, -20, 1);
 	const XMVECTOR cameraTarget = XMVectorSet(0, 5, 0, 1);
 	const XMVECTOR cameraUp = XMVectorSet(0, 1, 0, 0);
 
-	m_Scene->MainCamera.SetLookAt(cameraPos, cameraTarget, cameraUp);
+	m_Camera.SetLookAt(cameraPos, cameraTarget, cameraUp);
 
 	m_PAlignedCameraData = static_cast<CameraData*>(_aligned_malloc(sizeof(CameraData), 16));
 
-	m_PAlignedCameraData->m_InitialPosition = m_Scene->MainCamera.GetTranslation();
-	m_PAlignedCameraData->m_InitialQRotation = m_Scene->MainCamera.GetRotation();
+	m_PAlignedCameraData->m_InitialPosition = m_Camera.GetTranslation();
+	m_PAlignedCameraData->m_InitialQRotation = m_Camera.GetRotation();
 }
 
-LightingDemo::~LightingDemo()
+AnimationsDemo::~AnimationsDemo()
 {
 	_aligned_free(m_PAlignedCameraData);
 }
 
-bool LightingDemo::LoadContent()
+bool AnimationsDemo::LoadContent()
 {
 	const auto device = Application::Get().GetDevice();
 	const auto commandQueue = Application::Get().GetCommandQueue();
@@ -111,11 +121,82 @@ bool LightingDemo::LoadContent()
 	colorClearValue.Format = backBufferFormat;
 	memcpy(colorClearValue.Color, CLEAR_COLOR, sizeof CLEAR_COLOR);
 
-	m_SceneRenderer = std::make_shared<SceneRenderer>(device, *commandList, m_GraphicsSettings, backBufferFormat, depthBufferFormat);
-	m_SceneRenderer->SetScene(m_Scene);
+	// create root signature and pipeline state
+	{
+		{
+			ComPtr<ID3DBlob> vertexShaderBlob;
+			ThrowIfFailed(D3DReadFileToBlob(L"AnimationsDemo_VertexShader.cso", &vertexShaderBlob));
 
-	m_ReflectionCubemap = std::make_shared<Cubemap>(m_GraphicsSettings.DynamicReflectionsResolution, XMVectorSet(0, 5, 25, 1), *commandList, backBufferFormat, depthBufferFormat, colorClearValue);
-	m_SceneRenderer->SetEnvironmentReflectionsCubemap(m_ReflectionCubemap);
+			ComPtr<ID3DBlob> pixelShaderBlob;
+			ThrowIfFailed(D3DReadFileToBlob(L"AnimationsDemo_PixelShader.cso", &pixelShaderBlob));
+
+			// Create a root signature.
+			D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData;
+			featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
+			if (FAILED(device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData))))
+			{
+				featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
+			}
+
+			constexpr D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
+				D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+				D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+				D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+				D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
+
+			CD3DX12_DESCRIPTOR_RANGE1 descriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
+			CD3DX12_ROOT_PARAMETER1 rootParameters[RootParameters::NumRootParameters];
+			rootParameters[RootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
+			rootParameters[RootParameters::Diffuse].InitAsDescriptorTable(1, &descriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
+
+			CD3DX12_STATIC_SAMPLER_DESC samplers[] = {
+				// linear repeat
+				CD3DX12_STATIC_SAMPLER_DESC(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR),
+			};
+
+			CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
+			rootSignatureDescription.Init_1_1(RootParameters::NumRootParameters, rootParameters, _countof(samplers), samplers,
+				rootSignatureFlags);
+
+			m_RootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
+
+			// Setup the pipeline state.
+			struct PipelineStateStream
+			{
+				CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE RootSignature;
+				CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
+				CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
+				CD3DX12_PIPELINE_STATE_STREAM_VS Vs;
+				CD3DX12_PIPELINE_STATE_STREAM_PS Ps;
+				CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DsvFormat;
+				CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RtvFormats;
+				CD3DX12_PIPELINE_STATE_STREAM_RASTERIZER Rasterizer;
+			} pipelineStateStream;
+
+			D3D12_RT_FORMAT_ARRAY rtvFormats = {};
+			rtvFormats.NumRenderTargets = 1;
+			rtvFormats.RTFormats[0] = backBufferFormat;
+
+			pipelineStateStream.RootSignature = m_RootSignature.GetRootSignature().Get();
+			pipelineStateStream.InputLayout = { VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT };
+			pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+			pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
+			pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
+			pipelineStateStream.DsvFormat = depthBufferFormat;
+			pipelineStateStream.RtvFormats = rtvFormats;
+			pipelineStateStream.Rasterizer = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_BACK, FALSE, 0, 0,
+				0, TRUE, FALSE, FALSE, 0,
+				D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+
+			const D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = {
+				sizeof(PipelineStateStream), &pipelineStateStream
+			};
+
+			ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_PipelineState)));
+		}
+	}
+
 
 	// Generate default texture
 	{
@@ -128,43 +209,16 @@ bool LightingDemo::LoadContent()
 		ModelLoader modelLoader(m_WhiteTexture2d);
 
 		{
-			auto model = modelLoader.Load(*commandList, "Assets/Models/teapot/teapot.obj");
+			auto model = modelLoader.Load(*commandList, "Assets/Models/archer/archer.fbx");
 			{
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
-					L"Assets/Textures/PavingStones/PavingStones_1K_Color.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
-					L"Assets/Textures/PavingStones/PavingStones_1K_Normal.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Gloss,
-					L"Assets/Textures/PavingStones/PavingStones_1K_Roughness.jpg");
+
 			}
-			model->GetMaterial().SpecularPower = 50.0f;
+
 			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
-			XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
+			XMMATRIX scaleMatrix = XMMatrixScaling(0.05f, 0.05f, 0.05f);
 			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-			m_Scene->GameObjects.push_back(GameObject(worldMatrix, model));
-		}
-
-		{
-			auto model = modelLoader.Load(*commandList, "Assets/Models/sphere/sphere-cylcoords-1k.obj");
-			{
-				model->GetMaterial().SpecularPower = 100.0f;
-				model->GetMaterial().Reflectivity = 1.0f;
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
-					L"Assets/Textures/Metal/Metal_1K_Color.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
-					L"Assets/Textures/Metal/Metal_1K_Normal.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Specular,
-					L"Assets/Textures/Metal/Metal_1K_Specular.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Gloss,
-					L"Assets/Textures/Metal/Metal_1K_Roughness.jpg");
-			}
-
-			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 5.0f, 25.0f);
-			XMMATRIX rotationMatrix = XMMatrixIdentity();
-			XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
-			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-			m_Scene->GameObjects.push_back(GameObject(worldMatrix, model));
+			m_GameObjects.push_back(GameObject(worldMatrix, model));
 		}
 
 		{
@@ -184,74 +238,9 @@ bool LightingDemo::LoadContent()
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
 			XMMATRIX scaleMatrix = XMMatrixScaling(200.0f, 200.0f, 200.0f);
 			XMMATRIX worldMatrix = scaleMatrix * translationMatrix * rotationMatrix;
-			m_Scene->GameObjects.push_back(GameObject(worldMatrix, model));
-		}
-
-		{
-			auto model = modelLoader.LoadExisting(Mesh::CreateCube(*commandList, 1.0f));
-			{
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
-					L"Assets/Textures/PavingStones/PavingStones_1K_Color.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
-					L"Assets/Textures/PavingStones/PavingStones_1K_Normal.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Gloss,
-					L"Assets/Textures/PavingStones/PavingStones_1K_Roughness.jpg");
-			}
-			XMMATRIX translationMatrix = XMMatrixTranslation(7.0f, 2.5f, 11.0f);
-			XMMATRIX rotationMatrix = XMMatrixIdentity();
-			XMMATRIX scaleMatrix = XMMatrixScaling(1.0f, 5.0f, 1.0f);
-			XMMATRIX worldMatrix = scaleMatrix * translationMatrix * rotationMatrix;
-			m_Scene->GameObjects.push_back(GameObject(worldMatrix, model));
+			m_GameObjects.push_back(GameObject(worldMatrix, model));
 		}
 	}
-
-	// Create lights
-	{
-		m_Scene->MainDirectionalLight.m_DirectionWs = XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f);
-		m_Scene->MainDirectionalLight.m_Color = XMFLOAT4(0.9f, 0.9f, 0.7f, 0.0f);
-		m_Scene->MainDirectionalLight.m_Color = XMFLOAT4(0.5f, 0.5f, 0.4f, 0.0f);
-
-		// magenta
-		{
-			PointLight pointLight(XMFLOAT4(-8, 2, -2, 1));
-			pointLight.Color = XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f);
-			m_Scene->PointLights.push_back(pointLight);
-		}
-
-		// yellow-ish
-		{
-			PointLight pointLight(XMFLOAT4(0, 2, -6, 1));
-			pointLight.Color = XMFLOAT4(3.0f, 2.0f, 0.25f, 1.0f);
-			m_Scene->PointLights.push_back(pointLight);
-		}
-
-		// cyan-ish
-		{
-			PointLight pointLight(XMFLOAT4(6, 2, 10, 1), 25.0f);
-			pointLight.Color = XMFLOAT4(0.0f, 5.0f, 2.0f, 1.0f);
-			m_Scene->PointLights.push_back(pointLight);
-		}
-
-		// spotlight
-		{
-			SpotLight spotLight;
-			spotLight.PositionWs = XMFLOAT4(0, 5.0f, 55.0f, 1.0f);
-			spotLight.DirectionWs = XMFLOAT4(0, 0.0f, -1.0f, 0.0f);
-			spotLight.Color = XMFLOAT4(1, 1, 1, 1);
-			spotLight.Intensity = 5.0f;
-			spotLight.SpotAngle = XMConvertToRadians(45.0f);
-			spotLight.Attenuation = 0.0005f;
-			m_Scene->SpotLights.push_back(spotLight);
-		}
-	}
-
-	// Setup particles
-	{
-		m_Scene->ParticleSystems.push_back(ParticleSystem(device, *commandList, XMVectorSet(7.25f, 5.6f, 0.0f, 1.0f)));
-	}
-
-	XMVECTOR lightDir = XMLoadFloat4(&m_Scene->MainDirectionalLight.m_DirectionWs);
-	XMStoreFloat4(&m_Scene->MainDirectionalLight.m_DirectionWs, XMVector4Normalize(lightDir));
 
 	auto colorDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat,
 		m_Width, m_Height,
@@ -279,26 +268,13 @@ bool LightingDemo::LoadContent()
 	m_RenderTarget.AttachTexture(Color0, colorTexture);
 	m_RenderTarget.AttachTexture(DepthStencil, depthTexture);
 
-	// PostFX
-	{
-		auto postFxColorTexture = Texture(colorDesc, &colorClearValue, TextureUsageType::RenderTarget, L"PostFX Render Target");
-		m_PostFxRenderTarget.AttachTexture(Color0, postFxColorTexture);
-
-		m_PostFxPso = std::make_unique<PostFxPso>(device, *commandList, backBufferFormat);
-	}
-
-	// Bloom
-	{
-		m_BloomPso = std::make_unique<BloomPso>(device, *commandList, m_Width, m_Height, backBufferFormat);
-	}
-
 	auto fenceValue = commandQueue->ExecuteCommandList(commandList);
 	commandQueue->WaitForFenceValue(fenceValue);
 
 	return true;
 }
 
-void LightingDemo::OnResize(ResizeEventArgs& e)
+void AnimationsDemo::OnResize(ResizeEventArgs& e)
 {
 	Base::OnResize(e);
 
@@ -308,24 +284,20 @@ void LightingDemo::OnResize(ResizeEventArgs& e)
 		m_Height = std::max(1, e.Height);
 
 		const float aspectRatio = static_cast<float>(m_Width) / static_cast<float>(m_Height);
-		m_Scene->MainCamera.SetProjection(45.0f, aspectRatio, 0.1f, 1000.0f);
+		m_Camera.SetProjection(45.0f, aspectRatio, 0.1f, 1000.0f);
 
 		m_Viewport = CD3DX12_VIEWPORT(0.0f, 0.0f,
 			static_cast<float>(m_Width), static_cast<float>(m_Height));
 
 		m_RenderTarget.Resize(m_Width, m_Height);
-		m_PostFxRenderTarget.Resize(m_Width, m_Height);
-
-		if (m_BloomPso != nullptr)
-			m_BloomPso->Resize(m_Width, m_Height);
 	}
 }
 
-void LightingDemo::UnloadContent()
+void AnimationsDemo::UnloadContent()
 {
 }
 
-void LightingDemo::OnUpdate(UpdateEventArgs& e)
+void AnimationsDemo::OnUpdate(UpdateEventArgs& e)
 {
 	static uint64_t frameCount = 0;
 	static double totalTime = 0.0;
@@ -359,31 +331,17 @@ void LightingDemo::OnUpdate(UpdateEventArgs& e)
 	XMVECTOR cameraPan = XMVectorSet(0.0f, m_CameraController.m_Up - m_CameraController.m_Down, 0.0f, 1.0f) *
 		speedMultiplier *
 		static_cast<float>(e.ElapsedTime);
-	m_Scene->MainCamera.Translate(cameraTranslate, Space::Local);
-	m_Scene->MainCamera.Translate(cameraPan, Space::Local);
+	m_Camera.Translate(cameraTranslate, Space::Local);
+	m_Camera.Translate(cameraPan, Space::Local);
 
 	XMVECTOR cameraRotation = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(m_CameraController.m_Pitch),
 		XMConvertToRadians(m_CameraController.m_Yaw), 0.0f);
-	m_Scene->MainCamera.SetRotation(cameraRotation);
-
-	for (auto& ps : m_Scene->ParticleSystems)
-	{
-		ps.Update(e.ElapsedTime);
-	}
+	m_Camera.SetRotation(cameraRotation);
 
 	auto dt = static_cast<float>(e.ElapsedTime);
-
-	if (m_AnimateLights)
-	{
-		XMVECTOR dirLightDirectionWs = XMLoadFloat4(&m_Scene->MainDirectionalLight.m_DirectionWs);
-		dirLightDirectionWs = XMVector4Transform(dirLightDirectionWs,
-			XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
-				XMConvertToRadians(90.0f * dt)));
-		XMStoreFloat4(&m_Scene->MainDirectionalLight.m_DirectionWs, dirLightDirectionWs);
-	}
 }
 
-void LightingDemo::OnRender(RenderEventArgs& e)
+void AnimationsDemo::OnRender(RenderEventArgs& e)
 {
 	Base::OnRender(e);
 
@@ -396,77 +354,43 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 		commandList->ClearDepthStencilTexture(m_RenderTarget.GetTexture(DepthStencil), D3D12_CLEAR_FLAG_DEPTH);
 	}
 
-	m_SceneRenderer->ShadowPass(*commandList);
-
-
-
-	{
-		PIXScope(*commandList, "Reflection Cubemap");
-
-		m_SceneRenderer->ToggleEnvironmentReflections(false);
-		m_ReflectionCubemap->Clear(*commandList);
-		m_ReflectionCubemap->SetViewportScissorRect(*commandList);
-
-		for (uint32_t i = 0; i < Cubemap::SIDES_COUNT; ++i)
-		{
-			PIXScope(*commandList, "Reflection Cubemap Side");
-			XMMATRIX cubemapSideView, cubemapSideProjection;
-			m_ReflectionCubemap->ComputeViewProjectionMatrices(*commandList, i, &cubemapSideView, &cubemapSideProjection);
-			m_SceneRenderer->SetMatrices(cubemapSideView, cubemapSideProjection);
-
-			m_ReflectionCubemap->SetRenderTarget(*commandList, i);
-
-			m_SceneRenderer->MainPass(*commandList);
-		}
-	}
-
 	{
 		PIXScope(*commandList, "Main Pass");
 		commandList->SetRenderTarget(m_RenderTarget);
 		commandList->SetViewport(m_Viewport);
 		commandList->SetScissorRect(m_ScissorRect);
+		commandList->SetGraphicsRootSignature(m_RootSignature);
+		commandList->SetPipelineState(m_PipelineState);
 
-		const XMMATRIX viewMatrix = m_Scene->MainCamera.GetViewMatrix();
-		const XMMATRIX projectionMatrix = m_Scene->MainCamera.GetProjectionMatrix();
+		const XMMATRIX viewMatrix = m_Camera.GetViewMatrix();
+		const XMMATRIX projectionMatrix = m_Camera.GetProjectionMatrix();
+		const XMMATRIX viewProjection = viewMatrix * projectionMatrix;
 
-		m_SceneRenderer->SetMatrices(viewMatrix, projectionMatrix);
-		m_SceneRenderer->ToggleEnvironmentReflections(true);
-		m_SceneRenderer->MainPass(*commandList);
-	}
+		const std::vector<ModelMaps::MapType> mapTypes = { ModelMaps::Diffuse };
 
-	{
-		PIXScope(*commandList, "PostFX");
+		for (const auto& go : m_GameObjects)
+		{
+			MatricesCb matricesCb;
+			matricesCb.Compute(go.GetWorldMatrix(), viewMatrix, viewProjection, projectionMatrix);
+			commandList->SetGraphicsDynamicConstantBuffer(RootParameters::MatricesCb, matricesCb);
 
-		commandList->SetRenderTarget(m_PostFxRenderTarget);
-		commandList->SetViewport(m_Viewport);
-		commandList->SetScissorRect(m_ScissorRect);
+			const auto& model = go.GetModel();
+			std::shared_ptr<Texture> maps[ModelMaps::TotalNumber];
+			model->GetMaps(maps);
+			commandList->SetShaderResourceView(RootParameters::Diffuse, 0, *maps[ModelMaps::Diffuse], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
-		m_PostFxPso->SetContext(*commandList);
-		m_PostFxPso->SetSourceColorTexture(*commandList, m_RenderTarget.GetTexture(Color0));
-		m_PostFxPso->SetSourceDepthTexture(*commandList, m_RenderTarget.GetTexture(DepthStencil));
-
-		PostFxPso::PostFxParameters parameters;
-		parameters.ProjectionInverse = m_Scene->MainCamera.GetInverseProjectionMatrix();
-		parameters.FogColor = XMFLOAT3(CLEAR_COLOR);
-		parameters.FogDensity = 0.017f;
-		m_PostFxPso->SetParameters(*commandList, parameters);
-
-		m_PostFxPso->Blit(*commandList);
-	}
-
-	{
-		BloomPso::Parameters parameters;
-		parameters.Threshold = 1.25f;
-		parameters.SoftThreshold = 0.3f;
-		parameters.Intensity = 1.5f;
-		m_BloomPso->Draw(*commandList, m_PostFxRenderTarget.GetTexture(Color0), m_PostFxRenderTarget, parameters);
+			for (const auto& mesh : model->GetMeshes())
+			{
+				mesh->Draw(*commandList);
+			}
+		}
 	}
 
 	commandQueue->ExecuteCommandList(commandList);
-	PWindow->Present(m_PostFxRenderTarget.GetTexture(Color0));
+	PWindow->Present(m_RenderTarget.GetTexture(Color0));
 }
 
-void LightingDemo::OnKeyPressed(KeyEventArgs& e)
+void AnimationsDemo::OnKeyPressed(KeyEventArgs& e)
 {
 	Base::OnKeyPressed(e);
 
@@ -492,8 +416,8 @@ void LightingDemo::OnKeyPressed(KeyEventArgs& e)
 		break;
 	case KeyCode::R:
 		// Reset camera transform
-		m_Scene->MainCamera.SetTranslation(m_PAlignedCameraData->m_InitialPosition);
-		m_Scene->MainCamera.SetRotation(m_PAlignedCameraData->m_InitialQRotation);
+		m_Camera.SetTranslation(m_PAlignedCameraData->m_InitialPosition);
+		m_Camera.SetRotation(m_PAlignedCameraData->m_InitialQRotation);
 		m_CameraController.m_Pitch = 0.0f;
 		m_CameraController.m_Yaw = 0.0f;
 		break;
@@ -520,7 +444,6 @@ void LightingDemo::OnKeyPressed(KeyEventArgs& e)
 		m_CameraController.m_Up = 1.0f;
 		break;
 	case KeyCode::L:
-		m_AnimateLights = !m_AnimateLights;
 		break;
 	case KeyCode::ShiftKey:
 		m_CameraController.m_Shift = true;
@@ -528,7 +451,7 @@ void LightingDemo::OnKeyPressed(KeyEventArgs& e)
 	}
 }
 
-void LightingDemo::OnKeyReleased(KeyEventArgs& e)
+void AnimationsDemo::OnKeyReleased(KeyEventArgs& e)
 {
 	Base::OnKeyReleased(e);
 
@@ -569,7 +492,7 @@ void LightingDemo::OnKeyReleased(KeyEventArgs& e)
 	}
 }
 
-void LightingDemo::OnMouseMoved(MouseMotionEventArgs& e)
+void AnimationsDemo::OnMouseMoved(MouseMotionEventArgs& e)
 {
 	Base::OnMouseMoved(e);
 
@@ -586,15 +509,15 @@ void LightingDemo::OnMouseMoved(MouseMotionEventArgs& e)
 }
 
 
-void LightingDemo::OnMouseWheel(MouseWheelEventArgs& e)
+void AnimationsDemo::OnMouseWheel(MouseWheelEventArgs& e)
 {
 	{
-		auto fov = m_Scene->MainCamera.GetFov();
+		auto fov = m_Camera.GetFov();
 
 		fov -= e.WheelDelta;
 		fov = Clamp(fov, 12.0f, 90.0f);
 
-		m_Scene->MainCamera.SetFov(fov);
+		m_Camera.SetFov(fov);
 
 		char buffer[256];
 		sprintf_s(buffer, "FoV: %f\n", fov);

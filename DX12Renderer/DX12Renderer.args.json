@@ -3,20 +3,19 @@
   "Id": "5edb09fc-1d61-4e9a-b556-a81bb2d6b766",
   "Items": [
     {
-      "Id": "c085de39-a160-4a8c-8efe-f59196d80220",
-      "Command": "--shadowResolution 512"
-    },
-    {
-      "Id": "74a37891-476f-45ec-a8eb-b35eadb2b77e",
-      "Command": "--demo Tutorial3"
-    },
-    {
-      "Id": "4fe8924a-0012-4e11-8e48-f42c217e25ce",
-      "Command": "--poissonSpread 250"
-    },
-    {
-      "Id": "819bda52-1309-4824-b32e-c4a3e482c937",
-      "Command": "--demo LightingDemo"
+      "Id": "79af51ba-0b50-42ef-9c73-84eb068237a0",
+      "Command": "Demo",
+      "ExclusiveMode": true,
+      "Items": [
+        {
+          "Id": "819bda52-1309-4824-b32e-c4a3e482c937",
+          "Command": "--demo LightingDemo"
+        },
+        {
+          "Id": "201b8042-7cb3-4faf-8ce2-f518bfb7a9c0",
+          "Command": "--demo AnimationsDemo"
+        }
+      ]
     },
     {
       "Id": "c8f6b0fe-606d-42b6-b6f8-1a232d3779a6",
@@ -31,6 +30,18 @@
           "Command": "--height 1080"
         }
       ]
+    },
+    {
+      "Id": "c085de39-a160-4a8c-8efe-f59196d80220",
+      "Command": "--shadowResolution 512"
+    },
+    {
+      "Id": "74a37891-476f-45ec-a8eb-b35eadb2b77e",
+      "Command": "--demo Tutorial3"
+    },
+    {
+      "Id": "4fe8924a-0012-4e11-8e48-f42c217e25ce",
+      "Command": "--poissonSpread 250"
     }
   ]
 }

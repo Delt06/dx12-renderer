@@ -42,7 +42,7 @@ public:
 	Material& GetMaterial();
 
 	const MeshCollectionType& GetMeshes() const;
-
+	void GetMaps(std::shared_ptr<Texture> mapsDestination[ModelMaps::TotalNumber]) const;
 private:
 	MeshCollectionType m_Meshes{};
 

@@ -162,6 +162,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AnimationsDemo\AnimationsDemo.cpp" />
     <ClCompile Include="LightingDemo\BloomPso.cpp" />
     <ClCompile Include="Cubemap.cpp" />
     <ClCompile Include="Geometry\Aabb.cpp" />
@@ -212,6 +213,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\DirectXMesh\Utilities\WaveFrontReader.h" />
+    <ClInclude Include="AnimationsDemo\AnimationsDemo.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="LightingDemo\BloomPso.h" />
     <ClInclude Include="Cubemap.h" />
@@ -288,6 +290,18 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="Shaders\AnimationsDemo_PixelShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\AnimationsDemo_VertexShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
     <FxCompile Include="Shaders\GenerateMips_CS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>
