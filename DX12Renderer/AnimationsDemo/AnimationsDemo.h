@@ -57,6 +57,8 @@ private:
 
 	GraphicsSettings m_GraphicsSettings;
 
+	double m_Time = 0;
+
 	static constexpr size_t ALIGNMENT = 16;
 
 	struct alignas(ALIGNMENT) CameraData

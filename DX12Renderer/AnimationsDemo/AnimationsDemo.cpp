@@ -379,6 +379,7 @@ void AnimationsDemo::OnUpdate(UpdateEventArgs& e)
 	if (e.ElapsedTime > 1.0f) return;
 
 	totalTime += e.ElapsedTime;
+	m_Time += e.ElapsedTime;
 	frameCount++;
 
 	if (totalTime > 1.0)
@@ -410,13 +411,11 @@ void AnimationsDemo::OnUpdate(UpdateEventArgs& e)
 		XMConvertToRadians(m_CameraController.m_Yaw), 0.0f);
 	m_Camera.SetRotation(cameraRotation);
 
-	auto dt = static_cast<float>(e.ElapsedTime);
-
 	for (const auto& go : m_GameObjects)
 	{
 		for (auto& mesh : go.GetModel()->GetMeshes())
 		{
-			m_Animation->Play(*mesh, 0);
+			m_Animation->Play(*mesh, m_Time * 0.25f);
 			mesh->UpdateBoneGlobalTransforms();
 		}
 	}
