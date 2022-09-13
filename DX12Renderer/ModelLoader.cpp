@@ -5,6 +5,7 @@
 
 #include "Model.h"
 #include "Texture.h"
+#include "Bone.h"
 #include "DirectXMesh/DirectXMesh.h"
 
 #include <assimp/Importer.hpp>      // C++ importer interface
@@ -26,6 +27,17 @@ namespace
 	XMFLOAT2 ToXMFloat2(aiVector3D vector)
 	{
 		return { vector.x, vector.y };
+	}
+
+	XMMATRIX ToXMATRIX(aiMatrix4x4 matrix)
+	{
+		// transpose to convert to the left-handed orientation
+		return XMMATRIX(
+			matrix.a1, matrix.b1, matrix.c1, matrix.d1,
+			matrix.a2, matrix.b2, matrix.c2, matrix.d2,
+			matrix.a3, matrix.b3, matrix.c3, matrix.d3,
+			matrix.a4, matrix.b4, matrix.c4, matrix.d4
+		);
 	}
 }
 
@@ -107,7 +119,29 @@ std::shared_ptr<Model> ModelLoader::Load(CommandList& commandList, const std::st
 			outputIndices.push_back(face.mIndices[2]);
 		}
 
-		outputMeshes.push_back(Mesh::CreateMesh(commandList, outputVertices, outputIndices, true, false));
+
+		auto outputMesh = Mesh::CreateMesh(commandList, outputVertices, outputIndices, true, false);
+
+		if (mesh->HasBones())
+		{
+			std::vector<Bone> bones;
+			bones.reserve(mesh->mNumBones);
+
+			for (unsigned int boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
+			{
+				Bone bone;
+
+				auto meshBone = mesh->mBones[boneIndex];
+				bone.Name = meshBone->mName.C_Str();
+				bone.Transform = XMMatrixInverse(nullptr, ToXMATRIX(meshBone->mOffsetMatrix));
+
+				bones.push_back(bone);
+			}
+
+			outputMesh->SetBones(bones);
+		}
+
+		outputMeshes.push_back(outputMesh);
 	}
 
 	auto model = std::make_shared<Model>(outputMeshes);

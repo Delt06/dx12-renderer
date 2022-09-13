@@ -1,5 +1,6 @@
 ﻿#include <DX12LibPCH.h>
 #include "Mesh.h"
+#include "Bone.h"
 
 #include <Application.h>
 
@@ -489,4 +490,16 @@ void Mesh::CalculateAabb(const VertexCollectionType& vertices)
 		const XMVECTOR position = XMLoadFloat3(&vertex.Position);
 		m_Aabb.Encapsulate(position);
 	}
+}
+
+void Mesh::SetBones(const std::vector<Bone>& bones)
+{
+	m_Bones.resize(bones.size());
+	std::copy(bones.begin(), bones.end(), m_Bones.begin());
+}
+
+
+const std::vector<Bone>& Mesh::GetBones() const
+{
+	return m_Bones;
 }

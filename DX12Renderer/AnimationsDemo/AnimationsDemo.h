@@ -45,6 +45,10 @@ private:
 	RootSignature m_RootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineState;
 
+	RootSignature m_BonesRootSignature;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_BonesPipelineState;
+	std::shared_ptr<Mesh> m_BoneMesh;
+
 	D3D12_VIEWPORT m_Viewport;
 	D3D12_RECT m_ScissorRect;
 

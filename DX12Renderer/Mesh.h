@@ -44,6 +44,8 @@
 
 #include "Geometry/Aabb.h"
 
+struct Bone;
+
 struct VertexAttributes
 {
 	VertexAttributes()
@@ -120,7 +122,11 @@ public:
 	virtual ~Mesh();
 	Mesh();
 
+	void SetBones(const std::vector<Bone>& bones);
+
 	const Aabb& GetAabb() const;
+
+	const std::vector<Bone>& GetBones() const;
 
 private:
 	void Initialize(CommandList& commandList, VertexCollectionType& vertices, IndexCollectionType& indices,
@@ -130,7 +136,7 @@ private:
 	VertexBuffer m_VertexBuffer;
 	IndexBuffer m_IndexBuffer;
 
-	VertexBuffer m_WeightsVertexBuffer;
+	std::vector<Bone> m_Bones;
 
 	Aabb m_Aabb{};
 	UINT m_IndexCount;

@@ -8,6 +8,7 @@
 #include <Material.h>
 #include <Window.h>
 #include <GameObject.h>
+#include <Bone.h>
 
 #include <wrl.h>
 
@@ -76,6 +77,16 @@ namespace
 			MatricesCb,
 			// Texture2D register(t0);
 			Diffuse,
+			NumRootParameters
+		};
+	}
+
+	namespace RootParametersBones
+	{
+		enum RootParametersBones
+		{
+			// ConstantBuffer register(b0);
+			MatricesCb,
 			NumRootParameters
 		};
 	}
@@ -197,6 +208,80 @@ bool AnimationsDemo::LoadContent()
 		}
 	}
 
+	// create root signature and pipeline state for bones
+	{
+		{
+			ComPtr<ID3DBlob> vertexShaderBlob;
+			ThrowIfFailed(D3DReadFileToBlob(L"AnimationsDemo_Bone_VertexShader.cso", &vertexShaderBlob));
+
+			ComPtr<ID3DBlob> pixelShaderBlob;
+			ThrowIfFailed(D3DReadFileToBlob(L"AnimationsDemo_Bone_PixelShader.cso", &pixelShaderBlob));
+
+			// Create a root signature.
+			D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData;
+			featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
+			if (FAILED(device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData))))
+			{
+				featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
+			}
+
+			constexpr D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
+				D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+				D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+				D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+				D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
+				D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS
+				;
+
+			CD3DX12_DESCRIPTOR_RANGE1 descriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
+			CD3DX12_ROOT_PARAMETER1 rootParameters[RootParametersBones::NumRootParameters];
+			rootParameters[RootParametersBones::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
+
+			CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
+			rootSignatureDescription.Init_1_1(RootParametersBones::NumRootParameters, rootParameters, 0, nullptr,
+				rootSignatureFlags);
+
+			m_BonesRootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
+
+			// Setup the pipeline state.
+			struct PipelineStateStream
+			{
+				CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE RootSignature;
+				CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
+				CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
+				CD3DX12_PIPELINE_STATE_STREAM_VS Vs;
+				CD3DX12_PIPELINE_STATE_STREAM_PS Ps;
+				CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DsvFormat;
+				CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RtvFormats;
+				CD3DX12_PIPELINE_STATE_STREAM_RASTERIZER Rasterizer;
+				CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL DepthStencil;
+			} pipelineStateStream;
+
+			D3D12_RT_FORMAT_ARRAY rtvFormats = {};
+			rtvFormats.NumRenderTargets = 1;
+			rtvFormats.RTFormats[0] = backBufferFormat;
+
+			pipelineStateStream.RootSignature = m_BonesRootSignature.GetRootSignature().Get();
+			pipelineStateStream.InputLayout = { VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT };
+			pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+			pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
+			pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
+			pipelineStateStream.DsvFormat = depthBufferFormat;
+			pipelineStateStream.RtvFormats = rtvFormats;
+			pipelineStateStream.Rasterizer = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_BACK, FALSE, 0, 0,
+				0, TRUE, FALSE, FALSE, 0,
+				D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+
+			const D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = {
+				sizeof(PipelineStateStream), &pipelineStateStream
+			};
+
+			pipelineStateStream.DepthStencil = CD3DX12_DEPTH_STENCIL_DESC();
+
+			ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_BonesPipelineState)));
+		}
+	}
 
 	// Generate default texture
 	{
@@ -220,6 +305,8 @@ bool AnimationsDemo::LoadContent()
 			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
 			m_GameObjects.push_back(GameObject(worldMatrix, model));
 		}
+
+		m_BoneMesh = Mesh::CreateCube(*commandList);
 	}
 
 	auto colorDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat,
@@ -334,19 +421,19 @@ void AnimationsDemo::OnRender(RenderEventArgs& e)
 		commandList->ClearDepthStencilTexture(m_RenderTarget.GetTexture(DepthStencil), D3D12_CLEAR_FLAG_DEPTH);
 	}
 
+	commandList->SetRenderTarget(m_RenderTarget);
+	commandList->SetViewport(m_Viewport);
+	commandList->SetScissorRect(m_ScissorRect);
+
+	const XMMATRIX viewMatrix = m_Camera.GetViewMatrix();
+	const XMMATRIX projectionMatrix = m_Camera.GetProjectionMatrix();
+	const XMMATRIX viewProjection = viewMatrix * projectionMatrix;
+
 	{
 		PIXScope(*commandList, "Main Pass");
-		commandList->SetRenderTarget(m_RenderTarget);
-		commandList->SetViewport(m_Viewport);
-		commandList->SetScissorRect(m_ScissorRect);
+
 		commandList->SetGraphicsRootSignature(m_RootSignature);
 		commandList->SetPipelineState(m_PipelineState);
-
-		const XMMATRIX viewMatrix = m_Camera.GetViewMatrix();
-		const XMMATRIX projectionMatrix = m_Camera.GetProjectionMatrix();
-		const XMMATRIX viewProjection = viewMatrix * projectionMatrix;
-
-		const std::vector<ModelMaps::MapType> mapTypes = { ModelMaps::Diffuse };
 
 		for (const auto& go : m_GameObjects)
 		{
@@ -362,6 +449,31 @@ void AnimationsDemo::OnRender(RenderEventArgs& e)
 			for (const auto& mesh : model->GetMeshes())
 			{
 				mesh->Draw(*commandList);
+			}
+		}
+	}
+
+	{
+		PIXScope(*commandList, "Draw Bones");
+
+		commandList->SetGraphicsRootSignature(m_BonesRootSignature);
+		commandList->SetPipelineState(m_BonesPipelineState);
+
+		for (const auto& go : m_GameObjects)
+		{
+			const auto& model = go.GetModel();
+
+			for (const auto& mesh : model->GetMeshes())
+			{
+				for (const auto& bone : mesh->GetBones())
+				{
+					MatricesCb matricesCb;
+					XMMATRIX worldMatrix = bone.Transform * go.GetWorldMatrix();
+					matricesCb.Compute(worldMatrix, viewMatrix, viewProjection, projectionMatrix);
+					commandList->SetGraphicsDynamicConstantBuffer(RootParametersBones::MatricesCb, matricesCb);
+
+					m_BoneMesh->Draw(*commandList);
+				}
 			}
 		}
 	}
