@@ -80,7 +80,7 @@ void Animation::Play(Mesh& mesh, double time)
 		auto translationMatrix = XMMatrixTranslationFromVector(position);
 		auto rotationMatrix = XMMatrixRotationQuaternion(rotation);
 		auto scalingMatrix = XMMatrixScalingFromVector(scaling);
-		bone.LocalTransform = translationMatrix * rotationMatrix * scalingMatrix;
+		bone.LocalTransform = scalingMatrix * rotationMatrix * translationMatrix;
 	}
 
 	mesh.MarkBonesDirty();

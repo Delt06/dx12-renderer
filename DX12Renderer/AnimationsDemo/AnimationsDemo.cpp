@@ -436,7 +436,7 @@ void AnimationsDemo::OnUpdate(UpdateEventArgs& e)
 	{
 		for (auto& mesh : go.GetModel()->GetMeshes())
 		{
-			m_Animation->Play(*mesh, m_Time * 0.0f);
+			m_Animation->Play(*mesh, m_Time * 0.25f);
 			mesh->UpdateBoneGlobalTransforms();
 		}
 	}
