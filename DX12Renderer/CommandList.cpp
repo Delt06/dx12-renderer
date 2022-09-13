@@ -271,13 +271,15 @@ namespace
 	}
 }
 
-void CommandList::LoadTextureFromFile(Texture& texture, const std::wstring& fileName,
-	const TextureUsageType textureUsage)
+bool CommandList::LoadTextureFromFile(Texture& texture, const std::wstring& fileName,
+	const TextureUsageType textureUsage, bool throwOnNotFound)
 {
 	const fs::path filePath(fileName);
 	if (!exists(filePath))
 	{
-		throw std::exception("File not found.");
+		if (throwOnNotFound)
+			throw std::exception("File not found.");
+		return false;
 	}
 
 	std::lock_guard lock(m_TextureCacheMutex);
@@ -365,6 +367,8 @@ void CommandList::LoadTextureFromFile(Texture& texture, const std::wstring& file
 
 		m_TextureCache[fileName] = textureResource.Get();
 	}
+
+	return true;
 }
 
 void CommandList::ClearTexture(const Texture& texture, const float clearColor[4])

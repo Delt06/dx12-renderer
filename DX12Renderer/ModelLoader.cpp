@@ -11,7 +11,10 @@
 #include <assimp/scene.h>           // Output data structure
 #include <assimp/postprocess.h>     // Post processing flags
 
+#include <filesystem>
+
 using namespace DirectX;
+namespace fs = std::filesystem;
 
 namespace
 {
@@ -48,11 +51,11 @@ std::shared_ptr<Model> ModelLoader::Load(CommandList& commandList, const std::st
 
 	if (scene == nullptr)
 	{
-		throw std::exception(importer.GetErrorString());
+		std::string errorString = importer.GetErrorString();
+		throw std::exception(errorString.c_str());
 	}
 
 	std::vector<std::shared_ptr<Mesh>> outputMeshes;
-
 
 	for (unsigned int meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex)
 	{
@@ -109,6 +112,49 @@ std::shared_ptr<Model> ModelLoader::Load(CommandList& commandList, const std::st
 
 	auto model = std::make_shared<Model>(outputMeshes);
 	model->SetMapsEmpty(m_EmptyTexture2d);
+
+	if (outputMeshes.size() > 0 && scene->HasMaterials())
+	{
+		for (int i = 0; i < ModelMaps::TotalNumber; i++)
+		{
+			auto mapType = (ModelMaps::MapType)i;
+			aiTextureType textureType;
+			switch (mapType)
+			{
+			case ModelMaps::Diffuse:
+				textureType = aiTextureType_DIFFUSE;
+				break;
+			case ModelMaps::Normal:
+				textureType = aiTextureType_NORMALS;
+				break;
+			case ModelMaps::Specular:
+				textureType = aiTextureType_SPECULAR;
+				break;
+			case ModelMaps::Gloss:
+				textureType = aiTextureType_DIFFUSE_ROUGHNESS;
+				break;
+			}
+
+			auto materialIndex = scene->mMeshes[0]->mMaterialIndex;
+			auto material = scene->mMaterials[materialIndex];
+			aiString texturePath;
+			material->GetTexture(textureType, 0, &texturePath);
+			if (texturePath.length > 0)
+			{
+				auto texture = scene->GetEmbeddedTexture(texturePath.C_Str());
+				if (texture != nullptr)
+				{
+					throw std::exception("Embedded textures are not yet supported. Try extracting them.");
+				}
+
+				fs::path fsTexturePath(path);
+				fs::path fsTexturePathLocal(texturePath.C_Str());
+				fsTexturePath = fsTexturePath.replace_filename(fsTexturePathLocal);
+				LoadMap(*model, commandList, mapType, fsTexturePath.generic_wstring(), false);
+			}
+		}
+	}
+
 	return model;
 }
 
@@ -120,7 +166,7 @@ std::shared_ptr<Model> ModelLoader::LoadExisting(std::shared_ptr<Mesh> mesh) con
 }
 
 void ModelLoader::LoadMap(Model& model, CommandList& commandList, ModelMaps::MapType mapType,
-	const std::wstring& path) const
+	const std::wstring& path, bool throwOnNotFound) const
 {
 	const auto map = std::make_shared<Texture>();
 	TextureUsageType textureUsage;
@@ -137,6 +183,7 @@ void ModelLoader::LoadMap(Model& model, CommandList& commandList, ModelMaps::Map
 	default:
 		throw std::exception("Invalid map type.");
 	}
-	commandList.LoadTextureFromFile(*map, path, textureUsage);
-	model.SetMap(mapType, map);
+
+	if (commandList.LoadTextureFromFile(*map, path, textureUsage, throwOnNotFound))
+		model.SetMap(mapType, map);
 }

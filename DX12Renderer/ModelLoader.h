@@ -18,7 +18,7 @@ public:
 	explicit ModelLoader(std::shared_ptr<Texture> emptyTexture2d);
 	std::shared_ptr<Model> Load(CommandList& commandList, const std::string& path) const;
 	std::shared_ptr<Model> LoadExisting(std::shared_ptr<Mesh> mesh) const;
-	void LoadMap(Model& model, CommandList& commandList, ModelMaps::MapType mapType, const std::wstring& path) const;
+	void LoadMap(Model& model, CommandList& commandList, ModelMaps::MapType mapType, const std::wstring& path, bool throwOnNotFound = true) const;
 
 private:
 	std::shared_ptr<Texture> m_EmptyTexture2d;

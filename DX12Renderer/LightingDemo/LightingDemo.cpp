@@ -168,6 +168,19 @@ bool LightingDemo::LoadContent()
 		}
 
 		{
+			auto model = modelLoader.Load(*commandList, "Assets/Models/archer/archer.fbx");
+			{
+
+			}
+
+			XMMATRIX translationMatrix = XMMatrixTranslation(25.0f, 0.0f, 0.0f);
+			XMMATRIX rotationMatrix = XMMatrixIdentity();
+			XMMATRIX scaleMatrix = XMMatrixScaling(0.05f, 0.05f, 0.05f);
+			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+			m_Scene->GameObjects.push_back(GameObject(worldMatrix, model));
+		}
+
+		{
 			auto model = modelLoader.LoadExisting(Mesh::CreatePlane(*commandList));
 			{
 				model->GetMaterial().SpecularPower = 10.0f;

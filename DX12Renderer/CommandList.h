@@ -195,8 +195,8 @@ public:
 	/**
 	 * Load a texture by a filename.
 	 */
-	void LoadTextureFromFile(Texture& texture, const std::wstring& fileName,
-		TextureUsageType textureUsage = TextureUsageType::Albedo);
+	bool LoadTextureFromFile(Texture& texture, const std::wstring& fileName,
+		TextureUsageType textureUsage = TextureUsageType::Albedo, bool throwOnNotFound = true);
 
 	/**
 	 * Clear a texture.
