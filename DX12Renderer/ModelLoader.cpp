@@ -160,9 +160,9 @@ std::shared_ptr<Model> ModelLoader::Load(CommandList& commandList, const std::st
 
 			for (unsigned int boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
 			{
-				Bone bone;
-
 				auto meshBone = mesh->mBones[boneIndex];
+
+				Bone bone;
 				bone.Offset = ToXMATRIX(meshBone->mOffsetMatrix);
 				bone.Name = meshBone->mName.C_Str();
 				bone.IsDirty = true;
