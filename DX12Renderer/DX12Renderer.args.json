@@ -14,6 +14,10 @@
         {
           "Id": "201b8042-7cb3-4faf-8ce2-f518bfb7a9c0",
           "Command": "--demo AnimationsDemo"
+        },
+        {
+          "Id": "95f0491c-375f-4dad-bed5-de7a6dfb8f13",
+          "Command": "--demo DeferredLightingDemo"
         }
       ]
     },

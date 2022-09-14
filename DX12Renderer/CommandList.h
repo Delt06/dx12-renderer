@@ -367,6 +367,9 @@ public:
 	 */
 	void SetRenderTarget(const RenderTarget& renderTarget, UINT texArrayIndex = -1, bool useDepth = true);
 
+
+	void ClearRenderTarget(const RenderTarget& renderTarget, const float* clearColor, const D3D12_CLEAR_FLAGS clearFlags);
+
 	/**
 	 * Draw geometry.
 	 */

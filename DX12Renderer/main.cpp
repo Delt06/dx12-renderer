@@ -11,6 +11,7 @@
 #include "GraphicsSettings.h"
 #include "LightingDemo/LightingDemo.h"
 #include "AnimationsDemo/AnimationsDemo.h"
+#include "DeferredLightingDemo/DeferredLightingDemo.h"
 
 void ReportLiveObjects()
 {
@@ -79,6 +80,10 @@ std::shared_ptr<Game> CreateGame(const Parameters& parameters)
 
 	if (parameters.m_DemoName == "AnimationsDemo")
 		return std::make_shared<AnimationsDemo>(L"Animations Demo", parameters.m_ClientWidth, parameters.m_ClientHeight,
+			parameters.m_GraphicsSettings);
+
+	if (parameters.m_DemoName == "DeferredLightingDemo")
+		return std::make_shared<DeferredLightingDemo>(L"Deferred Lighting Demo", parameters.m_ClientWidth, parameters.m_ClientHeight,
 			parameters.m_GraphicsSettings);
 
 	const std::string message = "'" + std::string(parameters.m_DemoName) + "' is an unknown demo name";

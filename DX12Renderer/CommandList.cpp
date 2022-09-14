@@ -784,6 +784,27 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, const UINT t
 		renderTargetDescriptors.data(), FALSE, pDsv);
 }
 
+void CommandList::ClearRenderTarget(const RenderTarget& renderTarget, const float* clearColor, D3D12_CLEAR_FLAGS clearFlags)
+{
+	const auto& textures = renderTarget.GetTextures();
+
+	for (int i = 0; i < 8; ++i)
+	{
+		auto& texture = textures[i];
+
+		if (texture.IsValid())
+		{
+			ClearTexture(texture, clearColor);
+		}
+	}
+
+	const auto& depthTexture = renderTarget.GetTexture(DepthStencil);
+	if (depthTexture.IsValid())
+	{
+		ClearDepthStencilTexture(depthTexture, clearFlags);
+	}
+}
+
 void CommandList::Draw(const uint32_t vertexCount, const uint32_t instanceCount, const uint32_t startVertex,
 	const uint32_t startInstance)
 {
