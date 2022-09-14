@@ -538,13 +538,13 @@ bool DeferredLightingDemo::LoadContent()
 			pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
 			pipelineStateStream.DsvFormat = depthBufferFormat;
 			pipelineStateStream.RtvFormats = rtvFormats;
-			pipelineStateStream.Rasterizer = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_NONE, FALSE, 0, 0,
+			pipelineStateStream.Rasterizer = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_FRONT, FALSE, 0, 0,
 				0, TRUE, FALSE, FALSE, 0,
 				D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
 			pipelineStateStream.Blend = AdditiveBlending();
 
 			auto depthStencil = CD3DX12_DEPTH_STENCIL_DESC(CD3DX12_DEFAULT());
-			depthStencil.DepthEnable = true; // read
+			depthStencil.DepthEnable = false; // do not read
 			depthStencil.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; // but not write
 			depthStencil.StencilEnable = true;
 			depthStencil.StencilReadMask = UINT8_MAX;
