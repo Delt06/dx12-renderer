@@ -35,8 +35,7 @@
 
 ### Requirements
 
-- [assimp](https://github.com/assimp/assimp) accessible by the linker (e.g., installed via [vcpkg](https://vcpkg.io/en/index.html));
-- [texconv](https://github.com/microsoft/DirectXTex/wiki/Texconv) accessible in PATH.
+- [assimp](https://github.com/assimp/assimp) accessible by the linker (e.g., installed via [vcpkg](https://vcpkg.io/en/index.html)).
 
 ## Sources
 
