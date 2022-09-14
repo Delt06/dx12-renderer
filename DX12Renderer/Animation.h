@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <set>
 
 class Mesh;
 
@@ -34,13 +35,20 @@ public:
 		DirectX::XMVECTOR Scaling;
 	};
 
+	using BoneMask = std::set<size_t>;
+
 	std::vector<BoneTransform> GetBonesTranforms(Mesh& mesh, double time) const;
 
 	static void Apply(Mesh& mesh, const std::vector<BoneTransform>& transforms);
 
+	static BoneMask BuildMask(const Mesh& mesh, const std::string& rootBoneName);
 	static std::vector<BoneTransform> Blend(const std::vector<BoneTransform>& transforms1, const std::vector<BoneTransform>& transforms2, float weight);
+	static std::vector<BoneTransform> ApplyMask(const std::vector<BoneTransform>& transforms1, const std::vector<BoneTransform>& transforms2, const BoneMask& boneMask);
 
 private:
+
+	static void BuildMaskRecursive(const Mesh& mesh, size_t rootBoneIndex, BoneMask& result);
+
 	float m_Duration;
 	float m_TicksPerSecond;
 	std::vector<Channel> m_Channels;

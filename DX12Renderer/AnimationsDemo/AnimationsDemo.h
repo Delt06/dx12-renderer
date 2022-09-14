@@ -45,6 +45,7 @@ private:
 	std::vector<GameObject> m_GameObjects;
 	std::shared_ptr<Animation> m_RunAnimation;
 	std::shared_ptr<Animation> m_IdleAnimation;
+	std::shared_ptr<Animation> m_TopAnimation;
 
 	RootSignature m_RootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineState;

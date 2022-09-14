@@ -145,6 +145,8 @@ public:
 
 	void SetBones(const std::vector<Bone>& bones);
 	void SetBoneChildren(size_t boneIndex, const std::vector<size_t>& childrenIndices);
+	const std::vector<size_t>& GetBoneChildren(size_t boneIndex) const;
+
 	bool HasBones() const;
 	const std::vector<Bone>& GetBones() const;
 	Bone& GetBone(const std::string& name);

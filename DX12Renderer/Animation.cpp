@@ -127,6 +127,14 @@ void Animation::Apply(Mesh& mesh, const std::vector<BoneTransform>& transforms)
 	mesh.MarkBonesDirty();
 }
 
+Animation::BoneMask Animation::BuildMask(const Mesh& mesh, const std::string& rootBoneName)
+{
+	BoneMask mask;
+	const auto rootIndex = mesh.GetBoneIndex(rootBoneName);
+	BuildMaskRecursive(mesh, rootIndex, mask);
+	return mask;
+}
+
 std::vector<Animation::BoneTransform> Animation::Blend(const std::vector<BoneTransform>& transforms1, const std::vector<BoneTransform>& transforms2, float weight)
 {
 	if (transforms1.size() != transforms2.size())
@@ -149,4 +157,41 @@ std::vector<Animation::BoneTransform> Animation::Blend(const std::vector<BoneTra
 	}
 
 	return result;
+}
+
+std::vector<Animation::BoneTransform> Animation::ApplyMask(const std::vector<BoneTransform>& transforms1, const std::vector<BoneTransform>& transforms2, const BoneMask& boneMask)
+{
+	if (transforms1.size() != transforms2.size())
+	{
+		throw std::exception("Sizes are different.");
+	}
+
+	std::vector<Animation::BoneTransform> result;
+	result.resize(transforms1.size());
+
+	for (size_t i = 0; i < transforms1.size(); ++i)
+	{
+		const auto& t1 = transforms1[i];
+		const auto& t2 = transforms2[i];
+
+		result[i] = boneMask.contains(i) ? t1 : t2;
+	}
+
+	return result;
+}
+
+void Animation::BuildMaskRecursive(const Mesh& mesh, size_t rootBoneIndex, BoneMask& result)
+{
+	if (result.contains(rootBoneIndex))
+	{
+		return;
+	}
+
+	result.insert(rootBoneIndex);
+	const auto& children = mesh.GetBoneChildren(rootBoneIndex);
+
+	for (const auto childIndex : children)
+	{
+		BuildMaskRecursive(mesh, childIndex, result);
+	}
 }

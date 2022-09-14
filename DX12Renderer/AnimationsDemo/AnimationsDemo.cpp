@@ -83,11 +83,6 @@ namespace
 		return M;
 	}
 
-	struct BonesPropertiesCb
-	{
-		uint32_t NumBones;
-	};
-
 	struct BoneSbItem
 	{
 		XMMATRIX Transform;
@@ -99,8 +94,6 @@ namespace
 		{
 			// ConstantBuffer : register(b0);
 			MatricesCb,
-			// ConstantBuffer : register(b1);
-			BonesPropertiesCb,
 			// StructuredBuffer : register(t0);
 			Bones,
 			// Texture2D register(t0, space1);
@@ -187,7 +180,6 @@ bool AnimationsDemo::LoadContent()
 
 			CD3DX12_ROOT_PARAMETER1 rootParameters[RootParameters::NumRootParameters];
 			rootParameters[RootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
-			rootParameters[RootParameters::BonesPropertiesCb].InitAsConstants(sizeof(BonesPropertiesCb) / sizeof(float), 1, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 			rootParameters[RootParameters::Bones].InitAsShaderResourceView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
 			rootParameters[RootParameters::Diffuse].InitAsDescriptorTable(1, &descriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
 
@@ -346,6 +338,7 @@ bool AnimationsDemo::LoadContent()
 		{
 			m_RunAnimation = modelLoader.LoadAnimation("Assets/Models/archer/fast_run.fbx", "mixamo.com");
 			m_IdleAnimation = modelLoader.LoadAnimation("Assets/Models/archer/idle.fbx", "mixamo.com");
+			m_TopAnimation = modelLoader.LoadAnimation("Assets/Models/archer/reaction.fbx", "mixamo.com");
 		}
 	}
 
@@ -453,9 +446,14 @@ void AnimationsDemo::OnUpdate(UpdateEventArgs& e)
 	{
 		for (auto& mesh : go.GetModel()->GetMeshes())
 		{
-			auto runTransforms = m_RunAnimation->GetBonesTranforms(*mesh, m_Time);
-			auto idleTransforms = m_IdleAnimation->GetBonesTranforms(*mesh, m_Time);
+			const auto runTransforms = m_RunAnimation->GetBonesTranforms(*mesh, m_Time);
+			const auto idleTransforms = m_IdleAnimation->GetBonesTranforms(*mesh, m_Time);
+			const auto topTransforms = m_TopAnimation->GetBonesTranforms(*mesh, m_Time);
+			const auto topBodyMask = Animation::BuildMask(*mesh, "mixamorig:Spine");
+
 			auto transforms = Animation::Blend(runTransforms, idleTransforms, weight);
+			transforms = Animation::ApplyMask(topTransforms, transforms, topBodyMask);
+
 			Animation::Apply(*mesh, transforms);
 			mesh->UpdateBoneGlobalTransforms();
 		}
@@ -502,11 +500,7 @@ void AnimationsDemo::OnRender(RenderEventArgs& e)
 
 			for (const auto& mesh : model->GetMeshes())
 			{
-				BonesPropertiesCb bonesPropertiesCb;
 				auto& bones = mesh->GetBones();
-				bonesPropertiesCb.NumBones = bones.size();
-				commandList->SetGraphics32BitConstants(RootParameters::BonesPropertiesCb, bonesPropertiesCb);
-
 				std::vector<BoneSbItem> bonesSb;
 				bonesSb.reserve(bones.size());
 

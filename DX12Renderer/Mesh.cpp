@@ -553,6 +553,11 @@ void Mesh::SetBoneChildren(size_t boneIndex, const std::vector<size_t>& children
 	std::copy(childrenIndices.begin(), childrenIndices.end(), children.begin());
 }
 
+const std::vector<size_t>& Mesh::GetBoneChildren(size_t boneIndex) const
+{
+	return m_BoneChildrenByIndex[boneIndex];
+}
+
 bool Mesh::HasBones() const
 {
 	return m_Bones.size() > 0;

@@ -10,18 +10,12 @@ struct Matrices
     float4 CameraPosition;
 };
 
-struct BonesProperties
-{
-    uint NumBones;
-};
-
 struct Bone
 {
     matrix Transform;
 };
 
 ConstantBuffer<Matrices> matricesCb : register(b0);
-ConstantBuffer<BonesProperties> bonesPropertiesCb : register(b1);
 
 StructuredBuffer<Bone> bonesSb : register(t0);
 
