@@ -3,21 +3,29 @@
 ## Demos
 
 - [LightingDemo.h](./DX12Renderer/LightingDemo/LightingDemo.h)
-  - Models loaded from OBJ files;
-  - Mipmapping
-  - Phong lighting with a directional light and several point and spot lights;
-    - Using diffuse, normal, gloss, and specular maps;
-  - Particle system with CPU simulation (10000+ particles on screen) and instanced rendering;
-  - Shadow mapping for the directional, point, and spot lights;
-  - Soft shadows using 16x Poisson Sampling and Early Bail;
-  - Dynamic environment reflections - see the sphere;
-  - Post-processing:
-    - Screen-space fog;
-    - Bloom.
+    - Models loaded from OBJ files;
+    - Mipmapping
+    - Phong lighting with a directional light and several point and spot lights;
+        - Using diffuse, normal, gloss, and specular maps;
+    - Particle system with CPU simulation (10000+ particles on screen) and instanced rendering;
+    - Shadow mapping for the directional, point, and spot lights;
+    - Soft shadows using 16x Poisson Sampling and Early Bail;
+    - Dynamic environment reflections - see the sphere;
+    - Post-processing:
+        - Screen-space fog;
+        - Bloom.
 
 ![Lighting Demo Screenshot](./Screenshots/LightingDemo.jpg)
 
 ![Lighting Demo Screenshot 2](./Screenshots/LightingDemo2.jpg)
+
+- [AnimationsDemo.h](./DX12Renderer/AnimationsDemo/AnimationsDemo.h)
+    - Model and animations loaded from FBX files;
+    - Skinning in the vertex shader;
+    - Animation state blending;
+    - Animation state merging (i.e., avatar masks).
+
+![Animations Demo GIF](./Screenshots/AnimationsDemo.gif)
 
 ### Controls
 
@@ -50,3 +58,4 @@
 - https://ambientcg.com/view?id=PavingStones070
 - https://ambientcg.com/view?id=Moss002
 - https://ambientcg.com/view?id=Metal036
+- https://www.mixamo.com/
