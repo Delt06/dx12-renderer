@@ -173,7 +173,7 @@ bool LightingDemo::LoadContent()
 				model->GetMaterial().SpecularPower = 10.0f;
 				model->GetMaterial().TilingOffset = { 10, 10, 0, 0 };
 
-				;				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
+				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
 					L"Assets/Textures/Moss/Moss_1K_Color.jpg");
 				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
 					L"Assets/Textures/Moss/Moss_1K_Normal.jpg");

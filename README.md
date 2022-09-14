@@ -33,6 +33,11 @@
 - Hold <kbd>LMB</kbd> and move the mouse to orient the camera;
 - Press <kbd>L</kbd> to toggle light animation.
 
+### Requirements
+
+- [assimp](https://github.com/assimp/assimp) accessible by the linker (e.g., installed via [vcpkg](https://vcpkg.io/en/index.html));
+- [texconv](https://github.com/microsoft/DirectXTex/wiki/Texconv) accessible in PATH.
+
 ## Sources
 
 - https://www.3dgep.com/learning-directx-12-1/

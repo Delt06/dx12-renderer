@@ -259,7 +259,7 @@ namespace
 			ThrowIfFailed(LoadFromWICFile(filePath.c_str(), DirectX::WIC_FLAGS_FORCE_RGB, pMetadata, scratchImage));
 		}
 
-		if (builtInMipMapGeneration && pMetadata->dimension == DirectX::TEX_DIMENSION_TEXTURE2D)
+		if (builtInMipMapGeneration && pMetadata->dimension == DirectX::TEX_DIMENSION_TEXTURE2D && !DirectX::IsCompressed(pMetadata->format))
 		{
 			DirectX::ScratchImage mipChain;
 			ThrowIfFailed(GenerateMipMaps(scratchImage.GetImages(), scratchImage.GetImageCount(), *pMetadata,
@@ -274,7 +274,21 @@ namespace
 bool CommandList::LoadTextureFromFile(Texture& texture, const std::wstring& fileName,
 	const TextureUsageType textureUsage, bool throwOnNotFound)
 {
-	const fs::path filePath(fileName);
+	std::wstring effectiveFileName = fileName;
+	fs::path filePath(effectiveFileName);
+
+	// if not dds, try loading dds instead
+	if (filePath.extension() != ".dds")
+	{
+		fs::path ddsFilePath = filePath;
+		ddsFilePath.replace_extension(".dds");
+		if (exists(ddsFilePath))
+		{
+			filePath = ddsFilePath;
+			effectiveFileName = ddsFilePath;
+		}
+	}
+
 	if (!exists(filePath))
 	{
 		if (throwOnNotFound)
@@ -283,13 +297,13 @@ bool CommandList::LoadTextureFromFile(Texture& texture, const std::wstring& file
 	}
 
 	std::lock_guard lock(m_TextureCacheMutex);
-	const auto iter = m_TextureCache.find(fileName);
+	const auto iter = m_TextureCache.find(effectiveFileName);
 	if (iter != m_TextureCache.end())
 	{
 		texture.SetTextureUsage(textureUsage);
 		texture.SetD3D12Resource(iter->second);
 		texture.CreateViews();
-		texture.SetName(fileName);
+		texture.SetName(effectiveFileName);
 	}
 	else
 	{
@@ -337,7 +351,7 @@ bool CommandList::LoadTextureFromFile(Texture& texture, const std::wstring& file
 		texture.SetTextureUsage(textureUsage);
 		texture.SetD3D12Resource(textureResource);
 		texture.CreateViews();
-		texture.SetName(fileName);
+		texture.SetName(effectiveFileName);
 
 		ResourceStateTracker::AddGlobalResourceState(textureResource.Get(), initialResourceState);
 
@@ -365,7 +379,7 @@ bool CommandList::LoadTextureFromFile(Texture& texture, const std::wstring& file
 			GenerateMips(texture);
 		}
 
-		m_TextureCache[fileName] = textureResource.Get();
+		m_TextureCache[effectiveFileName] = textureResource.Get();
 	}
 
 	return true;
