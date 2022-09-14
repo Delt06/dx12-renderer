@@ -4,7 +4,9 @@
 
 - [LightingDemo.h](./DX12Renderer/LightingDemo/LightingDemo.h)
     - Models loaded from OBJ files;
-    - Mipmapping
+    - .DDS textures loading:
+        - Textures for this demo are stored in `BC7_UNORM`.
+    - Mipmapping;
     - Phong lighting with a directional light and several point and spot lights;
         - Using diffuse, normal, gloss, and specular maps;
     - Particle system with CPU simulation (10000+ particles on screen) and instanced rendering;
