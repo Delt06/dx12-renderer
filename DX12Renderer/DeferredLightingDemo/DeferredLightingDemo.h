@@ -39,12 +39,19 @@ private:
 	std::shared_ptr<Texture> m_WhiteTexture2d;
 
 	RenderTarget m_GBufferRenderTarget;
+	RenderTarget m_LightBufferRenderTarget;
 
 	Camera m_Camera;
 	std::vector<GameObject> m_GameObjects;
 
 	RootSignature m_GBufferPassRootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_GBufferPassPipelineState;
+
+	DirectionalLight m_DirectionalLight;
+
+	RootSignature m_DirectionaLightPassRootSignature;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_DirectionaLightPassPipelineState;
+	std::shared_ptr<Mesh> m_FullScreenMesh;
 
 	D3D12_VIEWPORT m_Viewport;
 	D3D12_RECT m_ScissorRect;

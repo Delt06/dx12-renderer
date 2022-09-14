@@ -128,7 +128,7 @@ bool LightingDemo::LoadContent()
 		ModelLoader modelLoader(m_WhiteTexture2d);
 
 		{
-			auto model = modelLoader.Load(*commandList, "Assets/Models/teapot/teapot.obj");
+			auto model = modelLoader.Load(*commandList, "Assets/Models/teapot/teapot.obj", true);
 			{
 				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
 					L"Assets/Textures/PavingStones/PavingStones_1K_Color.jpg");

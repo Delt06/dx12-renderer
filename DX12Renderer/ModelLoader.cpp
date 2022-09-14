@@ -73,7 +73,7 @@ ModelLoader::ModelLoader(const std::shared_ptr<Texture> emptyTexture2d) :
 {
 }
 
-std::shared_ptr<Model> ModelLoader::Load(CommandList& commandList, const std::string& path) const
+std::shared_ptr<Model> ModelLoader::Load(CommandList& commandList, const std::string& path, bool flipNormals) const
 {
 	Assimp::Importer importer;
 
@@ -84,7 +84,7 @@ std::shared_ptr<Model> ModelLoader::Load(CommandList& commandList, const std::st
 		aiProcess_SortByPType |
 		aiProcess_GenSmoothNormals |
 		aiProcess_PopulateArmatureData |
-		aiProcess_LimitBoneWeights
+		aiProcess_LimitBoneWeights 
 		;
 
 	const aiScene* scene = importer.ReadFile(path.c_str(), flags);
@@ -115,7 +115,7 @@ std::shared_ptr<Model> ModelLoader::Load(CommandList& commandList, const std::st
 
 			if (mesh->HasNormals())
 			{
-				vertexAttributes.Normal = ToXMFloat3(mesh->mNormals[vertexIndex]);
+				vertexAttributes.Normal = ToXMFloat3(mesh->mNormals[vertexIndex] * (flipNormals ? -1.0f : 1.0f));
 			}
 
 			constexpr unsigned int uvIndex = 0;

@@ -17,15 +17,7 @@ Texture2D diffuseMap : register(t0);
 Texture2D normalMap : register(t1);
 SamplerState defaultSampler : register(s0);
 
-float3 UnpackNormal(const float3 n)
-{
-    return n * 2.0f - 1.0f;
-}
-
-float3 PackNormal(const float3 n)
-{
-    return (n + 1.0f) * 0.5f;
-}
+#include <GBufferUtils.hlsli>
 
 float3 ApplyNormalMap(const float3x3 tbn, Texture2D map, const float2 uv)
 {
@@ -49,8 +41,7 @@ PixelShaderOutput main(PixelShaderInput IN)
     const float3x3 tbn = float3x3(tangent,
 		                              bitangent,
 		                              normal);
-    OUT.Normal.xyz = PackNormal(ApplyNormalMap(tbn, normalMap, uv));
-
+    OUT.Normal = float4(PackNormal(ApplyNormalMap(tbn, normalMap, uv)), 0);
     
     return OUT;
 }
