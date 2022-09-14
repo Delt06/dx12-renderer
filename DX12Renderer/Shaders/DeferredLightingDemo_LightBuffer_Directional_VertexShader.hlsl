@@ -1,19 +1,16 @@
 struct VertexShaderInput
 {
-    float4 PositionOS : POSITION;
-    float2 UV : TEXCOORD;
+    float3 PositionOS : POSITION;
 };
 
 struct VertexShaderOutput
 {
-    float2 UV : TEXCOORD;
     float4 PositionCS : SV_POSITION;
 };
 
 VertexShaderOutput main(VertexShaderInput IN)
 {
     VertexShaderOutput OUT;
-    OUT.PositionCS = IN.PositionOS;
-    OUT.UV = IN.UV;
+    OUT.PositionCS = float4(IN.PositionOS, 1);
     return OUT;
 }

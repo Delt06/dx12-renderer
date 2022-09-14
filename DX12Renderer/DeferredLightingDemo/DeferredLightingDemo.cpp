@@ -105,8 +105,12 @@ namespace
 	{
 		enum RootParameters
 		{
-			// ConstantBuffer : register(b0);
+			// ConstantBuffer: register(b0);
+			MatricesCb,
+			// ConstantBuffer : register(b1);
 			DirectionalLightCb,
+			// ConstantBuffer : register(b2);
+			ScreenParametersCb,
 			// Texture2D register(t0-t1);
 			GBuffer,
 			NumRootParameters
@@ -321,7 +325,9 @@ bool DeferredLightingDemo::LoadContent()
 			CD3DX12_DESCRIPTOR_RANGE1 texturesDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
 
 			CD3DX12_ROOT_PARAMETER1 rootParameters[DirectionalLightBufferRootParameters::NumRootParameters];
-			rootParameters[DirectionalLightBufferRootParameters::DirectionalLightCb].InitAsConstants(sizeof(DirectionalLight) / sizeof(float), 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
+			rootParameters[DirectionalLightBufferRootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE);
+			rootParameters[DirectionalLightBufferRootParameters::DirectionalLightCb].InitAsConstants(sizeof(DirectionalLight) / sizeof(float), 1, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+			rootParameters[DirectionalLightBufferRootParameters::ScreenParametersCb].InitAsConstants(sizeof(ScreenParameters) / sizeof(float), 2, 0, D3D12_SHADER_VISIBILITY_PIXEL);
 			rootParameters[DirectionalLightBufferRootParameters::GBuffer].InitAsDescriptorTable(1, &texturesDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
 
 			CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
@@ -784,6 +790,17 @@ void DeferredLightingDemo::OnUpdate(UpdateEventArgs& e)
 	XMVECTOR cameraRotation = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(m_CameraController.m_Pitch),
 		XMConvertToRadians(m_CameraController.m_Yaw), 0.0f);
 	m_Camera.SetRotation(cameraRotation);
+
+	auto dt = static_cast<float>(e.ElapsedTime);
+
+	if (m_AnimateLights)
+	{
+		XMVECTOR dirLightDirectionWs = XMLoadFloat4(&m_DirectionalLight.m_DirectionWs);
+		dirLightDirectionWs = XMVector4Transform(dirLightDirectionWs,
+			XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
+				XMConvertToRadians(90.0f * dt)));
+		XMStoreFloat4(&m_DirectionalLight.m_DirectionWs, dirLightDirectionWs);
+	}
 }
 
 void DeferredLightingDemo::OnRender(RenderEventArgs& e)
@@ -812,7 +829,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 
 	const XMMATRIX viewMatrix = m_Camera.GetViewMatrix();
 	const XMMATRIX projectionMatrix = m_Camera.GetProjectionMatrix();
-	const XMMATRIX viewProjection = viewMatrix * projectionMatrix;
+	const XMMATRIX viewProjectionMatrix = viewMatrix * projectionMatrix;
 
 	{
 		PIXScope(*commandList, "GBuffer Pass");
@@ -824,7 +841,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		for (const auto& go : m_GameObjects)
 		{
 			MatricesCb matricesCb;
-			matricesCb.Compute(go.GetWorldMatrix(), viewMatrix, viewProjection, projectionMatrix);
+			matricesCb.Compute(go.GetWorldMatrix(), viewMatrix, viewProjectionMatrix, projectionMatrix);
 			commandList->SetGraphicsDynamicConstantBuffer(GBufferRootParameters::MatricesCb, matricesCb);
 
 			const auto& model = go.GetModel();
@@ -879,7 +896,12 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			commandList->SetGraphicsRootSignature(m_DirectionalLightPassRootSignature);
 			commandList->SetPipelineState(m_DirectionalLightPassPipelineState);
 
+			MatricesCb matricesCb;
+			matricesCb.Compute(XMMatrixIdentity(), viewMatrix, viewProjectionMatrix, projectionMatrix);
+
+			commandList->SetGraphicsDynamicConstantBuffer(DirectionalLightBufferRootParameters::MatricesCb, matricesCb);
 			commandList->SetGraphics32BitConstants(DirectionalLightBufferRootParameters::DirectionalLightCb, m_DirectionalLight);
+			commandList->SetGraphics32BitConstants(DirectionalLightBufferRootParameters::ScreenParametersCb, screenParameters);
 			bindGBufferAsSRV(*commandList, DirectionalLightBufferRootParameters::GBuffer);
 
 			m_FullScreenMesh->Draw(*commandList);
@@ -900,7 +922,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			{
 				MatricesCb matricesCb;
 				XMMATRIX modelMatrix = GetModelMatrix(pointLight);
-				matricesCb.Compute(modelMatrix, viewMatrix, viewProjection, projectionMatrix);
+				matricesCb.Compute(modelMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
 
 				{
 					PIXScope(*commandList, "Light Stencil Pass");
@@ -989,6 +1011,7 @@ void DeferredLightingDemo::OnKeyPressed(KeyEventArgs& e)
 		m_CameraController.m_Up = 1.0f;
 		break;
 	case KeyCode::L:
+		m_AnimateLights = !m_AnimateLights;
 		break;
 	case KeyCode::ShiftKey:
 		m_CameraController.m_Shift = true;

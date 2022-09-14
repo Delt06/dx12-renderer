@@ -290,6 +290,7 @@
     </None>
     <None Include="..\README.md" />
     <None Include="packages.config" />
+    <None Include="Shaders\ShaderLibrary\BRDF.hlsli" />
     <None Include="Shaders\ShaderLibrary\GBuffer.hlsli" />
     <None Include="Shaders\ShaderLibrary\GBufferUtils.hlsli" />
     <None Include="Shaders\ShaderLibrary\MatricesCB.hlsli" />

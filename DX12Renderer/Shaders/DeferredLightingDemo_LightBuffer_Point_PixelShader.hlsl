@@ -2,6 +2,7 @@
 #include <ShaderLibrary/PointLight.hlsli>
 #include <ShaderLibrary/GBufferUtils.hlsli>
 #include <ShaderLibrary/ScreenParameters.hlsli>
+#include <ShaderLibrary/BRDF.hlsli>
 
 ConstantBuffer<Matrices> matricesCB : register(b0);
 ConstantBuffer<PointLight> pointLightCB : register(b1);
@@ -29,7 +30,15 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     float lightDistance = length(lightOffsetWS);
     float3 lightDirectionWS = lightOffsetWS / lightDistance;
     
-    float lambert = max(0.0, dot(lightDirectionWS, normalWS));
     float distanceAttenuation = ComputeDistanceAttenuation(pointLightCB.ConstantAttenuation, pointLightCB.LinearAttenuation, pointLightCB.QuadraticAttenuation, lightDistance);
-    return float4(lambert * distanceAttenuation * diffuseColor * pointLightCB.Color.rgb, 1.0);
+    
+    BRDFInput brdfInput;
+    brdfInput.CameraPositionWS = matricesCB.CameraPosition.xyz;
+    brdfInput.LightColor = distanceAttenuation * pointLightCB.Color.rgb;
+    brdfInput.LightDirectionWS = lightDirectionWS;
+    brdfInput.NormalWS = normalWS;
+    brdfInput.PositionWS = positionWS;
+    
+    float3 color = ComputeBRDF(brdfInput) * diffuseColor;
+    return float4(color, 1.0);
 }
