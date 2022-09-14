@@ -19,7 +19,7 @@ float4 main(PixelShaderInput IN) : SV_TARGET
 {
     float2 uv = ToScreenSpaceUV(IN.PositionCS, screenParametersCB);
     float3 diffuseColor = gBufferDiffuse.Sample(gBufferSampler, uv).rgb;
-    float3 normalWS = UnpackNormal(gBufferNormalsWS.Sample(gBufferSampler, uv).xyz);
+    float3 normalWS = normalize(UnpackNormal(gBufferNormalsWS.Sample(gBufferSampler, uv).xyz));
     
     float zNDC = gBufferDepth.Sample(gBufferSampler, uv).x;
     float3 positionNDC = ScreenSpaceUVToNDC(uv, zNDC);
