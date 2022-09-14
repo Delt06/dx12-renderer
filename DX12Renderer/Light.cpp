@@ -4,7 +4,7 @@
 
 namespace
 {
-	float Lerp(const float a, const float b, const float t)
+	float LerpUnclamped(const float a, const float b, const float t)
 	{
 		return (1.0f - t) * a + b * t;
 	}
@@ -40,9 +40,9 @@ void PointLight::RecalculateAttenuationCoefficients()
 		const float t = InverseLerp(record1.Range, record2.Range, Range);
 		AttenuationCoefficientsRecord intermediateCoefficients = {
 			Range,
-			Lerp(record1.ConstantAttenuation, record2.ConstantAttenuation, t),
-			Lerp(record1.LinearAttenuation, record2.LinearAttenuation, t),
-			Lerp(record1.QuadraticAttenuation, record2.QuadraticAttenuation, t),
+			LerpUnclamped(record1.ConstantAttenuation, record2.ConstantAttenuation, t),
+			LerpUnclamped(record1.LinearAttenuation, record2.LinearAttenuation, t),
+			LerpUnclamped(record1.QuadraticAttenuation, record2.QuadraticAttenuation, t),
 		};
 		ApplyAttenuationCoefficients(intermediateCoefficients);
 	}
