@@ -1,14 +1,4 @@
-struct Matrices
-{
-    matrix Model;
-    matrix ModelView;
-    matrix InverseTransposeModelView;
-    matrix ModelViewProjection;
-    matrix View;
-    matrix Projection;
-    matrix InverseTransposeModel;
-    float4 CameraPosition;
-};
+#include <ShaderLibrary/MatricesCB.hlsli>
 
 ConstantBuffer<Matrices> matricesCb : register(b0);
 

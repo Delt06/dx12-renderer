@@ -290,9 +290,12 @@
     </None>
     <None Include="..\README.md" />
     <None Include="packages.config" />
-    <None Include="Shaders\GBuffer.hlsli" />
-    <None Include="Shaders\GBufferUtils.hlsli" />
+    <None Include="Shaders\ShaderLibrary\GBuffer.hlsli" />
+    <None Include="Shaders\ShaderLibrary\GBufferUtils.hlsli" />
+    <None Include="Shaders\ShaderLibrary\MatricesCB.hlsli" />
     <None Include="Shaders\PostFX.hlsli" />
+    <None Include="Shaders\ShaderLibrary\PointLight.hlsli" />
+    <None Include="Shaders\ShaderLibrary\ScreenParameters.hlsli" />
     <None Include="Shaders\Shadows.hlsli">
       <FileType>Document</FileType>
     </None>
@@ -341,6 +344,18 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Shaders\DeferredLightingDemo_LightBuffer_Directional_VertexShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\DeferredLightingDemo_LightBuffer_Point_PixelShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\DeferredLightingDemo_LightBuffer_Point_VertexShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>

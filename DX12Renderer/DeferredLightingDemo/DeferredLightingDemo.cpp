@@ -113,6 +113,28 @@ namespace
 		};
 	}
 
+	namespace PointLightBufferRootParameters
+	{
+		enum RootParameters
+		{
+			// ConstantBuffer: register(b0);
+			MatricesCb,
+			// ConstantBuffer : register(b1);
+			PointLightCb,
+			// ConstantBuffer : register(b2);
+			ScreenParametersCb,
+			// Texture2D register(t0-t1);
+			GBuffer,
+			NumRootParameters
+		};
+	}
+
+	struct ScreenParameters
+	{
+		float Width, Height;
+		float OneOverWidth, OneOverHeight;
+	};
+
 	CD3DX12_BLEND_DESC AdditiveBlending()
 	{
 		CD3DX12_BLEND_DESC desc = CD3DX12_BLEND_DESC(CD3DX12_DEFAULT());
@@ -255,8 +277,15 @@ bool DeferredLightingDemo::LoadContent()
 
 	// root signature and pipeline states for light passes
 	{
-		// directional light
+		CD3DX12_STATIC_SAMPLER_DESC lightPassSamplers[] = {
+			// GBuffer sampler : point clamp
+			CD3DX12_STATIC_SAMPLER_DESC(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
+		};
+
+		// directional light pass
 		{
+			m_FullScreenMesh = Mesh::CreateBlitTriangle(*commandList);
+
 			ComPtr<ID3DBlob> vertexShaderBlob;
 			ThrowIfFailed(D3DReadFileToBlob(L"DeferredLightingDemo_LightBuffer_Directional_VertexShader.cso", &vertexShaderBlob));
 
@@ -277,22 +306,17 @@ bool DeferredLightingDemo::LoadContent()
 				D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 				D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
-			CD3DX12_DESCRIPTOR_RANGE1 texturesDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);
+			CD3DX12_DESCRIPTOR_RANGE1 texturesDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
 
 			CD3DX12_ROOT_PARAMETER1 rootParameters[DirectionalLightBufferRootParameters::NumRootParameters];
 			rootParameters[DirectionalLightBufferRootParameters::DirectionalLightCb].InitAsConstants(sizeof(DirectionalLight) / sizeof(float), 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
 			rootParameters[DirectionalLightBufferRootParameters::GBuffer].InitAsDescriptorTable(1, &texturesDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
 
-			CD3DX12_STATIC_SAMPLER_DESC samplers[] = {
-				// point clamp
-				CD3DX12_STATIC_SAMPLER_DESC(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
-			};
-
 			CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
-			rootSignatureDescription.Init_1_1(GBufferRootParameters::NumRootParameters, rootParameters, _countof(samplers), samplers,
+			rootSignatureDescription.Init_1_1(DirectionalLightBufferRootParameters::NumRootParameters, rootParameters, _countof(lightPassSamplers), lightPassSamplers,
 				rootSignatureFlags);
 
-			m_DirectionaLightPassRootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
+			m_DirectionalLightPassRootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
 
 			// Setup the pipeline state.
 			struct PipelineStateStream
@@ -313,7 +337,7 @@ bool DeferredLightingDemo::LoadContent()
 			rtvFormats.NumRenderTargets = 1;
 			rtvFormats.RTFormats[0] = lightBufferFormat;
 
-			pipelineStateStream.RootSignature = m_DirectionaLightPassRootSignature.GetRootSignature().Get();
+			pipelineStateStream.RootSignature = m_DirectionalLightPassRootSignature.GetRootSignature().Get();
 
 			std::vector<D3D12_INPUT_ELEMENT_DESC> inputElements;
 			inputElements.insert(inputElements.end(), std::begin(VertexAttributes::INPUT_ELEMENTS), std::end(VertexAttributes::INPUT_ELEMENTS));
@@ -339,7 +363,93 @@ bool DeferredLightingDemo::LoadContent()
 				sizeof(PipelineStateStream), &pipelineStateStream
 			};
 
-			ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_DirectionaLightPassPipelineState)));
+			ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_DirectionalLightPassPipelineState)));
+		}
+
+		// point light pass
+		{
+			m_PointLightMesh = Mesh::CreateSphere(*commandList, 1.0f);
+
+			ComPtr<ID3DBlob> vertexShaderBlob;
+			ThrowIfFailed(D3DReadFileToBlob(L"DeferredLightingDemo_LightBuffer_Point_VertexShader.cso", &vertexShaderBlob));
+
+			ComPtr<ID3DBlob> pixelShaderBlob;
+			ThrowIfFailed(D3DReadFileToBlob(L"DeferredLightingDemo_LightBuffer_Point_PixelShader.cso", &pixelShaderBlob));
+
+			// Create a root signature.
+			D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData;
+			featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
+			if (FAILED(device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData))))
+			{
+				featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
+			}
+
+			constexpr D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
+				D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+				D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+				D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+				D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
+
+			CD3DX12_DESCRIPTOR_RANGE1 texturesDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
+
+			CD3DX12_ROOT_PARAMETER1 rootParameters[PointLightBufferRootParameters::NumRootParameters];
+			rootParameters[PointLightBufferRootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE);
+			rootParameters[PointLightBufferRootParameters::PointLightCb].InitAsConstantBufferView(1, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
+			rootParameters[PointLightBufferRootParameters::ScreenParametersCb].InitAsConstants(sizeof(ScreenParameters) / sizeof(float), 2, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+			rootParameters[PointLightBufferRootParameters::GBuffer].InitAsDescriptorTable(1, &texturesDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
+
+			CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
+			rootSignatureDescription.Init_1_1(PointLightBufferRootParameters::NumRootParameters, rootParameters, _countof(lightPassSamplers), lightPassSamplers,
+				rootSignatureFlags);
+
+			m_PointLightPassRootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
+
+			// Setup the pipeline state.
+			struct PipelineStateStream
+			{
+				CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE RootSignature;
+				CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
+				CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
+				CD3DX12_PIPELINE_STATE_STREAM_VS Vs;
+				CD3DX12_PIPELINE_STATE_STREAM_PS Ps;
+				CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DsvFormat;
+				CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RtvFormats;
+				CD3DX12_PIPELINE_STATE_STREAM_RASTERIZER Rasterizer;
+				CD3DX12_PIPELINE_STATE_STREAM_BLEND_DESC Blend;
+				CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL DepthStencil;
+			} pipelineStateStream;
+
+			D3D12_RT_FORMAT_ARRAY rtvFormats = {};
+			rtvFormats.NumRenderTargets = 1;
+			rtvFormats.RTFormats[0] = lightBufferFormat;
+
+			pipelineStateStream.RootSignature = m_PointLightPassRootSignature.GetRootSignature().Get();
+
+			std::vector<D3D12_INPUT_ELEMENT_DESC> inputElements;
+			inputElements.insert(inputElements.end(), std::begin(VertexAttributes::INPUT_ELEMENTS), std::end(VertexAttributes::INPUT_ELEMENTS));
+			inputElements.insert(inputElements.end(), std::begin(SkinningVertexAttributes::INPUT_ELEMENTS), std::end(SkinningVertexAttributes::INPUT_ELEMENTS));
+
+			pipelineStateStream.InputLayout = { inputElements.data(), static_cast<uint32_t>(inputElements.size()) };
+			pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+			pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
+			pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
+			pipelineStateStream.DsvFormat = depthBufferFormat;
+			pipelineStateStream.RtvFormats = rtvFormats;
+			pipelineStateStream.Rasterizer = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_BACK, FALSE, 0, 0,
+				0, TRUE, FALSE, FALSE, 0,
+				D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+			pipelineStateStream.Blend = AdditiveBlending();
+
+			auto depthStencil = CD3DX12_DEPTH_STENCIL_DESC(CD3DX12_DEFAULT());
+			depthStencil.DepthEnable = false;
+			depthStencil.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+			pipelineStateStream.DepthStencil = depthStencil;
+
+			const D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = {
+				sizeof(PipelineStateStream), &pipelineStateStream
+			};
+
+			ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_PointLightPassPipelineState)));
 		}
 	}
 
@@ -347,6 +457,27 @@ bool DeferredLightingDemo::LoadContent()
 	{
 		m_DirectionalLight.m_DirectionWs = XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f);
 		m_DirectionalLight.m_Color = XMFLOAT4(0.5f, 0.5f, 0.4f, 0.0f);
+
+		// magenta
+		{
+			PointLight pointLight(XMFLOAT4(-8, 2, -2, 1));
+			pointLight.Color = XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f);
+			m_PointLights.push_back(pointLight);
+		}
+
+		// yellow-ish
+		{
+			PointLight pointLight(XMFLOAT4(0, 2, -6, 1));
+			pointLight.Color = XMFLOAT4(3.0f, 2.0f, 0.25f, 1.0f);
+			m_PointLights.push_back(pointLight);
+		}
+
+		// cyan-ish
+		{
+			PointLight pointLight(XMFLOAT4(6, 2, 10, 1), 25.0f);
+			pointLight.Color = XMFLOAT4(0.0f, 5.0f, 2.0f, 1.0f);
+			m_PointLights.push_back(pointLight);
+		}
 	}
 
 	// Generate default texture
@@ -357,8 +488,6 @@ bool DeferredLightingDemo::LoadContent()
 
 	// Load models
 	{
-		m_FullScreenMesh = Mesh::CreateBlitTriangle(*commandList);
-
 		ModelLoader modelLoader(m_WhiteTexture2d);
 
 		{
@@ -590,18 +719,62 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		PIXScope(*commandList, "Light Passes");
 
 		commandList->SetRenderTarget(m_LightBufferRenderTarget);
+		ScreenParameters screenParameters;
+		screenParameters.Width = m_Width;
+		screenParameters.Height = m_Height;
+		screenParameters.OneOverWidth = 1.0f / m_Width;
+		screenParameters.OneOverHeight = 1.0f / m_Height;
+
+		auto bindGBufferAsSRV = [](CommandList& commandList, const RenderTarget& gBuffer, uint32_t rootParameterIndex)
+		{
+			commandList.SetShaderResourceView(rootParameterIndex, 0, gBuffer.GetTexture(Color0), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			commandList.SetShaderResourceView(rootParameterIndex, 1, gBuffer.GetTexture(Color1), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+
+			D3D12_SHADER_RESOURCE_VIEW_DESC depthStencilSrvDesc;
+			depthStencilSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+			depthStencilSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			depthStencilSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+			depthStencilSrvDesc.Texture2D.MipLevels = 1;
+			depthStencilSrvDesc.Texture2D.MostDetailedMip = 0;
+			depthStencilSrvDesc.Texture2D.PlaneSlice = 0;
+			depthStencilSrvDesc.Texture2D.ResourceMinLODClamp = 0.0;
+			commandList.SetShaderResourceView(rootParameterIndex, 2, gBuffer.GetTexture(DepthStencil), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, &depthStencilSrvDesc);
+		};
 
 		{
 			PIXScope(*commandList, "Directional Light Pass");
 
-			commandList->SetGraphicsRootSignature(m_DirectionaLightPassRootSignature);
-			commandList->SetPipelineState(m_DirectionaLightPassPipelineState);
+			commandList->SetGraphicsRootSignature(m_DirectionalLightPassRootSignature);
+			commandList->SetPipelineState(m_DirectionalLightPassPipelineState);
 
 			commandList->SetGraphics32BitConstants(DirectionalLightBufferRootParameters::DirectionalLightCb, m_DirectionalLight);
-			commandList->SetShaderResourceView(DirectionalLightBufferRootParameters::GBuffer, 0, m_GBufferRenderTarget.GetTexture(Color0), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-			commandList->SetShaderResourceView(DirectionalLightBufferRootParameters::GBuffer, 1, m_GBufferRenderTarget.GetTexture(Color1), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			bindGBufferAsSRV(*commandList, m_GBufferRenderTarget, DirectionalLightBufferRootParameters::GBuffer);
 
 			m_FullScreenMesh->Draw(*commandList);
+		}
+
+		{
+			PIXScope(*commandList, "Point Light Pass");
+
+			commandList->SetGraphicsRootSignature(m_PointLightPassRootSignature);
+			commandList->SetPipelineState(m_PointLightPassPipelineState);
+
+			commandList->SetGraphics32BitConstants(PointLightBufferRootParameters::ScreenParametersCb, screenParameters);
+			bindGBufferAsSRV(*commandList, m_GBufferRenderTarget, PointLightBufferRootParameters::GBuffer);
+
+			for (const auto& pointLight : m_PointLights)
+			{
+				MatricesCb matricesCb;
+				XMMATRIX modelMatrix =
+					XMMatrixScaling(pointLight.Range, pointLight.Range, pointLight.Range) *
+					XMMatrixTranslationFromVector(XMLoadFloat4(&pointLight.PositionWs));
+				matricesCb.Compute(modelMatrix, viewMatrix, viewProjection, projectionMatrix);
+				commandList->SetGraphicsDynamicConstantBuffer(PointLightBufferRootParameters::MatricesCb, matricesCb);
+				commandList->SetGraphicsDynamicConstantBuffer(PointLightBufferRootParameters::PointLightCb, pointLight);
+
+				m_PointLightMesh->Draw(*commandList);
+			}
 		}
 	}
 

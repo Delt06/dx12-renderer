@@ -48,10 +48,15 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_GBufferPassPipelineState;
 
 	DirectionalLight m_DirectionalLight;
+	std::vector<PointLight> m_PointLights;
 
-	RootSignature m_DirectionaLightPassRootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_DirectionaLightPassPipelineState;
+	RootSignature m_DirectionalLightPassRootSignature;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_DirectionalLightPassPipelineState;
 	std::shared_ptr<Mesh> m_FullScreenMesh;
+
+	RootSignature m_PointLightPassRootSignature;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PointLightPassPipelineState;
+	std::shared_ptr<Mesh> m_PointLightMesh;
 
 	D3D12_VIEWPORT m_Viewport;
 	D3D12_RECT m_ScissorRect;

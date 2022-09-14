@@ -1,4 +1,4 @@
-#include <GBufferUtils.hlsli>
+#include <ShaderLibrary/GBufferUtils.hlsli>
 
 struct DirectionalLight
 {
@@ -8,7 +8,7 @@ struct DirectionalLight
 
 ConstantBuffer<DirectionalLight> directionalLightCB : register(b0);
 
-#include <GBuffer.hlsli>
+#include <ShaderLibrary/GBuffer.hlsli>
 
 struct PixelShaderInput
 {

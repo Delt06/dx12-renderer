@@ -17,7 +17,7 @@ Texture2D diffuseMap : register(t0);
 Texture2D normalMap : register(t1);
 SamplerState defaultSampler : register(s0);
 
-#include <GBufferUtils.hlsli>
+#include <ShaderLibrary/GBufferUtils.hlsli>
 
 float3 ApplyNormalMap(const float3x3 tbn, Texture2D map, const float2 uv)
 {

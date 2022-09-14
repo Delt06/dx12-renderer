@@ -15,4 +15,6 @@ void MatricesCb::Compute(DirectX::CXMMATRIX model, DirectX::CXMMATRIX view, Dire
 	Model = model;
 	InverseTransposeModel = XMMatrixTranspose(XMMatrixInverse(nullptr, model));
 	CameraPosition = XMVector4Transform(XMVectorSet(0, 0, 0, 1), XMMatrixInverse(nullptr, view));
+	InverseProjection = XMMatrixInverse(nullptr, projection);
+	InverseView = XMMatrixInverse(nullptr, view);
 }

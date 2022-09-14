@@ -11,6 +11,8 @@ struct MatricesCb
 	DirectX::XMMATRIX Projection;
 	DirectX::XMMATRIX InverseTransposeModel;
 	DirectX::XMVECTOR CameraPosition;
+	DirectX::XMMATRIX InverseProjection;
+	DirectX::XMMATRIX InverseView;
 
 	void XM_CALLCONV Compute(DirectX::CXMMATRIX model, DirectX::CXMMATRIX view,
 	                         DirectX::CXMMATRIX viewProjection, DirectX::CXMMATRIX projection);

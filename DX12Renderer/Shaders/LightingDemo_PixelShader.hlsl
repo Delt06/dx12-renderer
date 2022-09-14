@@ -36,15 +36,7 @@ struct DirectionalLight
     float4 Color;
 };
 
-struct PointLight
-{
-    float4 PositionWS;
-    float4 Color;
-    float ConstantAttenuation;
-    float LinearAttenuation;
-    float QuadraticAttenuation;
-    float Range;
-};
+#include <ShaderLibrary/PointLight.hlsli>
 
 struct SpotLight
 {
@@ -118,12 +110,6 @@ Light GetMainLight(const float4 shadowCoords)
     light.DistanceAttenuation = 1.0f;
     light.ShadowAttenuation = PoissonSampling_MainLight(shadowCoords);
     return light;
-}
-
-float ComputeDistanceAttenuation(const float cConstant, const float cLinear, const float cQuadratic,
-                                 const float distance)
-{
-    return 1.0f / (cConstant + cLinear * distance + cQuadratic * distance * distance);
 }
 
 // Unity URP

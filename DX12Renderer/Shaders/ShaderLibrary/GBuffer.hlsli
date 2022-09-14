@@ -3,6 +3,7 @@
 
 Texture2D gBufferDiffuse : register(t0);
 Texture2D gBufferNormalsWS : register(t1);
+Texture2D gBufferDepth : register(t2);
 
 SamplerState gBufferSampler : register(s0);
 
