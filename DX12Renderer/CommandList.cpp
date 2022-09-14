@@ -740,6 +740,11 @@ void CommandList::SetUnorderedAccessView(const uint32_t rootParameterIndex, cons
 	TrackResource(resource);
 }
 
+void CommandList::SetStencilRef(UINT8 stencilRef)
+{
+	m_D3d12CommandList->OMSetStencilRef(stencilRef);
+}
+
 void CommandList::SetRenderTarget(const RenderTarget& renderTarget, const UINT texArrayIndex, bool useDepth)
 {
 	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> renderTargetDescriptors;

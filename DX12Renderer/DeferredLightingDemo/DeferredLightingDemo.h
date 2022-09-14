@@ -40,6 +40,9 @@ private:
 
 	RenderTarget m_GBufferRenderTarget;
 	RenderTarget m_LightBufferRenderTarget;
+	RenderTarget m_LightStencilRenderTarget;
+	Texture m_DepthBuffer;
+	Texture m_DepthTexture;
 
 	Camera m_Camera;
 	std::vector<GameObject> m_GameObjects;
@@ -53,6 +56,9 @@ private:
 	RootSignature m_DirectionalLightPassRootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_DirectionalLightPassPipelineState;
 	std::shared_ptr<Mesh> m_FullScreenMesh;
+
+	RootSignature m_LightStencilPassRootSignature;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_LightStencilPassPipelineState;
 
 	RootSignature m_PointLightPassRootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PointLightPassPipelineState;

@@ -362,6 +362,8 @@ public:
 		const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc = nullptr
 	);
 
+	void SetStencilRef(UINT8 stencilRef);
+
 	/**
 	 * Set the render targets for the graphics rendering pipeline.
 	 */
