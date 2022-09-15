@@ -264,7 +264,6 @@ public:
 		SetCompute32BitConstants(rootParameterIndex, sizeof(T) / sizeof(uint32_t), &constants);
 	}
 
-
 	/**
 	 * Set the vertex buffer to the rendering pipeline.
 	 */
@@ -369,7 +368,6 @@ public:
 	 */
 	void SetRenderTarget(const RenderTarget& renderTarget, UINT texArrayIndex = -1, bool useDepth = true);
 
-
 	void ClearRenderTarget(const RenderTarget& renderTarget, const float* clearColor, const D3D12_CLEAR_FLAGS clearFlags);
 
 	/**
@@ -451,7 +449,7 @@ private:
 
 	// For copy queues, it may be necessary to generate mips while loading textures.
 	// Mips can't be generated on copy queues but must be generated on compute or
-	// direct queues. In this case, a Compute command list is generated and executed 
+	// direct queues. In this case, a Compute command list is generated and executed
 	// after the copy queue is finished uploading the first sub resource.
 	std::shared_ptr<CommandList> m_ComputeCommandList;
 
@@ -464,7 +462,7 @@ private:
 	std::unique_ptr<UploadBuffer> m_PUploadBuffer;
 
 	// Resource state tracker is used by the command list to track (per command list)
-	// the current state of a resource. The resource state tracker also tracks the 
+	// the current state of a resource. The resource state tracker also tracks the
 	// global state of a resource in order to minimize resource state transitions.
 	std::unique_ptr<ResourceStateTracker> m_PResourceStateTracker;
 
@@ -473,7 +471,7 @@ private:
 	// committed before a Draw or Dispatch.
 	std::unique_ptr<DynamicDescriptorHeap> m_DynamicDescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
 
-	// Keep track of the currently bound descriptor heaps. Only change descriptor 
+	// Keep track of the currently bound descriptor heaps. Only change descriptor
 	// heaps if they are different than the currently bound descriptor heaps.
 	ID3D12DescriptorHeap* m_DescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
 
@@ -482,10 +480,10 @@ private:
 	//// Pipeline state object for converting panorama (equirectangular) to cubemaps
 	//std::unique_ptr<PanoToCubemapPSO> PanoToCubemapPso;
 
-	// Objects that are being tracked by a command list that is "in-flight" on 
-	// the command-queue and cannot be deleted. To ensure objects are not deleted 
+	// Objects that are being tracked by a command list that is "in-flight" on
+	// the command-queue and cannot be deleted. To ensure objects are not deleted
 	// until the command list is finished executing, a reference to the object
-	// is stored. The referenced objects are released when the command list is 
+	// is stored. The referenced objects are released when the command list is
 	// reset.
 	TrackedObjectsType m_TrackedObjects;
 

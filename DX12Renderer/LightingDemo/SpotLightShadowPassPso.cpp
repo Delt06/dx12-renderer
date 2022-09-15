@@ -6,10 +6,10 @@ using namespace Microsoft::WRL;
 using namespace DirectX;
 
 SpotLightShadowPassPso::SpotLightShadowPassPso(const ComPtr<ID3D12Device2>& device,
-                                               const UINT resolution): ShadowPassPsoBase(device, resolution)
-                                                                       , m_ShadowMapsCapacity(0)
-                                                                       , m_ShadowMapsCount(0)
-                                                                       , m_CurrentLightIndex(0)
+	const UINT resolution) : ShadowPassPsoBase(device, resolution)
+	, m_ShadowMapsCapacity(0)
+	, m_ShadowMapsCount(0)
+	, m_CurrentLightIndex(0)
 {
 	m_ShadowPassParameters.LightType = ShadowPassParameters::SpotLight;
 }
@@ -25,7 +25,7 @@ void SpotLightShadowPassPso::ClearShadowMap(CommandList& commandList) const
 }
 
 void SpotLightShadowPassPso::SetShadowMapShaderResourceView(CommandList& commandList, uint32_t rootParameterIndex,
-                                                            uint32_t descriptorOffset) const
+	uint32_t descriptorOffset) const
 {
 	constexpr auto stateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 
@@ -41,9 +41,8 @@ void SpotLightShadowPassPso::SetShadowMapShaderResourceView(CommandList& command
 	srvDesc.Texture2DArray.PlaneSlice = 0;
 	srvDesc.Texture2DArray.ResourceMinLODClamp = 0.0f;
 
-
 	commandList.SetShaderResourceView(rootParameterIndex, descriptorOffset, GetShadowMapsAsTexture(), stateAfter, 0,
-	                                  numSubresources, &srvDesc);
+		numSubresources, &srvDesc);
 }
 
 void SpotLightShadowPassPso::ComputePassParameters(const SpotLight& spotLight)
@@ -71,17 +70,17 @@ void SpotLightShadowPassPso::SetShadowMapsCount(const uint32_t count)
 	if (count >= m_ShadowMapsCapacity && count > 0)
 	{
 		const auto shadowMapDesc = CD3DX12_RESOURCE_DESC::Tex2D(SHADOW_MAP_FORMAT,
-		                                                        m_Resolution, m_Resolution,
-		                                                        count, 1,
-		                                                        1, 0,
-		                                                        D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+			m_Resolution, m_Resolution,
+			count, 1,
+			1, 0,
+			D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 		D3D12_CLEAR_VALUE depthClearValue;
 		depthClearValue.Format = shadowMapDesc.Format;
-		depthClearValue.DepthStencil = {1.0f, 0};
+		depthClearValue.DepthStencil = { 1.0f, 0 };
 
 		const auto shadowMap = Texture(shadowMapDesc, &depthClearValue,
-		                               TextureUsageType::Depth,
-		                               L"Spot Light Shadow Map Array");
+			TextureUsageType::Depth,
+			L"Spot Light Shadow Map Array");
 		m_ShadowMapArray.AttachTexture(DepthStencil, shadowMap);
 		m_ShadowMapsCapacity = count;
 	}

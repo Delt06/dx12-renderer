@@ -14,6 +14,7 @@
 #include "GameObject.h"
 #include "GraphicsSettings.h"
 
+struct MatricesCb;
 
 class DeferredLightingDemo final : public Game
 {
@@ -29,6 +30,9 @@ public:
 protected:
 	void OnUpdate(UpdateEventArgs& e) override;
 	void OnRender(RenderEventArgs& e) override;
+
+	
+
 	void OnKeyPressed(KeyEventArgs& e) override;
 	void OnKeyReleased(KeyEventArgs& e) override;
 	void OnMouseMoved(MouseMotionEventArgs& e) override;
@@ -36,6 +40,19 @@ protected:
 	void OnResize(ResizeEventArgs& e) override;
 
 private:
+
+	struct ScreenParameters
+	{
+		float Width, Height;
+		float OneOverWidth, OneOverHeight;
+	};
+
+	void LightStencilPass(CommandList& commandList, const MatricesCb& matricesCb, std::shared_ptr<Mesh> mesh);
+
+	void BindGBufferAsSRV(CommandList& commandList, uint32_t rootParameterIndex);
+	void PointLightPass(CommandList& commandList, const MatricesCb& matricesCb, const PointLight& pointLight, const ScreenParameters& screenParameters, std::shared_ptr<Mesh> mesh);
+	void SpotLightPass(CommandList& commandList, const MatricesCb& matricesCb, const SpotLight& spotLight, const ScreenParameters& screenParameters, const std::shared_ptr<Mesh> mesh);
+
 	std::shared_ptr<Texture> m_WhiteTexture2d;
 
 	RenderTarget m_GBufferRenderTarget;
@@ -53,6 +70,7 @@ private:
 
 	DirectionalLight m_DirectionalLight;
 	std::vector<PointLight> m_PointLights;
+	std::vector<SpotLight> m_SpotLights;
 
 	RootSignature m_DirectionalLightPassRootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_DirectionalLightPassPipelineState;
@@ -64,6 +82,10 @@ private:
 	RootSignature m_PointLightPassRootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PointLightPassPipelineState;
 	std::shared_ptr<Mesh> m_PointLightMesh;
+
+	RootSignature m_SpotLightPassRootSignature;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_SpotLightPassPipelineState;
+	std::shared_ptr<Mesh> m_SpotLightMesh;
 
 	D3D12_VIEWPORT m_Viewport;
 	D3D12_RECT m_ScissorRect;

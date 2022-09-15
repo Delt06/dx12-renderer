@@ -197,20 +197,20 @@ std::shared_ptr<Mesh> Mesh::CreateCube(CommandList& commandList, float size, boo
 
 	static const XMVECTORF32 faceNormals[FaceCount] =
 	{
-		{0, 0, 1},
-		{0, 0, -1},
-		{1, 0, 0},
-		{-1, 0, 0},
-		{0, 1, 0},
-		{0, -1, 0},
+		{{0, 0, 1}},
+		{{0, 0, -1}},
+		{{1, 0, 0}},
+		{{-1, 0, 0}},
+		{{0, 1, 0}},
+		{{0, -1, 0}},
 	};
 
 	static const XMVECTORF32 textureCoordinates[4] =
 	{
-		{1, 0},
-		{1, 1},
-		{0, 1},
-		{0, 0},
+		{{1, 0}},
+		{{1, 1}},
+		{{0, 1}},
+		{{0, 0}},
 	};
 
 	VertexCollectionType vertices;
@@ -257,7 +257,7 @@ static inline XMVECTOR GetCircleVector(size_t i, size_t tessellation)
 
 	XMScalarSinCos(&dx, &dz, angle);
 
-	XMVECTORF32 v = { dx, 0, dz, 0 };
+	XMVECTORF32 v = { {dx, 0, dz, 0} };
 	return v;
 }
 
@@ -268,7 +268,7 @@ static inline XMVECTOR GetCircleTangent(size_t i, size_t tessellation)
 
 	XMScalarSinCos(&dx, &dz, angle);
 
-	XMVECTORF32 v = { dx, 0, dz, 0 };
+	XMVECTORF32 v = { {dx, 0, dz, 0} };
 	return v;
 }
 
@@ -459,6 +459,40 @@ std::shared_ptr<Mesh> Mesh::CreateVerticalQuad(CommandList& commandList, float w
 	return CreateMesh(commandList, vertices, indices, rhCoords);
 }
 
+std::shared_ptr<Mesh> Mesh::CreateSpotlightPyramid(CommandList& commandList, float size, float depth, bool rhCoords)
+{
+	float halfSize = size * 0.5;
+	VertexCollectionType vertices =
+	{
+		{
+			XMFLOAT3(0, 0, 0), XMFLOAT3(0, 0, -1), XMFLOAT2(0, 0)
+		},
+		{
+			XMFLOAT3(halfSize , halfSize , depth), XMFLOAT3(0, 0, 1), XMFLOAT2(0, 0)
+		},
+		{
+			XMFLOAT3(halfSize , -halfSize , depth), XMFLOAT3(0, 0, 1), XMFLOAT2(0, 0)
+		},
+		{
+			XMFLOAT3(-halfSize , halfSize , depth), XMFLOAT3(0, 0, 1), XMFLOAT2(0, 0)
+		},
+		{
+			XMFLOAT3(-halfSize , -halfSize , depth), XMFLOAT3(0, 0, 1), XMFLOAT2(0, 0)
+		}
+	};
+	IndexCollectionType indices =
+	{
+		2, 1, 0, // right
+		1, 3, 0, // top
+		4, 0, 3, // left
+		4, 2, 0, // bottom
+		4, 1, 2, // front 1
+		4, 3, 1, // front 2
+	};
+
+	return CreateMesh(commandList, vertices, indices, rhCoords);
+}
+
 std::shared_ptr<Mesh> Mesh::CreateBlitTriangle(CommandList& commandList)
 {
 	VertexCollectionType vertices;
@@ -488,7 +522,6 @@ std::shared_ptr<Mesh> Mesh::CreateMesh(CommandList& commandList, VertexCollectio
 	mesh->Initialize(commandList, vertices, indices, rhCoords);
 	return mesh;
 }
-
 
 // Helper for flipping winding of geometric primitives for LH vs. RH coords
 static void ReverseWinding(IndexCollectionType& indices, VertexCollectionType& vertices)

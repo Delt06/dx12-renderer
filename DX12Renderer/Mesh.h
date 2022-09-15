@@ -129,6 +129,7 @@ public:
 		bool rhCoords = false);
 	static std::shared_ptr<Mesh> CreateVerticalQuad(CommandList& commandList, float width = 1, float height = 1,
 		bool rhCoords = false);
+	static std::shared_ptr<Mesh> CreateSpotlightPyramid(CommandList& commandList, float width = 1.0f, float depth = 1.0f, bool rhCoords = false);
 
 	static std::shared_ptr<Mesh> CreateBlitTriangle(CommandList& commandList);
 

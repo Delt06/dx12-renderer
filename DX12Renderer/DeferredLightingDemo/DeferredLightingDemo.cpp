@@ -39,7 +39,6 @@ using namespace DirectX;
 
 namespace
 {
-
 	// Clamp a value between a min and max range.
 	template <typename T>
 	constexpr const T& Clamp(const T& val, const T& min, const T& max)
@@ -143,12 +142,6 @@ namespace
 		};
 	}
 
-	struct ScreenParameters
-	{
-		float Width, Height;
-		float OneOverWidth, OneOverHeight;
-	};
-
 	CD3DX12_BLEND_DESC AdditiveBlending()
 	{
 		CD3DX12_BLEND_DESC desc = CD3DX12_BLEND_DESC(CD3DX12_DEFAULT());
@@ -163,13 +156,43 @@ namespace
 		return desc;
 	}
 
+	float GetMaxColorComponentRGB(XMFLOAT4 color)
+	{
+		return std::max(color.x, std::max(color.y, color.z));
+	}
+
 	XMMATRIX GetModelMatrix(const PointLight& light)
 	{
-		return XMMatrixScaling(light.Range, light.Range, light.Range) *
+		// assuming minimum visible attenuation of L...
+		// 1/(c+l*d+q*d*d) = L
+		const auto l = 0.05f / GetMaxColorComponentRGB(light.Color);
+		const auto lInv = 1 / l;
+		auto discriminant = light.LinearAttenuation * light.LinearAttenuation - 4 * light.QuadraticAttenuation * (light.ConstantAttenuation - lInv);
+		auto radius = (-light.LinearAttenuation + sqrt(discriminant)) / (2 * light.QuadraticAttenuation);
+		return XMMatrixScaling(radius, radius, radius) *
 			XMMatrixTranslationFromVector(XMLoadFloat4(&light.PositionWs));
 	}
-}
 
+	XMMATRIX GetModelMatrix(const SpotLight& light)
+	{
+		// assuming minimum visible attenuation of L...
+		// 1/(1+a * d * d) = L
+		const auto l = 0.05f / (light.Intensity * GetMaxColorComponentRGB(light.Color));
+		const auto lInv = 1 / l;
+		auto scaleZ = (light.Attenuation > 0.0f) ? (sqrt((lInv - 1) / light.Attenuation)) : 1000.0f;
+		auto scaleX = 4 * scaleZ * tan(light.SpotAngle);
+
+		// generate any suitable up vector
+		auto direction = XMLoadFloat4(&light.DirectionWs);
+		auto bitangent = XMLoadFloat4(&light.DirectionWs);
+		bitangent += XMVectorSet(0.1f, 0.1f, 0.1f, 0); // slightly change to produce a non-parallel vector
+		bitangent = XMVector3Normalize(bitangent);
+		auto up = XMVector3Cross(direction, bitangent);
+
+		return XMMatrixScaling(scaleX, scaleX, scaleZ) *
+			XMMatrixLookToLH(XMLoadFloat4(&light.PositionWs), direction, up);
+	}
+}
 
 DeferredLightingDemo::DeferredLightingDemo(const std::wstring& name, int width, int height, GraphicsSettings graphicsSettings)
 	: Base(name, width, height, graphicsSettings.VSync)
@@ -380,7 +403,6 @@ bool DeferredLightingDemo::LoadContent()
 			ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_DirectionalLightPassPipelineState)));
 		}
 
-
 		// light stencil pass
 		{
 			ComPtr<ID3DBlob> vertexShaderBlob;
@@ -479,15 +501,16 @@ bool DeferredLightingDemo::LoadContent()
 			ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_LightStencilPassPipelineState)));
 		}
 
-		// point light pass
+		const auto initLightPass = [&lightPassSamplers](ComPtr<ID3D12Device2> device, const std::wstring& vertexShaderPath, const std::wstring& pixelShaderPath,
+			RootSignature& rootSignature,
+			ComPtr<ID3D12PipelineState>& pipelineState
+			)
 		{
-			m_PointLightMesh = Mesh::CreateSphere(*commandList, 1.0f);
-
 			ComPtr<ID3DBlob> vertexShaderBlob;
-			ThrowIfFailed(D3DReadFileToBlob(L"DeferredLightingDemo_LightBuffer_Point_VertexShader.cso", &vertexShaderBlob));
+			ThrowIfFailed(D3DReadFileToBlob(vertexShaderPath.c_str(), &vertexShaderBlob));
 
 			ComPtr<ID3DBlob> pixelShaderBlob;
-			ThrowIfFailed(D3DReadFileToBlob(L"DeferredLightingDemo_LightBuffer_Point_PixelShader.cso", &pixelShaderBlob));
+			ThrowIfFailed(D3DReadFileToBlob(pixelShaderPath.c_str(), &pixelShaderBlob));
 
 			// Create a root signature.
 			D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData;
@@ -515,7 +538,7 @@ bool DeferredLightingDemo::LoadContent()
 			rootSignatureDescription.Init_1_1(PointLightBufferRootParameters::NumRootParameters, rootParameters, _countof(lightPassSamplers), lightPassSamplers,
 				rootSignatureFlags);
 
-			m_PointLightPassRootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
+			rootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
 
 			// Setup the pipeline state.
 			struct PipelineStateStream
@@ -536,7 +559,7 @@ bool DeferredLightingDemo::LoadContent()
 			rtvFormats.NumRenderTargets = 1;
 			rtvFormats.RTFormats[0] = lightBufferFormat;
 
-			pipelineStateStream.RootSignature = m_PointLightPassRootSignature.GetRootSignature().Get();
+			pipelineStateStream.RootSignature = rootSignature.GetRootSignature().Get();
 
 			pipelineStateStream.InputLayout = { VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT };
 			pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
@@ -570,7 +593,31 @@ bool DeferredLightingDemo::LoadContent()
 				sizeof(PipelineStateStream), &pipelineStateStream
 			};
 
-			ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_PointLightPassPipelineState)));
+			ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&pipelineState)));
+		};
+
+		// point light pass
+		{
+			m_PointLightMesh = Mesh::CreateSphere(*commandList, 1.0f);
+
+			initLightPass(device,
+				L"DeferredLightingDemo_LightBuffer_Common_VertexShader.cso",
+				L"DeferredLightingDemo_LightBuffer_Point_PixelShader.cso",
+				m_PointLightPassRootSignature,
+				m_PointLightPassPipelineState
+			);
+		}
+
+		// spot light pass
+		{
+			m_SpotLightMesh = Mesh::CreateSpotlightPyramid(*commandList, 1, 1);
+
+			initLightPass(device,
+				L"DeferredLightingDemo_LightBuffer_Common_VertexShader.cso",
+				L"DeferredLightingDemo_LightBuffer_Spot_PixelShader.cso",
+				m_SpotLightPassRootSignature,
+				m_SpotLightPassPipelineState
+			);
 		}
 	}
 
@@ -595,9 +642,47 @@ bool DeferredLightingDemo::LoadContent()
 
 		// cyan-ish
 		{
-			PointLight pointLight(XMFLOAT4(6, 2, 10, 1), 25.0f);
-			pointLight.Color = XMFLOAT4(0.0f, 5.0f, 2.0f, 1.0f);
+			PointLight pointLight(XMFLOAT4(6, 4, 10, 1), 25.0f);
+			pointLight.Color = XMFLOAT4(0.0f, 4.0f, 2.0f, 1.0f);
 			m_PointLights.push_back(pointLight);
+		}
+
+		// red
+		{
+			PointLight pointLight(XMFLOAT4(10, 4, 10, 1), 25.0f);
+			pointLight.Color = XMFLOAT4(4.0f, 0.0f, 0.1f, 1.0f);
+			m_PointLights.push_back(pointLight);
+		}
+
+		// green-ish
+		{
+			PointLight pointLight(XMFLOAT4(4, 5, -4, 1));
+			pointLight.Color = XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
+			m_PointLights.push_back(pointLight);
+		}
+
+		// back spot light
+		{
+			SpotLight spotLight;
+			spotLight.PositionWs = XMFLOAT4(0, 5.0f, 25.0f, 1.0f);
+			spotLight.DirectionWs = XMFLOAT4(0, 0.0f, -1.0f, 0.0f);
+			spotLight.Color = XMFLOAT4(1, 1, 0, 1);
+			spotLight.Intensity = 1.0f;
+			spotLight.SpotAngle = XMConvertToRadians(45.0f);
+			spotLight.Attenuation = 0.0005f;
+			m_SpotLights.push_back(spotLight);
+		}
+
+		// character spot light
+		{
+			SpotLight spotLight;
+			spotLight.PositionWs = XMFLOAT4(10.0, 15.0f, 8.0f, 1.0f);
+			spotLight.DirectionWs = XMFLOAT4(0.0f, -1.0f, 0.0f, 0.0f);
+			spotLight.Color = XMFLOAT4(0, 0, 1, 1);
+			spotLight.Intensity = 1.0f;
+			spotLight.SpotAngle = XMConvertToRadians(45.0f);
+			spotLight.Attenuation = 0.0005f;
+			m_SpotLights.push_back(spotLight);
 		}
 	}
 
@@ -630,7 +715,6 @@ bool DeferredLightingDemo::LoadContent()
 		{
 			auto model = modelLoader.Load(*commandList, "Assets/Models/archer/archer.fbx");
 			{
-
 			}
 
 			XMMATRIX translationMatrix = XMMatrixTranslation(10.0f, 0.0f, 8.0f);
@@ -657,7 +741,6 @@ bool DeferredLightingDemo::LoadContent()
 			XMMATRIX worldMatrix = scaleMatrix * translationMatrix * rotationMatrix;
 			m_GameObjects.push_back(GameObject(worldMatrix, model));
 		}
-
 	}
 
 	// Depth Stencil
@@ -868,27 +951,10 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 
 		commandList->SetRenderTarget(m_LightBufferRenderTarget);
 		ScreenParameters screenParameters;
-		screenParameters.Width = m_Width;
-		screenParameters.Height = m_Height;
+		screenParameters.Width = static_cast<float>(m_Width);
+		screenParameters.Height = static_cast<float>(m_Height);
 		screenParameters.OneOverWidth = 1.0f / m_Width;
 		screenParameters.OneOverHeight = 1.0f / m_Height;
-
-		auto bindGBufferAsSRV = [this](CommandList& commandList, uint32_t rootParameterIndex)
-		{
-			commandList.SetShaderResourceView(rootParameterIndex, 0, m_GBufferRenderTarget.GetTexture(Color0), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-			commandList.SetShaderResourceView(rootParameterIndex, 1, m_GBufferRenderTarget.GetTexture(Color1), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
-
-			D3D12_SHADER_RESOURCE_VIEW_DESC depthStencilSrvDesc;
-			depthStencilSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-			depthStencilSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			depthStencilSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-			depthStencilSrvDesc.Texture2D.MipLevels = 1;
-			depthStencilSrvDesc.Texture2D.MostDetailedMip = 0;
-			depthStencilSrvDesc.Texture2D.PlaneSlice = 0;
-			depthStencilSrvDesc.Texture2D.ResourceMinLODClamp = 0.0;
-			commandList.SetShaderResourceView(rootParameterIndex, 2, m_DepthTexture, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, &depthStencilSrvDesc);
-		};
 
 		{
 			PIXScope(*commandList, "Directional Light Pass");
@@ -902,7 +968,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			commandList->SetGraphicsDynamicConstantBuffer(DirectionalLightBufferRootParameters::MatricesCb, matricesCb);
 			commandList->SetGraphics32BitConstants(DirectionalLightBufferRootParameters::DirectionalLightCb, m_DirectionalLight);
 			commandList->SetGraphics32BitConstants(DirectionalLightBufferRootParameters::ScreenParametersCb, screenParameters);
-			bindGBufferAsSRV(*commandList, DirectionalLightBufferRootParameters::GBuffer);
+			BindGBufferAsSRV(*commandList, DirectionalLightBufferRootParameters::GBuffer);
 
 			m_FullScreenMesh->Draw(*commandList);
 		}
@@ -912,49 +978,102 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		{
 			PIXScope(*commandList, "Point Light Pass");
 
-			commandList->SetGraphicsRootSignature(m_PointLightPassRootSignature);
-			commandList->SetPipelineState(m_PointLightPassPipelineState);
-
-			commandList->SetGraphics32BitConstants(PointLightBufferRootParameters::ScreenParametersCb, screenParameters);
-			bindGBufferAsSRV(*commandList, PointLightBufferRootParameters::GBuffer);
-
 			for (const auto& pointLight : m_PointLights)
 			{
 				MatricesCb matricesCb;
 				XMMATRIX modelMatrix = GetModelMatrix(pointLight);
 				matricesCb.Compute(modelMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
 
-				{
-					PIXScope(*commandList, "Light Stencil Pass");
+				const auto mesh = m_PointLightMesh;
+				LightStencilPass(*commandList, matricesCb, mesh);
+				PointLightPass(*commandList, matricesCb, pointLight, screenParameters, mesh);
+			}
+		}
 
-					commandList->SetRenderTarget(m_LightStencilRenderTarget);
-					commandList->ClearDepthStencilTexture(m_LightStencilRenderTarget.GetTexture(DepthStencil), D3D12_CLEAR_FLAG_STENCIL);
+		{
+			PIXScope(*commandList, "Spot Light Pass");
 
-					commandList->SetGraphicsRootSignature(m_LightStencilPassRootSignature);
-					commandList->SetPipelineState(m_LightStencilPassPipelineState);
+			commandList->SetGraphics32BitConstants(PointLightBufferRootParameters::ScreenParametersCb, screenParameters);
 
-					commandList->SetGraphicsDynamicConstantBuffer(LightStencilRootParameters::MatricesCb, matricesCb);
 
-					m_PointLightMesh->Draw(*commandList);
-				}
+			for (const auto& spotLight : m_SpotLights)
+			{
+				MatricesCb matricesCb;
+				XMMATRIX modelMatrix = GetModelMatrix(spotLight);
+				matricesCb.Compute(modelMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
 
-				{
-					commandList->SetRenderTarget(m_LightBufferRenderTarget);
-
-					commandList->SetGraphicsRootSignature(m_PointLightPassRootSignature);
-					commandList->SetPipelineState(m_PointLightPassPipelineState);
-
-					commandList->SetGraphicsDynamicConstantBuffer(PointLightBufferRootParameters::MatricesCb, matricesCb);
-					commandList->SetGraphicsDynamicConstantBuffer(PointLightBufferRootParameters::PointLightCb, pointLight);
-
-					m_PointLightMesh->Draw(*commandList);
-				}
+				const auto mesh = m_SpotLightMesh;
+				LightStencilPass(*commandList, matricesCb, mesh);
+				SpotLightPass(*commandList, matricesCb, spotLight, screenParameters, mesh);
 			}
 		}
 	}
 
 	commandQueue->ExecuteCommandList(commandList);
 	PWindow->Present(m_LightBufferRenderTarget.GetTexture(Color0));
+}
+
+void DeferredLightingDemo::BindGBufferAsSRV(CommandList& commandList, uint32_t rootParameterIndex)
+{
+	commandList.SetShaderResourceView(rootParameterIndex, 0, m_GBufferRenderTarget.GetTexture(Color0), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	commandList.SetShaderResourceView(rootParameterIndex, 1, m_GBufferRenderTarget.GetTexture(Color1), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC depthStencilSrvDesc;
+	depthStencilSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	depthStencilSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	depthStencilSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	depthStencilSrvDesc.Texture2D.MipLevels = 1;
+	depthStencilSrvDesc.Texture2D.MostDetailedMip = 0;
+	depthStencilSrvDesc.Texture2D.PlaneSlice = 0;
+	depthStencilSrvDesc.Texture2D.ResourceMinLODClamp = 0.0;
+	commandList.SetShaderResourceView(rootParameterIndex, 2, m_DepthTexture, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, &depthStencilSrvDesc);
+}
+
+void DeferredLightingDemo::LightStencilPass(CommandList& commandList, const MatricesCb& matricesCb, std::shared_ptr<Mesh> mesh)
+{
+	PIXScope(commandList, "Light Stencil Pass");
+
+	commandList.SetRenderTarget(m_LightStencilRenderTarget);
+	commandList.ClearDepthStencilTexture(m_LightStencilRenderTarget.GetTexture(DepthStencil), D3D12_CLEAR_FLAG_STENCIL);
+
+	commandList.SetGraphicsRootSignature(m_LightStencilPassRootSignature);
+	commandList.SetPipelineState(m_LightStencilPassPipelineState);
+
+	commandList.SetGraphicsDynamicConstantBuffer(LightStencilRootParameters::MatricesCb, matricesCb);
+
+	mesh->Draw(commandList);
+}
+
+void DeferredLightingDemo::PointLightPass(CommandList& commandList, const MatricesCb& matricesCb, const PointLight& pointLight, const ScreenParameters& screenParameters, std::shared_ptr<Mesh> mesh)
+{
+	commandList.SetRenderTarget(m_LightBufferRenderTarget);
+
+	commandList.SetGraphicsRootSignature(m_PointLightPassRootSignature);
+	commandList.SetPipelineState(m_PointLightPassPipelineState);
+
+	commandList.SetGraphicsDynamicConstantBuffer(PointLightBufferRootParameters::MatricesCb, matricesCb);
+	commandList.SetGraphicsDynamicConstantBuffer(PointLightBufferRootParameters::PointLightCb, pointLight);
+	commandList.SetGraphics32BitConstants(PointLightBufferRootParameters::ScreenParametersCb, screenParameters);
+
+	BindGBufferAsSRV(commandList, PointLightBufferRootParameters::GBuffer);
+
+	mesh->Draw(commandList);
+}
+
+void DeferredLightingDemo::SpotLightPass(CommandList& commandList, const MatricesCb& matricesCb, const SpotLight& spotLight, const ScreenParameters& screenParameters, const std::shared_ptr<Mesh> mesh)
+{
+	commandList.SetRenderTarget(m_LightBufferRenderTarget);
+
+	commandList.SetGraphicsRootSignature(m_SpotLightPassRootSignature);
+	commandList.SetPipelineState(m_SpotLightPassPipelineState);
+
+	commandList.SetGraphicsDynamicConstantBuffer(PointLightBufferRootParameters::MatricesCb, matricesCb);
+	commandList.SetGraphicsDynamicConstantBuffer(PointLightBufferRootParameters::PointLightCb, spotLight);
+	commandList.SetGraphics32BitConstants(PointLightBufferRootParameters::ScreenParametersCb, screenParameters);
+
+	BindGBufferAsSRV(commandList, PointLightBufferRootParameters::GBuffer);
+
+	mesh->Draw(commandList);
 }
 
 void DeferredLightingDemo::OnKeyPressed(KeyEventArgs& e)
@@ -1075,7 +1194,6 @@ void DeferredLightingDemo::OnMouseMoved(MouseMotionEventArgs& e)
 		m_CameraController.m_Yaw -= e.RelX * mouseSpeed;
 	}
 }
-
 
 void DeferredLightingDemo::OnMouseWheel(MouseWheelEventArgs& e)
 {

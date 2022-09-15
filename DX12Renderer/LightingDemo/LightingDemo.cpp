@@ -38,7 +38,6 @@ using namespace DirectX;
 
 namespace
 {
-
 	// Clamp a value between a min and max range.
 	template <typename T>
 	constexpr const T& Clamp(const T& val, const T& min, const T& max)
@@ -69,7 +68,6 @@ namespace
 		return M;
 	}
 }
-
 
 LightingDemo::LightingDemo(const std::wstring& name, int width, int height, GraphicsSettings graphicsSettings)
 	: Base(name, width, height, graphicsSettings.VSync)
@@ -398,8 +396,6 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 
 	m_SceneRenderer->ShadowPass(*commandList);
 
-
-
 	{
 		PIXScope(*commandList, "Reflection Cubemap");
 
@@ -584,7 +580,6 @@ void LightingDemo::OnMouseMoved(MouseMotionEventArgs& e)
 		m_CameraController.m_Yaw -= e.RelX * mouseSpeed;
 	}
 }
-
 
 void LightingDemo::OnMouseWheel(MouseWheelEventArgs& e)
 {

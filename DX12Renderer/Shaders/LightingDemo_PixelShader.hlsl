@@ -37,17 +37,7 @@ struct DirectionalLight
 };
 
 #include <ShaderLibrary/PointLight.hlsli>
-
-struct SpotLight
-{
-    float4 PositionWS;
-    float4 DirectionWS;
-    float4 Color;
-    float Intensity;
-    float SpotAngle;
-    float Attenuation;
-    float _Padding;
-};
+#include <ShaderLibrary/SpotLight.hlsli>
 
 struct LightingResult
 {
@@ -169,20 +159,6 @@ Light GetPointLight(const uint index, const float3 positionWs)
     light.ShadowAttenuation = PointLightShadowAttenuation(index, positionWs, directionWs);
 
     return light;
-}
-
-float GetSpotLightDistanceAttenuation(const float attenuation, const float distance)
-{
-    return 1.0f / (1.0f + attenuation * distance * distance);
-}
-
-float GetSpotLightConeAttenuation(const float3 lightDirection, const float3 directionTowardsLight,
-                                  const float spotAngle)
-{
-    const float minCos = cos(spotAngle);
-    const float maxCos = (minCos + 1.0f) / 2.0f;
-    const float cosAngle = dot(lightDirection, -directionTowardsLight);
-    return smoothstep(minCos, maxCos, cosAngle);
 }
 
 Light GetSpotLight(const uint index, const float3 positionWs)

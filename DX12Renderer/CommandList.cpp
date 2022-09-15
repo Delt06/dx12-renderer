@@ -110,7 +110,6 @@ void CommandList::FlushResourceBarriers()
 	m_PResourceStateTracker->FlushResourceBarriers(*this);
 }
 
-
 void CommandList::CopyResource(const Resource& dstRes, const Resource& srcRes)
 {
 	CopyResource(dstRes.GetD3D12Resource(), srcRes.GetD3D12Resource());
@@ -170,13 +169,12 @@ void CommandList::CopyBuffer(Buffer& buffer, const size_t numElements, const siz
 			IID_PPV_ARGS(&d3d12Resource)));
 	}
 
-
 	// Add the resource to the global resource state tracker.
 	ResourceStateTracker::AddGlobalResourceState(d3d12Resource.Get(), D3D12_RESOURCE_STATE_COMMON);
 
 	if (bufferData != nullptr)
 	{
-		// Create an upload resource to use as an intermediate buffer to copy the buffer resource 
+		// Create an upload resource to use as an intermediate buffer to copy the buffer resource
 		ComPtr<ID3D12Resource> uploadResource;
 		{
 			const auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
@@ -189,7 +187,6 @@ void CommandList::CopyBuffer(Buffer& buffer, const size_t numElements, const siz
 				nullptr,
 				IID_PPV_ARGS(&uploadResource)));
 		}
-
 
 		D3D12_SUBRESOURCE_DATA subresourceData = {};
 		subresourceData.pData = bufferData;
@@ -435,7 +432,7 @@ void CommandList::GenerateMips(Texture& texture)
 	ComPtr<ID3D12Resource> uavResource = resource;
 	// Create an alias of the original resource.
 	// This is done to perform a GPU copy of resources with different formats.
-	// BGR -> RGB texture copies will fail GPU validation unless performed 
+	// BGR -> RGB texture copies will fail GPU validation unless performed
 	// through an alias of the BRG resource in a placed heap.
 	ComPtr<ID3D12Resource> aliasResource;
 
@@ -481,8 +478,8 @@ void CommandList::GenerateMips(Texture& texture)
 		// is finished executing on the command queue.
 		TrackObject(heap);
 
-		// Create a placed resource that matches the description of the 
-		// original resource. This resource is used to copy the original 
+		// Create a placed resource that matches the description of the
+		// original resource. This resource is used to copy the original
 		// texture to the UAV compatible resource.
 		ThrowIfFailed(device->CreatePlacedResource(
 			heap.Get(),
@@ -518,7 +515,6 @@ void CommandList::GenerateMips(Texture& texture)
 		// Copy the original resource to the alias resource.
 		// This ensures GPU validation.
 		CopyResource(aliasResource, resource);
-
 
 		// Add an aliasing barrier for the UAV compatible resource.
 		AliasingBarrier(aliasResource, uavResource);
@@ -573,7 +569,6 @@ void CommandList::CopyTextureSubresource(const Texture& texture, const uint32_t 
 	TrackObject(intermediateResource);
 	TrackObject(destinationResource);
 }
-
 
 void CommandList::SetGraphicsDynamicConstantBuffer(const uint32_t rootParameterIndex, const size_t sizeInBytes,
 	const void* bufferData) const
@@ -836,7 +831,6 @@ void CommandList::DrawIndexed(const uint32_t indexCount, const uint32_t instance
 
 	m_D3d12CommandList->DrawIndexedInstanced(indexCount, instanceCount, startIndex, baseVertex, startInstance);
 }
-
 
 void CommandList::Dispatch(const uint32_t numGroupsX, const uint32_t numGroupsY, const uint32_t numGroupsZ)
 {
