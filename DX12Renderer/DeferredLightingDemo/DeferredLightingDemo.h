@@ -52,6 +52,7 @@ private:
 	void BindGBufferAsSRV(CommandList& commandList, uint32_t rootParameterIndex);
 	void PointLightPass(CommandList& commandList, const MatricesCb& matricesCb, const PointLight& pointLight, const ScreenParameters& screenParameters, std::shared_ptr<Mesh> mesh);
 	void SpotLightPass(CommandList& commandList, const MatricesCb& matricesCb, const SpotLight& spotLight, const ScreenParameters& screenParameters, const std::shared_ptr<Mesh> mesh);
+	void CapsuleLightPass(CommandList& commandList, const MatricesCb& matricesCb, const CapsuleLight& capsuleLight, const ScreenParameters& screenParameters, const std::shared_ptr<Mesh> mesh);
 
 	std::shared_ptr<Texture> m_WhiteTexture2d;
 
@@ -71,6 +72,7 @@ private:
 	DirectionalLight m_DirectionalLight;
 	std::vector<PointLight> m_PointLights;
 	std::vector<SpotLight> m_SpotLights;
+	std::vector<CapsuleLight> m_CapsuleLights;
 
 	RootSignature m_DirectionalLightPassRootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_DirectionalLightPassPipelineState;
@@ -86,6 +88,10 @@ private:
 	RootSignature m_SpotLightPassRootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_SpotLightPassPipelineState;
 	std::shared_ptr<Mesh> m_SpotLightMesh;
+
+	RootSignature m_CapsuleLightPassRootSignature;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_CapsuleLightPassPipelineState;
+	std::shared_ptr<Mesh> m_CapsuleLightMesh;
 
 	D3D12_VIEWPORT m_Viewport;
 	D3D12_RECT m_ScissorRect;

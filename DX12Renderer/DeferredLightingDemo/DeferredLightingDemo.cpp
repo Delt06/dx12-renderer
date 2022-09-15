@@ -180,7 +180,7 @@ namespace
 		const auto l = 0.05f / (light.Intensity * GetMaxColorComponentRGB(light.Color));
 		const auto lInv = 1 / l;
 		auto scaleZ = (light.Attenuation > 0.0f) ? (sqrt((lInv - 1) / light.Attenuation)) : 1000.0f;
-		auto scaleX = 4 * scaleZ * tan(light.SpotAngle);
+		auto scaleX = 2 * scaleZ * tan(light.SpotAngle);
 
 		// generate any suitable up vector
 		auto direction = XMLoadFloat4(&light.DirectionWs);
@@ -190,7 +190,31 @@ namespace
 		auto up = XMVector3Cross(direction, bitangent);
 
 		return XMMatrixScaling(scaleX, scaleX, scaleZ) *
-			XMMatrixLookToLH(XMLoadFloat4(&light.PositionWs), direction, up);
+			XMMatrixInverse(nullptr, XMMatrixLookToLH(XMLoadFloat4(&light.PositionWs), direction, up));
+	}
+
+	XMMATRIX GetModelMatrix(const CapsuleLight& light)
+	{
+		// assuming minimum visible attenuation of L...
+		// 1/(1+a * d * d) = L
+		const auto l = 0.05f / (GetMaxColorComponentRGB(light.Color));
+		const auto lInv = 1 / l;
+		auto radius = (light.Attenuation > 0.0f) ? (sqrt((lInv - 1) / light.Attenuation)) : 1000.0f;
+
+		auto pointA = XMLoadFloat4(&light.PointA);
+		auto pointB = XMLoadFloat4(&light.PointB);
+
+		auto origin = (pointA + pointB) * 0.5f;
+		auto ab = pointB - pointA;
+		auto lengthV = XMVector3Length(ab);
+		float length;
+		XMStoreFloat(&length, lengthV);
+		auto up = ab / length;
+		auto upModified = XMVector3Normalize(up + XMVectorSet(0.1, 0.1, 0.1, 0));
+		auto forward = XMVector3Cross(up, upModified);
+
+		return XMMatrixScaling(radius, length + radius * 2, radius) *
+			XMMatrixInverse(nullptr, XMMatrixLookToLH(origin, forward, up));
 	}
 }
 
@@ -225,6 +249,12 @@ bool DeferredLightingDemo::LoadContent()
 	const auto device = Application::Get().GetDevice();
 	const auto commandQueue = Application::Get().GetCommandQueue();
 	const auto commandList = commandQueue->GetCommandList();
+
+	// Generate default texture
+	{
+		m_WhiteTexture2d = std::make_shared<Texture>();
+		commandList->LoadTextureFromFile(*m_WhiteTexture2d, L"Assets/Textures/white.png");
+	}
 
 	constexpr DXGI_FORMAT gBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	constexpr DXGI_FORMAT lightBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
@@ -619,6 +649,19 @@ bool DeferredLightingDemo::LoadContent()
 				m_SpotLightPassPipelineState
 			);
 		}
+
+		// capsule light pass
+		{
+			ModelLoader modelLoader(m_WhiteTexture2d);
+			m_CapsuleLightMesh = modelLoader.Load(*commandList, "Assets/Models/_builtin/cylinder.obj")->GetMeshes()[0];
+
+			initLightPass(device,
+				L"DeferredLightingDemo_LightBuffer_Common_VertexShader.cso",
+				L"DeferredLightingDemo_LightBuffer_Capsule_PixelShader.cso",
+				m_CapsuleLightPassRootSignature,
+				m_CapsuleLightPassPipelineState
+			);
+		}
 	}
 
 	// Create lights
@@ -684,12 +727,26 @@ bool DeferredLightingDemo::LoadContent()
 			spotLight.Attenuation = 0.0005f;
 			m_SpotLights.push_back(spotLight);
 		}
-	}
 
-	// Generate default texture
-	{
-		m_WhiteTexture2d = std::make_shared<Texture>();
-		commandList->LoadTextureFromFile(*m_WhiteTexture2d, L"Assets/Textures/white.png");
+		// capsule light (X-axis)
+		{
+			CapsuleLight capsuleLight;
+			capsuleLight.Color = XMFLOAT4(0.0f, 10.0f, 10.0f, 1.0f);
+			capsuleLight.PointA = XMFLOAT4(-15.0, 3.0f, 0.0f, 1.0f);
+			capsuleLight.PointB = XMFLOAT4(15.0, 3.0f, 0.0f, 1.0f);
+			capsuleLight.Attenuation = 0.5f;
+			m_CapsuleLights.push_back(capsuleLight);
+		}
+
+		// capsule light (Z-axis)
+		{
+			CapsuleLight capsuleLight;
+			capsuleLight.Color = XMFLOAT4(10.0f, 0.0f, 10.0f, 1.0f);
+			capsuleLight.PointA = XMFLOAT4(0.0, 3.0f, -15.0f, 1.0f);
+			capsuleLight.PointB = XMFLOAT4(0.0, 3.0f, 15.0f, 1.0f);
+			capsuleLight.Attenuation = 0.5f;
+			m_CapsuleLights.push_back(capsuleLight);
+		}
 	}
 
 	// Load models
@@ -993,8 +1050,6 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		{
 			PIXScope(*commandList, "Spot Light Pass");
 
-			commandList->SetGraphics32BitConstants(LightPassRootParameters::ScreenParametersCb, screenParameters);
-
 
 			for (const auto& spotLight : m_SpotLights)
 			{
@@ -1005,6 +1060,23 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 				const auto mesh = m_SpotLightMesh;
 				LightStencilPass(*commandList, matricesCb, mesh);
 				SpotLightPass(*commandList, matricesCb, spotLight, screenParameters, mesh);
+			}
+		}
+
+		{
+			PIXScope(*commandList, "Capsule Light Pass");
+
+
+
+			for (const auto& capsuleLight : m_CapsuleLights)
+			{
+				MatricesCb matricesCb;
+				XMMATRIX modelMatrix = GetModelMatrix(capsuleLight);
+				matricesCb.Compute(modelMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
+
+				const auto mesh = m_CapsuleLightMesh;
+				LightStencilPass(*commandList, matricesCb, mesh);
+				CapsuleLightPass(*commandList, matricesCb, capsuleLight, screenParameters, mesh);
 			}
 		}
 	}
@@ -1069,6 +1141,22 @@ void DeferredLightingDemo::SpotLightPass(CommandList& commandList, const Matrice
 
 	commandList.SetGraphicsDynamicConstantBuffer(LightPassRootParameters::MatricesCb, matricesCb);
 	commandList.SetGraphicsDynamicConstantBuffer(LightPassRootParameters::LightCb, spotLight);
+	commandList.SetGraphics32BitConstants(LightPassRootParameters::ScreenParametersCb, screenParameters);
+
+	BindGBufferAsSRV(commandList, LightPassRootParameters::GBuffer);
+
+	mesh->Draw(commandList);
+}
+
+void DeferredLightingDemo::CapsuleLightPass(CommandList& commandList, const MatricesCb& matricesCb, const CapsuleLight& capsuleLight, const ScreenParameters& screenParameters, const std::shared_ptr<Mesh> mesh)
+{
+	commandList.SetRenderTarget(m_LightBufferRenderTarget);
+
+	commandList.SetGraphicsRootSignature(m_CapsuleLightPassRootSignature);
+	commandList.SetPipelineState(m_CapsuleLightPassPipelineState);
+
+	commandList.SetGraphicsDynamicConstantBuffer(LightPassRootParameters::MatricesCb, matricesCb);
+	commandList.SetGraphicsDynamicConstantBuffer(LightPassRootParameters::LightCb, capsuleLight);
 	commandList.SetGraphics32BitConstants(LightPassRootParameters::ScreenParametersCb, screenParameters);
 
 	BindGBufferAsSRV(commandList, LightPassRootParameters::GBuffer);

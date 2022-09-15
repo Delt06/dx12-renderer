@@ -89,3 +89,12 @@ struct SpotLight
 	float Attenuation;
 	float _Padding{};
 };
+
+struct CapsuleLight
+{
+	DirectX::XMFLOAT4 PointA = { 0, 0, 0, 1 };
+	DirectX::XMFLOAT4 PointB = { 0, 0, 0, 1 };
+	DirectX::XMFLOAT4 Color = {1, 1, 1, 1};
+	float Attenuation = {0.001f};
+	float _Padding[3]{};
+};
