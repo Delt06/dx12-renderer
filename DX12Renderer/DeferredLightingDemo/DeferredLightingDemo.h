@@ -93,6 +93,11 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_CapsuleLightPassPipelineState;
 	std::shared_ptr<Mesh> m_CapsuleLightMesh;
 
+	RootSignature m_SkyboxPassRootSignature;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_SkyboxPassPipelineState;
+	Texture m_Skybox;
+	std::shared_ptr<Mesh> m_SkyboxMesh;
+
 	D3D12_VIEWPORT m_Viewport;
 	D3D12_RECT m_ScissorRect;
 

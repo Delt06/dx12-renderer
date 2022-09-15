@@ -512,7 +512,6 @@ std::shared_ptr<Mesh> Mesh::CreateBlitTriangle(CommandList& commandList)
 
 	return CreateMesh(commandList, vertices, indices, true);
 }
-
 std::shared_ptr<Mesh> Mesh::CreateMesh(CommandList& commandList, VertexCollectionType& vertices,
 	IndexCollectionType& indices, const bool rhCoords, const bool generateTangents)
 {

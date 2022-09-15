@@ -51,11 +51,13 @@
 - https://learnopengl.com/Advanced-Lighting/Shadows/Point-Shadows
 - https://catlikecoding.com/unity/tutorials/advanced-rendering/bloom/
 
-### Libraries
+### Libraries and Tools
 
 - https://github.com/microsoft/DirectXTex
 - https://github.com/microsoft/DirectXMesh
 - https://github.com/assimp/assimp
+- https://github.com/Microsoft/DirectXTex/wiki/Texconv
+- https://matheowis.github.io/HDRI-to-CubeMap/
 
 ### Assets
 
