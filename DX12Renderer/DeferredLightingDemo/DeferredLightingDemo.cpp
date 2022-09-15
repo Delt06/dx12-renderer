@@ -126,14 +126,14 @@ namespace
 		};
 	}
 
-	namespace PointLightBufferRootParameters
+	namespace LightPassRootParameters
 	{
 		enum RootParameters
 		{
 			// ConstantBuffer: register(b0);
 			MatricesCb,
 			// ConstantBuffer : register(b1);
-			PointLightCb,
+			LightCb,
 			// ConstantBuffer : register(b2);
 			ScreenParametersCb,
 			// Texture2D register(t0-t1);
@@ -528,14 +528,14 @@ bool DeferredLightingDemo::LoadContent()
 
 			CD3DX12_DESCRIPTOR_RANGE1 texturesDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
 
-			CD3DX12_ROOT_PARAMETER1 rootParameters[PointLightBufferRootParameters::NumRootParameters];
-			rootParameters[PointLightBufferRootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE);
-			rootParameters[PointLightBufferRootParameters::PointLightCb].InitAsConstantBufferView(1, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
-			rootParameters[PointLightBufferRootParameters::ScreenParametersCb].InitAsConstants(sizeof(ScreenParameters) / sizeof(float), 2, 0, D3D12_SHADER_VISIBILITY_PIXEL);
-			rootParameters[PointLightBufferRootParameters::GBuffer].InitAsDescriptorTable(1, &texturesDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
+			CD3DX12_ROOT_PARAMETER1 rootParameters[LightPassRootParameters::NumRootParameters];
+			rootParameters[LightPassRootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE);
+			rootParameters[LightPassRootParameters::LightCb].InitAsConstantBufferView(1, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
+			rootParameters[LightPassRootParameters::ScreenParametersCb].InitAsConstants(sizeof(ScreenParameters) / sizeof(float), 2, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+			rootParameters[LightPassRootParameters::GBuffer].InitAsDescriptorTable(1, &texturesDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
 
 			CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
-			rootSignatureDescription.Init_1_1(PointLightBufferRootParameters::NumRootParameters, rootParameters, _countof(lightPassSamplers), lightPassSamplers,
+			rootSignatureDescription.Init_1_1(LightPassRootParameters::NumRootParameters, rootParameters, _countof(lightPassSamplers), lightPassSamplers,
 				rootSignatureFlags);
 
 			rootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
@@ -993,7 +993,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		{
 			PIXScope(*commandList, "Spot Light Pass");
 
-			commandList->SetGraphics32BitConstants(PointLightBufferRootParameters::ScreenParametersCb, screenParameters);
+			commandList->SetGraphics32BitConstants(LightPassRootParameters::ScreenParametersCb, screenParameters);
 
 
 			for (const auto& spotLight : m_SpotLights)
@@ -1051,11 +1051,11 @@ void DeferredLightingDemo::PointLightPass(CommandList& commandList, const Matric
 	commandList.SetGraphicsRootSignature(m_PointLightPassRootSignature);
 	commandList.SetPipelineState(m_PointLightPassPipelineState);
 
-	commandList.SetGraphicsDynamicConstantBuffer(PointLightBufferRootParameters::MatricesCb, matricesCb);
-	commandList.SetGraphicsDynamicConstantBuffer(PointLightBufferRootParameters::PointLightCb, pointLight);
-	commandList.SetGraphics32BitConstants(PointLightBufferRootParameters::ScreenParametersCb, screenParameters);
+	commandList.SetGraphicsDynamicConstantBuffer(LightPassRootParameters::MatricesCb, matricesCb);
+	commandList.SetGraphicsDynamicConstantBuffer(LightPassRootParameters::LightCb, pointLight);
+	commandList.SetGraphics32BitConstants(LightPassRootParameters::ScreenParametersCb, screenParameters);
 
-	BindGBufferAsSRV(commandList, PointLightBufferRootParameters::GBuffer);
+	BindGBufferAsSRV(commandList, LightPassRootParameters::GBuffer);
 
 	mesh->Draw(commandList);
 }
@@ -1067,11 +1067,11 @@ void DeferredLightingDemo::SpotLightPass(CommandList& commandList, const Matrice
 	commandList.SetGraphicsRootSignature(m_SpotLightPassRootSignature);
 	commandList.SetPipelineState(m_SpotLightPassPipelineState);
 
-	commandList.SetGraphicsDynamicConstantBuffer(PointLightBufferRootParameters::MatricesCb, matricesCb);
-	commandList.SetGraphicsDynamicConstantBuffer(PointLightBufferRootParameters::PointLightCb, spotLight);
-	commandList.SetGraphics32BitConstants(PointLightBufferRootParameters::ScreenParametersCb, screenParameters);
+	commandList.SetGraphicsDynamicConstantBuffer(LightPassRootParameters::MatricesCb, matricesCb);
+	commandList.SetGraphicsDynamicConstantBuffer(LightPassRootParameters::LightCb, spotLight);
+	commandList.SetGraphics32BitConstants(LightPassRootParameters::ScreenParametersCb, screenParameters);
 
-	BindGBufferAsSRV(commandList, PointLightBufferRootParameters::GBuffer);
+	BindGBufferAsSRV(commandList, LightPassRootParameters::GBuffer);
 
 	mesh->Draw(commandList);
 }
