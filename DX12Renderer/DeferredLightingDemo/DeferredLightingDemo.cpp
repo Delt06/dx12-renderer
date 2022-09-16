@@ -944,23 +944,24 @@ bool DeferredLightingDemo::LoadContent()
 		const uint32_t arraySize = Cubemap::SIDES_COUNT;
 		D3D12_RESOURCE_DESC skyboxDesc = m_Skybox.GetD3D12ResourceDesc();
 
-		const auto desc = CD3DX12_RESOURCE_DESC::Tex2D(
+		const UINT blurredSkyboxSize = 256;
+		const auto blurredSkyboxDesc = CD3DX12_RESOURCE_DESC::Tex2D(
 			DXGI_FORMAT_R32G32B32A32_FLOAT,
-			skyboxDesc.Width, skyboxDesc.Height,
+			blurredSkyboxSize, blurredSkyboxSize,
 			arraySize, 1,
 			1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 
-		auto blurredSkybox = Texture(desc, nullptr,
+		auto blurredSkybox = Texture(blurredSkyboxDesc, nullptr,
 			TextureUsageType::Albedo,
 			L"Blurred Skybox");
 		m_EnvironmentLightingMap.AttachTexture(Color0, blurredSkybox);
 
-		const auto resolutionScaleFactor = 2u;
-		const auto blurSpread = 10.0f;
-		const uint32_t iterations = 8;
+		const auto resolutionScaleFactor = 1u;
+		const auto blurSpread = 5.0f;
+		const uint32_t iterations = 16;
 
-		BlurPso blurPso(device, *commandList, desc.Format, resolutionScaleFactor, blurSpread);
-		BlitPso blitPso(device, *commandList, desc.Format);
+		BlurPso blurPso(device, *commandList, blurredSkyboxDesc.Format, resolutionScaleFactor, blurSpread);
+		BlitPso blitPso(device, *commandList, blurredSkyboxDesc.Format);
 
 		for (uint32_t sideIndex = 0; sideIndex < Cubemap::SIDES_COUNT; ++sideIndex)
 		{
