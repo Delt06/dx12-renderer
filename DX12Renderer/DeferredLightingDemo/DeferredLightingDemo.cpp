@@ -281,7 +281,7 @@ bool DeferredLightingDemo::LoadContent()
 		commandList->LoadTextureFromFile(*m_WhiteTexture2d, L"Assets/Textures/white.png");
 	}
 
-	constexpr DXGI_FORMAT gBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+	constexpr DXGI_FORMAT gBufferFormat = DXGI_FORMAT_R16G16B16A16_UNORM;
 	constexpr DXGI_FORMAT lightBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 	constexpr DXGI_FORMAT depthBufferFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
