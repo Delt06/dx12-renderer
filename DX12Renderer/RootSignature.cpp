@@ -135,8 +135,14 @@ void RootSignature::SetRootSignatureDesc(
 	// Serialize the root signature.
 	ComPtr<ID3DBlob> rootSignatureBlob;
 	ComPtr<ID3DBlob> errorBlob;
-	ThrowIfFailed(D3DX12SerializeVersionedRootSignature(&versionRootSignatureDesc,
-	                                                    rootSignatureVersion, &rootSignatureBlob, &errorBlob));
+	auto hResult = D3DX12SerializeVersionedRootSignature(&versionRootSignatureDesc,
+		rootSignatureVersion, &rootSignatureBlob, &errorBlob);
+	if (FAILED(hResult))
+	{
+		char* error = (char *) errorBlob->GetBufferPointer();
+		ThrowIfFailed(hResult);
+	}
+	
 
 	// Create the root signature.
 	ThrowIfFailed(device->CreateRootSignature(0, rootSignatureBlob->GetBufferPointer(),

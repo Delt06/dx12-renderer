@@ -142,7 +142,6 @@ public:
 	// Return an sRGB format in the same format family.
 	static DXGI_FORMAT GetSRgbFormat(DXGI_FORMAT format);
 	static DXGI_FORMAT GetUavCompatibleFormat(DXGI_FORMAT format);
-
 protected:
 private:
 	DescriptorAllocation CreateShaderResourceView(const D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc) const;

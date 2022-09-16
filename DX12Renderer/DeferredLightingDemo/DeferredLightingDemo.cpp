@@ -24,6 +24,7 @@ using namespace Microsoft::WRL;
 #include <d3dcompiler.h>
 #include <DirectXColors.h>
 #include <MatricesCb.h>
+#include <BlurPso.h>
 
 using namespace DirectX;
 
@@ -32,6 +33,7 @@ using namespace DirectX;
 #undef min
 #endif
 #include <LightingDemo/SceneRenderer.h>
+#include "BlitPso.h"
 
 #if defined(max)
 #undef max
@@ -110,8 +112,10 @@ namespace
 			DirectionalLightCb,
 			// ConstantBuffer : register(b2);
 			ScreenParametersCb,
-			// Texture2D register(t0-t1);
+			// Texture2D : register(t0-t2);
 			GBuffer,
+			// TextureCube : register(t3)
+			Skybox,
 			NumRootParameters
 		};
 	}
@@ -222,11 +226,18 @@ namespace
 		float length;
 		XMStoreFloat(&length, lengthV);
 		auto up = ab / length;
-		auto upModified = XMVector3Normalize(up + XMVectorSet(0.1, 0.1, 0.1, 0));
+		auto upModified = XMVector3Normalize(up + XMVectorSet(0.1f, 0.1f, 0.1f, 0));
 		auto forward = XMVector3Cross(up, upModified);
 
 		return XMMatrixScaling(radius, length + radius * 2, radius) *
 			XMMatrixInverse(nullptr, XMMatrixLookToLH(origin, forward, up));
+	}
+
+	auto GetSkyboxSampler(UINT shaderRegister)
+	{
+		auto skyboxSampler = CD3DX12_STATIC_SAMPLER_DESC(shaderRegister, D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
+		skyboxSampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		return skyboxSampler;
 	}
 }
 
@@ -387,16 +398,23 @@ bool DeferredLightingDemo::LoadContent()
 				D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 				D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
-			CD3DX12_DESCRIPTOR_RANGE1 texturesDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
+			CD3DX12_DESCRIPTOR_RANGE1 gBufferDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
+			CD3DX12_DESCRIPTOR_RANGE1 skyboxDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 3);
 
 			CD3DX12_ROOT_PARAMETER1 rootParameters[DirectionalLightBufferRootParameters::NumRootParameters];
 			rootParameters[DirectionalLightBufferRootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE);
 			rootParameters[DirectionalLightBufferRootParameters::DirectionalLightCb].InitAsConstants(sizeof(DirectionalLight) / sizeof(float), 1, 0, D3D12_SHADER_VISIBILITY_PIXEL);
 			rootParameters[DirectionalLightBufferRootParameters::ScreenParametersCb].InitAsConstants(sizeof(ScreenParameters) / sizeof(float), 2, 0, D3D12_SHADER_VISIBILITY_PIXEL);
-			rootParameters[DirectionalLightBufferRootParameters::GBuffer].InitAsDescriptorTable(1, &texturesDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
+			rootParameters[DirectionalLightBufferRootParameters::GBuffer].InitAsDescriptorTable(1, &gBufferDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
+			rootParameters[DirectionalLightBufferRootParameters::Skybox].InitAsDescriptorTable(1, &skyboxDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
+
+			CD3DX12_STATIC_SAMPLER_DESC samplers[] = {
+				lightPassSamplers[0],
+				GetSkyboxSampler(1)
+			};
 
 			CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
-			rootSignatureDescription.Init_1_1(DirectionalLightBufferRootParameters::NumRootParameters, rootParameters, _countof(lightPassSamplers), lightPassSamplers,
+			rootSignatureDescription.Init_1_1(DirectionalLightBufferRootParameters::NumRootParameters, rootParameters, _countof(samplers), samplers,
 				rootSignatureFlags);
 
 			m_DirectionalLightPassRootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
@@ -706,8 +724,7 @@ bool DeferredLightingDemo::LoadContent()
 			rootParameters[SkyboxPassRootParameters::SkyboxCubemap].InitAsDescriptorTable(1, &texturesDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
 
 			D3D12_STATIC_SAMPLER_DESC samplers[] = {
-				// linear clamp
-				CD3DX12_STATIC_SAMPLER_DESC(0, D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP)
+				GetSkyboxSampler(0)
 			};
 
 			CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
@@ -895,6 +912,47 @@ bool DeferredLightingDemo::LoadContent()
 		}
 
 		commandList->LoadTextureFromFile(m_Skybox, L"Assets/Textures/skybox/skybox.dds", TextureUsageType::Albedo);
+	}
+
+	{
+		PIXScope(*commandList, "Blur Skybox");
+
+		const uint32_t arraySize = Cubemap::SIDES_COUNT;
+		D3D12_RESOURCE_DESC skyboxDesc = m_Skybox.GetD3D12ResourceDesc();
+
+		const auto desc = CD3DX12_RESOURCE_DESC::Tex2D(
+			DXGI_FORMAT_R32G32B32A32_FLOAT,
+			skyboxDesc.Width, skyboxDesc.Height,
+			arraySize, 1,
+			1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+
+		auto blurredSkybox = Texture(desc, nullptr,
+			TextureUsageType::Albedo,
+			L"Blurred Skybox");
+		m_EnvironmentLightingMap.AttachTexture(Color0, blurredSkybox);
+
+		BlurPso blurPso(device, *commandList, desc.Format, 2u, 8);
+		BlitPso blitPso(device, *commandList, desc.Format);
+
+		for (uint32_t sideIndex = 0; sideIndex < Cubemap::SIDES_COUNT; ++sideIndex)
+		{
+			D3D12_SHADER_RESOURCE_VIEW_DESC skyboxSrvDesc;
+			skyboxSrvDesc.Format = m_Skybox.GetD3D12ResourceDesc().Format;
+			skyboxSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			skyboxSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+			skyboxSrvDesc.Texture2DArray.MipLevels = 1;
+			skyboxSrvDesc.Texture2DArray.MostDetailedMip = 0;
+			skyboxSrvDesc.Texture2DArray.FirstArraySlice = sideIndex;
+			skyboxSrvDesc.Texture2DArray.ArraySize = 1;
+			skyboxSrvDesc.Texture2DArray.PlaneSlice = 0;
+			skyboxSrvDesc.Texture2DArray.ResourceMinLODClamp = 0.0f;
+
+			auto t1 = blurPso.Blur(*commandList, m_Skybox, BlurDirection::Horizontal, &skyboxSrvDesc);
+			auto t2 = blurPso.Blur(*commandList, t1, BlurDirection::Vertical);
+			auto t3 = blurPso.Blur(*commandList, t2, BlurDirection::Horizontal);
+			auto t4 = blurPso.Blur(*commandList, t3, BlurDirection::Vertical);
+			blitPso.Blit(*commandList, t4, m_EnvironmentLightingMap, sideIndex);
+		}
 	}
 
 	// Depth Stencil
@@ -1125,6 +1183,19 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			commandList->SetGraphics32BitConstants(DirectionalLightBufferRootParameters::ScreenParametersCb, screenParameters);
 			BindGBufferAsSRV(*commandList, DirectionalLightBufferRootParameters::GBuffer);
 
+
+			const auto& environmentMap = m_EnvironmentLightingMap.GetTexture(Color0);
+
+			D3D12_SHADER_RESOURCE_VIEW_DESC skyboxSrvDesc;
+			skyboxSrvDesc.Format = environmentMap.GetD3D12ResourceDesc().Format;
+			skyboxSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			skyboxSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+			skyboxSrvDesc.TextureCube.MipLevels = -1;
+			skyboxSrvDesc.TextureCube.MostDetailedMip = 0;
+			skyboxSrvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+
+			commandList->SetShaderResourceView(DirectionalLightBufferRootParameters::Skybox, 0, environmentMap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, UINT_MAX, &skyboxSrvDesc);
+
 			m_FullScreenMesh->Draw(*commandList);
 		}
 
@@ -1195,9 +1266,9 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		srvDesc.TextureCube.MostDetailedMip = 0;
 		srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
 
-		commandList->SetShaderResourceView(SkyboxPassRootParameters::SkyboxCubemap, 0, m_Skybox, 
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 
-			0, UINT_MAX, &srvDesc 
+		commandList->SetShaderResourceView(SkyboxPassRootParameters::SkyboxCubemap, 0, m_Skybox,
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+			0, UINT_MAX, &srvDesc
 		);
 
 		m_SkyboxMesh->Draw(*commandList);

@@ -14,6 +14,14 @@ ConstantBuffer<Matrices> matricesCB : register(b0);
 ConstantBuffer<DirectionalLight> directionalLightCB : register(b1);
 ConstantBuffer<ScreenParameters> screenParametersCB : register(b2);
 
+TextureCube skybox : register(t3);
+SamplerState skyboxSampler : register(s1);
+
+float3 SampleSkybox(float3 uv)
+{
+    return skybox.SampleLevel(skyboxSampler, uv, 0).rgb;
+}
+
 #include <ShaderLibrary/GBuffer.hlsli>
 
 struct PixelShaderInput
@@ -39,5 +47,8 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     brdfInput.PositionWS = positionWS;
     
     float3 color = ComputeBRDF(brdfInput) * diffuseColor;
+    
+    color += SampleSkybox(normalWS) * diffuseColor;
+    
     return float4(color, 1.0);
 }
