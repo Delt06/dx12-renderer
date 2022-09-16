@@ -10,6 +10,7 @@
 #include <GameObject.h>
 #include <Bone.h>
 #include <Animation.h>
+#include <Cubemap.h>
 
 #include <wrl.h>
 
@@ -24,7 +25,6 @@ using namespace Microsoft::WRL;
 #include <d3dcompiler.h>
 #include <DirectXColors.h>
 #include <MatricesCb.h>
-#include <BlurPso.h>
 
 using namespace DirectX;
 
@@ -32,8 +32,8 @@ using namespace DirectX;
 #if defined(min)
 #undef min
 #endif
-#include <LightingDemo/SceneRenderer.h>
-#include "BlitPso.h"
+
+#include "IBL/DiffuseIrradiancePso.h"
 
 #if defined(max)
 #undef max
@@ -939,52 +939,31 @@ bool DeferredLightingDemo::LoadContent()
 	}
 
 	{
-		PIXScope(*commandList, "Blur Skybox");
+		PIXScope(*commandList, "Diffuse Irradiance Convolution");
 
 		const uint32_t arraySize = Cubemap::SIDES_COUNT;
 		D3D12_RESOURCE_DESC skyboxDesc = m_Skybox.GetD3D12ResourceDesc();
 
-		const UINT blurredSkyboxSize = 256;
-		const auto blurredSkyboxDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-			DXGI_FORMAT_R32G32B32A32_FLOAT,
-			blurredSkyboxSize, blurredSkyboxSize,
+		const UINT diffuseIrradianceMapSize = 128;
+		const auto diffuseIrradianceMapDesc = CD3DX12_RESOURCE_DESC::Tex2D(
+			DXGI_FORMAT_R16G16B16A16_FLOAT,
+			diffuseIrradianceMapSize, diffuseIrradianceMapSize,
 			arraySize, 1,
 			1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 
-		auto blurredSkybox = Texture(blurredSkyboxDesc, nullptr,
+		auto diffuseIrradianceMap = Texture(diffuseIrradianceMapDesc, nullptr,
 			TextureUsageType::Albedo,
-			L"Blurred Skybox");
-		m_EnvironmentLightingMap.AttachTexture(Color0, blurredSkybox);
+			L"Skybox IBL (Diffuse Irradiance)");
+		m_DiffuseIrradianceMapRt.AttachTexture(Color0, diffuseIrradianceMap);
 
-		const auto resolutionScaleFactor = 1u;
-		const auto blurSpread = 5.0f;
-		const uint32_t iterations = 16;
+		DiffuseIrradiancePso diffuseIrradiancePso(device, *commandList, diffuseIrradianceMapDesc.Format);
+		diffuseIrradiancePso.SetContext(*commandList);
+		diffuseIrradiancePso.SetSourceCubemap(*commandList, m_Skybox);
 
-		BlurPso blurPso(device, *commandList, blurredSkyboxDesc.Format, resolutionScaleFactor, blurSpread);
-		BlitPso blitPso(device, *commandList, blurredSkyboxDesc.Format);
-
-		for (uint32_t sideIndex = 0; sideIndex < Cubemap::SIDES_COUNT; ++sideIndex)
+		for (UINT32 sideIndex = 0; sideIndex < Cubemap::SIDES_COUNT; ++sideIndex)
 		{
-			D3D12_SHADER_RESOURCE_VIEW_DESC skyboxSrvDesc;
-			skyboxSrvDesc.Format = m_Skybox.GetD3D12ResourceDesc().Format;
-			skyboxSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			skyboxSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
-			skyboxSrvDesc.Texture2DArray.MipLevels = 1;
-			skyboxSrvDesc.Texture2DArray.MostDetailedMip = 0;
-			skyboxSrvDesc.Texture2DArray.FirstArraySlice = sideIndex;
-			skyboxSrvDesc.Texture2DArray.ArraySize = 1;
-			skyboxSrvDesc.Texture2DArray.PlaneSlice = 0;
-			skyboxSrvDesc.Texture2DArray.ResourceMinLODClamp = 0.0f;
-
-			auto t = blurPso.Blur(*commandList, m_Skybox, BlurDirection::Horizontal, &skyboxSrvDesc);
-
-			for (uint32_t i = 0; i < iterations; ++i)
-			{
-				t = blurPso.Blur(*commandList, t, BlurDirection::Vertical);
-			}
-
-			
-			blitPso.Blit(*commandList, t, m_EnvironmentLightingMap, sideIndex);
+			diffuseIrradiancePso.SetRenderTarget(*commandList, m_DiffuseIrradianceMapRt, sideIndex);
+			diffuseIrradiancePso.Draw(*commandList, sideIndex);
 		}
 	}
 
@@ -1219,7 +1198,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			BindGBufferAsSRV(*commandList, DirectionalLightBufferRootParameters::GBuffer);
 
 
-			const auto& environmentMap = m_EnvironmentLightingMap.GetTexture(Color0);
+			const auto& environmentMap = m_DiffuseIrradianceMapRt.GetTexture(Color0);
 
 			D3D12_SHADER_RESOURCE_VIEW_DESC skyboxSrvDesc;
 			skyboxSrvDesc.Format = environmentMap.GetD3D12ResourceDesc().Format;
@@ -1293,15 +1272,17 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		matricesCb.Compute(modelMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
 		commandList->SetGraphicsDynamicConstantBuffer(SkyboxPassRootParameters::MatricesCb, matricesCb);
 
+		const auto& skybox = m_Skybox;
+
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
-		srvDesc.Format = m_Skybox.GetD3D12ResourceDesc().Format;
+		srvDesc.Format = skybox.GetD3D12ResourceDesc().Format;
 		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 		srvDesc.TextureCube.MipLevels = 1;
 		srvDesc.TextureCube.MostDetailedMip = 0;
 		srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
 
-		commandList->SetShaderResourceView(SkyboxPassRootParameters::SkyboxCubemap, 0, m_Skybox,
+		commandList->SetShaderResourceView(SkyboxPassRootParameters::SkyboxCubemap, 0, skybox,
 			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 			0, UINT_MAX, &srvDesc
 		);

@@ -167,6 +167,7 @@
     <ClCompile Include="BlurPso.cpp" />
     <ClCompile Include="Bone.cpp" />
     <ClCompile Include="DeferredLightingDemo\DeferredLightingDemo.cpp" />
+    <ClCompile Include="IBL\DiffuseIrradiancePso.cpp" />
     <ClCompile Include="LightingDemo\BloomPso.cpp" />
     <ClCompile Include="Cubemap.cpp" />
     <ClCompile Include="Geometry\Aabb.cpp" />
@@ -225,6 +226,7 @@
     <ClInclude Include="Bone.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="DeferredLightingDemo\DeferredLightingDemo.h" />
+    <ClInclude Include="IBL\DiffuseIrradiancePso.h" />
     <ClInclude Include="LightingDemo\BloomPso.h" />
     <ClInclude Include="Cubemap.h" />
     <ClInclude Include="Geometry\Aabb.h" />
@@ -299,6 +301,7 @@
     <None Include="Shaders\ShaderLibrary\GBuffer.hlsli" />
     <None Include="Shaders\ShaderLibrary\GBufferUtils.hlsli" />
     <None Include="Shaders\ShaderLibrary\Material.hlsli" />
+    <None Include="Shaders\ShaderLibrary\Math.hlsli" />
     <None Include="Shaders\ShaderLibrary\MatricesCB.hlsli" />
     <None Include="Shaders\PostFX.hlsli" />
     <None Include="Shaders\ShaderLibrary\PointLight.hlsli" />
@@ -434,6 +437,18 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">generateMips_Cs</VariableName>
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">GenerateMips_CS.h</HeaderFileOutput>
+    </FxCompile>
+    <FxCompile Include="Shaders\IBL_DiffuseIrradiance_PixelShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\IBL_DiffuseIrradiance_VertexShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
     </FxCompile>
     <FxCompile Include="Shaders\LightingDemo_Bloom_Downsample_PixelShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
