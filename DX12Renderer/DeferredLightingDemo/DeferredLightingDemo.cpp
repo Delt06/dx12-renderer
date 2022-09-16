@@ -955,7 +955,11 @@ bool DeferredLightingDemo::LoadContent()
 			L"Blurred Skybox");
 		m_EnvironmentLightingMap.AttachTexture(Color0, blurredSkybox);
 
-		BlurPso blurPso(device, *commandList, desc.Format, 1, 10.0f);
+		const auto resolutionScaleFactor = 2u;
+		const auto blurSpread = 10.0f;
+		const uint32_t iterations = 8;
+
+		BlurPso blurPso(device, *commandList, desc.Format, resolutionScaleFactor, blurSpread);
 		BlitPso blitPso(device, *commandList, desc.Format);
 
 		for (uint32_t sideIndex = 0; sideIndex < Cubemap::SIDES_COUNT; ++sideIndex)
@@ -973,7 +977,7 @@ bool DeferredLightingDemo::LoadContent()
 
 			auto t = blurPso.Blur(*commandList, m_Skybox, BlurDirection::Horizontal, &skyboxSrvDesc);
 
-			for (uint32_t i = 0; i < 8; ++i)
+			for (uint32_t i = 0; i < iterations; ++i)
 			{
 				t = blurPso.Blur(*commandList, t, BlurDirection::Vertical);
 			}
