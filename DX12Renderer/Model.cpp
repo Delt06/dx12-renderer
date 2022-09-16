@@ -56,6 +56,11 @@ Material& Model::GetMaterial()
 	return m_Material;
 }
 
+const Material& Model::GetMaterial() const
+{
+	return m_Material;
+}
+
 const Model::MeshCollectionType& Model::GetMeshes() const
 {
 	return m_Meshes;

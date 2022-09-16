@@ -96,6 +96,8 @@ namespace
 		{
 			// ConstantBuffer : register(b0);
 			MatricesCb,
+			// ConstantBuffer : register(b1);
+			MaterialCb,
 			// Texture2D register(t0-t1);
 			Textures,
 			NumRootParameters
@@ -317,6 +319,7 @@ bool DeferredLightingDemo::LoadContent()
 
 		CD3DX12_ROOT_PARAMETER1 rootParameters[GBufferRootParameters::NumRootParameters];
 		rootParameters[GBufferRootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
+		rootParameters[GBufferRootParameters::MaterialCb].InitAsConstantBufferView(1, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
 		rootParameters[GBufferRootParameters::Textures].InitAsDescriptorTable(1, &texturesDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
 
 		CD3DX12_STATIC_SAMPLER_DESC samplers[] = {
@@ -911,6 +914,27 @@ bool DeferredLightingDemo::LoadContent()
 			m_GameObjects.push_back(GameObject(worldMatrix, model));
 		}
 
+		{
+			auto model = modelLoader.Load(*commandList, "Assets/Models/sphere/sphere-cylcoords-1k.obj");
+			{
+				model->GetMaterial().SpecularPower = 50.0f;
+				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
+					L"Assets/Textures/Metal/Metal_1K_Color.jpg");
+				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
+					L"Assets/Textures/Metal/Metal_1K_Normal.jpg");
+				modelLoader.LoadMap(*model, *commandList, ModelMaps::Specular,
+					L"Assets/Textures/Metal/Metal_1K_Specular.jpg");
+				modelLoader.LoadMap(*model, *commandList, ModelMaps::Gloss,
+					L"Assets/Textures/Metal/Metal_1K_Roughness.jpg");
+			}
+
+			XMMATRIX translationMatrix = XMMatrixTranslation(-50.0f, 5.0f, 25.0f);
+			XMMATRIX rotationMatrix = XMMatrixIdentity();
+			XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
+			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+			m_GameObjects.push_back(GameObject(worldMatrix, model));
+		}
+
 		commandList->LoadTextureFromFile(m_Skybox, L"Assets/Textures/skybox/skybox.dds", TextureUsageType::Albedo);
 	}
 
@@ -931,7 +955,7 @@ bool DeferredLightingDemo::LoadContent()
 			L"Blurred Skybox");
 		m_EnvironmentLightingMap.AttachTexture(Color0, blurredSkybox);
 
-		BlurPso blurPso(device, *commandList, desc.Format, 2u, 8);
+		BlurPso blurPso(device, *commandList, desc.Format, 1, 10.0f);
 		BlitPso blitPso(device, *commandList, desc.Format);
 
 		for (uint32_t sideIndex = 0; sideIndex < Cubemap::SIDES_COUNT; ++sideIndex)
@@ -947,11 +971,15 @@ bool DeferredLightingDemo::LoadContent()
 			skyboxSrvDesc.Texture2DArray.PlaneSlice = 0;
 			skyboxSrvDesc.Texture2DArray.ResourceMinLODClamp = 0.0f;
 
-			auto t1 = blurPso.Blur(*commandList, m_Skybox, BlurDirection::Horizontal, &skyboxSrvDesc);
-			auto t2 = blurPso.Blur(*commandList, t1, BlurDirection::Vertical);
-			auto t3 = blurPso.Blur(*commandList, t2, BlurDirection::Horizontal);
-			auto t4 = blurPso.Blur(*commandList, t3, BlurDirection::Vertical);
-			blitPso.Blit(*commandList, t4, m_EnvironmentLightingMap, sideIndex);
+			auto t = blurPso.Blur(*commandList, m_Skybox, BlurDirection::Horizontal, &skyboxSrvDesc);
+
+			for (uint32_t i = 0; i < 8; ++i)
+			{
+				t = blurPso.Blur(*commandList, t, BlurDirection::Vertical);
+			}
+
+			
+			blitPso.Blit(*commandList, t, m_EnvironmentLightingMap, sideIndex);
 		}
 	}
 
@@ -1141,6 +1169,8 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			commandList->SetGraphicsDynamicConstantBuffer(GBufferRootParameters::MatricesCb, matricesCb);
 
 			const auto& model = go.GetModel();
+			commandList->SetGraphicsDynamicConstantBuffer(GBufferRootParameters::MaterialCb, model->GetMaterial());
+
 			std::shared_ptr<Texture> maps[ModelMaps::TotalNumber];
 			model->GetMaps(maps);
 			commandList->SetShaderResourceView(GBufferRootParameters::Textures, 0, *maps[ModelMaps::Diffuse], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);

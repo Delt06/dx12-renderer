@@ -298,6 +298,7 @@
     <None Include="Shaders\ShaderLibrary\CapsuleLight.hlsli" />
     <None Include="Shaders\ShaderLibrary\GBuffer.hlsli" />
     <None Include="Shaders\ShaderLibrary\GBufferUtils.hlsli" />
+    <None Include="Shaders\ShaderLibrary\Material.hlsli" />
     <None Include="Shaders\ShaderLibrary\MatricesCB.hlsli" />
     <None Include="Shaders\PostFX.hlsli" />
     <None Include="Shaders\ShaderLibrary\PointLight.hlsli" />

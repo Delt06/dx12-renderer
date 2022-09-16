@@ -13,6 +13,10 @@ struct PixelShaderOutput
     float4 Normal : SV_TARGET1;
 };
 
+#include <ShaderLibrary/Material.hlsli>
+
+ConstantBuffer<Material> materialCB : register(b1);
+
 Texture2D diffuseMap : register(t0);
 Texture2D normalMap : register(t1);
 SamplerState defaultSampler : register(s0);
@@ -29,19 +33,31 @@ PixelShaderOutput main(PixelShaderInput IN)
 {
     PixelShaderOutput OUT;
     
-    float2 uv = IN.Uv;
+    float2 uv = ApplyTilingOffset(materialCB, IN.Uv);
     
-    OUT.DiffuseColor = diffuseMap.Sample(defaultSampler, uv);
+    if (materialCB.HasDiffuseMap)
+    {
+        OUT.DiffuseColor = diffuseMap.Sample(defaultSampler, uv);
+    }
+    else
+    {
+        OUT.DiffuseColor = 1;
+    }
     
-    // move to WS
-    const float3 tangent = normalize(IN.TangentWs);
-    const float3 bitangent = normalize(IN.BitangentWs);
-    const float3 normal = normalize(IN.NormalWs);
+    float3 normal = normalize(IN.NormalWs);
+    
+    if (materialCB.HasNormalMap)
+    {
+        const float3 tangent = normalize(IN.TangentWs);
+        const float3 bitangent = normalize(IN.BitangentWs);
 
-    const float3x3 tbn = float3x3(tangent,
+        const float3x3 tbn = float3x3(tangent,
 		                              bitangent,
 		                              normal);
-    OUT.Normal = float4(PackNormal(ApplyNormalMap(tbn, normalMap, uv)), 0);
+        normal = ApplyNormalMap(tbn, normalMap, uv);
+    }
+    
+    OUT.Normal = float4(PackNormal(normal), 0);
     
     return OUT;
 }

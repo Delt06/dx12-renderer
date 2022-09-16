@@ -40,6 +40,7 @@ public:
 	void SetMap(ModelMaps::MapType mapType, std::shared_ptr<Texture> map);
 	void SetMapsEmpty(std::shared_ptr<Texture> emptyMap);
 	Material& GetMaterial();
+	const Material& GetMaterial() const;
 
 	const MeshCollectionType& GetMeshes() const;
 	void GetMaps(std::shared_ptr<Texture> mapsDestination[ModelMaps::TotalNumber]) const;

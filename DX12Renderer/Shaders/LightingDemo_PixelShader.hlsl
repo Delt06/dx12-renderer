@@ -11,25 +11,6 @@ struct PixelShaderInput
     float3 EyeWs : EYE_WS;
 };
 
-struct Material
-{
-    float4 Emissive;
-    float4 Ambient;
-    float4 Diffuse;
-    float4 Specular;
-
-    float SpecularPower;
-    float Reflectivity;
-    float2 Padding;
-
-    bool HasDiffuseMap;
-    bool HasNormalMap;
-    bool HasSpecularMap;
-    bool HasGlossMap;
-    
-    float4 TilingOffset;
-};
-
 struct DirectionalLight
 {
     float4 DirectionWs; // update on CPU
@@ -50,6 +31,8 @@ struct LightPropertiesCb
     uint NumPointLights;
     uint NumSpotLights;
 };
+
+#include <ShaderLibrary/Material.hlsli>
 
 ConstantBuffer<Material> materialCb : register(b0, space1);
 ConstantBuffer<DirectionalLight> dirLightCb : register(b1, space1);
