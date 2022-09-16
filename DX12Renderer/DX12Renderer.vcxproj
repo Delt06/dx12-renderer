@@ -204,6 +204,7 @@
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="ModelLoader.cpp" />
     <ClCompile Include="LightingDemo\PostFxPso.cpp" />
+    <ClCompile Include="PbrMaterial.cpp" />
     <ClCompile Include="RenderTarget.cpp" />
     <ClCompile Include="ResourceStateTracker.cpp" />
     <ClCompile Include="ResourceWrapper.cpp" />
@@ -262,11 +263,13 @@
     <ClInclude Include="LightingDemo\ShadowPassPsoBase.h" />
     <ClInclude Include="LightingDemo\SpotLightShadowPassPso.h" />
     <ClInclude Include="Material.h" />
+    <ClInclude Include="MaterialBase.h" />
     <ClInclude Include="MatricesCb.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="ModelLoader.h" />
     <ClInclude Include="LightingDemo\PostFxPso.h" />
+    <ClInclude Include="PbrMaterial.h" />
     <ClInclude Include="RenderTarget.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="ResourceStateTracker.h" />
