@@ -8,6 +8,7 @@ struct BRDFInput
     float3 LightColor;
     float3 PositionWS;
     float3 CameraPositionWS;
+    float3 DiffuseColor;
 };
 
 float Diffuse(const float3 n, const float3 l)
@@ -27,7 +28,9 @@ float Specular(const float3 v, const float3 n, const float3 l, const float specu
 float3 ComputeBRDF(in BRDFInput input)
 {
     float3 invEyeWS = normalize(input.CameraPositionWS - input.PositionWS);
-    return (Diffuse(input.NormalWS, input.LightDirectionWS) + Specular(invEyeWS, input.NormalWS, input.LightDirectionWS, 10.0)) * input.LightColor;
+    float3 diffuse = Diffuse(input.NormalWS, input.LightDirectionWS) * input.DiffuseColor;
+    float3 specular = Specular(invEyeWS, input.NormalWS, input.LightDirectionWS, 100.0);
+    return (diffuse + specular) * input.LightColor;
 }
 
 #endif

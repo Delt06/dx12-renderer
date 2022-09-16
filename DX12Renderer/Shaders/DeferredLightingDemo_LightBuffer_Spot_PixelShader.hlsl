@@ -39,7 +39,8 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     brdfInput.LightDirectionWS = directionTowardsLightWS;
     brdfInput.NormalWS = normalWS;
     brdfInput.PositionWS = positionWS;
+    brdfInput.DiffuseColor = diffuseColor;
     
-    float3 color = ComputeBRDF(brdfInput) * diffuseColor;
+    float3 color = ComputeBRDF(brdfInput);
     return float4(color, 1.0);
 }

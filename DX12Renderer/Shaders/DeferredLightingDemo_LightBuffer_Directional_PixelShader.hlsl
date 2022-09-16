@@ -45,8 +45,9 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     brdfInput.LightDirectionWS = directionalLightCB.DirectionWS.xyz;
     brdfInput.NormalWS = normalWS;
     brdfInput.PositionWS = positionWS;
+    brdfInput.DiffuseColor = diffuseColor;
     
-    float3 color = ComputeBRDF(brdfInput) * diffuseColor;
+    float3 color = ComputeBRDF(brdfInput);
     
     color += SampleSkybox(normalWS) * diffuseColor;
     
