@@ -13,12 +13,16 @@ struct PixelShaderOutput
     float4 Normal : SV_TARGET1;
 };
 
-#include <ShaderLibrary/Material.hlsli>
+#include <ShaderLibrary/PbrMaterial.hlsli>
 
-ConstantBuffer<Material> materialCB : register(b1);
+ConstantBuffer<PbrMaterial> materialCB : register(b1);
 
 Texture2D diffuseMap : register(t0);
 Texture2D normalMap : register(t1);
+Texture2D metallicMap : register(t2);
+Texture2D roughnessMap : register(t3);
+Texture2D ambientOcclusionMap : register(t4);
+
 SamplerState defaultSampler : register(s0);
 
 #include <ShaderLibrary/GBufferUtils.hlsli>

@@ -34,6 +34,7 @@ using namespace DirectX;
 #endif
 
 #include "IBL/DiffuseIrradiancePso.h"
+#include "PBR/PbrTextureLoader.h"
 
 #if defined(max)
 #undef max
@@ -315,7 +316,7 @@ bool DeferredLightingDemo::LoadContent()
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
-		CD3DX12_DESCRIPTOR_RANGE1 texturesDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);
+		CD3DX12_DESCRIPTOR_RANGE1 texturesDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, PbrMaterial::TotalNumMaps, 0);
 
 		CD3DX12_ROOT_PARAMETER1 rootParameters[GBufferRootParameters::NumRootParameters];
 		rootParameters[GBufferRootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
@@ -685,7 +686,7 @@ bool DeferredLightingDemo::LoadContent()
 
 		// capsule light pass
 		{
-			ModelLoader modelLoader(m_WhiteTexture2d);
+			ModelLoader modelLoader;
 			m_CapsuleLightMesh = modelLoader.Load(*commandList, "Assets/Models/_builtin/cylinder.obj")->GetMeshes()[0];
 
 			initLightPass(device,
@@ -866,73 +867,77 @@ bool DeferredLightingDemo::LoadContent()
 
 	// Load models
 	{
-		ModelLoader modelLoader(m_WhiteTexture2d);
+		ModelLoader modelLoader;
+		PbrTextureLoader textureLoader(m_WhiteTexture2d);
 
 		{
 			auto model = modelLoader.Load(*commandList, "Assets/Models/teapot/teapot.obj", true);
-			{
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
-					L"Assets/Textures/PavingStones/PavingStones_1K_Color.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
-					L"Assets/Textures/PavingStones/PavingStones_1K_Normal.jpg");
-			}
-			model->GetMaterial().SpecularPower = 50.0f;
+			auto material = std::make_shared<PbrMaterial>();
+			textureLoader.Init(*material);
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse,
+				L"Assets/Textures/PavingStones/PavingStones_1K_Color.jpg");
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Normal,
+				L"Assets/Textures/PavingStones/PavingStones_1K_Normal.jpg");
+
+			material->GetConstants().Roughness = 0.9f;
+
 			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
 			XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
 			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-			m_GameObjects.push_back(GameObject(worldMatrix, model));
+			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
 		}
 
 		{
 			auto model = modelLoader.Load(*commandList, "Assets/Models/archer/archer.fbx");
-			{
-			}
+			auto material = std::make_shared<PbrMaterial>();
+			textureLoader.Init(*material);
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse, L"Assets/Models/archer/textures/akai_diffuse.png");
 
 			XMMATRIX translationMatrix = XMMatrixTranslation(10.0f, 0.0f, 8.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
 			XMMATRIX scaleMatrix = XMMatrixScaling(0.05f, 0.05f, 0.05f);
 			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-			m_GameObjects.push_back(GameObject(worldMatrix, model));
+			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
 		}
 
 		{
 			auto model = modelLoader.LoadExisting(Mesh::CreatePlane(*commandList));
-			{
-				model->GetMaterial().SpecularPower = 10.0f;
-				model->GetMaterial().TilingOffset = { 10, 10, 0, 0 };
+			auto material = std::make_shared<PbrMaterial>();
+			textureLoader.Init(*material);
+			material->GetConstants().Roughness = 0.7f;
+			material->GetConstants().TilingOffset = { 10, 10, 0, 0 };
 
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse,
 					L"Assets/Textures/Moss/Moss_1K_Color.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Normal,
 					L"Assets/Textures/Moss/Moss_1K_Normal.jpg");
-			}
 			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
 			XMMATRIX scaleMatrix = XMMatrixScaling(200.0f, 200.0f, 200.0f);
 			XMMATRIX worldMatrix = scaleMatrix * translationMatrix * rotationMatrix;
-			m_GameObjects.push_back(GameObject(worldMatrix, model));
+			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
 		}
 
 		{
 			auto model = modelLoader.Load(*commandList, "Assets/Models/sphere/sphere-cylcoords-1k.obj");
-			{
-				model->GetMaterial().SpecularPower = 50.0f;
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
-					L"Assets/Textures/Metal/Metal_1K_Color.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
-					L"Assets/Textures/Metal/Metal_1K_Normal.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Specular,
-					L"Assets/Textures/Metal/Metal_1K_Specular.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Gloss,
-					L"Assets/Textures/Metal/Metal_1K_Roughness.jpg");
-			}
+			auto material = std::make_shared<PbrMaterial>();
+			textureLoader.Init(*material);
+			material->GetConstants().Roughness = 0.5f;
+			material->GetConstants().Metallic = 0.1f;
+
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse,
+				L"Assets/Textures/Metal/Metal_1K_Color.jpg");
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Normal,
+				L"Assets/Textures/Metal/Metal_1K_Normal.jpg");
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Roughness,
+				L"Assets/Textures/Metal/Metal_1K_Roughness.jpg");
 
 			XMMATRIX translationMatrix = XMMatrixTranslation(-50.0f, 5.0f, 25.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
 			XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
 			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-			m_GameObjects.push_back(GameObject(worldMatrix, model));
+			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
 		}
 
 		commandList->LoadTextureFromFile(m_Skybox, L"Assets/Textures/skybox/skybox.dds", TextureUsageType::Albedo);
@@ -1152,14 +1157,11 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			matricesCb.Compute(go.GetWorldMatrix(), viewMatrix, viewProjectionMatrix, projectionMatrix);
 			commandList->SetGraphicsDynamicConstantBuffer(GBufferRootParameters::MatricesCb, matricesCb);
 
+			auto material = go.GetMaterial<PbrMaterial>();
+			material->SetDynamicConstantBuffer(*commandList, GBufferRootParameters::MaterialCb);
+			material->SetShaderResourceViews(*commandList, GBufferRootParameters::Textures);
+
 			const auto& model = go.GetModel();
-			commandList->SetGraphicsDynamicConstantBuffer(GBufferRootParameters::MaterialCb, model->GetMaterial());
-
-			std::shared_ptr<Texture> maps[ModelMaps::TotalNumber];
-			model->GetMaps(maps);
-			commandList->SetShaderResourceView(GBufferRootParameters::Textures, 0, *maps[ModelMaps::Diffuse], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-			commandList->SetShaderResourceView(GBufferRootParameters::Textures, 1, *maps[ModelMaps::Normal], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
 			for (const auto& mesh : model->GetMeshes())
 			{
 				mesh->Draw(*commandList);

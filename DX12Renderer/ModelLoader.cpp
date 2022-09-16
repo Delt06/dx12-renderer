@@ -68,11 +68,6 @@ namespace
 	}
 }
 
-ModelLoader::ModelLoader(const std::shared_ptr<Texture> emptyTexture2d) :
-	m_EmptyTexture2d(emptyTexture2d)
-{
-}
-
 std::shared_ptr<Model> ModelLoader::Load(CommandList& commandList, const std::string& path, bool flipNormals) const
 {
 	Assimp::Importer importer;
@@ -226,7 +221,7 @@ std::shared_ptr<Model> ModelLoader::Load(CommandList& commandList, const std::st
 	}
 
 	auto model = std::make_shared<Model>(outputMeshes);
-	model->SetMapsEmpty(m_EmptyTexture2d);
+	/*model->SetMapsEmpty(m_EmptyTexture2d);
 
 	if (outputMeshes.size() > 0 && scene->HasMaterials())
 	{
@@ -268,7 +263,7 @@ std::shared_ptr<Model> ModelLoader::Load(CommandList& commandList, const std::st
 				LoadMap(*model, commandList, mapType, fsTexturePath.generic_wstring(), false);
 			}
 		}
-	}
+	}*/
 
 	return model;
 }
@@ -276,31 +271,7 @@ std::shared_ptr<Model> ModelLoader::Load(CommandList& commandList, const std::st
 std::shared_ptr<Model> ModelLoader::LoadExisting(std::shared_ptr<Mesh> mesh) const
 {
 	auto model = std::make_shared<Model>(mesh);
-	model->SetMapsEmpty(m_EmptyTexture2d);
 	return model;
-}
-
-void ModelLoader::LoadMap(Model& model, CommandList& commandList, ModelMaps::MapType mapType,
-	const std::wstring& path, bool throwOnNotFound) const
-{
-	const auto map = std::make_shared<Texture>();
-	TextureUsageType textureUsage;
-	switch (mapType)
-	{
-	case ModelMaps::Diffuse: textureUsage = TextureUsageType::Albedo;
-		break;
-	case ModelMaps::Normal: textureUsage = TextureUsageType::Normalmap;
-		break;
-	case ModelMaps::Specular: textureUsage = TextureUsageType::Other;
-		break;
-	case ModelMaps::Gloss: textureUsage = TextureUsageType::Other;
-		break;
-	default:
-		throw std::exception("Invalid map type.");
-	}
-
-	if (commandList.LoadTextureFromFile(*map, path, textureUsage, throwOnNotFound))
-		model.SetMap(mapType, map);
 }
 
 std::shared_ptr<Animation> ModelLoader::LoadAnimation(const std::string& path, const std::string& animationName) const

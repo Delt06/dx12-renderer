@@ -31,6 +31,7 @@ using namespace DirectX;
 #undef min
 #endif
 #include <LightingDemo/SceneRenderer.h>
+#include "TextureLoader.h"
 
 #if defined(max)
 #undef max
@@ -123,38 +124,43 @@ bool LightingDemo::LoadContent()
 
 	// Load models
 	{
-		ModelLoader modelLoader(m_WhiteTexture2d);
+		ModelLoader modelLoader;
+		TextureLoader textureLoader(m_WhiteTexture2d);
 
 		{
 			auto model = modelLoader.Load(*commandList, "Assets/Models/teapot/teapot.obj", true);
+			auto material = std::make_shared<Material>();
+			textureLoader.Init(*material);
 			{
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
+				textureLoader.Load(*material, *commandList, Material::Diffuse,
 					L"Assets/Textures/PavingStones/PavingStones_1K_Color.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
+				textureLoader.Load(*material, *commandList, Material::Normal,
 					L"Assets/Textures/PavingStones/PavingStones_1K_Normal.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Gloss,
+				textureLoader.Load(*material, *commandList, Material::Gloss,
 					L"Assets/Textures/PavingStones/PavingStones_1K_Roughness.jpg");
 			}
-			model->GetMaterial().SpecularPower = 50.0f;
+			material->GetConstants().SpecularPower = 50.0f;
 			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
 			XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
 			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-			m_Scene->GameObjects.push_back(GameObject(worldMatrix, model));
+			m_Scene->GameObjects.push_back(GameObject(worldMatrix, model, material));
 		}
 
 		{
 			auto model = modelLoader.Load(*commandList, "Assets/Models/sphere/sphere-cylcoords-1k.obj");
+			auto material = std::make_shared<Material>();
+			textureLoader.Init(*material);
 			{
-				model->GetMaterial().SpecularPower = 100.0f;
-				model->GetMaterial().Reflectivity = 1.0f;
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
+				material->GetConstants().SpecularPower = 100.0f;
+				material->GetConstants().Reflectivity = 1.0f;
+				textureLoader.Load(*material, *commandList, Material::Diffuse,
 					L"Assets/Textures/Metal/Metal_1K_Color.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
+				textureLoader.Load(*material, *commandList, Material::Normal,
 					L"Assets/Textures/Metal/Metal_1K_Normal.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Specular,
+				textureLoader.Load(*material, *commandList, Material::Specular,
 					L"Assets/Textures/Metal/Metal_1K_Specular.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Gloss,
+				textureLoader.Load(*material, *commandList, Material::Gloss,
 					L"Assets/Textures/Metal/Metal_1K_Roughness.jpg");
 			}
 
@@ -162,44 +168,48 @@ bool LightingDemo::LoadContent()
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
 			XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
 			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-			m_Scene->GameObjects.push_back(GameObject(worldMatrix, model));
+			m_Scene->GameObjects.push_back(GameObject(worldMatrix, model, material));
 		}
 
 		{
 			auto model = modelLoader.LoadExisting(Mesh::CreatePlane(*commandList));
+			auto material = std::make_shared<Material>();
+			textureLoader.Init(*material);
 			{
-				model->GetMaterial().SpecularPower = 10.0f;
-				model->GetMaterial().TilingOffset = { 10, 10, 0, 0 };
+				material->GetConstants().SpecularPower = 10.0f;
+				material->GetConstants().TilingOffset = { 10, 10, 0, 0 };
 
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
+				textureLoader.Load(*material, *commandList, Material::Diffuse,
 					L"Assets/Textures/Moss/Moss_1K_Color.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
+				textureLoader.Load(*material, *commandList, Material::Normal,
 					L"Assets/Textures/Moss/Moss_1K_Normal.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Gloss,
+				textureLoader.Load(*material, *commandList, Material::Gloss,
 					L"Assets/Textures/Moss/Moss_1K_Roughness.jpg");
 			}
 			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
 			XMMATRIX scaleMatrix = XMMatrixScaling(200.0f, 200.0f, 200.0f);
 			XMMATRIX worldMatrix = scaleMatrix * translationMatrix * rotationMatrix;
-			m_Scene->GameObjects.push_back(GameObject(worldMatrix, model));
+			m_Scene->GameObjects.push_back(GameObject(worldMatrix, model, material));
 		}
 
 		{
 			auto model = modelLoader.LoadExisting(Mesh::CreateCube(*commandList, 1.0f));
+			auto material = std::make_shared<Material>();
+			textureLoader.Init(*material);
 			{
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Diffuse,
+				textureLoader.Load(*material, *commandList, Material::Diffuse,
 					L"Assets/Textures/PavingStones/PavingStones_1K_Color.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Normal,
+				textureLoader.Load(*material, *commandList, Material::Normal,
 					L"Assets/Textures/PavingStones/PavingStones_1K_Normal.jpg");
-				modelLoader.LoadMap(*model, *commandList, ModelMaps::Gloss,
+				textureLoader.Load(*material, *commandList, Material::Gloss,
 					L"Assets/Textures/PavingStones/PavingStones_1K_Roughness.jpg");
 			}
 			XMMATRIX translationMatrix = XMMatrixTranslation(7.0f, 2.5f, 11.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
 			XMMATRIX scaleMatrix = XMMatrixScaling(1.0f, 5.0f, 1.0f);
 			XMMATRIX worldMatrix = scaleMatrix * translationMatrix * rotationMatrix;
-			m_Scene->GameObjects.push_back(GameObject(worldMatrix, model));
+			m_Scene->GameObjects.push_back(GameObject(worldMatrix, model, material));
 		}
 	}
 

@@ -32,6 +32,7 @@ using namespace DirectX;
 #undef min
 #endif
 #include <LightingDemo/SceneRenderer.h>
+#include "TextureLoader.h"
 
 #if defined(max)
 #undef max
@@ -318,19 +319,20 @@ bool AnimationsDemo::LoadContent()
 
 	// Load models and animations
 	{
-		ModelLoader modelLoader(m_WhiteTexture2d);
+		ModelLoader modelLoader;
+		TextureLoader textureLoader(m_WhiteTexture2d);
 
 		{
 			auto model = modelLoader.Load(*commandList, "Assets/Models/archer/archer.fbx");
-			{
-
-			}
+			auto material = std::make_shared<Material>();
+			textureLoader.Init(*material);
+			textureLoader.Load(*material, *commandList, Material::Diffuse, L"Assets/Models/archer/textures/akai_diffuse.png");
 
 			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
 			XMMATRIX scaleMatrix = XMMatrixScaling(0.05f, 0.05f, 0.05f);
 			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-			m_GameObjects.push_back(GameObject(worldMatrix, model));
+			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
 		}
 
 		m_BoneMesh = Mesh::CreateCube(*commandList);
@@ -494,9 +496,8 @@ void AnimationsDemo::OnRender(RenderEventArgs& e)
 			commandList->SetGraphicsDynamicConstantBuffer(RootParameters::MatricesCb, matricesCb);
 
 			const auto& model = go.GetModel();
-			std::shared_ptr<Texture> maps[ModelMaps::TotalNumber];
-			model->GetMaps(maps);
-			commandList->SetShaderResourceView(RootParameters::Diffuse, 0, *maps[ModelMaps::Diffuse], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			auto diffuseMap = go.GetMaterial<Material>()->GetMap(Material::Diffuse);
+			commandList->SetShaderResourceView(RootParameters::Diffuse, 0, *diffuseMap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 			for (const auto& mesh : model->GetMeshes())
 			{

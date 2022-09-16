@@ -6,7 +6,7 @@
 
 class Texture;
 
-class PbrMaterial final : MaterialBase
+class PbrMaterial final : public MaterialBase
 {
 public:
 	struct Constants
@@ -15,12 +15,14 @@ public:
 
 		float Metallic = 0;
 		float Roughness = 0.5;
-		uint32_t _Padding[2]{};
 
 		uint32_t HasDiffuseMap{};
 		uint32_t HasNormalMap{};
+
 		uint32_t HasMetallicMap{};
 		uint32_t HasRoughnessMap{};
+		uint32_t HasAmbientOcclusionMap{};
+		float _Padding;
 
 		DirectX::XMFLOAT4 TilingOffset{ 1, 1, 0, 0 };
 	};
@@ -31,6 +33,7 @@ public:
 		Normal,
 		Metallic,
 		Roughness,
+		AmbientOcclusion,
 		TotalNumMaps
 	};
 
@@ -42,10 +45,8 @@ public:
 	void SetMap(MapType mapType, std::shared_ptr<Texture> map);
 
 private:
-	void UpdateMapFlags();
 
-	Constants m_Constants{};
-
+	Constants m_Constants;
 	std::shared_ptr<Texture> m_Maps[TotalNumMaps];
 };
 

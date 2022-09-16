@@ -1,4 +1,5 @@
-#include <PbrMaterial.h>
+#include "PBR/PbrMaterial.h"
+#include "CommandList.h"
 
 
 PbrMaterial::Constants& PbrMaterial::GetConstants()
@@ -17,38 +18,35 @@ void PbrMaterial::SetMapsEmpty(std::shared_ptr<Texture> emptyMap)
 	{
 		Map = emptyMap;
 	}
-	UpdateMapFlags();
+	m_Constants.HasDiffuseMap = false;
+	m_Constants.HasNormalMap = false;
+	m_Constants.HasMetallicMap = false;
+	m_Constants.HasRoughnessMap = false;
+	m_Constants.HasAmbientOcclusionMap = false;
 }
 
 void PbrMaterial::SetMap(MapType mapType, std::shared_ptr<Texture> map)
 {
 	m_Maps[mapType] = map;
-	UpdateMapFlags();
-}
-
-void PbrMaterial::UpdateMapFlags()
-{
-	for (size_t i = 0; i < TotalNumMaps; ++i)
+	switch (mapType)
 	{
-		MapType mapType = static_cast<MapType>(i);
-		bool hasMap = m_Maps[i] != nullptr;
-		switch (mapType)
-		{
-		case Diffuse:
-			m_Constants.HasDiffuseMap = hasMap;
-			break;
-		case Normal:
-			m_Constants.HasNormalMap = hasMap;
-			break;
-		case Metallic:
-			m_Constants.HasMetallicMap = hasMap;
-			break;
-		case Roughness:
-			m_Constants.HasRoughnessMap = hasMap;
-			break;
-		default:
-			throw std::exception("Invalid map.");
-		}
+	case Diffuse:
+		m_Constants.HasDiffuseMap = true;
+		break;
+	case Normal:
+		m_Constants.HasNormalMap = true;
+		break;
+	case Metallic:
+		m_Constants.HasMetallicMap = true;
+		break;
+	case Roughness:
+		m_Constants.HasRoughnessMap = true;
+		break;
+	case AmbientOcclusion:
+		m_Constants.HasAmbientOcclusionMap = true;
+		break;
+	default:
+		throw std::exception("Invalid map.");
 	}
 }
 

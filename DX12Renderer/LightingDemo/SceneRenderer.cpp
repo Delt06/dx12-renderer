@@ -92,14 +92,14 @@ SceneRenderer::SceneRenderer(Microsoft::WRL::ComPtr<ID3D12Device2> device, Comma
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
-		CD3DX12_DESCRIPTOR_RANGE1 descriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, ModelMaps::TotalNumber, 0);
-		CD3DX12_DESCRIPTOR_RANGE1 descriptorRangeShadowMaps(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, ModelMaps::TotalNumber + 1);
+		CD3DX12_DESCRIPTOR_RANGE1 descriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, Material::TotalNumMaps, 0);
+		CD3DX12_DESCRIPTOR_RANGE1 descriptorRangeShadowMaps(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, Material::TotalNumMaps + 1);
 		CD3DX12_DESCRIPTOR_RANGE1 descriptorRangePointLightShadowMaps(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1,
-			ModelMaps::TotalNumber + 2);
+			Material::TotalNumMaps + 2);
 		CD3DX12_DESCRIPTOR_RANGE1 descriptorRangeSpotLightShadowMaps(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1,
-			ModelMaps::TotalNumber + 5);
+			Material::TotalNumMaps + 5);
 		CD3DX12_DESCRIPTOR_RANGE1 environmentReflectionsCubemap(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1,
-			ModelMaps::TotalNumber + 7);
+			Material::TotalNumMaps + 7);
 
 		CD3DX12_ROOT_PARAMETER1 rootParameters[RootParameters::NumRootParameters];
 		rootParameters[RootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
@@ -117,18 +117,18 @@ SceneRenderer::SceneRenderer(Microsoft::WRL::ComPtr<ID3D12Device2> device, Comma
 		rootParameters[RootParameters::PointLightShadowMaps].InitAsDescriptorTable(1, &descriptorRangePointLightShadowMaps,
 			D3D12_SHADER_VISIBILITY_PIXEL);
 		rootParameters[RootParameters::PointLightMatrices].InitAsShaderResourceView(
-			ModelMaps::TotalNumber + 3, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
+			Material::TotalNumMaps + 3, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
 			D3D12_SHADER_VISIBILITY_PIXEL);
 		rootParameters[RootParameters::Textures].InitAsDescriptorTable(1, &descriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
 		rootParameters[RootParameters::PointLights].InitAsShaderResourceView(
-			ModelMaps::TotalNumber, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
+			Material::TotalNumMaps, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
 		rootParameters[RootParameters::SpotLights].InitAsShaderResourceView(
-			ModelMaps::TotalNumber + 4, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
+			Material::TotalNumMaps + 4, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
 			D3D12_SHADER_VISIBILITY_PIXEL);
 		rootParameters[RootParameters::SpotLightShadowMaps].InitAsDescriptorTable(1, &descriptorRangeSpotLightShadowMaps,
 			D3D12_SHADER_VISIBILITY_PIXEL);
 		rootParameters[RootParameters::SpotLightMatrices].InitAsShaderResourceView(
-			ModelMaps::TotalNumber + 6, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
+			Material::TotalNumMaps + 6, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
 		rootParameters[RootParameters::EnvironmentReflectionsCubemap].InitAsDescriptorTable(
 			1, &environmentReflectionsCubemap, D3D12_SHADER_VISIBILITY_PIXEL);
 
@@ -396,6 +396,10 @@ void SceneRenderer::MainPass(CommandList& commandList)
 
 		for (const auto& go : m_Scene->GameObjects)
 		{
+			auto material = go.GetMaterial<Material>();
+			material->SetDynamicConstantBuffer(commandList, RootParameters::MaterialCb);
+			material->SetShaderResourceViews(commandList, RootParameters::Textures);
+
 			go.Draw([this, &viewMatrix, &viewProjectionMatrix, &projectionMatrix](auto& cmd, auto worldMatrix)
 				{
 					MatricesCb matrices;

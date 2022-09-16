@@ -199,12 +199,14 @@
     <ClCompile Include="LightingDemo\ShadowPassPsoBase.cpp" />
     <ClCompile Include="LightingDemo\SpotLightShadowPassPso.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Material.cpp" />
     <ClCompile Include="MatricesCb.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="ModelLoader.cpp" />
     <ClCompile Include="LightingDemo\PostFxPso.cpp" />
-    <ClCompile Include="PbrMaterial.cpp" />
+    <ClCompile Include="PBR\PbrTextureLoader.cpp" />
+    <ClCompile Include="PBR\PbrMaterial.cpp" />
     <ClCompile Include="RenderTarget.cpp" />
     <ClCompile Include="ResourceStateTracker.cpp" />
     <ClCompile Include="ResourceWrapper.cpp" />
@@ -214,6 +216,7 @@
     <ClCompile Include="Animation.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="TextureLoader.cpp" />
     <ClCompile Include="UploadBuffer.cpp" />
     <ClCompile Include="VertexBuffer.cpp" />
     <ClCompile Include="Window.cpp" />
@@ -269,7 +272,8 @@
     <ClInclude Include="Model.h" />
     <ClInclude Include="ModelLoader.h" />
     <ClInclude Include="LightingDemo\PostFxPso.h" />
-    <ClInclude Include="PbrMaterial.h" />
+    <ClInclude Include="PBR\PbrTextureLoader.h" />
+    <ClInclude Include="PBR\PbrMaterial.h" />
     <ClInclude Include="RenderTarget.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="ResourceStateTracker.h" />
@@ -278,6 +282,7 @@
     <ClInclude Include="LightingDemo\Scene.h" />
     <ClInclude Include="LightingDemo\SceneRenderer.h" />
     <ClInclude Include="Texture.h" />
+    <ClInclude Include="TextureLoader.h" />
     <ClInclude Include="TextureUsageType.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="ThreadSafeQueue.h" />
@@ -307,6 +312,7 @@
     <None Include="Shaders\ShaderLibrary\Math.hlsli" />
     <None Include="Shaders\ShaderLibrary\MatricesCB.hlsli" />
     <None Include="Shaders\PostFX.hlsli" />
+    <None Include="Shaders\ShaderLibrary\PbrMaterial.hlsli" />
     <None Include="Shaders\ShaderLibrary\PointLight.hlsli" />
     <None Include="Shaders\ShaderLibrary\ScreenParameters.hlsli" />
     <None Include="Shaders\ShaderLibrary\SpotLight.hlsli" />

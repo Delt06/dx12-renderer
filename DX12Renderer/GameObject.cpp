@@ -1,11 +1,13 @@
 #include "GameObject.h"
 #include "Mesh.h"
 #include "Model.h"
+#include "MaterialBase.h"
 
-GameObject::GameObject(const DirectX::XMMATRIX worldMatrix, const std::shared_ptr<Model> model)
+GameObject::GameObject(const DirectX::XMMATRIX worldMatrix, const std::shared_ptr<Model> model, std::shared_ptr<MaterialBase> material)
 	: m_WorldMatrix(worldMatrix)
 	  , m_Aabb{}
 	  , m_Model(model)
+	, m_Material(material)
 {
 	RecalculateAabb();
 }
@@ -15,7 +17,7 @@ void GameObject::Draw(
 	CommandList& commandList, const uint32_t materialRootParameterIndex, const uint32_t mapsRootParameterIndex) const
 {
 	setMatricesFunc(commandList, m_WorldMatrix);
-	m_Model->Draw(commandList, materialRootParameterIndex, mapsRootParameterIndex);
+	m_Model->Draw(commandList);
 }
 
 const DirectX::XMMATRIX& GameObject::GetWorldMatrix() const
