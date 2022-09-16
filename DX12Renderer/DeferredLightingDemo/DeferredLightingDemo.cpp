@@ -285,6 +285,7 @@ bool DeferredLightingDemo::LoadContent()
 	constexpr DXGI_FORMAT gBufferFormat = DXGI_FORMAT_R16G16B16A16_UNORM;
 	constexpr DXGI_FORMAT lightBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 	constexpr DXGI_FORMAT depthBufferFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	constexpr UINT gBufferTexturesCount = 4;
 
 	D3D12_CLEAR_VALUE gBufferColorClearValue;
 	gBufferColorClearValue.Format = gBufferFormat;
@@ -348,9 +349,10 @@ bool DeferredLightingDemo::LoadContent()
 		} pipelineStateStream;
 
 		D3D12_RT_FORMAT_ARRAY rtvFormats = {};
-		rtvFormats.NumRenderTargets = 2;
+		rtvFormats.NumRenderTargets = gBufferTexturesCount - 1;
 		rtvFormats.RTFormats[0] = gBufferFormat;
 		rtvFormats.RTFormats[1] = gBufferFormat;
+		rtvFormats.RTFormats[2] = gBufferFormat;
 
 		pipelineStateStream.RootSignature = m_GBufferPassRootSignature.GetRootSignature().Get();
 
@@ -402,8 +404,8 @@ bool DeferredLightingDemo::LoadContent()
 				D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 				D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
-			CD3DX12_DESCRIPTOR_RANGE1 gBufferDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
-			CD3DX12_DESCRIPTOR_RANGE1 skyboxDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 3);
+			CD3DX12_DESCRIPTOR_RANGE1 gBufferDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, gBufferTexturesCount, 0);
+			CD3DX12_DESCRIPTOR_RANGE1 skyboxDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, gBufferTexturesCount);
 
 			CD3DX12_ROOT_PARAMETER1 rootParameters[DirectionalLightBufferRootParameters::NumRootParameters];
 			rootParameters[DirectionalLightBufferRootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE);
@@ -491,7 +493,7 @@ bool DeferredLightingDemo::LoadContent()
 				D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS
 				;
 
-			CD3DX12_DESCRIPTOR_RANGE1 texturesDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
+			CD3DX12_DESCRIPTOR_RANGE1 texturesDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, gBufferTexturesCount, 0);
 
 			CD3DX12_ROOT_PARAMETER1 rootParameters[LightStencilRootParameters::NumRootParameters];
 			rootParameters[LightStencilRootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
@@ -590,7 +592,7 @@ bool DeferredLightingDemo::LoadContent()
 				D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 				D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
-			CD3DX12_DESCRIPTOR_RANGE1 texturesDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
+			CD3DX12_DESCRIPTOR_RANGE1 texturesDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, gBufferTexturesCount, 0);
 
 			CD3DX12_ROOT_PARAMETER1 rootParameters[LightPassRootParameters::NumRootParameters];
 			rootParameters[LightPassRootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE);
@@ -880,6 +882,7 @@ bool DeferredLightingDemo::LoadContent()
 				L"Assets/Textures/PavingStones/PavingStones_1K_Normal.jpg");
 
 			material->GetConstants().Roughness = 0.9f;
+			material->GetConstants().Metallic = 0.1f;
 
 			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
@@ -924,7 +927,7 @@ bool DeferredLightingDemo::LoadContent()
 			auto material = std::make_shared<PbrMaterial>();
 			textureLoader.Init(*material);
 			material->GetConstants().Roughness = 0.5f;
-			material->GetConstants().Metallic = 0.1f;
+			material->GetConstants().Metallic = 0.2f;
 
 			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse,
 				L"Assets/Textures/Metal/Metal_1K_Color.jpg");
@@ -1007,8 +1010,13 @@ bool DeferredLightingDemo::LoadContent()
 			TextureUsageType::RenderTarget,
 			L"GBuffer-Normal");
 
+		auto surfaceTexture = Texture(colorDesc, &gBufferColorClearValue,
+			TextureUsageType::RenderTarget,
+			L"GBuffer-Surface");
+
 		m_GBufferRenderTarget.AttachTexture(Color0, diffuseTexture);
 		m_GBufferRenderTarget.AttachTexture(Color1, normalTexture);
+		m_GBufferRenderTarget.AttachTexture(Color2, surfaceTexture);
 		m_GBufferRenderTarget.AttachTexture(DepthStencil, m_DepthBuffer);
 	}
 
@@ -1300,6 +1308,7 @@ void DeferredLightingDemo::BindGBufferAsSRV(CommandList& commandList, uint32_t r
 {
 	commandList.SetShaderResourceView(rootParameterIndex, 0, m_GBufferRenderTarget.GetTexture(Color0), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	commandList.SetShaderResourceView(rootParameterIndex, 1, m_GBufferRenderTarget.GetTexture(Color1), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	commandList.SetShaderResourceView(rootParameterIndex, 2, m_GBufferRenderTarget.GetTexture(Color2), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC depthStencilSrvDesc;
 	depthStencilSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
@@ -1309,7 +1318,7 @@ void DeferredLightingDemo::BindGBufferAsSRV(CommandList& commandList, uint32_t r
 	depthStencilSrvDesc.Texture2D.MostDetailedMip = 0;
 	depthStencilSrvDesc.Texture2D.PlaneSlice = 0;
 	depthStencilSrvDesc.Texture2D.ResourceMinLODClamp = 0.0;
-	commandList.SetShaderResourceView(rootParameterIndex, 2, m_DepthTexture, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, &depthStencilSrvDesc);
+	commandList.SetShaderResourceView(rootParameterIndex, 3, m_DepthTexture, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, &depthStencilSrvDesc);
 }
 
 void DeferredLightingDemo::LightStencilPass(CommandList& commandList, const MatricesCb& matricesCb, std::shared_ptr<Mesh> mesh)

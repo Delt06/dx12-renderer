@@ -18,4 +18,9 @@ float3 RestorePositionWS(float3 positionNDC, matrix inverseProjection, matrix in
     return mul(inverseView, positionVS).xyz;
 }
 
+float4 PackSurface(float metallic, float roughness, float ambientOcclusion)
+{
+    return float4(metallic, roughness, ambientOcclusion, 0.0f);
+}
+
 #endif

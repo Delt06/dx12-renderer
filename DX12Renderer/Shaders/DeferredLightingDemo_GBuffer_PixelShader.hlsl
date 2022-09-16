@@ -11,6 +11,7 @@ struct PixelShaderOutput
 {
     float4 DiffuseColor : SV_TARGET0;
     float4 Normal : SV_TARGET1;
+    float4 Surface : SV_TARGET2; // metallic, roughtness, ambient occlusion
 };
 
 #include <ShaderLibrary/PbrMaterial.hlsli>
@@ -62,6 +63,26 @@ PixelShaderOutput main(PixelShaderInput IN)
     }
     
     OUT.Normal = float4(PackNormal(normal), 0);
+    
+    float metallic = materialCB.Metallic;
+    if (materialCB.HasMetallicMap)
+    {
+        metallic *= metallicMap.Sample(defaultSampler, uv).r;
+    }
+    
+    float roughness = materialCB.Roughness;
+    if (materialCB.HasRoughnessMap)
+    {
+        roughness *= roughnessMap.Sample(defaultSampler, uv).r;
+    }
+    
+    float ambientOcclusion = 1.0f;
+    if (materialCB.HasAmbientOcclusionMap)
+    {
+        ambientOcclusion *= ambientOcclusionMap.Sample(defaultSampler, uv).r;
+    }
+    
+    OUT.Surface = PackSurface(metallic, roughness, ambientOcclusion);
     
     return OUT;
 }
