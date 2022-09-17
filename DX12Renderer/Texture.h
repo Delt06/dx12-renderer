@@ -102,7 +102,7 @@ public:
 	 * Get the RTV for the texture.
 	 */
 	virtual D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetView() const;
-	virtual D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetViewArray(uint32_t index) const;
+	virtual D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetViewArray(uint32_t index, uint32_t mipLevel = 0) const;
 
 	/**
 	 * Get the DSV for the texture.
@@ -144,6 +144,13 @@ public:
 	static DXGI_FORMAT GetUavCompatibleFormat(DXGI_FORMAT format);
 protected:
 private:
+
+	uint32_t GetRenderTargetDescriptorIndex(UINT16 arrayIndex, UINT16 mipLevel) const
+	{
+		CD3DX12_RESOURCE_DESC desc(GetD3D12ResourceDesc());
+		return arrayIndex + mipLevel * desc.ArraySize();
+	}
+
 	DescriptorAllocation CreateShaderResourceView(const D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc) const;
 	DescriptorAllocation CreateUnorderedAccessView(const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc) const;
 

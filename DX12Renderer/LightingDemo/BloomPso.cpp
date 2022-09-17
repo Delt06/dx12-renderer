@@ -354,7 +354,7 @@ void BloomPso::Draw(CommandList& commandList, const Texture& source, const Rende
 
 		// back blit
 		{
-			commandList.SetRenderTarget(destination, -1, false);
+			commandList.SetRenderTarget(destination, -1, 0, false);
 
 			float fBufferWidth = static_cast<float>(m_Width);
 			float fBufferHeight = static_cast<float>(m_Height);

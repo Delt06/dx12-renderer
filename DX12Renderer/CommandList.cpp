@@ -740,7 +740,7 @@ void CommandList::SetStencilRef(UINT8 stencilRef)
 	m_D3d12CommandList->OMSetStencilRef(stencilRef);
 }
 
-void CommandList::SetRenderTarget(const RenderTarget& renderTarget, const UINT texArrayIndex, bool useDepth)
+void CommandList::SetRenderTarget(const RenderTarget& renderTarget, UINT texArrayIndex /*= -1*/, UINT mipLevel /*= 0*/, bool useDepth /*= true*/)
 {
 	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> renderTargetDescriptors;
 	renderTargetDescriptors.reserve(NumAttachmentPoints);
@@ -758,7 +758,7 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, const UINT t
 		{
 			TransitionBarrier(texture, D3D12_RESOURCE_STATE_RENDER_TARGET, subresource);
 			renderTargetDescriptors.push_back(isArrayItem
-				? texture.GetRenderTargetViewArray(texArrayIndex)
+				? texture.GetRenderTargetViewArray(texArrayIndex, mipLevel)
 				: texture.GetRenderTargetView());
 
 			TrackResource(texture);

@@ -163,7 +163,8 @@ void Texture::CreateViews()
 
 		const CD3DX12_RESOURCE_DESC desc(m_d3d12Resource->GetDesc());
 		const UINT16 arraySize = desc.ArraySize();
-		const UINT16 numDescriptors = arraySize + 1;
+		const UINT16 mipLevels = desc.MipLevels;
+		const UINT16 numDescriptors = arraySize * mipLevels + 1;
 		// first descriptor is whole resource, other are individual pieces of the array
 
 		if ((desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET) != 0 &&
@@ -173,18 +174,23 @@ void Texture::CreateViews()
 			device->CreateRenderTargetView(m_d3d12Resource.Get(), nullptr,
 				m_RenderTargetView.GetDescriptorHandle(0));
 
-			for (UINT16 i = 0; i < arraySize; i++)
+			for (UINT16 arrayIndex = 0; arrayIndex < arraySize; arrayIndex++)
 			{
-				D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
-				rtvDesc.Format = desc.Format;
-				rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
-				rtvDesc.Texture2DArray.ArraySize = 1;
-				rtvDesc.Texture2DArray.PlaneSlice = 0;
-				rtvDesc.Texture2DArray.MipSlice = 0;
-				rtvDesc.Texture2DArray.FirstArraySlice = i;
+				for (UINT16 mipLevel = 0; mipLevel < mipLevels; ++mipLevel)
+				{
+					D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
+					rtvDesc.Format = desc.Format;
+					rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
+					rtvDesc.Texture2DArray.ArraySize = 1;
+					rtvDesc.Texture2DArray.PlaneSlice = 0;
+					rtvDesc.Texture2DArray.MipSlice = mipLevel;
+					rtvDesc.Texture2DArray.FirstArraySlice = arrayIndex;
 
-				device->CreateRenderTargetView(m_d3d12Resource.Get(), &rtvDesc,
-					m_RenderTargetView.GetDescriptorHandle(i + 1));
+					const UINT16 offset = GetRenderTargetDescriptorIndex(arrayIndex, mipLevel) + 1;
+					device->CreateRenderTargetView(m_d3d12Resource.Get(), &rtvDesc,
+						m_RenderTargetView.GetDescriptorHandle(offset));
+				}
+				
 			}
 		}
 		if ((desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) != 0 &&
@@ -285,9 +291,10 @@ D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetRenderTargetView() const
 	return m_RenderTargetView.GetDescriptorHandle();
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetRenderTargetViewArray(const uint32_t index) const
+D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetRenderTargetViewArray(const uint32_t index, uint32_t mipLevel) const
 {
-	return m_RenderTargetView.GetDescriptorHandle(index + 1);
+	uint32_t offset = GetRenderTargetDescriptorIndex(index, mipLevel) + 1;
+	return m_RenderTargetView.GetDescriptorHandle(offset);
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetDepthStencilView() const
