@@ -94,6 +94,7 @@ private:
 	std::shared_ptr<Mesh> m_CapsuleLightMesh;
 
 	RenderTarget m_DiffuseIrradianceMapRt;
+	RenderTarget m_BrdfIntegrationMapRt;
 	RootSignature m_SkyboxPassRootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_SkyboxPassPipelineState;
 	Texture m_Skybox;

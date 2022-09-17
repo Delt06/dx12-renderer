@@ -35,6 +35,7 @@ using namespace DirectX;
 
 #include "PBR/IBL/DiffuseIrradiancePso.h"
 #include "PBR/PbrTextureLoader.h"
+#include "PBR/IBL/BrdfIntegrationPso.h"
 
 #if defined(max)
 #undef max
@@ -992,6 +993,31 @@ bool DeferredLightingDemo::LoadContent()
 			diffuseIrradiancePso.SetRenderTarget(*commandList, m_DiffuseIrradianceMapRt, sideIndex);
 			diffuseIrradiancePso.Draw(*commandList, sideIndex);
 		}
+	}
+
+	{
+		PIXScope(*commandList, "BRDF Integration");
+
+		const uint32_t arraySize = Cubemap::SIDES_COUNT;
+		D3D12_RESOURCE_DESC skyboxDesc = m_Skybox.GetD3D12ResourceDesc();
+
+		const UINT brdfIntegrationMapSize = 512;
+		const auto diffuseIrradianceMapDesc = CD3DX12_RESOURCE_DESC::Tex2D(
+			DXGI_FORMAT_R16G16_FLOAT,
+			brdfIntegrationMapSize, brdfIntegrationMapSize,
+			arraySize, 1,
+			1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+
+		auto brdfIntegrationMap = Texture(diffuseIrradianceMapDesc, nullptr,
+			TextureUsageType::Other,
+			L"BRDF Integration Map");
+		m_BrdfIntegrationMapRt.AttachTexture(Color0, brdfIntegrationMap);
+
+		auto device = Application::Get().GetDevice();
+		BrdfIntegrationPso brdfIntegrationPso(device, *commandList, diffuseIrradianceMapDesc.Format);
+		brdfIntegrationPso.SetContext(*commandList);
+		brdfIntegrationPso.SetRenderTarget(*commandList, m_BrdfIntegrationMapRt);
+		brdfIntegrationPso.Draw(*commandList);
 	}
 
 	// Depth Stencil

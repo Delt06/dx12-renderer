@@ -166,6 +166,7 @@
     <ClCompile Include="BlitPso.cpp" />
     <ClCompile Include="BlurPso.cpp" />
     <ClCompile Include="Bone.cpp" />
+    <ClCompile Include="PBR\IBL\BrdfIntegrationPso.cpp" />
     <ClCompile Include="DeferredLightingDemo\DeferredLightingDemo.cpp" />
     <ClCompile Include="PBR\IBL\DiffuseIrradiancePso.cpp" />
     <ClCompile Include="LightingDemo\BloomPso.cpp" />
@@ -228,6 +229,7 @@
     <ClInclude Include="BlitPso.h" />
     <ClInclude Include="BlurPso.h" />
     <ClInclude Include="Bone.h" />
+    <ClInclude Include="PBR\IBL\BrdfIntegrationPso.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="DeferredLightingDemo\DeferredLightingDemo.h" />
     <ClInclude Include="PBR\IBL\DiffuseIrradiancePso.h" />
@@ -447,6 +449,12 @@
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">generateMips_Cs</VariableName>
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">GenerateMips_CS.h</HeaderFileOutput>
     </FxCompile>
+    <FxCompile Include="Shaders\IBL_BRDFIntegration_PixelShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
     <FxCompile Include="Shaders\IBL_DiffuseIrradiance_PixelShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
@@ -531,6 +539,13 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
     </FxCompile>
+    <None Include="Shaders\ShaderLibrary\IBLUtils.hlsli">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <FileType>Document</FileType>
+    </None>
     <None Include="Shaders\ShadowsPoissonSampling.hlsli">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
