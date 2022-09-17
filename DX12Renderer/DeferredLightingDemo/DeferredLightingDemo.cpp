@@ -198,10 +198,11 @@ namespace
 	{
 		// assuming minimum visible attenuation of L...
 		// 1/(1+a * d * d) = L
-		const auto l = 0.05f / (light.Intensity * GetMaxColorComponentRGB(light.Color));
+		const auto l = 0.01f / (light.Intensity * GetMaxColorComponentRGB(light.Color));
 		const auto lInv = 1 / l;
 		auto scaleZ = (light.Attenuation > 0.0f) ? (sqrt((lInv - 1) / light.Attenuation)) : 1000.0f;
-		auto scaleX = 2 * scaleZ * tan(light.SpotAngle);
+		auto tangent = static_cast<float>(tan(light.SpotAngle));
+		auto scaleX = 2 * scaleZ * tangent;
 
 		// generate any suitable up vector
 		auto direction = XMLoadFloat4(&light.DirectionWs);
@@ -232,10 +233,11 @@ namespace
 		XMStoreFloat(&length, lengthV);
 		auto up = ab / length;
 		auto upModified = XMVector3Normalize(up + XMVectorSet(0.1f, 0.1f, 0.1f, 0));
-		auto forward = XMVector3Cross(up, upModified);
+		auto forward = XMVector3Normalize(XMVector3Cross(up, upModified));
 
-		return XMMatrixScaling(radius, length + radius * 2, radius) *
+		XMMATRIX transform = XMMatrixScaling(radius, length + radius * 2, radius) *
 			XMMatrixInverse(nullptr, XMMatrixLookToLH(origin, forward, up));
+		return transform;
 	}
 
 	auto GetSkyboxSampler(UINT shaderRegister)
@@ -824,27 +826,15 @@ bool DeferredLightingDemo::LoadContent()
 			m_PointLights.push_back(pointLight);
 		}
 
-		// back spot light
+		// chest spot light
 		{
 			SpotLight spotLight;
-			spotLight.PositionWs = XMFLOAT4(0, 5.0f, 25.0f, 1.0f);
-			spotLight.DirectionWs = XMFLOAT4(0, 0.0f, -1.0f, 0.0f);
-			spotLight.Color = XMFLOAT4(1, 1, 0, 1);
-			spotLight.Intensity = 1.0f;
-			spotLight.SpotAngle = XMConvertToRadians(45.0f);
-			spotLight.Attenuation = 0.0005f;
-			m_SpotLights.push_back(spotLight);
-		}
-
-		// character spot light
-		{
-			SpotLight spotLight;
-			spotLight.PositionWs = XMFLOAT4(10.0, 15.0f, 8.0f, 1.0f);
+			spotLight.PositionWs = XMFLOAT4(0.0, 10.0f, 15.0f, 1.0f);
 			spotLight.DirectionWs = XMFLOAT4(0.0f, -1.0f, 0.0f, 0.0f);
-			spotLight.Color = XMFLOAT4(0, 0, 1, 1);
-			spotLight.Intensity = 1.0f;
-			spotLight.SpotAngle = XMConvertToRadians(45.0f);
-			spotLight.Attenuation = 0.0005f;
+			spotLight.Color = XMFLOAT4(1.0f, 1.0f, 0.8f, 1);
+			spotLight.Intensity = 10.0f;
+			spotLight.SpotAngle = XMConvertToRadians(60.0f);
+			spotLight.Attenuation = 0.01f;
 			m_SpotLights.push_back(spotLight);
 		}
 
@@ -852,8 +842,8 @@ bool DeferredLightingDemo::LoadContent()
 		{
 			CapsuleLight capsuleLight;
 			capsuleLight.Color = XMFLOAT4(0.0f, 10.0f, 10.0f, 1.0f);
-			capsuleLight.PointA = XMFLOAT4(-15.0, 3.0f, 0.0f, 1.0f);
-			capsuleLight.PointB = XMFLOAT4(15.0, 3.0f, 0.0f, 1.0f);
+			capsuleLight.PointA = XMFLOAT4(-15.0, 1.0f, 0.0f, 1.0f);
+			capsuleLight.PointB = XMFLOAT4(15.0, 1.0f, 0.0f, 1.0f);
 			capsuleLight.Attenuation = 0.5f;
 			m_CapsuleLights.push_back(capsuleLight);
 		}
@@ -862,8 +852,8 @@ bool DeferredLightingDemo::LoadContent()
 		{
 			CapsuleLight capsuleLight;
 			capsuleLight.Color = XMFLOAT4(10.0f, 0.0f, 10.0f, 1.0f);
-			capsuleLight.PointA = XMFLOAT4(0.0, 3.0f, -15.0f, 1.0f);
-			capsuleLight.PointB = XMFLOAT4(0.0, 3.0f, 15.0f, 1.0f);
+			capsuleLight.PointA = XMFLOAT4(0.0, 1.0f, -15.0f, 1.0f);
+			capsuleLight.PointB = XMFLOAT4(0.0, 1.0f, 15.0f, 1.0f);
 			capsuleLight.Attenuation = 0.5f;
 			m_CapsuleLights.push_back(capsuleLight);
 		}
