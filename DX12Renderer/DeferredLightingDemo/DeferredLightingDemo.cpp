@@ -186,7 +186,7 @@ namespace
 	{
 		// assuming minimum visible attenuation of L...
 		// 1/(c+l*d+q*d*d) = L
-		const auto l = 0.05f / GetMaxColorComponentRGB(light.Color);
+		const auto l = 0.02f / GetMaxColorComponentRGB(light.Color);
 		const auto lInv = 1 / l;
 		auto discriminant = light.LinearAttenuation * light.LinearAttenuation - 4 * light.QuadraticAttenuation * (light.ConstantAttenuation - lInv);
 		auto radius = (-light.LinearAttenuation + sqrt(discriminant)) / (2 * light.QuadraticAttenuation);
