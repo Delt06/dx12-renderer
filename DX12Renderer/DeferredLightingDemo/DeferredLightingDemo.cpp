@@ -950,6 +950,27 @@ bool DeferredLightingDemo::LoadContent()
 		}
 
 		{
+			auto model = modelLoader.Load(*commandList, "Assets/Models/old-wooden-chest/chest_01.fbx");
+			auto material = std::make_shared<PbrMaterial>();
+			textureLoader.Init(*material);
+
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse,
+				L"Assets/Models/old-wooden-chest/chest_01_BaseColor.png");
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Normal,
+				L"Assets/Models/old-wooden-chest/chest_01_Normal.png");
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Roughness,
+				L"Assets/Models/old-wooden-chest/chest_01_Roughness.png");
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Metallic,
+				L"Assets/Models/old-wooden-chest/chest_01_Metallic.png");
+
+			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.75f, 25.0f);
+			XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(90), 0, 0);
+			XMMATRIX scaleMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
+		}
+
+		{
 			const int steps = 5;
 			for (auto x = 0; x < steps; ++x)
 			{
