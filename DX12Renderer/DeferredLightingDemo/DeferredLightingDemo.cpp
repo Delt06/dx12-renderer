@@ -875,41 +875,6 @@ bool DeferredLightingDemo::LoadContent()
 		PbrTextureLoader textureLoader(m_WhiteTexture2d);
 
 		{
-			auto model = modelLoader.Load(*commandList, "Assets/Models/teapot/teapot.obj", true);
-			auto material = std::make_shared<PbrMaterial>();
-			textureLoader.Init(*material);
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse,
-				L"Assets/Textures/PavingStones/PavingStones_1K_Color.jpg");
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Normal,
-				L"Assets/Textures/PavingStones/PavingStones_1K_Normal.jpg");
-
-			material->GetConstants().Roughness = 0.8f;
-			material->GetConstants().Metallic = 0.2f;
-
-			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
-			XMMATRIX rotationMatrix = XMMatrixIdentity();
-			XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
-			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
-		}
-
-		{
-			auto model = modelLoader.Load(*commandList, "Assets/Models/archer/archer.fbx");
-			auto material = std::make_shared<PbrMaterial>();
-			textureLoader.Init(*material);
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse, L"Assets/Models/archer/textures/akai_diffuse.png");
-
-			material->GetConstants().Roughness = 0.75f;
-			material->GetConstants().Metallic = 0.1f;
-
-			XMMATRIX translationMatrix = XMMatrixTranslation(10.0f, 0.0f, 8.0f);
-			XMMATRIX rotationMatrix = XMMatrixIdentity();
-			XMMATRIX scaleMatrix = XMMatrixScaling(0.05f, 0.05f, 0.05f);
-			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
-		}
-
-		{
 			auto model = modelLoader.LoadExisting(Mesh::CreatePlane(*commandList));
 			auto material = std::make_shared<PbrMaterial>();
 			textureLoader.Init(*material);
@@ -929,27 +894,6 @@ bool DeferredLightingDemo::LoadContent()
 		}
 
 		{
-			auto model = modelLoader.Load(*commandList, "Assets/Models/sphere/sphere-cylcoords-1k.obj");
-			auto material = std::make_shared<PbrMaterial>();
-			textureLoader.Init(*material);
-			material->GetConstants().Roughness = 0.5f;
-			material->GetConstants().Metallic = 0.2f;
-
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse,
-				L"Assets/Textures/Metal/Metal_1K_Color.jpg");
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Normal,
-				L"Assets/Textures/Metal/Metal_1K_Normal.jpg");
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Roughness,
-				L"Assets/Textures/Metal/Metal_1K_Roughness.jpg");
-
-			XMMATRIX translationMatrix = XMMatrixTranslation(-50.0f, 5.0f, 25.0f);
-			XMMATRIX rotationMatrix = XMMatrixIdentity();
-			XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
-			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
-		}
-
-		{
 			auto model = modelLoader.Load(*commandList, "Assets/Models/old-wooden-chest/chest_01.fbx");
 			auto material = std::make_shared<PbrMaterial>();
 			textureLoader.Init(*material);
@@ -963,9 +907,30 @@ bool DeferredLightingDemo::LoadContent()
 			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Metallic,
 				L"Assets/Models/old-wooden-chest/chest_01_Metallic.png");
 
-			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.75f, 25.0f);
+			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.75f, 15.0f);
 			XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(90), 0, 0);
 			XMMATRIX scaleMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
+		}
+
+		{
+			auto model = modelLoader.Load(*commandList, "Assets/Models/cerberus/Cerberus_LP.FBX");
+			auto material = std::make_shared<PbrMaterial>();
+			textureLoader.Init(*material);
+
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse,
+				L"Assets/Models/cerberus/Cerberus_A.jpg");
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Normal,
+				L"Assets/Models/cerberus/Cerberus_N.jpg");
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Roughness,
+				L"Assets/Models/cerberus/Cerberus_R.jpg");
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Metallic,
+				L"Assets/Models/cerberus/Cerberus_M.jpg");
+
+			XMMATRIX translationMatrix = XMMatrixTranslation(15.0f, 5.0f, 10.0f);
+			XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(90), XMConvertToRadians(135), XMConvertToRadians(0));
+			XMMATRIX scaleMatrix = XMMatrixScaling(0.10f, 0.10f, 0.10f);
 			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
 			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
 		}
@@ -982,7 +947,7 @@ bool DeferredLightingDemo::LoadContent()
 					material->GetConstants().Metallic = static_cast<float>(x) / (steps - 1);
 					material->GetConstants().Roughness = static_cast<float>(y) / (steps - 1);
 					
-					XMMATRIX translationMatrix = XMMatrixTranslation(x * 1.5f, 5.0f + y * 2.0f, 50.0f);
+					XMMATRIX translationMatrix = XMMatrixTranslation(x * 1.5f, 5.0f + y * 2.0f, 25.0f);
 					XMMATRIX worldMatrix = translationMatrix;
 					m_GameObjects.push_back(GameObject(worldMatrix, model, material));
 				}
