@@ -747,7 +747,6 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, UINT texArra
 
 	const auto& textures = renderTarget.GetTextures();
 	const bool isArrayItem = texArrayIndex != -1;
-	const UINT subresource = isArrayItem ? texArrayIndex : D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
 	// Bind color targets (max of 8 render targets can be bound to the rendering pipeline.
 	for (int i = 0; i < 8; ++i)
@@ -756,6 +755,7 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, UINT texArra
 
 		if (texture.IsValid())
 		{
+			const UINT subresource = isArrayItem ? texture.GetRenderTargetSubresourceIndex(texArrayIndex, mipLevel) : D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 			TransitionBarrier(texture, D3D12_RESOURCE_STATE_RENDER_TARGET, subresource);
 			renderTargetDescriptors.push_back(isArrayItem
 				? texture.GetRenderTargetViewArray(texArrayIndex, mipLevel)
@@ -770,6 +770,7 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, UINT texArra
 	CD3DX12_CPU_DESCRIPTOR_HANDLE depthStencilDescriptor(D3D12_DEFAULT);
 	if (useDepth && depthTexture.GetD3D12Resource())
 	{
+		const UINT subresource = isArrayItem ? depthTexture.GetDepthStencilSubresourceIndex(texArrayIndex) : D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 		TransitionBarrier(depthTexture, D3D12_RESOURCE_STATE_DEPTH_WRITE, subresource);
 		depthStencilDescriptor = isArrayItem
 			? depthTexture.GetDepthStencilViewArray(texArrayIndex)

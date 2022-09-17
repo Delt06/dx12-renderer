@@ -186,7 +186,7 @@ void Texture::CreateViews()
 					rtvDesc.Texture2DArray.MipSlice = mipLevel;
 					rtvDesc.Texture2DArray.FirstArraySlice = arrayIndex;
 
-					const UINT16 offset = GetRenderTargetDescriptorIndex(arrayIndex, mipLevel) + 1;
+					const UINT16 offset = GetRenderTargetSubresourceIndex(arrayIndex, mipLevel) + 1;
 					device->CreateRenderTargetView(m_d3d12Resource.Get(), &rtvDesc,
 						m_RenderTargetView.GetDescriptorHandle(offset));
 				}
@@ -293,7 +293,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetRenderTargetView() const
 
 D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetRenderTargetViewArray(const uint32_t index, uint32_t mipLevel) const
 {
-	uint32_t offset = GetRenderTargetDescriptorIndex(index, mipLevel) + 1;
+	uint32_t offset = GetRenderTargetSubresourceIndex(index, mipLevel) + 1;
 	return m_RenderTargetView.GetDescriptorHandle(offset);
 }
 
@@ -550,4 +550,15 @@ DXGI_FORMAT Texture::GetUavCompatibleFormat(const DXGI_FORMAT format)
 	}
 
 	return uavFormat;
+}
+
+uint32_t Texture::GetRenderTargetSubresourceIndex(UINT16 arrayIndex, UINT16 mipLevel) const
+{
+	CD3DX12_RESOURCE_DESC desc(GetD3D12ResourceDesc());
+	return mipLevel + arrayIndex * desc.MipLevels;
+}
+
+uint32_t Texture::GetDepthStencilSubresourceIndex(UINT16 arrayIndex) const
+{
+	return arrayIndex;
 }

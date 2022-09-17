@@ -142,14 +142,11 @@ public:
 	// Return an sRGB format in the same format family.
 	static DXGI_FORMAT GetSRgbFormat(DXGI_FORMAT format);
 	static DXGI_FORMAT GetUavCompatibleFormat(DXGI_FORMAT format);
+
+	uint32_t GetRenderTargetSubresourceIndex(UINT16 arrayIndex, UINT16 mipLevel) const;
+	uint32_t GetDepthStencilSubresourceIndex(UINT16 arrayIndex) const;
 protected:
 private:
-
-	uint32_t GetRenderTargetDescriptorIndex(UINT16 arrayIndex, UINT16 mipLevel) const
-	{
-		CD3DX12_RESOURCE_DESC desc(GetD3D12ResourceDesc());
-		return arrayIndex + mipLevel * desc.ArraySize();
-	}
 
 	DescriptorAllocation CreateShaderResourceView(const D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc) const;
 	DescriptorAllocation CreateUnorderedAccessView(const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc) const;

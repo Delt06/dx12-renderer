@@ -36,6 +36,7 @@ using namespace DirectX;
 #include "PBR/IBL/DiffuseIrradiancePso.h"
 #include "PBR/PbrTextureLoader.h"
 #include "PBR/IBL/BrdfIntegrationPso.h"
+#include "PBR/IBL/PreFilterEnvironmentPso.h"
 
 #if defined(max)
 #undef max
@@ -1018,6 +1019,43 @@ bool DeferredLightingDemo::LoadContent()
 		brdfIntegrationPso.SetContext(*commandList);
 		brdfIntegrationPso.SetRenderTarget(*commandList, m_BrdfIntegrationMapRt);
 		brdfIntegrationPso.Draw(*commandList);
+	}
+
+	{
+		PIXScope(*commandList, "Pre-Filter Environment");
+
+		const uint32_t arraySize = Cubemap::SIDES_COUNT;
+		D3D12_RESOURCE_DESC skyboxDesc = m_Skybox.GetD3D12ResourceDesc();
+
+		const UINT mipLevels = 5;
+
+		const auto preFilterEnvironmentMapDesc = CD3DX12_RESOURCE_DESC::Tex2D(
+			DXGI_FORMAT_R16G16B16A16_FLOAT,
+			skyboxDesc.Width, skyboxDesc.Height,
+			arraySize, mipLevels,
+			1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+
+		auto preFilterEnvironmentMap = Texture(preFilterEnvironmentMapDesc, nullptr,
+			TextureUsageType::Albedo,
+			L"Skybox IBL (Pre-Filtered Environment Map)");
+		m_PreFilterEnvironmentMapRt.AttachTexture(Color0, preFilterEnvironmentMap);
+
+		PreFilterEnvironmentPso preFilterEnvironmentPso(device, *commandList, preFilterEnvironmentMapDesc.Format);
+		preFilterEnvironmentPso.SetContext(*commandList);
+		preFilterEnvironmentPso.SetSourceCubemap(*commandList, m_Skybox);
+
+		for (UINT mipLevel = 0; mipLevel < mipLevels; ++mipLevel)
+		{
+			PIXScope(*commandList, ("Pre-Filter Environment: Mip " + std::to_string(mipLevel)).c_str());
+
+			float roughness = static_cast<float>(mipLevel) / static_cast<float>(mipLevels - 1);
+
+			for (UINT32 sideIndex = 0; sideIndex < Cubemap::SIDES_COUNT; ++sideIndex)
+			{
+				preFilterEnvironmentPso.SetRenderTarget(*commandList, m_PreFilterEnvironmentMapRt, sideIndex, mipLevel);
+				preFilterEnvironmentPso.Draw(*commandList, roughness, sideIndex);
+			}
+		}
 	}
 
 	// Depth Stencil

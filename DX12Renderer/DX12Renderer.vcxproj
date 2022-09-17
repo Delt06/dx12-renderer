@@ -208,6 +208,7 @@
     <ClCompile Include="LightingDemo\PostFxPso.cpp" />
     <ClCompile Include="PBR\PbrTextureLoader.cpp" />
     <ClCompile Include="PBR\PbrMaterial.cpp" />
+    <ClCompile Include="PBR\IBL\PreFilterEnvironmentPso.cpp" />
     <ClCompile Include="RenderTarget.cpp" />
     <ClCompile Include="ResourceStateTracker.cpp" />
     <ClCompile Include="ResourceWrapper.cpp" />
@@ -276,6 +277,7 @@
     <ClInclude Include="LightingDemo\PostFxPso.h" />
     <ClInclude Include="PBR\PbrTextureLoader.h" />
     <ClInclude Include="PBR\PbrMaterial.h" />
+    <ClInclude Include="PBR\IBL\PreFilterEnvironmentPso.h" />
     <ClInclude Include="RenderTarget.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="ResourceStateTracker.h" />
@@ -461,11 +463,17 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
-    <FxCompile Include="Shaders\IBL_DiffuseIrradiance_VertexShader.hlsl">
+    <FxCompile Include="Shaders\IBL_CubeMapSideBlit_VertexShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\IBL_PreFilterEnvironment_PixelShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Shaders\LightingDemo_Bloom_Downsample_PixelShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
