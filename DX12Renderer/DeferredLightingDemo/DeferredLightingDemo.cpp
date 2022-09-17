@@ -120,7 +120,7 @@ namespace
 			// Texture2D : register(t0-t2);
 			GBuffer,
 			// TextureCube : register(t3)
-			Skybox,
+			Ambient,
 			NumRootParameters
 		};
 	}
@@ -407,14 +407,14 @@ bool DeferredLightingDemo::LoadContent()
 				D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
 			CD3DX12_DESCRIPTOR_RANGE1 gBufferDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, gBufferTexturesCount, 0);
-			CD3DX12_DESCRIPTOR_RANGE1 skyboxDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, gBufferTexturesCount);
+			CD3DX12_DESCRIPTOR_RANGE1 ambientDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, gBufferTexturesCount);
 
 			CD3DX12_ROOT_PARAMETER1 rootParameters[DirectionalLightBufferRootParameters::NumRootParameters];
 			rootParameters[DirectionalLightBufferRootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE);
 			rootParameters[DirectionalLightBufferRootParameters::DirectionalLightCb].InitAsConstants(sizeof(DirectionalLight) / sizeof(float), 1, 0, D3D12_SHADER_VISIBILITY_PIXEL);
 			rootParameters[DirectionalLightBufferRootParameters::ScreenParametersCb].InitAsConstants(sizeof(ScreenParameters) / sizeof(float), 2, 0, D3D12_SHADER_VISIBILITY_PIXEL);
 			rootParameters[DirectionalLightBufferRootParameters::GBuffer].InitAsDescriptorTable(1, &gBufferDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
-			rootParameters[DirectionalLightBufferRootParameters::Skybox].InitAsDescriptorTable(1, &skyboxDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
+			rootParameters[DirectionalLightBufferRootParameters::Ambient].InitAsDescriptorTable(1, &ambientDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
 
 			CD3DX12_STATIC_SAMPLER_DESC samplers[] = {
 				lightPassSamplers[0],
@@ -1291,17 +1291,27 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			BindGBufferAsSRV(*commandList, DirectionalLightBufferRootParameters::GBuffer);
 
 
-			const auto& environmentMap = m_DiffuseIrradianceMapRt.GetTexture(Color0);
+			const auto& diffuseIrradianceMap = m_DiffuseIrradianceMapRt.GetTexture(Color0);
+			D3D12_SHADER_RESOURCE_VIEW_DESC irradianceSrvDesc;
+			irradianceSrvDesc.Format = diffuseIrradianceMap.GetD3D12ResourceDesc().Format;
+			irradianceSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			irradianceSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+			irradianceSrvDesc.TextureCube.MipLevels = 1;
+			irradianceSrvDesc.TextureCube.MostDetailedMip = 0;
+			irradianceSrvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+			commandList->SetShaderResourceView(DirectionalLightBufferRootParameters::Ambient, 0, diffuseIrradianceMap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, UINT_MAX, &irradianceSrvDesc);
 
-			D3D12_SHADER_RESOURCE_VIEW_DESC skyboxSrvDesc;
-			skyboxSrvDesc.Format = environmentMap.GetD3D12ResourceDesc().Format;
-			skyboxSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			skyboxSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
-			skyboxSrvDesc.TextureCube.MipLevels = -1;
-			skyboxSrvDesc.TextureCube.MostDetailedMip = 0;
-			skyboxSrvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+			const auto& preFilterEnvironmentMap = m_PreFilterEnvironmentMapRt.GetTexture(Color0);
+			D3D12_SHADER_RESOURCE_VIEW_DESC preFilterEnvironmentSrvDesc;
+			preFilterEnvironmentSrvDesc.Format = diffuseIrradianceMap.GetD3D12ResourceDesc().Format;
+			preFilterEnvironmentSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			preFilterEnvironmentSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+			preFilterEnvironmentSrvDesc.TextureCube.MipLevels = -1;
+			preFilterEnvironmentSrvDesc.TextureCube.MostDetailedMip = 0;
+			preFilterEnvironmentSrvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+			commandList->SetShaderResourceView(DirectionalLightBufferRootParameters::Ambient, 1, preFilterEnvironmentMap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, UINT_MAX, &preFilterEnvironmentSrvDesc);
 
-			commandList->SetShaderResourceView(DirectionalLightBufferRootParameters::Skybox, 0, environmentMap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, UINT_MAX, &skyboxSrvDesc);
+			commandList->SetShaderResourceView(DirectionalLightBufferRootParameters::Ambient, 2, m_BrdfIntegrationMapRt.GetTexture(Color0), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 			m_FullScreenMesh->Draw(*commandList);
 		}

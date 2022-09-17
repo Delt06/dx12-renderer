@@ -94,24 +94,4 @@ float3 ComputeBRDF(in BRDFInput input)
     return (kD * input.DiffuseColor / PI + specular) * input.LightColor * NdotL;
 }
 
-float3 ComputeBRDFAmbient(in BRDFInput input)
-{
-    float3 eyeWS = normalize(input.CameraPositionWS - input.PositionWS);
-    
-    float3 F0 = ComputeF0(input);
-    float3 F = FresnelSchlick(max(dot(input.NormalWS, eyeWS), 0.0), F0, input.Roughness);;
-    float3 kS = F;
-    float3 kD = 1.0 - kS;
-    kD *= 1.0 - input.Metallic;
-    
-    float3 diffuse = input.Irradiance * input.DiffuseColor;
-    
-    // TODO: implement prefilterMap
-    // https://github.com/JoeyDeVries/LearnOpenGL/blob/master/src/6.pbr/2.2.1.ibl_specular/2.2.1.pbr.fs
-    float3 specular = input.Irradiance * (F * 0.05 + 0.00);
-    
-    float3 ambient = (kD * diffuse + specular) * input.AmbientOcclusion;
-    return ambient;
-}
-
 #endif
