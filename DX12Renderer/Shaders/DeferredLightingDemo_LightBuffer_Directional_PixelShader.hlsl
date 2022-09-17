@@ -14,13 +14,8 @@ ConstantBuffer<Matrices> matricesCB : register(b0);
 ConstantBuffer<DirectionalLight> directionalLightCB : register(b1);
 ConstantBuffer<ScreenParameters> screenParametersCB : register(b2);
 
-TextureCube skybox : register(t4);
-SamplerState skyboxSampler : register(s1);
-
-float3 SampleSkybox(float3 uv)
-{
-    return skybox.SampleLevel(skyboxSampler, uv, 0).rgb;
-}
+TextureCube irradianceMap : register(t4);
+SamplerState irradianceMapSampler : register(s1);
 
 #include <ShaderLibrary/GBuffer.hlsli>
 
@@ -46,13 +41,11 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     brdfInput.NormalWS = normalWS;
     brdfInput.PositionWS = positionWS;
     brdfInput.DiffuseColor = diffuseColor;
+    brdfInput.Irradiance = irradianceMap.SampleLevel(irradianceMapSampler, normalWS, 0).rgb;
     
     const float4 surface = gBufferSurface.Sample(gBufferSampler, uv);
     UnpackSurface(surface, brdfInput.Metallic, brdfInput.Roughness, brdfInput.AmbientOcclusion);
     
-    float3 color = ComputeBRDF(brdfInput);
-    
-    color += SampleSkybox(normalWS) * diffuseColor * brdfInput.AmbientOcclusion;
-    
+    float3 color = ComputeBRDF(brdfInput) + ComputeBRDFAmbient(brdfInput);
     return float4(color, 1.0);
 }

@@ -43,6 +43,7 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     brdfInput.NormalWS = normalWS;
     brdfInput.PositionWS = positionWS;
     brdfInput.DiffuseColor = diffuseColor;
+    brdfInput.Irradiance = 0;
     
     const float4 surface = gBufferSurface.Sample(gBufferSampler, uv);
     UnpackSurface(surface, brdfInput.Metallic, brdfInput.Roughness, brdfInput.AmbientOcclusion);
