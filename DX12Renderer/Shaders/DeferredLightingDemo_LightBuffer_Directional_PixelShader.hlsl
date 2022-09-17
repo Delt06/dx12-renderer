@@ -52,7 +52,7 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     
     float3 color = ComputeBRDF(brdfInput);
     
-    color += SampleSkybox(normalWS) * diffuseColor;
+    color += SampleSkybox(normalWS) * diffuseColor * brdfInput.AmbientOcclusion;
     
     return float4(color, 1.0);
 }
