@@ -33,7 +33,7 @@ using namespace DirectX;
 #undef min
 #endif
 
-#include "IBL/DiffuseIrradiancePso.h"
+#include "PBR/IBL/DiffuseIrradiancePso.h"
 #include "PBR/PbrTextureLoader.h"
 
 #if defined(max)
