@@ -37,6 +37,7 @@ using namespace DirectX;
 #include "PBR/PbrTextureLoader.h"
 #include "PBR/IBL/BrdfIntegrationPso.h"
 #include "PBR/IBL/PreFilterEnvironmentPso.h"
+#include "BlitPso.h"
 
 #if defined(max)
 #undef max
@@ -287,7 +288,8 @@ bool DeferredLightingDemo::LoadContent()
 	}
 
 	constexpr DXGI_FORMAT gBufferFormat = DXGI_FORMAT_R16G16B16A16_UNORM;
-	constexpr DXGI_FORMAT lightBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	constexpr DXGI_FORMAT lightBufferFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	constexpr DXGI_FORMAT resultFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 	constexpr DXGI_FORMAT depthBufferFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	constexpr UINT gBufferTexturesCount = 4;
 
@@ -784,6 +786,10 @@ bool DeferredLightingDemo::LoadContent()
 
 			ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_SkyboxPassPipelineState)));
 		}
+
+		{
+			m_ToneMappingPso = std::make_unique<ToneMappingPso>(device, *commandList, resultFormat);
+		}
 	}
 
 	// Create lights
@@ -1107,6 +1113,21 @@ bool DeferredLightingDemo::LoadContent()
 		m_LightStencilRenderTarget.AttachTexture(DepthStencil, depthBuffer);
 	}
 
+	// Result
+	{
+		auto colorDesc = CD3DX12_RESOURCE_DESC::Tex2D(resultFormat,
+			m_Width, m_Height,
+			1, 1,
+			1, 0,
+			D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+
+		auto resultRT = Texture(colorDesc, nullptr,
+			TextureUsageType::RenderTarget,
+			L"Result RT");
+
+		m_ResultRenderTarget.AttachTexture(Color0, resultRT);
+	}
+
 	auto fenceValue = commandQueue->ExecuteCommandList(commandList);
 	commandQueue->WaitForFenceValue(fenceValue);
 
@@ -1133,6 +1154,7 @@ void DeferredLightingDemo::OnResize(ResizeEventArgs& e)
 		m_LightBufferRenderTarget.AttachTexture(DepthStencil, m_GBufferRenderTarget.GetTexture(DepthStencil));
 		m_LightStencilRenderTarget.AttachTexture(DepthStencil, m_GBufferRenderTarget.GetTexture(DepthStencil));
 		m_DepthTexture.Resize(m_Width, m_Height);
+		m_ResultRenderTarget.Resize(m_Width, m_Height);
 	}
 }
 
@@ -1380,8 +1402,13 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		m_SkyboxMesh->Draw(*commandList);
 	}
 
+	{
+		auto& source = m_LightBufferRenderTarget.GetTexture(Color0);
+		m_ToneMappingPso->Blit(*commandList, source, m_ResultRenderTarget, 1.0f);
+	}
+
 	commandQueue->ExecuteCommandList(commandList);
-	PWindow->Present(m_LightBufferRenderTarget.GetTexture(Color0));
+	PWindow->Present(m_ResultRenderTarget.GetTexture(Color0));
 }
 
 void DeferredLightingDemo::BindGBufferAsSRV(CommandList& commandList, uint32_t rootParameterIndex)

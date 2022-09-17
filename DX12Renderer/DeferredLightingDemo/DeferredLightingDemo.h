@@ -13,6 +13,7 @@
 
 #include "GameObject.h"
 #include "GraphicsSettings.h"
+#include "HDR/ToneMappingPso.h"
 
 struct MatricesCb;
 
@@ -59,7 +60,10 @@ private:
 	RenderTarget m_GBufferRenderTarget;
 	RenderTarget m_LightBufferRenderTarget;
 	RenderTarget m_LightStencilRenderTarget;
+	RenderTarget m_ResultRenderTarget;
 	Texture m_DepthTexture;
+
+	std::unique_ptr<ToneMappingPso> m_ToneMappingPso;
 
 	Camera m_Camera;
 	std::vector<GameObject> m_GameObjects;
