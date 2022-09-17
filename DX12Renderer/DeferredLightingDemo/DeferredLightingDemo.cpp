@@ -883,8 +883,8 @@ bool DeferredLightingDemo::LoadContent()
 			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Normal,
 				L"Assets/Textures/PavingStones/PavingStones_1K_Normal.jpg");
 
-			material->GetConstants().Roughness = 0.9f;
-			material->GetConstants().Metallic = 0.1f;
+			material->GetConstants().Roughness = 0.8f;
+			material->GetConstants().Metallic = 0.2f;
 
 			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
@@ -899,6 +899,9 @@ bool DeferredLightingDemo::LoadContent()
 			textureLoader.Init(*material);
 			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse, L"Assets/Models/archer/textures/akai_diffuse.png");
 
+			material->GetConstants().Roughness = 0.75f;
+			material->GetConstants().Metallic = 0.1f;
+
 			XMMATRIX translationMatrix = XMMatrixTranslation(10.0f, 0.0f, 8.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
 			XMMATRIX scaleMatrix = XMMatrixScaling(0.05f, 0.05f, 0.05f);
@@ -911,6 +914,7 @@ bool DeferredLightingDemo::LoadContent()
 			auto material = std::make_shared<PbrMaterial>();
 			textureLoader.Init(*material);
 			material->GetConstants().Roughness = 0.7f;
+			material->GetConstants().Metallic = 0.1f;
 			material->GetConstants().TilingOffset = { 10, 10, 0, 0 };
 
 			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse,
