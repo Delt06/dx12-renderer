@@ -868,14 +868,18 @@ bool DeferredLightingDemo::LoadContent()
 			auto model = modelLoader.LoadExisting(Mesh::CreatePlane(*commandList));
 			auto material = std::make_shared<PbrMaterial>();
 			textureLoader.Init(*material);
-			material->GetConstants().Roughness = 0.7f;
-			material->GetConstants().Metallic = 0.1f;
-			material->GetConstants().TilingOffset = { 10, 10, 0, 0 };
+			material->GetConstants().Metallic = 0.02f;
+			material->GetConstants().TilingOffset = { 6, 6, 0, 0 };
 
 			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse,
-					L"Assets/Textures/Moss/Moss_1K_Color.jpg");
+					L"Assets/Textures/Ground047/Ground047_1K_Color.jpg");
 			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Normal,
-					L"Assets/Textures/Moss/Moss_1K_Normal.jpg");
+					L"Assets/Textures/Ground047/Ground047_1K_NormalDX.jpg");
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Roughness,
+				L"Assets/Textures/Ground047/Ground047_1K_Roughness.jpg");
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::AmbientOcclusion,
+				L"Assets/Textures/Ground047/Ground047_1K_AmbientOcclusion.jpg");
+
 			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
 			XMMATRIX scaleMatrix = XMMatrixScaling(200.0f, 200.0f, 200.0f);
