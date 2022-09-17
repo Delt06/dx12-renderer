@@ -9,6 +9,9 @@ struct BRDFInput
     float3 PositionWS;
     float3 CameraPositionWS;
     float3 DiffuseColor;
+    float Metallic;
+    float Roughness;
+    float AmbientOcclusion;
 };
 
 float Diffuse(const float3 n, const float3 l)

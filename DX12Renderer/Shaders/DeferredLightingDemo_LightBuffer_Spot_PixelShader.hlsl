@@ -41,6 +41,9 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     brdfInput.PositionWS = positionWS;
     brdfInput.DiffuseColor = diffuseColor;
     
+    const float4 surface = gBufferSurface.Sample(gBufferSampler, uv);
+    UnpackSurface(surface, brdfInput.Metallic, brdfInput.Roughness, brdfInput.AmbientOcclusion);
+    
     float3 color = ComputeBRDF(brdfInput);
     return float4(color, 1.0);
 }

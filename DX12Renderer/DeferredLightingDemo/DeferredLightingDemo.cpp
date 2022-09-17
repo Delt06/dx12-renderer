@@ -943,6 +943,25 @@ bool DeferredLightingDemo::LoadContent()
 			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
 		}
 
+		{
+			const int steps = 5;
+			for (auto x = 0; x < steps; ++x)
+			{
+				for (auto y = 0; y < steps; ++y)
+				{
+					auto model = modelLoader.LoadExisting(Mesh::CreateSphere(*commandList));
+					auto material = std::make_shared<PbrMaterial>();
+					textureLoader.Init(*material);
+					material->GetConstants().Metallic = static_cast<float>(x) / (steps - 1);
+					material->GetConstants().Roughness = static_cast<float>(y) / (steps - 1);
+					
+					XMMATRIX translationMatrix = XMMatrixTranslation(x * 1.5f, 5.0f + y * 2.0f, 50.0f);
+					XMMATRIX worldMatrix = translationMatrix;
+					m_GameObjects.push_back(GameObject(worldMatrix, model, material));
+				}
+			}
+		}
+
 		commandList->LoadTextureFromFile(m_Skybox, L"Assets/Textures/skybox/skybox.dds", TextureUsageType::Albedo);
 	}
 

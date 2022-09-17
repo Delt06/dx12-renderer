@@ -23,4 +23,11 @@ float4 PackSurface(float metallic, float roughness, float ambientOcclusion)
     return float4(metallic, roughness, ambientOcclusion, 0.0f);
 }
 
+void UnpackSurface(float4 surface, out float metallic, out float roughness, out float ambientOcclusion)
+{
+    metallic = surface.x;
+    roughness = surface.y;
+    ambientOcclusion = surface.z;
+}
+
 #endif
