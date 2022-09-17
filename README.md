@@ -67,3 +67,4 @@
 - https://ambientcg.com/view?id=Moss002
 - https://ambientcg.com/view?id=Metal036
 - https://www.mixamo.com/
+- https://sketchfab.com/3d-models/old-wooden-chest-45f93c78e5174036801bfb535c139ac7
