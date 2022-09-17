@@ -1038,6 +1038,8 @@ bool DeferredLightingDemo::LoadContent()
 		}
 	}
 
+	Texture depthBuffer;
+
 	// Depth Stencil
 	{
 		auto depthDesc = CD3DX12_RESOURCE_DESC::Tex2D(depthBufferFormat,
@@ -1049,7 +1051,7 @@ bool DeferredLightingDemo::LoadContent()
 		depthClearValue.Format = depthDesc.Format;
 		depthClearValue.DepthStencil = { 1.0f, 0 };
 
-		m_DepthBuffer = Texture(depthDesc, &depthClearValue,
+		depthBuffer = Texture(depthDesc, &depthClearValue,
 			TextureUsageType::Depth,
 			L"Depth-Stencil");
 		m_DepthTexture = Texture(depthDesc, &depthClearValue,
@@ -1080,7 +1082,7 @@ bool DeferredLightingDemo::LoadContent()
 		m_GBufferRenderTarget.AttachTexture(Color0, diffuseTexture);
 		m_GBufferRenderTarget.AttachTexture(Color1, normalTexture);
 		m_GBufferRenderTarget.AttachTexture(Color2, surfaceTexture);
-		m_GBufferRenderTarget.AttachTexture(DepthStencil, m_DepthBuffer);
+		m_GBufferRenderTarget.AttachTexture(DepthStencil, depthBuffer);
 	}
 
 	// Light Buffer
@@ -1096,9 +1098,9 @@ bool DeferredLightingDemo::LoadContent()
 			L"Light Buffer");
 
 		m_LightBufferRenderTarget.AttachTexture(Color0, lightBuffer);
-		m_LightBufferRenderTarget.AttachTexture(DepthStencil, m_DepthBuffer);
+		m_LightBufferRenderTarget.AttachTexture(DepthStencil, depthBuffer);
 
-		m_LightStencilRenderTarget.AttachTexture(DepthStencil, m_DepthBuffer);
+		m_LightStencilRenderTarget.AttachTexture(DepthStencil, depthBuffer);
 	}
 
 	auto fenceValue = commandQueue->ExecuteCommandList(commandList);
@@ -1124,8 +1126,9 @@ void DeferredLightingDemo::OnResize(ResizeEventArgs& e)
 
 		m_GBufferRenderTarget.Resize(m_Width, m_Height);
 		m_LightBufferRenderTarget.Resize(m_Width, m_Height);
+		m_LightBufferRenderTarget.AttachTexture(DepthStencil, m_GBufferRenderTarget.GetTexture(DepthStencil));
+		m_LightStencilRenderTarget.AttachTexture(DepthStencil, m_GBufferRenderTarget.GetTexture(DepthStencil));
 		m_DepthTexture.Resize(m_Width, m_Height);
-		m_DepthBuffer.Resize(m_Width, m_Height);
 	}
 }
 
@@ -1243,7 +1246,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 	{
 		PIXScope(*commandList, "Copy Depth Buffer to Depth Texture");
 
-		commandList->CopyResource(m_DepthTexture, m_DepthBuffer);
+		commandList->CopyResource(m_DepthTexture, m_GBufferRenderTarget.GetTexture(DepthStencil));
 	}
 
 	{

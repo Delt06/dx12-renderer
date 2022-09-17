@@ -59,7 +59,6 @@ private:
 	RenderTarget m_GBufferRenderTarget;
 	RenderTarget m_LightBufferRenderTarget;
 	RenderTarget m_LightStencilRenderTarget;
-	Texture m_DepthBuffer;
 	Texture m_DepthTexture;
 
 	Camera m_Camera;
