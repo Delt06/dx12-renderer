@@ -16,7 +16,7 @@ class ToneMappingPso
 public:
 	explicit ToneMappingPso(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT renderTargetFormat);
 
-	void Blit(CommandList& commandList, const Texture& source, RenderTarget& destination, float exposure);
+	void Blit(CommandList& commandList, const Texture& source, const Texture& luminanceOutput, RenderTarget& destination, float whitePoint = 4.0f);
 
 private:
 	RootSignature m_RootSignature;

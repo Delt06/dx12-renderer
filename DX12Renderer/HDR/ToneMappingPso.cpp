@@ -20,7 +20,7 @@ namespace
 
 	struct Parameters
 	{
-		float Exposure;
+		float WhitePoint;
 		float _Padding[3];
 	};
 }
@@ -50,7 +50,7 @@ ToneMappingPso::ToneMappingPso(Microsoft::WRL::ComPtr<ID3D12Device2> device, Com
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS;
 
-	CD3DX12_DESCRIPTOR_RANGE1 sourceDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+	CD3DX12_DESCRIPTOR_RANGE1 sourceDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);
 
 	CD3DX12_ROOT_PARAMETER1 rootParameters[RootParameters::NumRootParameters];
 	rootParameters[RootParameters::Source].InitAsDescriptorTable(1, &sourceDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
@@ -97,7 +97,7 @@ ToneMappingPso::ToneMappingPso(Microsoft::WRL::ComPtr<ID3D12Device2> device, Com
 	ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_PipelineState)));
 }
 
-void ToneMappingPso::Blit(CommandList& commandList, const Texture& source, RenderTarget& destination, float exposure)
+void ToneMappingPso::Blit(CommandList& commandList, const Texture& source, const Texture& luminanceOutput, RenderTarget& destination, float whitePoint)
 {
 	PIXScope(commandList, "Tone Mapping");
 
@@ -111,9 +111,10 @@ void ToneMappingPso::Blit(CommandList& commandList, const Texture& source, Rende
 	commandList.SetViewport(viewport);
 
 	commandList.SetShaderResourceView(RootParameters::Source, 0, source, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	commandList.SetShaderResourceView(RootParameters::Source, 1, luminanceOutput, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 	Parameters parameters;
-	parameters.Exposure = exposure;
+	parameters.WhitePoint = whitePoint;
 	commandList.SetGraphics32BitConstants(RootParameters::Parameters, parameters);
 
 	m_BlitMesh->Draw(commandList);

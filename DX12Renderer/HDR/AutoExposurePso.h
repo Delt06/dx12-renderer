@@ -13,7 +13,9 @@ class AutoExposurePso
 public:
 	explicit AutoExposurePso(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList);
 
-	void Dispatch(CommandList& commandList, const Texture& hdrTexture, float deltaTime);
+	void Dispatch(CommandList& commandList, const Texture& hdrTexture, float deltaTime, float tau = 1.1f);
+
+	const Texture& GetLuminanceOutput() const;
 
 private:
 	static constexpr uint32_t NUM_HISTOGRAM_BINS = 256;

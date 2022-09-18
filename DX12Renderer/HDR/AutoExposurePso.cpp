@@ -162,7 +162,7 @@ AutoExposurePso::AutoExposurePso(Microsoft::WRL::ComPtr<ID3D12Device2> device, C
 	commandList.CopyTextureSubresource(m_LuminanceOutput, 0, 1, &luminanceOutputData);
 }
 
-void AutoExposurePso::Dispatch(CommandList& commandList, const Texture& hdrTexture, float deltaTime)
+void AutoExposurePso::Dispatch(CommandList& commandList, const Texture& hdrTexture, float deltaTime, float tau)
 {
 	constexpr auto minLogLuminance = -10.0f;
 	constexpr auto maxLogLuminance = 2.0f;
@@ -207,11 +207,16 @@ void AutoExposurePso::Dispatch(CommandList& commandList, const Texture& hdrTextu
 		parameters.MinLogLuminance = minLogLuminance;
 		parameters.LogLuminanceRange = logLuminanceRange;
 		parameters.DeltaTime = deltaTime;
-		parameters.Tau = 1.1f;
+		parameters.Tau = tau;
 		commandList.SetCompute32BitConstants(AverageLuminanceHistogramRootParameters::LuminanceHistogramParametersCB, parameters);
 
 		commandList.Dispatch(1, 1);
 	}
 
 	commandList.UavBarrier(m_LuminanceOutput);
+}
+
+const Texture& AutoExposurePso::GetLuminanceOutput() const
+{
+	return m_LuminanceOutput;
 }

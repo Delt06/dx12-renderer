@@ -1468,7 +1468,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 
 	{
 		auto& source = m_LightBufferRenderTarget.GetTexture(Color0);
-		m_ToneMappingPso->Blit(*commandList, source, m_ResultRenderTarget, 1.0f);
+		m_ToneMappingPso->Blit(*commandList, source, m_AutoExposurePso->GetLuminanceOutput(), m_ResultRenderTarget);
 	}
 
 	commandQueue->ExecuteCommandList(commandList);

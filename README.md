@@ -50,6 +50,10 @@
 - http://www.opengl-tutorial.org/ru/intermediate-tutorials/tutorial-16-shadow-mapping/
 - https://learnopengl.com/Advanced-Lighting/Shadows/Point-Shadows
 - https://catlikecoding.com/unity/tutorials/advanced-rendering/bloom/
+- https://learnopengl.com/Advanced-Lighting/HDR
+- https://www.alextardif.com/HistogramLuminance.html
+- https://bruop.github.io/exposure/
+- https://bruop.github.io/tonemapping/
 
 ### Libraries and Tools
 
