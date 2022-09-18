@@ -20,6 +20,7 @@
 #include <d3d12.h>
 
 #include <filesystem>
+#include "StructuredBuffer.h"
 
 std::map<std::wstring, ID3D12Resource*> CommandList::m_TextureCache;
 std::mutex CommandList::m_TextureCacheMutex;
@@ -225,6 +226,11 @@ void CommandList::CopyByteAddressBuffer(ByteAddressBuffer& byteAddressBuffer, co
 	const void* bufferData)
 {
 	CopyBuffer(byteAddressBuffer, 1, bufferSize, bufferData, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+}
+
+void CommandList::CopyStructuredBuffer(StructuredBuffer& structuredBuffer, size_t numElements, size_t elementSize, const void* bufferData)
+{
+	CopyBuffer(structuredBuffer, numElements, elementSize, bufferData, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 }
 
 void CommandList::SetPrimitiveTopology(const D3D_PRIMITIVE_TOPOLOGY primitiveTopology) const
