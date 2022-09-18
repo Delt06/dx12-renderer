@@ -14,7 +14,7 @@ struct PbrMaterial
     bool HasMetallicMap;
     bool HasRoughnessMap;
     bool HasAmbientOcclusionMap;
-    float _Padding;
+    float Emission;
 
     float4 TilingOffset;
 };

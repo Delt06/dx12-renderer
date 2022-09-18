@@ -64,6 +64,7 @@ private:
 	Texture m_DepthTexture;
 
 	std::unique_ptr<ToneMappingPso> m_ToneMappingPso;
+	std::unique_ptr<GameObject> m_PointLightGameObject;
 
 	Camera m_Camera;
 	std::vector<GameObject> m_GameObjects;

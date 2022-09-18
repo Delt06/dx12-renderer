@@ -51,7 +51,9 @@ struct PixelShaderInput
 float4 main(PixelShaderInput IN) : SV_TARGET
 {
     float2 uv = ToScreenSpaceUV(IN.PositionCS, screenParametersCB);
-    float3 diffuseColor = gBufferDiffuse.Sample(gBufferSampler, uv).rgb;
+    float4 gBufferDiffuseSample = gBufferDiffuse.Sample(gBufferSampler, uv);
+    float3 diffuseColor = gBufferDiffuseSample.rgb;
+    float emission = gBufferDiffuseSample.a;
     float3 normalWS = normalize(UnpackNormal(gBufferNormalsWS.Sample(gBufferSampler, uv).xyz));
     
     float zNDC = gBufferDepth.Sample(gBufferSampler, uv).x;
@@ -70,6 +72,6 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     const float4 surface = gBufferSurface.Sample(gBufferSampler, uv);
     UnpackSurface(surface, brdfInput.Metallic, brdfInput.Roughness, brdfInput.AmbientOcclusion);
     
-    float3 color = ComputeBRDF(brdfInput) + ComputeBRDFAmbient(brdfInput);
+    float3 color = ComputeBRDF(brdfInput) + ComputeBRDFAmbient(brdfInput) + diffuseColor * emission;
     return float4(color, 1.0);
 }

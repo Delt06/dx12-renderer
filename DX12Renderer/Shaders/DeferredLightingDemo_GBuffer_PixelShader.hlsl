@@ -40,14 +40,19 @@ PixelShaderOutput main(PixelShaderInput IN)
     
     float2 uv = ApplyTilingOffset(materialCB, IN.Uv);
     
+    float3 diffuseColor;
+    
     if (materialCB.HasDiffuseMap)
     {
-        OUT.DiffuseColor = diffuseMap.Sample(defaultSampler, uv);
+        diffuseColor = diffuseMap.Sample(defaultSampler, uv).rgb;
     }
     else
     {
-        OUT.DiffuseColor = 1;
+        diffuseColor = 1;
     }
+    
+    diffuseColor *= materialCB.Diffuse.rgb;    
+    OUT.DiffuseColor = float4(diffuseColor, materialCB.Emission);
     
     float3 normal = normalize(IN.NormalWs);
     

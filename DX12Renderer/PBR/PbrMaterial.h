@@ -22,7 +22,7 @@ public:
 		uint32_t HasMetallicMap{};
 		uint32_t HasRoughnessMap{};
 		uint32_t HasAmbientOcclusionMap{};
-		float _Padding;
+		float Emission = 0;
 
 		DirectX::XMFLOAT4 TilingOffset{ 1, 1, 0, 0 };
 	};

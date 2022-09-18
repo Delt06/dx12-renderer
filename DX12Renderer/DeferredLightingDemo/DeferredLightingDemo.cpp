@@ -65,6 +65,24 @@ namespace
 		return t * t * (3 - 2 * t);
 	}
 
+	XMFLOAT4 NormalizeColor(XMFLOAT4 value)
+	{
+		auto vector = XMLoadFloat4(&value);
+		vector = XMVector3Normalize(vector);
+		XMFLOAT4 result{};
+		XMStoreFloat4(&result, vector);
+		return result;
+	}
+
+	float GetColorMagnitude(XMFLOAT4 value)
+	{
+		auto vector = XMLoadFloat4(&value);
+		auto magnitude = XMVector3Length(vector);
+		float result = 0;
+		XMStoreFloat(&result, magnitude);
+		return result;
+	}
+
 	bool allowFullscreenToggle = true;
 	constexpr FLOAT CLEAR_COLOR[] = { 0.4f, 0.6f, 0.9f, 1.0f };
 	constexpr FLOAT LIGHT_BUFFER_CLEAR_COLOR[] = { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -287,7 +305,7 @@ bool DeferredLightingDemo::LoadContent()
 		commandList->LoadTextureFromFile(*m_WhiteTexture2d, L"Assets/Textures/white.png");
 	}
 
-	constexpr DXGI_FORMAT gBufferFormat = DXGI_FORMAT_R16G16B16A16_UNORM;
+	constexpr DXGI_FORMAT gBufferFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	constexpr DXGI_FORMAT lightBufferFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	constexpr DXGI_FORMAT resultFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 	constexpr DXGI_FORMAT depthBufferFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -799,35 +817,35 @@ bool DeferredLightingDemo::LoadContent()
 
 		// magenta
 		{
-			PointLight pointLight(XMFLOAT4(-8, 2, -2, 1));
+			PointLight pointLight(XMFLOAT4(-8, 2, 10, 1));
 			pointLight.Color = XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f);
 			m_PointLights.push_back(pointLight);
 		}
 
 		// yellow-ish
 		{
-			PointLight pointLight(XMFLOAT4(0, 2, -6, 1));
+			PointLight pointLight(XMFLOAT4(-6, 2, 17, 1));
 			pointLight.Color = XMFLOAT4(3.0f, 2.0f, 0.25f, 1.0f);
 			m_PointLights.push_back(pointLight);
 		}
 
 		// cyan-ish
 		{
-			PointLight pointLight(XMFLOAT4(6, 4, 10, 1), 25.0f);
+			PointLight pointLight(XMFLOAT4(6, 4, 13, 1), 25.0f);
 			pointLight.Color = XMFLOAT4(0.0f, 4.0f, 2.0f, 1.0f);
 			m_PointLights.push_back(pointLight);
 		}
 
 		// red
 		{
-			PointLight pointLight(XMFLOAT4(10, 4, 10, 1), 25.0f);
+			PointLight pointLight(XMFLOAT4(10, 4, 18, 1), 25.0f);
 			pointLight.Color = XMFLOAT4(4.0f, 0.0f, 0.1f, 1.0f);
 			m_PointLights.push_back(pointLight);
 		}
 
 		// green-ish
 		{
-			PointLight pointLight(XMFLOAT4(4, 5, -4, 1));
+			PointLight pointLight(XMFLOAT4(-2, 5, 12, 1));
 			pointLight.Color = XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
 			m_PointLights.push_back(pointLight);
 		}
@@ -951,6 +969,19 @@ bool DeferredLightingDemo::LoadContent()
 					XMMATRIX worldMatrix = translationMatrix;
 					m_GameObjects.push_back(GameObject(worldMatrix, model, material));
 				}
+			}
+		}
+
+		{
+			{
+				auto mesh = modelLoader.LoadExisting(Mesh::CreateSphere(*commandList, 0.5f));
+				auto material = std::make_shared<PbrMaterial>();
+				textureLoader.Init(*material);
+
+				material->GetConstants().Metallic = 0.2f;
+				material->GetConstants().Roughness = 0.25f;
+
+				m_PointLightGameObject = std::make_unique<GameObject>(XMMatrixIdentity(), mesh, material);
 			}
 		}
 
@@ -1265,6 +1296,32 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			for (const auto& mesh : model->GetMeshes())
 			{
 				mesh->Draw(*commandList);
+			}
+		}
+
+		// point lights
+		{
+			auto material = m_PointLightGameObject->GetMaterial<PbrMaterial>();
+			const auto model = m_PointLightGameObject->GetModel();
+			
+			material->SetShaderResourceViews(*commandList, GBufferRootParameters::Textures);
+
+			for (const auto& pointLight : m_PointLights)
+			{
+				MatricesCb matricesCb;
+				auto positionWS = XMLoadFloat4(&pointLight.PositionWs);
+				auto modelMatrix = XMMatrixTranslationFromVector(positionWS);
+				matricesCb.Compute(modelMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
+				commandList->SetGraphicsDynamicConstantBuffer(GBufferRootParameters::MatricesCb, matricesCb);
+
+				material->GetConstants().Diffuse = NormalizeColor(pointLight.Color);
+				material->GetConstants().Emission = GetColorMagnitude(pointLight.Color);
+				material->SetDynamicConstantBuffer(*commandList, GBufferRootParameters::MaterialCb);
+				
+				for (const auto& mesh : model->GetMeshes())
+				{
+					mesh->Draw(*commandList);
+				}
 			}
 		}
 	}
