@@ -21,7 +21,7 @@ namespace
 	}
 }
 
-BlitPso::BlitPso(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT renderTargetFormat) 
+BlitPso::BlitPso(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT renderTargetFormat, bool linearFilter)
 	: m_BlitMesh(Mesh::CreateBlitTriangle(commandList))
 	, m_ScissorRect(CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX))
 {
@@ -51,9 +51,10 @@ BlitPso::BlitPso(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& comm
 	CD3DX12_ROOT_PARAMETER1 rootParameters[RootParameters::NumRootParameters];
 	rootParameters[RootParameters::Source].InitAsDescriptorTable(1, &sourceDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
 
+	auto filter = linearFilter ? D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR : D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT;
 	CD3DX12_STATIC_SAMPLER_DESC samplers[] = {
 		// point clamp
-		CD3DX12_STATIC_SAMPLER_DESC(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
+		CD3DX12_STATIC_SAMPLER_DESC(0, filter, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
 	};
 
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
