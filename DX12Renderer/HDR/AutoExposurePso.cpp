@@ -8,7 +8,7 @@
 
 namespace
 {
-	namespace RootParameters
+	namespace BuildLuminanceHistogramRootParameters
 	{
 		enum RootParameters
 		{
@@ -17,15 +17,17 @@ namespace
 			LuminanceHistogramParametersCB,
 			NumRootParameters
 		};
+
+		struct LuminanceHistogramParameters
+		{
+			uint32_t InputWidth;
+			uint32_t InputHeight;
+			float MinLogLuminance;
+			float OneOverLogLuminanceRange;
+		};
 	}
 
-	struct LuminanceHistogramParameters
-	{
-		uint32_t InputWidth;
-		uint32_t InputHeight;
-		float MinLogLuminance;
-		float OneOverLogLuminanceRange;
-	};
+	
 }
 
 AutoExposurePso::AutoExposurePso(Microsoft::WRL::ComPtr<ID3D12Device2> device)
@@ -41,10 +43,10 @@ AutoExposurePso::AutoExposurePso(Microsoft::WRL::ComPtr<ID3D12Device2> device)
 		const CD3DX12_DESCRIPTOR_RANGE1 hdrTexture(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0,
 			D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE);
 
-		CD3DX12_ROOT_PARAMETER1 rootParameters[RootParameters::NumRootParameters];
-		rootParameters[RootParameters::HDRTexture].InitAsDescriptorTable(1, &hdrTexture);
-		rootParameters[RootParameters::LuminanceHistogram].InitAsUnorderedAccessView(0, 0);
-		rootParameters[RootParameters::LuminanceHistogramParametersCB].InitAsConstants(sizeof(LuminanceHistogramParameters) / sizeof(float), 0);
+		CD3DX12_ROOT_PARAMETER1 rootParameters[BuildLuminanceHistogramRootParameters::NumRootParameters];
+		rootParameters[BuildLuminanceHistogramRootParameters::HDRTexture].InitAsDescriptorTable(1, &hdrTexture);
+		rootParameters[BuildLuminanceHistogramRootParameters::LuminanceHistogram].InitAsUnorderedAccessView(0, 0);
+		rootParameters[BuildLuminanceHistogramRootParameters::LuminanceHistogramParametersCB].InitAsConstants(sizeof(BuildLuminanceHistogramRootParameters::LuminanceHistogramParameters) / sizeof(float), 0);
 
 		const CD3DX12_STATIC_SAMPLER_DESC linearClampSampler(
 			0,
@@ -55,7 +57,7 @@ AutoExposurePso::AutoExposurePso(Microsoft::WRL::ComPtr<ID3D12Device2> device)
 		);
 
 		const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc(
-			RootParameters::NumRootParameters,
+			BuildLuminanceHistogramRootParameters::NumRootParameters,
 			rootParameters, 0, nullptr
 		);
 
@@ -91,18 +93,18 @@ void AutoExposurePso::Dispatch(CommandList& commandList, const Texture& hdrTextu
 		commandList.SetPipelineState(m_BuildLuminanceHistogramPipelineState);
 		commandList.SetComputeRootSignature(m_BuildLuminanceHistogramRootSignature);
 
-		commandList.SetShaderResourceView(RootParameters::HDRTexture, 0, hdrTexture);
+		commandList.SetShaderResourceView(BuildLuminanceHistogramRootParameters::HDRTexture, 0, hdrTexture);
 
-		commandList.SetComputeRootUnorderedAccessView(RootParameters::LuminanceHistogram, m_LuminanceHistogram);
+		commandList.SetComputeRootUnorderedAccessView(BuildLuminanceHistogramRootParameters::LuminanceHistogram, m_LuminanceHistogram);
 
 		auto hdrTextureDesc = hdrTexture.GetD3D12ResourceDesc();
-		LuminanceHistogramParameters parameters;
+		BuildLuminanceHistogramRootParameters::LuminanceHistogramParameters parameters;
 		parameters.InputWidth = static_cast<uint32_t>(hdrTextureDesc.Width);
 		parameters.InputHeight = static_cast<uint32_t>(hdrTextureDesc.Height);
 		parameters.MinLogLuminance = -10.0f;
 		constexpr auto maxLogLuminance = 2.0f;
 		parameters.OneOverLogLuminanceRange = 1.0f / (maxLogLuminance - parameters.MinLogLuminance);
-		commandList.SetCompute32BitConstants(RootParameters::LuminanceHistogramParametersCB, parameters);
+		commandList.SetCompute32BitConstants(BuildLuminanceHistogramRootParameters::LuminanceHistogramParametersCB, parameters);
 
 		commandList.Dispatch(Math::DivideByMultiple(parameters.InputWidth, 16), Math::DivideByMultiple(parameters.InputHeight, 16));
 	}
