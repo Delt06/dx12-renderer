@@ -216,6 +216,7 @@
     <ClCompile Include="LightingDemo\Scene.cpp" />
     <ClCompile Include="LightingDemo\SceneRenderer.cpp" />
     <ClCompile Include="Animation.cpp" />
+    <ClCompile Include="StructuredBuffer.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="TextureLoader.cpp" />
@@ -286,6 +287,7 @@
     <ClInclude Include="RootSignature.h" />
     <ClInclude Include="LightingDemo\Scene.h" />
     <ClInclude Include="LightingDemo\SceneRenderer.h" />
+    <ClInclude Include="StructuredBuffer.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureLoader.h" />
     <ClInclude Include="TextureUsageType.h" />
