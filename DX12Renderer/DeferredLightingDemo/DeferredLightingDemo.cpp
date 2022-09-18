@@ -807,7 +807,7 @@ bool DeferredLightingDemo::LoadContent()
 		}
 
 		{
-			m_AutoExposurePso = std::make_unique<AutoExposurePso>(device);
+			m_AutoExposurePso = std::make_unique<AutoExposurePso>(device, *commandList);
 			m_ToneMappingPso = std::make_unique<ToneMappingPso>(device, *commandList, resultFormat);
 		}
 	}
@@ -1238,6 +1238,7 @@ void DeferredLightingDemo::OnUpdate(UpdateEventArgs& e)
 	m_Camera.SetRotation(cameraRotation);
 
 	auto dt = static_cast<float>(e.ElapsedTime);
+	m_DeltaTime = dt;
 
 	if (m_AnimateLights)
 	{
@@ -1462,7 +1463,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 	}
 
 	{
-		m_AutoExposurePso->Dispatch(*commandList, m_LightBufferRenderTarget.GetTexture(Color0));
+		m_AutoExposurePso->Dispatch(*commandList, m_LightBufferRenderTarget.GetTexture(Color0), m_DeltaTime);
 	}
 
 	{

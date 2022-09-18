@@ -585,6 +585,14 @@ void CommandList::SetGraphicsDynamicConstantBuffer(const uint32_t rootParameterI
 	m_D3d12CommandList->SetGraphicsRootConstantBufferView(rootParameterIndex, heapAllocation.Gpu);
 }
 
+void CommandList::SetComputeDynamicConstantBuffer(uint32_t rootParameterIndex, size_t sizeInBytes, const void* bufferData) const
+{
+	const auto heapAllocation = m_PUploadBuffer->Allocate(sizeInBytes, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+	memcpy(heapAllocation.Cpu, bufferData, sizeInBytes);
+
+	m_D3d12CommandList->SetComputeRootConstantBufferView(rootParameterIndex, heapAllocation.Gpu);
+}
+
 void CommandList::SetGraphics32BitConstants(const uint32_t rootParameterIndex, const uint32_t numConstants,
 	const void* constants)
 {

@@ -5,7 +5,7 @@
 #define NUM_HISTOGRAM_BINS 256
 #define HISTOGRAM_THREADS_PER_DIMENSION 16
 
-#define EPSILON 0.005
+#define EPSILON 0.0000001
 
 Texture2D HDRTexture : register(t0);
 RWByteAddressBuffer LuminanceHistogram : register(u0);
@@ -35,7 +35,7 @@ uint HDRToHistogramBin(float3 hdrColor)
 }
 
 [numthreads(HISTOGRAM_THREADS_PER_DIMENSION, HISTOGRAM_THREADS_PER_DIMENSION, 1)]
-void main(uint groupIndex : SV_GroupIndex, uint3 threadId : SV_DispatchThreadID )
+void main(uint groupIndex : SV_GroupIndex, uint3 threadId : SV_DispatchThreadID)
 {
     HistogramShared[groupIndex] = 0;
     

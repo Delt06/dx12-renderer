@@ -240,6 +240,15 @@ public:
 		SetGraphicsDynamicConstantBuffer(rootParameterIndex, sizeof(T), &data);
 	}
 
+	void SetComputeDynamicConstantBuffer(uint32_t rootParameterIndex, size_t sizeInBytes,
+		const void* bufferData) const;
+
+	template <typename T>
+	void SetComputeDynamicConstantBuffer(uint32_t rootParameterIndex, const T& data)
+	{
+		SetComputeDynamicConstantBuffer(rootParameterIndex, sizeof(T), &data);
+	}
+
 	/**
 	 * Set a set of 32-bit constants on the graphics pipeline.
 	 */
