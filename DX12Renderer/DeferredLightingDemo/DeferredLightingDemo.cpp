@@ -38,6 +38,7 @@ using namespace DirectX;
 #include "PBR/IBL/BrdfIntegrationPso.h"
 #include "PBR/IBL/PreFilterEnvironmentPso.h"
 #include "BlitPso.h"
+#include "HDR/AutoExposurePso.h"
 
 #if defined(max)
 #undef max
@@ -806,6 +807,7 @@ bool DeferredLightingDemo::LoadContent()
 		}
 
 		{
+			m_AutoExposurePso = std::make_unique<AutoExposurePso>(device);
 			m_ToneMappingPso = std::make_unique<ToneMappingPso>(device, *commandList, resultFormat);
 		}
 	}
@@ -1457,6 +1459,10 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		);
 
 		m_SkyboxMesh->Draw(*commandList);
+	}
+
+	{
+		m_AutoExposurePso->Dispatch(*commandList, m_LightBufferRenderTarget.GetTexture(Color0));
 	}
 
 	{

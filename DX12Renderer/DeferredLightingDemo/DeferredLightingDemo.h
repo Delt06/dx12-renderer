@@ -16,6 +16,7 @@
 #include "HDR/ToneMappingPso.h"
 
 struct MatricesCb;
+class AutoExposurePso;
 
 class DeferredLightingDemo final : public Game
 {
@@ -63,6 +64,7 @@ private:
 	RenderTarget m_ResultRenderTarget;
 	Texture m_DepthTexture;
 
+	std::unique_ptr<AutoExposurePso> m_AutoExposurePso;
 	std::unique_ptr<ToneMappingPso> m_ToneMappingPso;
 	std::unique_ptr<GameObject> m_PointLightGameObject;
 

@@ -44,5 +44,5 @@ public:
      * Create the views for the buffer resource.
      * Used by the CommandList when setting the buffer contents.
      */
-    virtual void CreateViews(size_t numElements, size_t elementSize);
+    virtual void CreateViews(size_t numElements, size_t elementSize) = 0;
 };

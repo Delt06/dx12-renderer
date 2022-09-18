@@ -422,6 +422,8 @@ public:
 		return m_ComputeCommandList;
 	}
 
+	void SetComputeRootUnorderedAccessView(UINT rootParameterIndex, const Resource& resource);
+
 protected:
 private:
 	void TrackObject(Microsoft::WRL::ComPtr<ID3D12Object> object);

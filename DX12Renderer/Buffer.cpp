@@ -12,10 +12,4 @@ Buffer::Buffer(const D3D12_RESOURCE_DESC& resDesc,
                const std::wstring& name)
     : ResourceWrapper(resDesc, nullptr, name)
 {
-    CreateViews(numElements, elementSize);
-}
-
-void Buffer::CreateViews(size_t numElements, size_t elementSize)
-{
-    throw std::exception("Unimplemented function.");
 }

@@ -1010,6 +1010,14 @@ void CommandList::SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, ID3D12D
 	}
 }
 
+void CommandList::SetComputeRootUnorderedAccessView(UINT rootParameterIndex, const Resource& resource)
+{
+	auto d3d12Resource = resource.GetD3D12Resource();
+	TransitionBarrier(resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	m_D3d12CommandList->SetComputeRootUnorderedAccessView(rootParameterIndex, d3d12Resource->GetGPUVirtualAddress());
+	TrackObject(d3d12Resource);
+}
+
 void CommandList::BindDescriptorHeaps()
 {
 	UINT numDescriptorHeaps = 0;
