@@ -35,9 +35,9 @@ uint HDRToHistogramBin(float3 hdrColor)
 }
 
 [numthreads(HISTOGRAM_THREADS_PER_DIMENSION, HISTOGRAM_THREADS_PER_DIMENSION, 1)]
-void main(uint groupIndex : SV_GroupIndex, uint3 threadId : SV_DispatchThreadID)
+void main(uint groupIndex : SV_GroupIndex, uint3 threadId : SV_DispatchThreadID, uint3 localThreadId : SV_GroupThreadID)
 {
-    HistogramShared[groupIndex] = 0;
+    HistogramShared[localThreadId.x + localThreadId.y * HISTOGRAM_THREADS_PER_DIMENSION] = 0;
     
     GroupMemoryBarrierWithGroupSync();
     

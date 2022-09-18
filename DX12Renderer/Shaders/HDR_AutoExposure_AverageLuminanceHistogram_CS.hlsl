@@ -26,6 +26,8 @@ void main(uint3 localThreadIndex : SV_GroupThreadID)
     
     GroupMemoryBarrierWithGroupSync();
     
+    LuminanceHistogram.Store(localIndex * 4, 0);
+    
     [unroll]
     for (uint histogramSampleIndex = (NUM_HISTOGRAM_BINS >> 1); histogramSampleIndex > 0; histogramSampleIndex >>= 1)
     {
@@ -42,7 +44,8 @@ void main(uint3 localThreadIndex : SV_GroupThreadID)
         float weightedLogAverage = (HistogramShared[0] / max((float) PixelCount - countForThisBin, 1.0)) - 1.0;
         float weightedAverageLuminance = exp2(((weightedLogAverage / (NUM_HISTOGRAM_BINS - 2)) * LogLuminanceRange) + MinLogLuminance);
         float luminanceLastFrame = LuminanceOutput[uint2(0, 0)];
-        float adaptedLuminance = luminanceLastFrame + (weightedAverageLuminance - luminanceLastFrame) * (1 - exp(-DeltaTime * Tau));
+        float timeCoeff = saturate(1 - exp(-DeltaTime * Tau));
+        float adaptedLuminance = luminanceLastFrame + (weightedAverageLuminance - luminanceLastFrame) * timeCoeff;
         LuminanceOutput[uint2(0, 0)] = adaptedLuminance;
     }
 }
