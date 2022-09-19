@@ -1199,6 +1199,16 @@ bool DeferredLightingDemo::LoadContent()
 		m_ResultRenderTarget.AttachTexture(Color0, resultRT);
 	}
 
+	// TAA
+	{
+		auto colorDesc = CD3DX12_RESOURCE_DESC::Tex2D(lightBufferFormat, m_Width, m_Height, 1, 1);
+
+		for (uint32_t i = 0; i < TAA_HISTORY_SIZE; ++i)
+		{
+			m_TaaHistory[i] = std::make_shared<Texture>(colorDesc, nullptr, TextureUsageType::Other, L"TAA History Texture");
+		}
+	}
+
 	auto fenceValue = commandQueue->ExecuteCommandList(commandList);
 	commandQueue->WaitForFenceValue(fenceValue);
 
@@ -1233,6 +1243,14 @@ void DeferredLightingDemo::OnResize(ResizeEventArgs& e)
 		}
 
 		m_SurfaceRenderTarget.AttachTexture(Color0, GetGBufferTexture(GBufferTextureType::Surface));
+
+		for (const auto& taaHistoryItem : m_TaaHistory)
+		{
+			if (taaHistoryItem != nullptr)
+			{
+				taaHistoryItem->Resize(m_Width, m_Height);
+			}
+		}
 	}
 }
 
@@ -1508,6 +1526,21 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		);
 
 		m_SkyboxMesh->Draw(*commandList);
+	}
+
+	{
+		PIXScope(*commandList, "Update TAA History");
+
+		const auto last = m_TaaHistory[TAA_HISTORY_SIZE - 1];
+
+		for (uint32_t i = 0; i < TAA_HISTORY_SIZE - 1; ++i)
+		{
+			m_TaaHistory[i + 1] = m_TaaHistory[i];
+		}
+
+		m_TaaHistory[0] = last;
+
+		commandList->CopyResource(*last, m_LightBufferRenderTarget.GetTexture(Color0));
 	}
 
 	{

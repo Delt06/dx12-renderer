@@ -92,6 +92,7 @@ private:
 	float m_DeltaTime;
 
 
+	// TAA
 	constexpr static DirectX::XMFLOAT2 TAA_JITTER_OFFSETS[]{
 		{0.500000f, 0.333333f},
 		{0.250000f, 0.666667f},
@@ -111,9 +112,10 @@ private:
 		{0.031250f, 0.592593f},
 	};
 	constexpr static uint32_t TAA_JITTER_OFFSETS_COUNT = _countof(TAA_JITTER_OFFSETS);
-	// TAA
 	DirectX::XMMATRIX m_PreviousViewProjectionMatrix;
 	uint32_t m_TaaFrameIndex = 0;
+	constexpr static uint32_t TAA_HISTORY_SIZE = 4;
+	std::shared_ptr<Texture> m_TaaHistory[TAA_HISTORY_SIZE];
 
 	RootSignature m_GBufferPassRootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_GBufferPassPipelineState;
