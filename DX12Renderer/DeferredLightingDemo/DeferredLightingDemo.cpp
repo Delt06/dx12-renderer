@@ -1539,7 +1539,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 	}
 
 	commandQueue->ExecuteCommandList(commandList);
-	const auto& presentedTexture = m_Taa->GetResolvedTexture();
+	const auto& presentedTexture = m_TaaEnabled ? m_Taa->GetResolvedTexture() : m_ResultRenderTarget.GetTexture(Color0);
 	PWindow->Present(presentedTexture);
 }
 
