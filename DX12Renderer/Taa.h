@@ -22,6 +22,7 @@ public:
 	void Resolve(CommandList& commandList, const Texture& currentBuffer, const Texture& velocityBuffer);
 	void Resize(uint32_t width, uint32_t height);
 	void CopyResolvedTexture(CommandList& commandList, const Texture& destination);
+	[[nodiscard]] const Texture& GetResolvedTexture() const;
 
 	void OnRenderedFrame(const DirectX::XMMATRIX& viewProjectionMatrix);
 

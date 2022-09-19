@@ -826,6 +826,10 @@ bool DeferredLightingDemo::LoadContent()
 			m_AutoExposurePso = std::make_unique<AutoExposurePso>(device, *commandList);
 			m_ToneMappingPso = std::make_unique<ToneMappingPso>(device, *commandList, resultFormat);
 		}
+
+		{
+			m_Taa = std::make_unique<Taa>(device, *commandList, resultFormat, m_Width, m_Height);
+		}
 	}
 
 	// Create lights
@@ -1200,11 +1204,6 @@ bool DeferredLightingDemo::LoadContent()
 		m_ResultRenderTarget.AttachTexture(Color0, resultRT);
 	}
 
-	// TAA
-	{
-		m_Taa = std::make_unique<Taa>(device, *commandList, lightBufferFormat, m_Width, m_Height);
-	}
-
 	auto fenceValue = commandQueue->ExecuteCommandList(commandList);
 	commandQueue->WaitForFenceValue(fenceValue);
 
@@ -1514,12 +1513,6 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		m_SkyboxMesh->Draw(*commandList);
 	}
 
-	if (m_TaaEnabled)
-	{
-		m_Taa->Resolve(*commandList, m_LightBufferRenderTarget.GetTexture(Color0), GetGBufferTexture(GBufferTextureType::Velocity));
-		m_Taa->CopyResolvedTexture(*commandList, m_LightBufferRenderTarget.GetTexture(Color0));
-	}
-
 	{
 		m_AutoExposurePso->Dispatch(*commandList, m_LightBufferRenderTarget.GetTexture(Color0), m_DeltaTime);
 	}
@@ -1527,6 +1520,12 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 	{
 		auto& source = m_LightBufferRenderTarget.GetTexture(Color0);
 		m_ToneMappingPso->Blit(*commandList, source, m_AutoExposurePso->GetLuminanceOutput(), m_ResultRenderTarget);
+	}
+
+	if (m_TaaEnabled)
+	{
+		const Texture& currentBuffer = m_ResultRenderTarget.GetTexture(Color0);
+		m_Taa->Resolve(*commandList, currentBuffer, GetGBufferTexture(GBufferTextureType::Velocity));
 	}
 
 	// Maintain TAA data
@@ -1540,7 +1539,8 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 	}
 
 	commandQueue->ExecuteCommandList(commandList);
-	PWindow->Present(m_ResultRenderTarget.GetTexture(Color0));
+	const auto& presentedTexture = m_Taa->GetResolvedTexture();
+	PWindow->Present(presentedTexture);
 }
 
 void DeferredLightingDemo::BindGBufferAsSRV(CommandList& commandList, uint32_t rootParameterIndex)
