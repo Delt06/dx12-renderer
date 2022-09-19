@@ -33,12 +33,12 @@ using namespace DirectX;
 #undef min
 #endif
 
-#include "PBR/IBL/DiffuseIrradiancePso.h"
+#include "PBR/IBL/DiffuseIrradiance.h"
 #include "PBR/PbrTextureLoader.h"
-#include "PBR/IBL/BrdfIntegrationPso.h"
-#include "PBR/IBL/PreFilterEnvironmentPso.h"
-#include "BlitPso.h"
-#include "HDR/AutoExposurePso.h"
+#include "PBR/IBL/BrdfIntegration.h"
+#include "PBR/IBL/PreFilterEnvironment.h"
+#include "Blit.h"
+#include "HDR/AutoExposure.h"
 #include "TaaCBuffer.h"
 #include "Taa.h"
 
@@ -823,8 +823,8 @@ bool DeferredLightingDemo::LoadContent()
 		}
 
 		{
-			m_AutoExposurePso = std::make_unique<AutoExposurePso>(device, *commandList);
-			m_ToneMappingPso = std::make_unique<ToneMappingPso>(device, *commandList, resultFormat);
+			m_AutoExposurePso = std::make_unique<AutoExposure>(device, *commandList);
+			m_ToneMappingPso = std::make_unique<ToneMapping>(device, *commandList, resultFormat);
 		}
 
 		{
@@ -1044,7 +1044,7 @@ bool DeferredLightingDemo::LoadContent()
 			L"Skybox IBL (Diffuse Irradiance)");
 		m_DiffuseIrradianceMapRt.AttachTexture(Color0, diffuseIrradianceMap);
 
-		DiffuseIrradiancePso diffuseIrradiancePso(device, *commandList, diffuseIrradianceMapDesc.Format);
+		DiffuseIrradiance diffuseIrradiancePso(device, *commandList, diffuseIrradianceMapDesc.Format);
 		diffuseIrradiancePso.SetContext(*commandList);
 		diffuseIrradiancePso.SetSourceCubemap(*commandList, m_Skybox);
 
@@ -1074,7 +1074,7 @@ bool DeferredLightingDemo::LoadContent()
 		m_BrdfIntegrationMapRt.AttachTexture(Color0, brdfIntegrationMap);
 
 		auto device = Application::Get().GetDevice();
-		BrdfIntegrationPso brdfIntegrationPso(device, *commandList, diffuseIrradianceMapDesc.Format);
+		BrdfIntegration brdfIntegrationPso(device, *commandList, diffuseIrradianceMapDesc.Format);
 		brdfIntegrationPso.SetContext(*commandList);
 		brdfIntegrationPso.SetRenderTarget(*commandList, m_BrdfIntegrationMapRt);
 		brdfIntegrationPso.Draw(*commandList);
@@ -1099,7 +1099,7 @@ bool DeferredLightingDemo::LoadContent()
 			L"Skybox IBL (Pre-Filtered Environment Map)");
 		m_PreFilterEnvironmentMapRt.AttachTexture(Color0, preFilterEnvironmentMap);
 
-		PreFilterEnvironmentPso preFilterEnvironmentPso(device, *commandList, preFilterEnvironmentMapDesc.Format);
+		PreFilterEnvironment preFilterEnvironmentPso(device, *commandList, preFilterEnvironmentMapDesc.Format);
 		preFilterEnvironmentPso.SetContext(*commandList);
 		preFilterEnvironmentPso.SetSourceCubemap(*commandList, m_Skybox);
 

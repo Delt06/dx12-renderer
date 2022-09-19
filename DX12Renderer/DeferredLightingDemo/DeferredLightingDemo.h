@@ -13,12 +13,12 @@
 
 #include "GameObject.h"
 #include "GraphicsSettings.h"
-#include "HDR/ToneMappingPso.h"
+#include "HDR/ToneMapping.h"
 #include "Ssao.h"
 #include "Taa.h"
 
 struct MatricesCb;
-class AutoExposurePso;
+class AutoExposure;
 
 class DeferredLightingDemo final : public Game
 {
@@ -84,8 +84,8 @@ private:
 	std::unique_ptr<Ssao> m_Ssao;
 	RenderTarget m_SurfaceRenderTarget;
 
-	std::unique_ptr<AutoExposurePso> m_AutoExposurePso;
-	std::unique_ptr<ToneMappingPso> m_ToneMappingPso;
+	std::unique_ptr<AutoExposure> m_AutoExposurePso;
+	std::unique_ptr<ToneMapping> m_ToneMappingPso;
 
 	Camera m_Camera;
 	std::vector<GameObject> m_GameObjects;

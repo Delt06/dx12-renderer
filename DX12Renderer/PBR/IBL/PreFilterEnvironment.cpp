@@ -1,4 +1,4 @@
-#include "PreFilterEnvironmentPso.h"
+#include "PreFilterEnvironment.h"
 #include <d3dcompiler.h>
 #include "Helpers.h"
 #include <DirectXMath.h>
@@ -35,7 +35,7 @@ namespace
 	};
 }
 
-PreFilterEnvironmentPso::PreFilterEnvironmentPso(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT renderTargetFormat)
+PreFilterEnvironment::PreFilterEnvironment(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT renderTargetFormat)
 	: m_BlitMesh(Mesh::CreateBlitTriangle(commandList))
 	, m_ScissorRect(CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX))
 {
@@ -110,14 +110,14 @@ PreFilterEnvironmentPso::PreFilterEnvironmentPso(Microsoft::WRL::ComPtr<ID3D12De
 
 }
 
-void PreFilterEnvironmentPso::SetContext(CommandList& commandList)
+void PreFilterEnvironment::SetContext(CommandList& commandList)
 {
 	commandList.SetGraphicsRootSignature(m_RootSignature);
 	commandList.SetPipelineState(m_PipelineState);
 	commandList.SetScissorRect(m_ScissorRect);
 }
 
-void PreFilterEnvironmentPso::SetSourceCubemap(CommandList& commandList, Texture& texture)
+void PreFilterEnvironment::SetSourceCubemap(CommandList& commandList, Texture& texture)
 {
 	const auto sourceDesc = texture.GetD3D12ResourceDesc();
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
@@ -133,7 +133,7 @@ void PreFilterEnvironmentPso::SetSourceCubemap(CommandList& commandList, Texture
 	m_SourceHeight = sourceDesc.Height;
 }
 
-void PreFilterEnvironmentPso::SetRenderTarget(CommandList& commandList, RenderTarget& renderTarget, UINT texArrayIndex, UINT mipLevel)
+void PreFilterEnvironment::SetRenderTarget(CommandList& commandList, RenderTarget& renderTarget, UINT texArrayIndex, UINT mipLevel)
 {
 	const auto rtColorDesc = renderTarget.GetTexture(Color0).GetD3D12ResourceDesc();
 	const float sizeScale = pow(2, mipLevel);
@@ -145,7 +145,7 @@ void PreFilterEnvironmentPso::SetRenderTarget(CommandList& commandList, RenderTa
 	commandList.SetRenderTarget(renderTarget, texArrayIndex, mipLevel);
 }
 
-void PreFilterEnvironmentPso::Draw(CommandList& commandList, float roughness, uint32_t cubemapSideIndex)
+void PreFilterEnvironment::Draw(CommandList& commandList, float roughness, uint32_t cubemapSideIndex)
 {
 	Parameters parameters;
 

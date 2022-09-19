@@ -8,10 +8,10 @@
 
 class CommandList;
 
-class AutoExposurePso
+class AutoExposure
 {
 public:
-	explicit AutoExposurePso(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList);
+	explicit AutoExposure(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList);
 
 	void Dispatch(CommandList& commandList, const Texture& hdrTexture, float deltaTime, float tau = 1.1f);
 

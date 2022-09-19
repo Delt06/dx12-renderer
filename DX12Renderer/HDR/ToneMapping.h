@@ -11,12 +11,12 @@ class Mesh;
 class Texture;
 class RenderTarget;
 
-class BlitPso
+class ToneMapping
 {
 public:
-	explicit BlitPso(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT renderTargetFormat, bool linearFilter = false);
+	explicit ToneMapping(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT renderTargetFormat);
 
-	void Blit(CommandList& commandList, const Texture& source, RenderTarget& destination, UINT destinationTexArrayIndex=-1);
+	void Blit(CommandList& commandList, const Texture& source, const Texture& luminanceOutput, RenderTarget& destination, float whitePoint = 4.0f);
 
 private:
 	RootSignature m_RootSignature;

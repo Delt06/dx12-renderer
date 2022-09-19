@@ -30,7 +30,7 @@ namespace
 	};
 }
 
-BlurPso::BlurPso(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT renderTargetFormat, UINT resolutionScaling, float spread)
+Blur::Blur(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT renderTargetFormat, UINT resolutionScaling, float spread)
 	: m_ScissorRect(CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX))
 	, m_RenderTargetFormat(renderTargetFormat)
 	, m_ResolutionScaling(resolutionScaling)
@@ -109,7 +109,7 @@ BlurPso::BlurPso(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& comm
 	m_BlitMesh = Mesh::CreateBlitTriangle(commandList);
 }
 
-Texture BlurPso::Blur(CommandList& commandList, Texture& source, BlurDirection direction, const D3D12_SHADER_RESOURCE_VIEW_DESC* sourceDesc /*= nullptr*/)
+Texture Blur::Execute(CommandList& commandList, Texture& source, BlurDirection direction, const D3D12_SHADER_RESOURCE_VIEW_DESC* sourceDesc /*= nullptr*/)
 {
 	// prepare
 	const auto sourceWidth = source.GetD3D12ResourceDesc().Width;

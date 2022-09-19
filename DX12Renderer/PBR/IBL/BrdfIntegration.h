@@ -9,10 +9,10 @@ class CommandList;
 class RenderTarget;
 class Mesh;
 
-class BrdfIntegrationPso
+class BrdfIntegration
 {
 public:
-	BrdfIntegrationPso(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT renderTargetFormat);
+	BrdfIntegration(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT renderTargetFormat);
 
 	void SetContext(CommandList& commandList);
 	void SetRenderTarget(CommandList& commandList, RenderTarget& renderTarget);

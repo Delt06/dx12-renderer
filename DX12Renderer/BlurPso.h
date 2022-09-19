@@ -16,12 +16,12 @@ enum class BlurDirection
 	Horizontal, Vertical
 };
 
-class BlurPso
+class Blur
 {
 public:
-	explicit BlurPso(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT renderTargetFormat, UINT resolutionScaling = 2u, float spread = 1.0f);
+	explicit Blur(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT renderTargetFormat, UINT resolutionScaling = 2u, float spread = 1.0f);
 
-	Texture Blur(CommandList& commandList, Texture& source, BlurDirection direction,
+	Texture Execute(CommandList& commandList, Texture& source, BlurDirection direction,
 		const D3D12_SHADER_RESOURCE_VIEW_DESC* sourceDesc = nullptr);
 
 private:

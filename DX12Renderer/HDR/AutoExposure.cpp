@@ -1,4 +1,4 @@
-#include "AutoExposurePso.h"
+#include "AutoExposure.h"
 #include "HDR_AutoExposure_BuildLuminanceHistogram_CS.h"
 #include "HDR_AutoExposure_AverageLuminanceHistogram_CS.h"
 #include "CommandList.h"
@@ -52,7 +52,7 @@ namespace
 	
 }
 
-AutoExposurePso::AutoExposurePso(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList)
+AutoExposure::AutoExposure(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList)
 {
 	{
 		D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData;
@@ -162,7 +162,7 @@ AutoExposurePso::AutoExposurePso(Microsoft::WRL::ComPtr<ID3D12Device2> device, C
 	commandList.CopyTextureSubresource(m_LuminanceOutput, 0, 1, &luminanceOutputData);
 }
 
-void AutoExposurePso::Dispatch(CommandList& commandList, const Texture& hdrTexture, float deltaTime, float tau)
+void AutoExposure::Dispatch(CommandList& commandList, const Texture& hdrTexture, float deltaTime, float tau)
 {
 	constexpr auto minLogLuminance = -10.0f;
 	constexpr auto maxLogLuminance = 2.0f;
@@ -216,7 +216,7 @@ void AutoExposurePso::Dispatch(CommandList& commandList, const Texture& hdrTextu
 	commandList.UavBarrier(m_LuminanceOutput);
 }
 
-const Texture& AutoExposurePso::GetLuminanceOutput() const
+const Texture& AutoExposure::GetLuminanceOutput() const
 {
 	return m_LuminanceOutput;
 }
