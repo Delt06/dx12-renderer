@@ -1344,14 +1344,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 
 
 		TaaCBuffer taaBuffer;
-		{
-			XMFLOAT2 jitterOffset = TAA_JITTER_OFFSETS[m_TaaFrameIndex];
-			XMFLOAT2 viewSize = { static_cast<float>(m_Width), static_cast<float>(m_Height) };
-			jitterOffset.x = ((jitterOffset.x - 0.5f) / viewSize.x) * 2;
-			jitterOffset.y = ((jitterOffset.y - 0.5f) / viewSize.y) * 2;
-
-			taaBuffer.JitterOffset = jitterOffset;
-		}
+		taaBuffer.JitterOffset = m_Taa->ComputeJitterOffset(m_Width, m_Height);
 
 		for (const auto& go : m_GameObjects)
 		{
@@ -1363,7 +1356,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			material->SetDynamicConstantBuffer(*commandList, GBufferRootParameters::MaterialCb);
 			material->SetShaderResourceViews(*commandList, GBufferRootParameters::Textures);
 
-			taaBuffer.PreviousModelViewProjectionMatrix = go.GetPreviousWorldMatrix() * m_PreviousViewProjectionMatrix;
+			taaBuffer.PreviousModelViewProjectionMatrix = go.GetPreviousWorldMatrix() * m_Taa->GetPreviousViewProjectionMatrix();
 			commandList->SetGraphicsDynamicConstantBuffer(GBufferRootParameters::TaaBufferCb, taaBuffer);
 
 			const auto& model = go.GetModel();
@@ -1542,11 +1535,8 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			go.OnRenderedFrame();
 		}
 
-		m_PreviousViewProjectionMatrix = viewProjectionMatrix;
-		m_TaaFrameIndex = (m_TaaFrameIndex + 1) % TAA_JITTER_OFFSETS_COUNT;
+		m_Taa->OnRenderedFrame(viewProjectionMatrix);
 	}
-
-	
 
 	commandQueue->ExecuteCommandList(commandList);
 	PWindow->Present(m_ResultRenderTarget.GetTexture(Color0));

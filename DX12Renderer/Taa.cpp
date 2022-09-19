@@ -108,6 +108,21 @@ Taa::Taa(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList,
 	m_HistoryBuffer = Texture(historyBufferDesc, nullptr, TextureUsageType::Other, L"TAA History Buffer");
 }
 
+DirectX::XMFLOAT2 Taa::ComputeJitterOffset(uint32_t width, uint32_t height) const
+{
+	DirectX::XMFLOAT2 jitterOffset = JITTER_OFFSETS[m_FrameIndex];
+	DirectX::XMFLOAT2 viewSize = { static_cast<float>(width), static_cast<float>(width) };
+	jitterOffset.x = ((jitterOffset.x - 0.5f) / viewSize.x) * 2;
+	jitterOffset.y = ((jitterOffset.y - 0.5f) / viewSize.y) * 2;
+
+	return jitterOffset;
+}
+
+const DirectX::XMMATRIX& Taa::GetPreviousViewProjectionMatrix() const
+{
+	return m_PreviousViewProjectionMatrix;
+}
+
 void Taa::Resolve(CommandList& commandList, const Texture& currentBuffer, const Texture& velocityBuffer)
 {
 	PIXScope(commandList, "TAA");
@@ -147,4 +162,10 @@ void Taa::Resize(uint32_t width, uint32_t height)
 void Taa::CopyResolvedTexture(CommandList& commandList, const Texture& destination)
 {
 	commandList.CopyResource(destination, m_ResolveRenderTarget.GetTexture(Color0));
+}
+
+void Taa::OnRenderedFrame(const DirectX::XMMATRIX& viewProjectionMatrix)
+{
+	m_PreviousViewProjectionMatrix = viewProjectionMatrix;
+	m_FrameIndex = (m_FrameIndex + 1) % JITTER_OFFSETS_COUNT;
 }
