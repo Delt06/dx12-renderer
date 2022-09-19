@@ -4,6 +4,9 @@
 struct TAABuffer
 {
     matrix PreviousModelViewProjection;
+    
+    float2 JitterOffset;
+    float2 _Padding;
 };
 
 #endif 

@@ -28,7 +28,10 @@ VertexShaderOutput main(VertexAttributes IN)
 {
     VertexShaderOutput OUT;
 
-    OUT.PositionCs = mul(matricesCB.ModelViewProjection, float4(IN.PositionOs, 1.0f));
+    float4 positionCS = mul(matricesCB.ModelViewProjection, float4(IN.PositionOs, 1.0f));
+    positionCS.xy += taaCB.JitterOffset * positionCS.w;
+    OUT.PositionCs = positionCS;
+    
     OUT.NormalWs = mul((float3x3) matricesCB.InverseTransposeModel, IN.Normal);
     OUT.TangentWs = mul((float3x3) matricesCB.InverseTransposeModel, IN.TangentOs);
     OUT.BitangentWs = mul((float3x3) matricesCB.InverseTransposeModel, IN.BitangentOs);
