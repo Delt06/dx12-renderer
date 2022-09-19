@@ -14,6 +14,7 @@
 #include "GameObject.h"
 #include "GraphicsSettings.h"
 #include "HDR/ToneMappingPso.h"
+#include "Ssao.h"
 
 struct MatricesCb;
 class AutoExposurePso;
@@ -49,7 +50,20 @@ private:
 		float OneOverWidth, OneOverHeight;
 	};
 
+	enum class GBufferTextureType
+	{
+		Diffuse,
+		Normals,
+		Surface,
+		DepthStencil
+	};
+
+	AttachmentPoint GetGBufferTextureAttachmentPoint(GBufferTextureType type);
+	const Texture& GetGBufferTexture(GBufferTextureType type);
+
 	void LightStencilPass(CommandList& commandList, const MatricesCb& matricesCb, std::shared_ptr<Mesh> mesh);
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC GetDepthTextureSrv() const;
 
 	void BindGBufferAsSRV(CommandList& commandList, uint32_t rootParameterIndex);
 	void PointLightPass(CommandList& commandList, const MatricesCb& matricesCb, const PointLight& pointLight, const ScreenParameters& screenParameters, std::shared_ptr<Mesh> mesh);
@@ -64,6 +78,7 @@ private:
 	RenderTarget m_ResultRenderTarget;
 	Texture m_DepthTexture;
 
+	std::unique_ptr<Ssao> m_Ssao;
 	std::unique_ptr<AutoExposurePso> m_AutoExposurePso;
 	std::unique_ptr<ToneMappingPso> m_ToneMappingPso;
 	std::unique_ptr<GameObject> m_PointLightGameObject;

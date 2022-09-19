@@ -807,6 +807,10 @@ bool DeferredLightingDemo::LoadContent()
 		}
 
 		{
+			m_Ssao = std::make_unique<Ssao>(device, *commandList, gBufferFormat, m_Width, m_Height);
+		}
+
+		{
 			m_AutoExposurePso = std::make_unique<AutoExposurePso>(device, *commandList);
 			m_ToneMappingPso = std::make_unique<ToneMappingPso>(device, *commandList, resultFormat);
 		}
@@ -1122,10 +1126,10 @@ bool DeferredLightingDemo::LoadContent()
 			TextureUsageType::RenderTarget,
 			L"GBuffer-Surface");
 
-		m_GBufferRenderTarget.AttachTexture(Color0, diffuseTexture);
-		m_GBufferRenderTarget.AttachTexture(Color1, normalTexture);
-		m_GBufferRenderTarget.AttachTexture(Color2, surfaceTexture);
-		m_GBufferRenderTarget.AttachTexture(DepthStencil, depthBuffer);
+		m_GBufferRenderTarget.AttachTexture(GetGBufferTextureAttachmentPoint(GBufferTextureType::Diffuse), diffuseTexture);
+		m_GBufferRenderTarget.AttachTexture(GetGBufferTextureAttachmentPoint(GBufferTextureType::Normals), normalTexture);
+		m_GBufferRenderTarget.AttachTexture(GetGBufferTextureAttachmentPoint(GBufferTextureType::Surface), surfaceTexture);
+		m_GBufferRenderTarget.AttachTexture(GetGBufferTextureAttachmentPoint(GBufferTextureType::DepthStencil), depthBuffer);
 	}
 
 	// Light Buffer
@@ -1188,6 +1192,11 @@ void DeferredLightingDemo::OnResize(ResizeEventArgs& e)
 		m_LightStencilRenderTarget.AttachTexture(DepthStencil, m_GBufferRenderTarget.GetTexture(DepthStencil));
 		m_DepthTexture.Resize(m_Width, m_Height);
 		m_ResultRenderTarget.Resize(m_Width, m_Height);
+
+		if (m_Ssao != nullptr)
+		{
+			m_Ssao->Resize(m_Width, m_Height);
+		}
 	}
 }
 
@@ -1336,6 +1345,16 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 	}
 
 	{
+		PIXScope(*commandList, "SSAO");
+
+		D3D12_SHADER_RESOURCE_VIEW_DESC depthTextureSrv = GetDepthTextureSrv();
+		m_Ssao->SsaoPass(*commandList, GetGBufferTexture(GBufferTextureType::Normals), m_DepthTexture, projectionMatrix, &depthTextureSrv);
+	}
+
+	commandList->SetViewport(m_Viewport);
+	commandList->SetScissorRect(m_ScissorRect);
+
+	{
 		PIXScope(*commandList, "Light Passes");
 
 		commandList->SetRenderTarget(m_LightBufferRenderTarget);
@@ -1477,19 +1496,34 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 
 void DeferredLightingDemo::BindGBufferAsSRV(CommandList& commandList, uint32_t rootParameterIndex)
 {
-	commandList.SetShaderResourceView(rootParameterIndex, 0, m_GBufferRenderTarget.GetTexture(Color0), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	commandList.SetShaderResourceView(rootParameterIndex, 1, m_GBufferRenderTarget.GetTexture(Color1), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	commandList.SetShaderResourceView(rootParameterIndex, 2, m_GBufferRenderTarget.GetTexture(Color2), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	commandList.SetShaderResourceView(rootParameterIndex, 0, GetGBufferTexture(GBufferTextureType::Diffuse), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	commandList.SetShaderResourceView(rootParameterIndex, 1, GetGBufferTexture(GBufferTextureType::Normals), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	commandList.SetShaderResourceView(rootParameterIndex, 2, GetGBufferTexture(GBufferTextureType::Surface), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
-	D3D12_SHADER_RESOURCE_VIEW_DESC depthStencilSrvDesc;
-	depthStencilSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-	depthStencilSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	depthStencilSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	depthStencilSrvDesc.Texture2D.MipLevels = 1;
-	depthStencilSrvDesc.Texture2D.MostDetailedMip = 0;
-	depthStencilSrvDesc.Texture2D.PlaneSlice = 0;
-	depthStencilSrvDesc.Texture2D.ResourceMinLODClamp = 0.0;
+	auto depthStencilSrvDesc = GetDepthTextureSrv();
 	commandList.SetShaderResourceView(rootParameterIndex, 3, m_DepthTexture, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, &depthStencilSrvDesc);
+}
+
+AttachmentPoint DeferredLightingDemo::GetGBufferTextureAttachmentPoint(GBufferTextureType type)
+{
+	switch (type)
+	{
+	case GBufferTextureType::Diffuse:
+		return Color0;
+	case GBufferTextureType::Normals:
+		return Color1;
+	case GBufferTextureType::Surface:
+		return Color2;
+	case GBufferTextureType::DepthStencil:
+		return DepthStencil;
+	default:
+		throw std::exception("Invalid GBuffer texture type.");
+	}
+}
+
+const Texture& DeferredLightingDemo::GetGBufferTexture(GBufferTextureType type)
+{
+	return m_GBufferRenderTarget.GetTexture(GetGBufferTextureAttachmentPoint(type));
 }
 
 void DeferredLightingDemo::LightStencilPass(CommandList& commandList, const MatricesCb& matricesCb, std::shared_ptr<Mesh> mesh)
@@ -1505,6 +1539,19 @@ void DeferredLightingDemo::LightStencilPass(CommandList& commandList, const Matr
 	commandList.SetGraphicsDynamicConstantBuffer(LightStencilRootParameters::MatricesCb, matricesCb);
 
 	mesh->Draw(commandList);
+}
+
+D3D12_SHADER_RESOURCE_VIEW_DESC DeferredLightingDemo::GetDepthTextureSrv() const
+{
+	D3D12_SHADER_RESOURCE_VIEW_DESC depthStencilSrvDesc;
+	depthStencilSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	depthStencilSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	depthStencilSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	depthStencilSrvDesc.Texture2D.MipLevels = 1;
+	depthStencilSrvDesc.Texture2D.MostDetailedMip = 0;
+	depthStencilSrvDesc.Texture2D.PlaneSlice = 0;
+	depthStencilSrvDesc.Texture2D.ResourceMinLODClamp = 0.0;
+	return depthStencilSrvDesc;
 }
 
 void DeferredLightingDemo::PointLightPass(CommandList& commandList, const MatricesCb& matricesCb, const PointLight& pointLight, const ScreenParameters& screenParameters, std::shared_ptr<Mesh> mesh)
