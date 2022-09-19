@@ -5,24 +5,41 @@
 #include <wrl.h>
 #include "RootSignature.h"
 #include <memory>
+#include "Framework/Shader.h"
 
 class CommandList;
 class Mesh;
 class Texture;
 class RenderTarget;
 
-class Blit
+class Blit : public Shader
 {
 public:
-	explicit Blit(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT renderTargetFormat, bool linearFilter = false);
+	Blit(Shader::Format renderTargetFormat, bool linearFilter = false);
 
 	void Execute(CommandList& commandList, const Texture& source, RenderTarget& destination, UINT destinationTexArrayIndex=-1);
 
-private:
-	RootSignature m_RootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineState;
-	std::shared_ptr<Mesh> m_BlitMesh;
+protected:
+	std::wstring GetVertexShaderName() const override;
 
-	D3D12_RECT m_ScissorRect;
+
+	std::wstring GetPixelShaderName() const override;
+
+
+	std::vector<RootParameter> GetRootParameters() const override;
+
+
+	std::vector<StaticSampler> GetStaticSamplers() const override;
+
+
+	Format GetRenderTargetFormat() const override;
+
+
+	void OnPostInit(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList) override;
+
+private:
+	Shader::Format m_RenderTargetFormat;
+	bool m_LinearFilter;
+	std::shared_ptr<Mesh> m_BlitMesh = nullptr;
 };
 
