@@ -55,6 +55,7 @@
 - https://bruop.github.io/exposure/
 - https://bruop.github.io/tonemapping/
 - https://learnopengl.com/Advanced-Lighting/SSAO
+- https://sugulee.wordpress.com/2021/06/21/temporal-anti-aliasingtaa-tutorial/
 
 ### Libraries and Tools
 
