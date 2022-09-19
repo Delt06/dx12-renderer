@@ -819,7 +819,7 @@ bool DeferredLightingDemo::LoadContent()
 	// Create lights
 	{
 		m_DirectionalLight.m_DirectionWs = XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f);
-		m_DirectionalLight.m_Color = XMFLOAT4(0.5f, 0.5f, 0.4f, 0.0f);
+		m_DirectionalLight.m_Color = XMFLOAT4(0.6f, 0.5f, 0.3f, 0.0f);
 
 		// magenta
 		{
@@ -931,11 +931,22 @@ bool DeferredLightingDemo::LoadContent()
 			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Metallic,
 				L"Assets/Models/old-wooden-chest/chest_01_Metallic.png");
 
-			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.75f, 15.0f);
-			XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(90), 0, 0);
-			XMMATRIX scaleMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
-			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
+			{
+				XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.75f, 15.0f);
+				XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(90), 0, 0);
+				XMMATRIX scaleMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+				XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+				m_GameObjects.push_back(GameObject(worldMatrix, model, material));
+			}
+			
+			{
+				XMMATRIX translationMatrix = XMMatrixTranslation(-50.0f, 0.75f, 15.0f);
+				XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(90), 0, 0);
+				XMMATRIX scaleMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+				XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+				m_GameObjects.push_back(GameObject(worldMatrix, model, material));
+			}
+			
 		}
 
 		{
@@ -1130,6 +1141,8 @@ bool DeferredLightingDemo::LoadContent()
 		m_GBufferRenderTarget.AttachTexture(GetGBufferTextureAttachmentPoint(GBufferTextureType::Normals), normalTexture);
 		m_GBufferRenderTarget.AttachTexture(GetGBufferTextureAttachmentPoint(GBufferTextureType::Surface), surfaceTexture);
 		m_GBufferRenderTarget.AttachTexture(GetGBufferTextureAttachmentPoint(GBufferTextureType::DepthStencil), depthBuffer);
+
+		m_SurfaceRenderTarget.AttachTexture(Color0, GetGBufferTexture(GBufferTextureType::Surface));
 	}
 
 	// Light Buffer
@@ -1197,6 +1210,8 @@ void DeferredLightingDemo::OnResize(ResizeEventArgs& e)
 		{
 			m_Ssao->Resize(m_Width, m_Height);
 		}
+
+		m_SurfaceRenderTarget.AttachTexture(Color0, GetGBufferTexture(GBufferTextureType::Surface));
 	}
 }
 
@@ -1344,11 +1359,15 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		commandList->CopyResource(m_DepthTexture, m_GBufferRenderTarget.GetTexture(DepthStencil));
 	}
 
+	if (m_SsaoEnabled)
 	{
 		PIXScope(*commandList, "SSAO");
 
 		D3D12_SHADER_RESOURCE_VIEW_DESC depthTextureSrv = GetDepthTextureSrv();
-		m_Ssao->SsaoPass(*commandList, GetGBufferTexture(GBufferTextureType::Normals), m_DepthTexture, viewMatrix, projectionMatrix, 0.5f, &depthTextureSrv);
+		constexpr float radius = 0.25f;
+		constexpr float power = 4.0f;
+		m_Ssao->SsaoPass(*commandList, GetGBufferTexture(GBufferTextureType::Normals), m_DepthTexture, viewMatrix, projectionMatrix, &depthTextureSrv, radius, power);
+		m_Ssao->BlurPass(*commandList, m_SurfaceRenderTarget);
 	}
 
 	commandList->SetViewport(m_Viewport);
@@ -1701,6 +1720,10 @@ void DeferredLightingDemo::OnKeyReleased(KeyEventArgs& e)
 		break;
 	case KeyCode::ShiftKey:
 		m_CameraController.m_Shift = false;
+		break;
+	case KeyCode::O:
+		m_SsaoEnabled = !m_SsaoEnabled;
+		OutputDebugStringA(m_SsaoEnabled ? "SSAO: On\n" : "SSAO: Off\n");
 		break;
 	}
 }

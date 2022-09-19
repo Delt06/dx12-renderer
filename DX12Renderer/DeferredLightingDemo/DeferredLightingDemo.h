@@ -78,7 +78,10 @@ private:
 	RenderTarget m_ResultRenderTarget;
 	Texture m_DepthTexture;
 
+	bool m_SsaoEnabled = true;
 	std::unique_ptr<Ssao> m_Ssao;
+	RenderTarget m_SurfaceRenderTarget;
+
 	std::unique_ptr<AutoExposurePso> m_AutoExposurePso;
 	std::unique_ptr<ToneMappingPso> m_ToneMappingPso;
 	std::unique_ptr<GameObject> m_PointLightGameObject;

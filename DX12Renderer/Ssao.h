@@ -17,7 +17,8 @@ public:
 
 	void Resize(uint32_t width, uint32_t height);
 
-	void SsaoPass(CommandList& commandList, const Texture& gBufferNormals, const Texture& gBufferDepth, DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX projectionMatrix, float radius = 0.5f, const D3D12_SHADER_RESOURCE_VIEW_DESC* gBufferDepthSrvDesc = nullptr);
+	void SsaoPass(CommandList& commandList, const Texture& gBufferNormals, const Texture& gBufferDepth, DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX projectionMatrix, const D3D12_SHADER_RESOURCE_VIEW_DESC* gBufferDepthSrvDesc = nullptr, float radius = 0.5f, float power = 1.0f);
+	void BlurPass(CommandList& commandList, const RenderTarget& surfaceRenderTarget);
 
 private:
 	RenderTarget m_RenderTarget;
@@ -28,5 +29,8 @@ private:
 
 	RootSignature m_SsaoPassRootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_SsaoPassPipelineState;
+
+	RootSignature m_BlurPassRootSignature;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_BlurPassPipelineState;
 };
 

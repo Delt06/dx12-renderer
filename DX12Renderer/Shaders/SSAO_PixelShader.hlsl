@@ -7,13 +7,16 @@ struct PixelShaderInput
 };
 
 #define SAMPLES_COUNT 64
-#define BIAS 0.025
+#define BIAS 0.1
 
 cbuffer SSAOCBuffer : register(b0)
 {
     float2 NoiseScale;
     float Radius;
     uint KernelSize;
+    
+    float Power;
+    float3 _Padding;
     
     matrix InverseProjection;
     matrix InverseView;
@@ -73,5 +76,5 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     }
     
     occlusion = 1.0 - (occlusion / KernelSize);
-    return float4(occlusion, 1.0f, 1.0f, 1.0f);
+    return float4(pow(occlusion, Power), 1.0f, 1.0f, 1.0f);
 }
