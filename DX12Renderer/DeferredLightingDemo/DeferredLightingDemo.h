@@ -92,6 +92,7 @@ private:
 	bool m_AnimateLights = false;
 	float m_DeltaTime;
 
+	bool m_TaaEnabled = true;
 	std::unique_ptr<Taa> m_Taa;
 
 	RootSignature m_GBufferPassRootSignature;

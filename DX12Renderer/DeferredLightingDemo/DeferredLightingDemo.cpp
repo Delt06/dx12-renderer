@@ -1344,7 +1344,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 
 
 		TaaCBuffer taaBuffer;
-		taaBuffer.JitterOffset = m_Taa->ComputeJitterOffset(m_Width, m_Height);
+		taaBuffer.JitterOffset = m_TaaEnabled ? m_Taa->ComputeJitterOffset(m_Width, m_Height) : XMFLOAT2(0.0f, 0.0f);
 
 		for (const auto& go : m_GameObjects)
 		{
@@ -1514,6 +1514,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		m_SkyboxMesh->Draw(*commandList);
 	}
 
+	if (m_TaaEnabled)
 	{
 		m_Taa->Resolve(*commandList, m_LightBufferRenderTarget.GetTexture(Color0), GetGBufferTexture(GBufferTextureType::Velocity));
 		m_Taa->CopyResolvedTexture(*commandList, m_LightBufferRenderTarget.GetTexture(Color0));
@@ -1755,6 +1756,10 @@ void DeferredLightingDemo::OnKeyReleased(KeyEventArgs& e)
 	case KeyCode::O:
 		m_SsaoEnabled = !m_SsaoEnabled;
 		OutputDebugStringA(m_SsaoEnabled ? "SSAO: On\n" : "SSAO: Off\n");
+		break;
+	case KeyCode::T:
+		m_TaaEnabled = !m_TaaEnabled;
+		OutputDebugStringA(m_SsaoEnabled ? "TAA: On\n" : "TAA: Off\n");
 		break;
 	}
 }
