@@ -66,7 +66,8 @@ float4 main(PixelShaderInput IN) : SV_TARGET
         
         float3 samplePositionVS = mul(View, float4(samplePositionWS, 1.0)).xyz;
         
-        occlusion += (samplePositionVS.z >= sampleDepthPositionVS.z + BIAS ? 1.0 : 0.0);
+        float rangeCheck = smoothstep(0.0, 1.0, Radius / abs(positionVS.z - sampleDepthPositionVS.z));
+        occlusion += (samplePositionVS.z >= sampleDepthPositionVS.z + BIAS ? 1.0 : 0.0) * rangeCheck;
     }
     
     occlusion = 1.0 - (occlusion / KernelSize);
