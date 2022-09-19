@@ -17,7 +17,7 @@ public:
 
 	void Resize(uint32_t width, uint32_t height);
 
-	void SsaoPass(CommandList& commandList, const Texture& gBufferNormals, const Texture& gBufferDepth, DirectX::XMMATRIX projectionMatrix, const D3D12_SHADER_RESOURCE_VIEW_DESC* gBufferDepthSrvDesc = nullptr);
+	void SsaoPass(CommandList& commandList, const Texture& gBufferNormals, const Texture& gBufferDepth, DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX projectionMatrix, float radius = 0.5f, const D3D12_SHADER_RESOURCE_VIEW_DESC* gBufferDepthSrvDesc = nullptr);
 
 private:
 	RenderTarget m_RenderTarget;

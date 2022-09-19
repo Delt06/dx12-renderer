@@ -11,10 +11,16 @@ float3 PackNormal(const float3 n)
     return (n + 1.0f) * 0.5f;
 }
 
-float3 RestorePositionWS(float3 positionNDC, matrix inverseProjection, matrix inverseView)
+float4 RestorePositionVS(float3 positionNDC, matrix inverseProjection)
 {
     float4 positionVS = mul(inverseProjection, float4(positionNDC, 1.0));
     positionVS /= positionVS.w;
+    return positionVS;
+}
+
+float3 RestorePositionWS(float3 positionNDC, matrix inverseProjection, matrix inverseView)
+{
+    float4 positionVS = RestorePositionVS(positionNDC, inverseProjection);
     return mul(inverseView, positionVS).xyz;
 }
 

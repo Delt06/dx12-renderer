@@ -1348,7 +1348,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		PIXScope(*commandList, "SSAO");
 
 		D3D12_SHADER_RESOURCE_VIEW_DESC depthTextureSrv = GetDepthTextureSrv();
-		m_Ssao->SsaoPass(*commandList, GetGBufferTexture(GBufferTextureType::Normals), m_DepthTexture, projectionMatrix, &depthTextureSrv);
+		m_Ssao->SsaoPass(*commandList, GetGBufferTexture(GBufferTextureType::Normals), m_DepthTexture, viewMatrix, projectionMatrix, 0.5f, &depthTextureSrv);
 	}
 
 	commandList->SetViewport(m_Viewport);

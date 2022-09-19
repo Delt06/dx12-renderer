@@ -31,9 +31,13 @@ namespace
 			static constexpr size_t SAMPLES_COUNT = 64;
 
 			XMFLOAT2 NoiseScale;
-			float _Padding[2];
+			float Radius;
+			uint32_t KernelSize;
 
-			XMMATRIX Projection;
+			XMMATRIX InverseProjection;
+			XMMATRIX InverseView;
+			XMMATRIX View;
+			XMMATRIX ViewProjection;
 
 			XMFLOAT3 Samples[SAMPLES_COUNT];
 		};
@@ -87,6 +91,8 @@ Ssao::Ssao(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandLis
 		CD3DX12_STATIC_SAMPLER_DESC samplers[] = {
 			// point clamp
 			CD3DX12_STATIC_SAMPLER_DESC(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
+			// point wrap
+			CD3DX12_STATIC_SAMPLER_DESC(1, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_TEXTURE_ADDRESS_MODE_WRAP),
 		};
 
 		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
@@ -172,7 +178,7 @@ Ssao::Ssao(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandLis
 			noiseSamples.push_back(noiseSample);
 		}
 
-		auto noiseTextureDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R16G16_FLOAT, noiseTextureWidth, noiseTextureHeight);
+		auto noiseTextureDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R32G32_FLOAT, noiseTextureWidth, noiseTextureHeight, 1, 1);
 		m_NoiseTexture = Texture(noiseTextureDesc, nullptr, TextureUsageType::Other, L"SSAO Noise Texture");
 		D3D12_SUBRESOURCE_DATA subresourceData{};
 		subresourceData.pData = noiseSamples.data();
@@ -186,7 +192,7 @@ void Ssao::Resize(uint32_t width, uint32_t height)
 	m_RenderTarget.Resize(width, height);
 }
 
-void Ssao::SsaoPass(CommandList& commandList, const Texture& gBufferNormals, const Texture& gBufferDepth, DirectX::XMMATRIX projectionMatrix, const D3D12_SHADER_RESOURCE_VIEW_DESC* gBufferDepthSrvDesc /*= nullptr*/)
+void Ssao::SsaoPass(CommandList& commandList, const Texture& gBufferNormals, const Texture& gBufferDepth, DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX projectionMatrix, float radius /*= 0.5f*/, const D3D12_SHADER_RESOURCE_VIEW_DESC* gBufferDepthSrvDesc /*= nullptr*/)
 {
 	PIXScope(commandList, "SSAO Pass");
 
@@ -207,8 +213,14 @@ void Ssao::SsaoPass(CommandList& commandList, const Texture& gBufferNormals, con
 		static_cast<float>(ssaoTextureDesc.Width) / static_cast<float>(noiseTextureDesc.Width),
 		static_cast<float>(ssaoTextureDesc.Height) / static_cast<float>(noiseTextureDesc.Height),
 	};
-	cbuffer.Projection = projectionMatrix;
+	cbuffer.Radius = radius;
+	cbuffer.KernelSize = SsaoPassRootParameters::SSAOCBuffer::SAMPLES_COUNT;
+	cbuffer.InverseProjection = XMMatrixInverse(nullptr, projectionMatrix);
+	cbuffer.InverseView = XMMatrixInverse(nullptr, viewMatrix);
+	cbuffer.View = viewMatrix;
+	cbuffer.ViewProjection = viewMatrix * projectionMatrix;
 	memcpy(cbuffer.Samples, m_Samples.data(), sizeof(cbuffer.Samples));
+	commandList.SetGraphicsDynamicConstantBuffer(SsaoPassRootParameters::CBuffer, cbuffer);
 
 	commandList.SetShaderResourceView(SsaoPassRootParameters::GBuffer, 0, gBufferNormals, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	commandList.SetShaderResourceView(SsaoPassRootParameters::GBuffer, 1, gBufferDepth, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, gBufferDepthSrvDesc);
