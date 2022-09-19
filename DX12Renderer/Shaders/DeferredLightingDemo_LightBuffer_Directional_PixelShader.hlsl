@@ -16,9 +16,9 @@ ConstantBuffer<ScreenParameters> screenParametersCB : register(b2);
 
 #include <ShaderLibrary/GBuffer.hlsli>
 
-TextureCube irradianceMap : register(t4);
-TextureCube prefilterMap : register(t5);
-Texture2D brdfLUT : register(t6);
+TextureCube irradianceMap : register(t5);
+TextureCube prefilterMap : register(t6);
+Texture2D brdfLUT : register(t7);
 SamplerState ambientMapSampler : register(s1);
 
 float3 ComputeBRDFAmbient(in BRDFInput input)

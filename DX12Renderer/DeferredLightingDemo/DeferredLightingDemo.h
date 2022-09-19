@@ -55,6 +55,7 @@ private:
 		Diffuse,
 		Normals,
 		Surface,
+		Velocity,
 		DepthStencil
 	};
 
@@ -89,6 +90,8 @@ private:
 	std::vector<GameObject> m_GameObjects;
 	bool m_AnimateLights = false;
 	float m_DeltaTime;
+
+	DirectX::XMMATRIX m_PreviousViewProjectionMatrix;
 
 	RootSignature m_GBufferPassRootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_GBufferPassPipelineState;

@@ -5,8 +5,9 @@
 
 GameObject::GameObject(const DirectX::XMMATRIX worldMatrix, const std::shared_ptr<Model> model, std::shared_ptr<MaterialBase> material)
 	: m_WorldMatrix(worldMatrix)
-	  , m_Aabb{}
-	  , m_Model(model)
+	, m_PreviousWorldMatrix(worldMatrix)
+	, m_Aabb{}
+	, m_Model(model)
 	, m_Material(material)
 {
 	RecalculateAabb();
@@ -33,6 +34,16 @@ std::shared_ptr<const Model> GameObject::GetModel() const
 const Aabb& GameObject::GetAabb() const
 {
 	return m_Aabb;
+}
+
+void GameObject::OnRenderedFrame()
+{
+	m_PreviousWorldMatrix = m_WorldMatrix;
+}
+
+const DirectX::XMMATRIX& GameObject::GetPreviousWorldMatrix() const
+{
+	return m_PreviousWorldMatrix;
 }
 
 void GameObject::RecalculateAabb()

@@ -39,6 +39,7 @@ using namespace DirectX;
 #include "PBR/IBL/PreFilterEnvironmentPso.h"
 #include "BlitPso.h"
 #include "HDR/AutoExposurePso.h"
+#include "TaaCBuffer.h"
 
 #if defined(max)
 #undef max
@@ -86,6 +87,7 @@ namespace
 
 	bool allowFullscreenToggle = true;
 	constexpr FLOAT CLEAR_COLOR[] = { 0.4f, 0.6f, 0.9f, 1.0f };
+	constexpr FLOAT VELOCITY_CLEAR_COLOR[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	constexpr FLOAT LIGHT_BUFFER_CLEAR_COLOR[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 	// Builds a look-at (world) matrix from a point, up and direction vectors.
@@ -121,6 +123,8 @@ namespace
 			MatricesCb,
 			// ConstantBuffer : register(b1);
 			MaterialCb,
+			// ConstantBuffer : register(b1, space1);
+			TaaBufferCb,
 			// Texture2D register(t0-t1);
 			Textures,
 			NumRootParameters
@@ -310,11 +314,15 @@ bool DeferredLightingDemo::LoadContent()
 	constexpr DXGI_FORMAT lightBufferFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	constexpr DXGI_FORMAT resultFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 	constexpr DXGI_FORMAT depthBufferFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	constexpr UINT gBufferTexturesCount = 4;
+	constexpr UINT gBufferTexturesCount = 5;
 
 	D3D12_CLEAR_VALUE gBufferColorClearValue;
 	gBufferColorClearValue.Format = gBufferFormat;
 	memcpy(gBufferColorClearValue.Color, CLEAR_COLOR, sizeof CLEAR_COLOR);
+
+	D3D12_CLEAR_VALUE velocityColorClearValue;
+	velocityColorClearValue.Format = gBufferFormat;
+	memcpy(velocityColorClearValue.Color, VELOCITY_CLEAR_COLOR, sizeof VELOCITY_CLEAR_COLOR);
 
 	D3D12_CLEAR_VALUE lightBufferColorClearValue{};
 	lightBufferColorClearValue.Format = lightBufferFormat;
@@ -347,6 +355,7 @@ bool DeferredLightingDemo::LoadContent()
 		CD3DX12_ROOT_PARAMETER1 rootParameters[GBufferRootParameters::NumRootParameters];
 		rootParameters[GBufferRootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
 		rootParameters[GBufferRootParameters::MaterialCb].InitAsConstantBufferView(1, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
+		rootParameters[GBufferRootParameters::TaaBufferCb].InitAsConstantBufferView(1, 1, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
 		rootParameters[GBufferRootParameters::Textures].InitAsDescriptorTable(1, &texturesDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
 
 		CD3DX12_STATIC_SAMPLER_DESC samplers[] = {
@@ -375,9 +384,11 @@ bool DeferredLightingDemo::LoadContent()
 
 		D3D12_RT_FORMAT_ARRAY rtvFormats = {};
 		rtvFormats.NumRenderTargets = gBufferTexturesCount - 1;
-		rtvFormats.RTFormats[0] = gBufferFormat;
-		rtvFormats.RTFormats[1] = gBufferFormat;
-		rtvFormats.RTFormats[2] = gBufferFormat;
+
+		for (UINT i = 0; i < rtvFormats.NumRenderTargets; ++i)
+		{
+			rtvFormats.RTFormats[i] = gBufferFormat;
+		}
 
 		pipelineStateStream.RootSignature = m_GBufferPassRootSignature.GetRootSignature().Get();
 
@@ -1142,9 +1153,14 @@ bool DeferredLightingDemo::LoadContent()
 			TextureUsageType::RenderTarget,
 			L"GBuffer-Surface");
 
+		auto velocityTexture = Texture(colorDesc, &velocityColorClearValue,
+			TextureUsageType::RenderTarget,
+			L"GBuffer-Velocity");
+
 		m_GBufferRenderTarget.AttachTexture(GetGBufferTextureAttachmentPoint(GBufferTextureType::Diffuse), diffuseTexture);
 		m_GBufferRenderTarget.AttachTexture(GetGBufferTextureAttachmentPoint(GBufferTextureType::Normals), normalTexture);
 		m_GBufferRenderTarget.AttachTexture(GetGBufferTextureAttachmentPoint(GBufferTextureType::Surface), surfaceTexture);
+		m_GBufferRenderTarget.AttachTexture(GetGBufferTextureAttachmentPoint(GBufferTextureType::Velocity), velocityTexture);
 		m_GBufferRenderTarget.AttachTexture(GetGBufferTextureAttachmentPoint(GBufferTextureType::DepthStencil), depthBuffer);
 
 		m_SurfaceRenderTarget.AttachTexture(Color0, GetGBufferTexture(GBufferTextureType::Surface));
@@ -1292,6 +1308,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		{
 			PIXScope(*commandList, "Clear GBuffer");
 			commandList->ClearRenderTarget(m_GBufferRenderTarget, CLEAR_COLOR, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL);
+			commandList->ClearTexture(GetGBufferTexture(GBufferTextureType::Velocity), VELOCITY_CLEAR_COLOR);
 		}
 
 		{
@@ -1323,6 +1340,10 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			auto material = go.GetMaterial<PbrMaterial>();
 			material->SetDynamicConstantBuffer(*commandList, GBufferRootParameters::MaterialCb);
 			material->SetShaderResourceViews(*commandList, GBufferRootParameters::Textures);
+
+			TaaCBuffer taaBuffer;
+			taaBuffer.PreviousModelViewProjectionMatrix = go.GetPreviousWorldMatrix() * m_PreviousViewProjectionMatrix;
+			commandList->SetGraphicsDynamicConstantBuffer(GBufferRootParameters::TaaBufferCb, taaBuffer);
 
 			const auto& model = go.GetModel();
 			for (const auto& mesh : model->GetMeshes())
@@ -1488,6 +1509,13 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		m_ToneMappingPso->Blit(*commandList, source, m_AutoExposurePso->GetLuminanceOutput(), m_ResultRenderTarget);
 	}
 
+	for (auto& go : m_GameObjects)
+	{
+		go.OnRenderedFrame();
+	}
+
+	m_PreviousViewProjectionMatrix = viewProjectionMatrix;
+
 	commandQueue->ExecuteCommandList(commandList);
 	PWindow->Present(m_ResultRenderTarget.GetTexture(Color0));
 }
@@ -1512,6 +1540,8 @@ AttachmentPoint DeferredLightingDemo::GetGBufferTextureAttachmentPoint(GBufferTe
 		return Color1;
 	case GBufferTextureType::Surface:
 		return Color2;
+	case GBufferTextureType::Velocity:
+		return Color3;
 	case GBufferTextureType::DepthStencil:
 		return DepthStencil;
 	default:

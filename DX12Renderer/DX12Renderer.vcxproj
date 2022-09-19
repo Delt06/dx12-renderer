@@ -219,6 +219,7 @@
     <ClCompile Include="Animation.cpp" />
     <ClCompile Include="Ssao.cpp" />
     <ClCompile Include="StructuredBuffer.cpp" />
+    <ClCompile Include="TaaCBuffer.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="TextureLoader.cpp" />
@@ -292,6 +293,7 @@
     <ClInclude Include="LightingDemo\SceneRenderer.h" />
     <ClInclude Include="Ssao.h" />
     <ClInclude Include="StructuredBuffer.h" />
+    <ClInclude Include="TaaCBuffer.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureLoader.h" />
     <ClInclude Include="TextureUsageType.h" />
@@ -329,6 +331,7 @@
     <None Include="Shaders\ShaderLibrary\PointLight.hlsli" />
     <None Include="Shaders\ShaderLibrary\ScreenParameters.hlsli" />
     <None Include="Shaders\ShaderLibrary\SpotLight.hlsli" />
+    <None Include="Shaders\ShaderLibrary\TAABuffer.hlsli" />
     <None Include="Shaders\Shadows.hlsli">
       <FileType>Document</FileType>
     </None>

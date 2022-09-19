@@ -5,6 +5,8 @@ struct PixelShaderInput
     float3 TangentWs : TANGENT;
     float3 BitangentWs : BINORMAL;
     float2 Uv : TEXCOORD0;
+    float4 CurrentPositionCs : TAA_CURRENT_POSITION;
+    float4 PrevPositionCs : TAA_PREV_POSITION;
 };
 
 struct PixelShaderOutput
@@ -12,6 +14,7 @@ struct PixelShaderOutput
     float4 DiffuseColor : SV_TARGET0;
     float4 Normal : SV_TARGET1;
     float4 Surface : SV_TARGET2; // metallic, roughtness, ambient occlusion
+    float4 Velocity : SV_TARGET3;
 };
 
 #include <ShaderLibrary/PbrMaterial.hlsli>
@@ -32,6 +35,19 @@ float3 ApplyNormalMap(const float3x3 tbn, Texture2D map, const float2 uv)
 {
     const float3 normalTs = UnpackNormal(map.Sample(defaultSampler, uv).xyz);
     return normalize(mul(normalTs, tbn));
+}
+
+float4 HClipToScreenSpaceUV(float4 positionCS)
+{
+    positionCS /= positionCS.w;
+    positionCS.xy = (positionCS.xy + 1) / 2.0f;
+    positionCS.y = 1 - positionCS.y;
+    return positionCS;
+}
+
+float2 CalculateVelocity(float4 newPositionCS, float4 oldPositionCS)
+{
+    return (HClipToScreenSpaceUV(newPositionCS) - HClipToScreenSpaceUV(oldPositionCS)).xy;
 }
 
 PixelShaderOutput main(PixelShaderInput IN)
@@ -88,6 +104,8 @@ PixelShaderOutput main(PixelShaderInput IN)
     }
     
     OUT.Surface = PackSurface(metallic, roughness, ambientOcclusion);
+    OUT.Velocity = 0.1;
+    //float4(CalculateVelocity(IN.CurrentPositionCs, IN.PrevPositionCs), 0, 0);
     
     return OUT;
 }

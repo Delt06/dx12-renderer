@@ -29,10 +29,15 @@ public:
 		static_assert(std::is_base_of<MaterialBase, TMaterial>::value, "type parameter of this class must derive from MaterialBase");
 		return std::static_pointer_cast<TMaterial>(m_Material);
 	}
+
+	void OnRenderedFrame();
+
+	[[nodiscard]] const DirectX::XMMATRIX& GetPreviousWorldMatrix() const;
 private:
 	void RecalculateAabb();
 
 	DirectX::XMMATRIX m_WorldMatrix;
+	DirectX::XMMATRIX m_PreviousWorldMatrix;
 	Aabb m_Aabb;
 	std::shared_ptr<Model> m_Model{};
 	std::shared_ptr<MaterialBase> m_Material;
