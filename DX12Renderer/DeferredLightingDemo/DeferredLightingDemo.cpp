@@ -1365,7 +1365,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 
 		D3D12_SHADER_RESOURCE_VIEW_DESC depthTextureSrv = GetDepthTextureSrv();
 		constexpr float radius = 0.25f;
-		constexpr float power = 4.0f;
+		constexpr float power = 2.0f;
 		m_Ssao->SsaoPass(*commandList, GetGBufferTexture(GBufferTextureType::Normals), m_DepthTexture, viewMatrix, projectionMatrix, &depthTextureSrv, radius, power);
 		m_Ssao->BlurPass(*commandList, m_SurfaceRenderTarget);
 	}

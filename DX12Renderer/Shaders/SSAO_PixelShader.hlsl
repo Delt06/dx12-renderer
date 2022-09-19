@@ -7,7 +7,7 @@ struct PixelShaderInput
 };
 
 #define SAMPLES_COUNT 64
-#define BIAS 0.1
+#define BIAS 0.025
 
 cbuffer SSAOCBuffer : register(b0)
 {
