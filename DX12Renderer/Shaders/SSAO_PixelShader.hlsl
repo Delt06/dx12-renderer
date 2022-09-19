@@ -32,6 +32,8 @@ SamplerState noiseTextureSampler : register(s1);
 
 float4 main(PixelShaderInput IN) : SV_TARGET
 {
+    // https://learnopengl.com/Advanced-Lighting/SSAO
+    
     float2 uv = IN.UV;
     float3 normal = normalize(UnpackNormal(gBufferNormalsWS.Sample(gBufferSampler, uv).xyz));
     

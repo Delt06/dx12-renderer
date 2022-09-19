@@ -54,6 +54,7 @@
 - https://www.alextardif.com/HistogramLuminance.html
 - https://bruop.github.io/exposure/
 - https://bruop.github.io/tonemapping/
+- https://learnopengl.com/Advanced-Lighting/SSAO
 
 ### Libraries and Tools
 
