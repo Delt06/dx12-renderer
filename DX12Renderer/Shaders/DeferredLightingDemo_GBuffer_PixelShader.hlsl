@@ -40,7 +40,7 @@ float3 ApplyNormalMap(const float3x3 tbn, Texture2D map, const float2 uv)
 float4 HClipToScreenSpaceUV(float4 positionCS)
 {
     positionCS /= positionCS.w;
-    positionCS.xy = (positionCS.xy + 1) / 2.0f;
+    positionCS.xy = (positionCS.xy + 1) * 0.5f;
     positionCS.y = 1 - positionCS.y;
     return positionCS;
 }
@@ -104,8 +104,7 @@ PixelShaderOutput main(PixelShaderInput IN)
     }
     
     OUT.Surface = PackSurface(metallic, roughness, ambientOcclusion);
-    OUT.Velocity = 0.1;
-    //float4(CalculateVelocity(IN.CurrentPositionCs, IN.PrevPositionCs), 0, 0);
+    OUT.Velocity = float4(CalculateVelocity(IN.CurrentPositionCs, IN.PrevPositionCs), 0, 0);
     
     return OUT;
 }

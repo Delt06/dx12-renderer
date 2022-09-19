@@ -40,6 +40,7 @@ using namespace DirectX;
 #include "BlitPso.h"
 #include "HDR/AutoExposurePso.h"
 #include "TaaCBuffer.h"
+#include "Taa.h"
 
 #if defined(max)
 #undef max
@@ -1201,12 +1202,11 @@ bool DeferredLightingDemo::LoadContent()
 
 	// TAA
 	{
-		auto colorDesc = CD3DX12_RESOURCE_DESC::Tex2D(lightBufferFormat, m_Width, m_Height, 1, 1);
+		auto rtColorDesc = CD3DX12_RESOURCE_DESC::Tex2D(lightBufferFormat, m_Width, m_Height, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);;
+		auto taaTempTexture = Texture(rtColorDesc, nullptr, TextureUsageType::RenderTarget, L"TAA Temp RT");
+		m_TaaTempRenderTarget.AttachTexture(Color0, taaTempTexture);
 
-		for (uint32_t i = 0; i < TAA_HISTORY_SIZE; ++i)
-		{
-			m_TaaHistory[i] = std::make_shared<Texture>(colorDesc, nullptr, TextureUsageType::Other, L"TAA History Texture");
-		}
+		m_Taa = std::make_unique<Taa>(device, *commandList, lightBufferFormat, m_Width, m_Height);
 	}
 
 	auto fenceValue = commandQueue->ExecuteCommandList(commandList);
@@ -1244,12 +1244,10 @@ void DeferredLightingDemo::OnResize(ResizeEventArgs& e)
 
 		m_SurfaceRenderTarget.AttachTexture(Color0, GetGBufferTexture(GBufferTextureType::Surface));
 
-		for (const auto& taaHistoryItem : m_TaaHistory)
+		m_TaaTempRenderTarget.Resize(m_Width, m_Height);
+		if (m_Taa != nullptr)
 		{
-			if (taaHistoryItem != nullptr)
-			{
-				taaHistoryItem->Resize(m_Width, m_Height);
-			}
+			m_Taa->Resize(m_Width, m_Height);
 		}
 	}
 }
@@ -1529,18 +1527,14 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 	}
 
 	{
-		PIXScope(*commandList, "Update TAA History");
+		commandList->SetRenderTarget(m_TaaTempRenderTarget);
+		m_Taa->Resolve(*commandList, m_LightBufferRenderTarget.GetTexture(Color0), GetGBufferTexture(GBufferTextureType::Velocity));
+		m_Taa->CaptureHistory(*commandList, m_TaaTempRenderTarget.GetTexture(Color0));
 
-		const auto last = m_TaaHistory[TAA_HISTORY_SIZE - 1];
-
-		for (uint32_t i = 0; i < TAA_HISTORY_SIZE - 1; ++i)
 		{
-			m_TaaHistory[i + 1] = m_TaaHistory[i];
+			PIXScope(*commandList, "Copy TAA Resolution Result");
+			commandList->CopyResource(m_LightBufferRenderTarget.GetTexture(Color0), m_TaaTempRenderTarget.GetTexture(Color0));
 		}
-
-		m_TaaHistory[0] = last;
-
-		commandList->CopyResource(*last, m_LightBufferRenderTarget.GetTexture(Color0));
 	}
 
 	{

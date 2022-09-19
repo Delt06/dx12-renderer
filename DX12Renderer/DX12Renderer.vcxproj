@@ -219,6 +219,7 @@
     <ClCompile Include="Animation.cpp" />
     <ClCompile Include="Ssao.cpp" />
     <ClCompile Include="StructuredBuffer.cpp" />
+    <ClCompile Include="Taa.cpp" />
     <ClCompile Include="TaaCBuffer.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Camera.cpp" />
@@ -293,6 +294,7 @@
     <ClInclude Include="LightingDemo\SceneRenderer.h" />
     <ClInclude Include="Ssao.h" />
     <ClInclude Include="StructuredBuffer.h" />
+    <ClInclude Include="Taa.h" />
     <ClInclude Include="TaaCBuffer.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureLoader.h" />
@@ -596,6 +598,12 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Shaders\SSAO_PixelShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\TAA_Resolve_PixelShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>

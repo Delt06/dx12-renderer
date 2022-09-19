@@ -15,6 +15,7 @@
 #include "GraphicsSettings.h"
 #include "HDR/ToneMappingPso.h"
 #include "Ssao.h"
+#include "Taa.h"
 
 struct MatricesCb;
 class AutoExposurePso;
@@ -114,8 +115,8 @@ private:
 	constexpr static uint32_t TAA_JITTER_OFFSETS_COUNT = _countof(TAA_JITTER_OFFSETS);
 	DirectX::XMMATRIX m_PreviousViewProjectionMatrix;
 	uint32_t m_TaaFrameIndex = 0;
-	constexpr static uint32_t TAA_HISTORY_SIZE = 4;
-	std::shared_ptr<Texture> m_TaaHistory[TAA_HISTORY_SIZE];
+	RenderTarget m_TaaTempRenderTarget;
+	std::unique_ptr<Taa> m_Taa;
 
 	RootSignature m_GBufferPassRootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_GBufferPassPipelineState;
