@@ -100,36 +100,51 @@ Taa::Taa(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList,
 		ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_ResolvePipelineState)));
 	}
 
+	auto rtColorDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat, width, height, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);;
+	auto taaTempTexture = Texture(rtColorDesc, nullptr, TextureUsageType::RenderTarget, L"TAA Resolve RT");
+	m_ResolveRenderTarget.AttachTexture(Color0, taaTempTexture);
+
 	auto historyBufferDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat, width, height, 1, 1);
 	m_HistoryBuffer = Texture(historyBufferDesc, nullptr, TextureUsageType::Other, L"TAA History Buffer");
 }
 
 void Taa::Resolve(CommandList& commandList, const Texture& currentBuffer, const Texture& velocityBuffer)
 {
-	PIXScope(commandList, "Resolve TAA");
+	PIXScope(commandList, "TAA");
 
-	commandList.SetPipelineState(m_ResolvePipelineState);
-	commandList.SetGraphicsRootSignature(m_ResolveRootSignature);
+	{
+		PIXScope(commandList, "Resolve TAA");
 
-	commandList.SetShaderResourceView(RootParameters::Buffers, 0, currentBuffer, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	commandList.SetShaderResourceView(RootParameters::Buffers, 1, m_HistoryBuffer, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	commandList.SetShaderResourceView(RootParameters::Buffers, 2, velocityBuffer, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		commandList.SetPipelineState(m_ResolvePipelineState);
+		commandList.SetGraphicsRootSignature(m_ResolveRootSignature);
+		commandList.SetRenderTarget(m_ResolveRenderTarget);
 
-	const auto colorDesc = currentBuffer.GetD3D12ResourceDesc();
-	RootParameters::Parameters parameters{};
-	parameters.OneOverTexelSize = { 1.0f / static_cast<float>(colorDesc.Width), 1.0f / static_cast<float>(colorDesc.Height) };
-	commandList.SetGraphics32BitConstants(RootParameters::ParametersCBuffer, parameters);
+		commandList.SetShaderResourceView(RootParameters::Buffers, 0, currentBuffer, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		commandList.SetShaderResourceView(RootParameters::Buffers, 1, m_HistoryBuffer, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		commandList.SetShaderResourceView(RootParameters::Buffers, 2, velocityBuffer, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
-	m_BlitMesh->Draw(commandList);
+		const auto colorDesc = currentBuffer.GetD3D12ResourceDesc();
+		RootParameters::Parameters parameters{};
+		parameters.OneOverTexelSize = { 1.0f / static_cast<float>(colorDesc.Width), 1.0f / static_cast<float>(colorDesc.Height) };
+		commandList.SetGraphics32BitConstants(RootParameters::ParametersCBuffer, parameters);
+
+		m_BlitMesh->Draw(commandList);
+	}
+
+	{
+		PIXScope(commandList, "Capture TAA History");
+
+		commandList.CopyResource(m_HistoryBuffer, m_ResolveRenderTarget.GetTexture(Color0));
+	}
 }
 
 void Taa::Resize(uint32_t width, uint32_t height)
 {
 	m_HistoryBuffer.Resize(width, height);
+	m_ResolveRenderTarget.Resize(width, height);
 }
 
-void Taa::CaptureHistory(CommandList& commandList, const Texture& currentBuffer)
+void Taa::CopyResolvedTexture(CommandList& commandList, const Texture& destination)
 {
-	PIXScope(commandList, "Capture TAA History");
-	commandList.CopyResource(m_HistoryBuffer, currentBuffer);
+	commandList.CopyResource(destination, m_ResolveRenderTarget.GetTexture(Color0));
 }

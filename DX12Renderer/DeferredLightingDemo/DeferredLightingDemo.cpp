@@ -1202,10 +1202,6 @@ bool DeferredLightingDemo::LoadContent()
 
 	// TAA
 	{
-		auto rtColorDesc = CD3DX12_RESOURCE_DESC::Tex2D(lightBufferFormat, m_Width, m_Height, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);;
-		auto taaTempTexture = Texture(rtColorDesc, nullptr, TextureUsageType::RenderTarget, L"TAA Temp RT");
-		m_TaaTempRenderTarget.AttachTexture(Color0, taaTempTexture);
-
 		m_Taa = std::make_unique<Taa>(device, *commandList, lightBufferFormat, m_Width, m_Height);
 	}
 
@@ -1244,7 +1240,6 @@ void DeferredLightingDemo::OnResize(ResizeEventArgs& e)
 
 		m_SurfaceRenderTarget.AttachTexture(Color0, GetGBufferTexture(GBufferTextureType::Surface));
 
-		m_TaaTempRenderTarget.Resize(m_Width, m_Height);
 		if (m_Taa != nullptr)
 		{
 			m_Taa->Resize(m_Width, m_Height);
@@ -1527,14 +1522,8 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 	}
 
 	{
-		commandList->SetRenderTarget(m_TaaTempRenderTarget);
 		m_Taa->Resolve(*commandList, m_LightBufferRenderTarget.GetTexture(Color0), GetGBufferTexture(GBufferTextureType::Velocity));
-		m_Taa->CaptureHistory(*commandList, m_TaaTempRenderTarget.GetTexture(Color0));
-
-		{
-			PIXScope(*commandList, "Copy TAA Resolution Result");
-			commandList->CopyResource(m_LightBufferRenderTarget.GetTexture(Color0), m_TaaTempRenderTarget.GetTexture(Color0));
-		}
+		m_Taa->CopyResolvedTexture(*commandList, m_LightBufferRenderTarget.GetTexture(Color0));
 	}
 
 	{

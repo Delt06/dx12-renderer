@@ -5,6 +5,7 @@
 #include <d3d12.h>
 #include <memory>
 #include "Texture.h"
+#include "RenderTarget.h"
 
 class CommandList;
 class Mesh;
@@ -16,9 +17,10 @@ public:
 
 	void Resolve(CommandList& commandList, const Texture& currentBuffer, const Texture& velocityBuffer);
 	void Resize(uint32_t width, uint32_t height);
-	void CaptureHistory(CommandList& commandList, const Texture& currentBuffer);
+	void CopyResolvedTexture(CommandList& commandList, const Texture& destination);
 
 private:
+	RenderTarget m_ResolveRenderTarget;
 	RootSignature m_ResolveRootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_ResolvePipelineState;
 

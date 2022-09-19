@@ -115,7 +115,6 @@ private:
 	constexpr static uint32_t TAA_JITTER_OFFSETS_COUNT = _countof(TAA_JITTER_OFFSETS);
 	DirectX::XMMATRIX m_PreviousViewProjectionMatrix;
 	uint32_t m_TaaFrameIndex = 0;
-	RenderTarget m_TaaTempRenderTarget;
 	std::unique_ptr<Taa> m_Taa;
 
 	RootSignature m_GBufferPassRootSignature;
