@@ -84,7 +84,6 @@ private:
 
 	std::unique_ptr<AutoExposurePso> m_AutoExposurePso;
 	std::unique_ptr<ToneMappingPso> m_ToneMappingPso;
-	std::unique_ptr<GameObject> m_PointLightGameObject;
 
 	Camera m_Camera;
 	std::vector<GameObject> m_GameObjects;

@@ -990,6 +990,7 @@ bool DeferredLightingDemo::LoadContent()
 		}
 
 		{
+			for (const auto&pointLight : m_PointLights)
 			{
 				auto mesh = modelLoader.LoadExisting(Mesh::CreateSphere(*commandList, 0.5f));
 				auto material = std::make_shared<PbrMaterial>();
@@ -997,8 +998,12 @@ bool DeferredLightingDemo::LoadContent()
 
 				material->GetConstants().Metallic = 0.2f;
 				material->GetConstants().Roughness = 0.25f;
+				material->GetConstants().Diffuse = NormalizeColor(pointLight.Color);
+				material->GetConstants().Emission = GetColorMagnitude(pointLight.Color);
 
-				m_PointLightGameObject = std::make_unique<GameObject>(XMMatrixIdentity(), mesh, material);
+				auto positionWS = XMLoadFloat4(&pointLight.PositionWs);
+				auto modelMatrix = XMMatrixTranslationFromVector(positionWS);
+				m_GameObjects.push_back(GameObject(modelMatrix, mesh, material));
 			}
 		}
 
@@ -1323,32 +1328,6 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			for (const auto& mesh : model->GetMeshes())
 			{
 				mesh->Draw(*commandList);
-			}
-		}
-
-		// point lights
-		{
-			auto material = m_PointLightGameObject->GetMaterial<PbrMaterial>();
-			const auto model = m_PointLightGameObject->GetModel();
-			
-			material->SetShaderResourceViews(*commandList, GBufferRootParameters::Textures);
-
-			for (const auto& pointLight : m_PointLights)
-			{
-				MatricesCb matricesCb;
-				auto positionWS = XMLoadFloat4(&pointLight.PositionWs);
-				auto modelMatrix = XMMatrixTranslationFromVector(positionWS);
-				matricesCb.Compute(modelMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
-				commandList->SetGraphicsDynamicConstantBuffer(GBufferRootParameters::MatricesCb, matricesCb);
-
-				material->GetConstants().Diffuse = NormalizeColor(pointLight.Color);
-				material->GetConstants().Emission = GetColorMagnitude(pointLight.Color);
-				material->SetDynamicConstantBuffer(*commandList, GBufferRootParameters::MaterialCb);
-				
-				for (const auto& mesh : model->GetMeshes())
-				{
-					mesh->Draw(*commandList);
-				}
 			}
 		}
 	}
