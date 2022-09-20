@@ -823,6 +823,12 @@ bool DeferredLightingDemo::LoadContent()
 		}
 
 		{
+			D3D12_SHADER_RESOURCE_VIEW_DESC depthTextureSrv = GetDepthTextureSrv();
+			m_Ssr = std::make_unique<Ssr>(lightBufferFormat, depthTextureSrv, m_Width, m_Height);
+			m_Ssr->Init(device, *commandList);
+		}
+
+		{
 			m_AutoExposurePso = std::make_unique<AutoExposure>(device, *commandList);
 			m_ToneMappingPso = std::make_unique<ToneMapping>(device, *commandList, resultFormat);
 		}
@@ -1239,6 +1245,11 @@ void DeferredLightingDemo::OnResize(ResizeEventArgs& e)
 
 		m_SurfaceRenderTarget.AttachTexture(Color0, GetGBufferTexture(GBufferTextureType::Surface));
 
+		if (m_Ssr != nullptr)
+		{
+			m_Ssr->Resize(m_Width, m_Height);
+		}
+
 		if (m_Taa != nullptr)
 		{
 			m_Taa->Resize(m_Width, m_Height);
@@ -1511,6 +1522,14 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		);
 
 		m_SkyboxMesh->Draw(*commandList);
+	}
+
+	{
+		m_Ssr->SetMatrices(viewMatrix, projectionMatrix);
+		const Texture& sceneColor = m_LightBufferRenderTarget.GetTexture(Color0);
+		const Texture& normals = GetGBufferTexture(GBufferTextureType::Normals);
+		const Texture& depth = m_DepthTexture;
+		m_Ssr->Execute(*commandList, sceneColor, normals, depth);
 	}
 
 	{

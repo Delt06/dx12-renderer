@@ -16,6 +16,7 @@
 #include "HDR/ToneMapping.h"
 #include "Ssao.h"
 #include "Taa.h"
+#include "SSR/Ssr.h"
 
 struct MatricesCb;
 class AutoExposure;
@@ -83,6 +84,8 @@ private:
 	bool m_SsaoEnabled = true;
 	std::unique_ptr<Ssao> m_Ssao;
 	RenderTarget m_SurfaceRenderTarget;
+
+	std::unique_ptr<Ssr> m_Ssr;
 
 	std::unique_ptr<AutoExposure> m_AutoExposurePso;
 	std::unique_ptr<ToneMapping> m_ToneMappingPso;

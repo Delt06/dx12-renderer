@@ -219,6 +219,8 @@
     <ClCompile Include="LightingDemo\SceneRenderer.cpp" />
     <ClCompile Include="Animation.cpp" />
     <ClCompile Include="Ssao.cpp" />
+    <ClCompile Include="SSR\Ssr.cpp" />
+    <ClCompile Include="SSR\SsrTrace.cpp" />
     <ClCompile Include="StructuredBuffer.cpp" />
     <ClCompile Include="Taa.cpp" />
     <ClCompile Include="TaaCBuffer.cpp" />
@@ -234,6 +236,7 @@
     <ClInclude Include="..\DirectXMesh\Utilities\WaveFrontReader.h" />
     <ClInclude Include="Animation.h" />
     <ClInclude Include="AnimationsDemo\AnimationsDemo.h" />
+    <ClInclude Include="Framework\EffectBase.h" />
     <ClInclude Include="Framework\Shader.h" />
     <ClInclude Include="HDR\AutoExposure.h" />
     <ClInclude Include="Blit.h" />
@@ -295,6 +298,8 @@
     <ClInclude Include="LightingDemo\Scene.h" />
     <ClInclude Include="LightingDemo\SceneRenderer.h" />
     <ClInclude Include="Ssao.h" />
+    <ClInclude Include="SSR\Ssr.h" />
+    <ClInclude Include="SSR\SsrTrace.h" />
     <ClInclude Include="StructuredBuffer.h" />
     <ClInclude Include="Taa.h" />
     <ClInclude Include="TaaCBuffer.h" />
@@ -600,6 +605,12 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Shaders\SSAO_PixelShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\SSR_Trace_PixelShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>

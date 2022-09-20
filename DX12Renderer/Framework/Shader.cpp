@@ -70,6 +70,7 @@ void Shader::Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandLi
 		ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_PipelineState)));
 	}
 
+	OnPostInit(device, commandList);
 }
 
 void Shader::SetContext(CommandList& commandList) const

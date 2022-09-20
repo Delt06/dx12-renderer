@@ -7,11 +7,11 @@
 #include <string>
 #include "RenderTarget.h"
 #include <vector>
+#include "EffectBase.h"
 
-class Shader
+class Shader : public EffectBase
 {
 public:
-	using IDevice = ID3D12Device2;
 	using RootParameter = CD3DX12_ROOT_PARAMETER1;
 	using DescriptorRange = CD3DX12_DESCRIPTOR_RANGE1;
 	using StaticSampler = CD3DX12_STATIC_SAMPLER_DESC;
@@ -22,13 +22,7 @@ public:
 	Shader() = default;
 	virtual ~Shader();
 
-	void Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList);
-
-	Shader(const Shader& other) = delete;
-	Shader(const Shader&& other) = delete;
-
-	Shader operator=(const Shader& other) = delete;
-	Shader operator=(const Shader&& other) = delete;
+	void Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList) override;
 
 protected:
 	virtual std::wstring GetVertexShaderName() const = 0;
@@ -47,15 +41,6 @@ protected:
 
 	[[nodiscard]] static ScissorRect GetAutoScissorRect();
 	[[nodiscard]] static Viewport GetAutoViewport(const RenderTarget& renderTarget);
-
-	template<typename T, size_t N>
-	static std::vector<T> ToVector(T staticArray[N])
-	{
-		std::vector<T> vector;
-		vector.resize(N);
-		memcpy(vector.data(), staticArray, sizeof(staticArray));
-		return vector;
-	}
 
 private:
 	static void CombineRootSignatureFlags(D3D12_ROOT_SIGNATURE_FLAGS& flags, const std::vector<RootParameter>& rootParameters);
