@@ -109,28 +109,32 @@ TraceOutput Trace(float2 uv)
     float3 viewDir = normalize(originVS);
     float3 reflectDir = normalize(reflect(viewDir, normalVS));
     
-    float currentLength = 5;
-    uint loops = 200;
-    
     output.Fade = 1 - saturate(-dot(viewDir, reflectDir));
     output.Fade = output.Fade * output.Fade;
     
-    float3 rayOrigin = originVS + reflectDir * 2;
-    float3 rayDelta = reflectDir * 0.25;
+    float3 rayOrigin = originVS + reflectDir * 2.0;
+    float step = 0.05f;
+    float totalDistance = step;
+    float thickness = 0.5f;
     
-    for (uint i = 0; i < loops; ++i)
+    for (uint i = 0; i < 200; ++i)
     {
         float4 currentUV = ToScreenSpaceUV(rayOrigin);
         float3 currentGBufferPositionVS = SamplePositionVS(currentUV.xy, gBufferDepth);
         
-        if (gBufferDepth < 0.9999 && abs(rayOrigin.z - currentGBufferPositionVS.z) < 0.2)
+        float zDelta = rayOrigin.z - currentGBufferPositionVS.z;
+        if (gBufferDepth < 0.9999 && zDelta < 0 && zDelta > -thickness)
         {
             output.Hit = true;
             output.UV = currentUV.xy;
+            output.Fade = 1 - smoothstep(0.75, 1.0, (float) i / (float) (loops - 1));
             return output;
         }
         
-        rayOrigin += rayDelta;
+        if (totalDistance > 0.25f)
+            step += 0.005f;
+        rayOrigin += reflectDir * step;
+        totalDistance += step;
 
     }
     
