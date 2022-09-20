@@ -109,6 +109,8 @@ TraceOutput Trace(float2 uv)
     float3 viewDir = normalize(originVS);
     float3 reflectDir = normalize(reflect(viewDir, normalVS));
     
+    uint loops = 200;
+    
     output.Fade = 1 - saturate(-dot(viewDir, reflectDir));
     output.Fade = output.Fade * output.Fade;
     
