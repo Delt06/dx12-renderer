@@ -925,8 +925,8 @@ bool DeferredLightingDemo::LoadContent()
 
 			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse,
 					L"Assets/Textures/Ground047/Ground047_1K_Color.jpg");
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Normal,
-					L"Assets/Textures/Ground047/Ground047_1K_NormalDX.jpg");
+			/*textureLoader.LoadMap(*material, *commandList, PbrMaterial::Normal,
+					L"Assets/Textures/Ground047/Ground047_1K_NormalDX.jpg");*/
 			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Roughness,
 				L"Assets/Textures/Ground047/Ground047_1K_Roughness.jpg");
 			textureLoader.LoadMap(*material, *commandList, PbrMaterial::AmbientOcclusion,
@@ -1529,7 +1529,8 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		const Texture& sceneColor = m_LightBufferRenderTarget.GetTexture(Color0);
 		const Texture& normals = GetGBufferTexture(GBufferTextureType::Normals);
 		const Texture& depth = m_DepthTexture;
-		m_Ssr->Execute(*commandList, sceneColor, normals, depth);
+		const RenderTarget& resultRenderTarget = m_LightBufferRenderTarget;
+		m_Ssr->Execute(*commandList, sceneColor, normals, depth, resultRenderTarget);
 	}
 
 	{

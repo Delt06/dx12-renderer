@@ -4,6 +4,7 @@
 Ssr::Ssr(Shader::Format renderTargetFormat, const D3D12_SHADER_RESOURCE_VIEW_DESC& depthSrv, uint32_t width, uint32_t height)
 	: m_Trace(renderTargetFormat)
 	, m_DepthSrv(depthSrv)
+	, m_LightPass(renderTargetFormat)
 {
 	m_Trace.SetDepthSrv(&m_DepthSrv);
 
@@ -27,14 +28,25 @@ void Ssr::SetMatrices(DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX projection
 	m_ProjectionMatrix = projectionMatrix;
 }
 
-void Ssr::Execute(CommandList& commandList, const Texture& sceneColor, const Texture& normals, const Texture& depth) const
+void Ssr::Execute(CommandList& commandList, const Texture& sceneColor, const Texture& normals, const Texture& depth, const RenderTarget& resultRenderTarget) const
 {
 	PIXScope(commandList, "SSR");
 
-	m_Trace.Execute(commandList, sceneColor, normals, depth, m_TraceRenderTarget, m_ViewMatrix, m_ProjectionMatrix);
+	{
+		PIXScope(commandList, "SSR Trace");
+		m_Trace.Execute(commandList, sceneColor, normals, depth, m_TraceRenderTarget, m_ViewMatrix, m_ProjectionMatrix);
+	}
+
+	{
+		PIXScope(commandList, "SSR Light Pass");
+		const Texture& traceResult = m_TraceRenderTarget.GetTexture(Color0);
+		m_LightPass.Execute(commandList, traceResult, resultRenderTarget);
+	}
+	
 }
 
 void Ssr::Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList)
 {
 	m_Trace.Init(device, commandList);
+	m_LightPass.Init(device, commandList);
 }

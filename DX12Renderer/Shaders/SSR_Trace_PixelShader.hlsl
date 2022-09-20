@@ -59,9 +59,9 @@ float4 ToScreenSpaceUV(float3 positionVS)
     return positionCS;
 }
 
-float4 SampleSceneColor(float2 uv)
+float3 SampleSceneColor(float2 uv)
 {
-    return sceneColor.Sample(defaultSampler, uv);
+    return sceneColor.Sample(defaultSampler, uv).rgb;
 }
 
 struct TraceOutput
@@ -69,6 +69,8 @@ struct TraceOutput
     bool Hit;
     float2 UV;
 };
+
+//https://virtexedge.design/shader-series-basic-screen-space-reflections/
 
 #define SAMPLES_COUNT 16
 
@@ -148,9 +150,11 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     TraceOutput traceOutput = Trace(uv);
     if (traceOutput.Hit)
     {
+        float3 sceneColor = SampleSceneColor(traceOutput.UV);
+        float fade = 1;
         if (any(traceOutput.UV < 0 || traceOutput.UV > 1))
             return 0;
-        return SampleSceneColor(traceOutput.UV);
+        return float4(sceneColor, fade);
     }
     
     return 0;

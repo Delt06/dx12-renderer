@@ -18,11 +18,12 @@ public:
 	using Format = DXGI_FORMAT;
 	using ScissorRect = D3D12_RECT;
 	using Viewport = CD3DX12_VIEWPORT;
+	using BlendMode = CD3DX12_BLEND_DESC;
 
 	Shader() = default;
 	virtual ~Shader();
 
-	void Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList) override;
+	void Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList) final;
 
 protected:
 	virtual std::wstring GetVertexShaderName() const = 0;
@@ -33,6 +34,8 @@ protected:
 
 	virtual Format GetRenderTargetFormat() const = 0;
 
+	virtual BlendMode GetBlendMode() const;
+
 	virtual void OnPostInit(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList) {};
 
 	void SetContext(CommandList& commandList) const;
@@ -41,6 +44,8 @@ protected:
 
 	[[nodiscard]] static ScissorRect GetAutoScissorRect();
 	[[nodiscard]] static Viewport GetAutoViewport(const RenderTarget& renderTarget);
+
+	[[nodiscard]] static BlendMode AdditiveBlend();
 
 private:
 	static void CombineRootSignatureFlags(D3D12_ROOT_SIGNATURE_FLAGS& flags, const std::vector<RootParameter>& rootParameters);
