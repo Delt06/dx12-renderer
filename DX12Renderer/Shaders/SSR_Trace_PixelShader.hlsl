@@ -129,8 +129,13 @@ TraceOutput Trace(float2 uv)
             {
                 output.Hit = true;
                 output.UV = currentUV.xy;
+                
+                float3 newPosition = currentGBufferPositionVS;
+                newPosition.z = currentDepth;
+                currentLength = length(originVS - newPosition);
+                
+                output.Fade *= smoothstep(2.5, 5, currentLength);
                 return output;
-                break;
             }
             
             // jitter sample depth
@@ -143,9 +148,11 @@ TraceOutput Trace(float2 uv)
             break;
         }
         
-        float3 newPosition = currentGBufferPositionVS;
-        newPosition.z = currentDepth;
-        currentLength = length(originVS - newPosition);
+        {
+            float3 newPosition = currentGBufferPositionVS;
+            newPosition.z = currentDepth;
+            currentLength = length(originVS - newPosition);
+        }
     }
     
     return output;
