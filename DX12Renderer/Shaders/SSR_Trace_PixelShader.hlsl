@@ -48,7 +48,7 @@ float4 ToScreenSpace(float3 positionVS)
     positionCS.xyz /= positionCS.w;
     
     positionCS.xy = positionCS.xy * 0.5 + 0.5;
-    positionCS.y = 1 - positionVS.y;
+    positionCS.y = 1 - positionCS.y;
     positionCS.xy /= TexelSize;
     
     return positionCS;
