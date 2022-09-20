@@ -29,5 +29,8 @@ private:
 	std::shared_ptr<Mesh> m_BlitMesh;
 	Format m_RenderTargetFormat;
 	const D3D12_SHADER_RESOURCE_VIEW_DESC* m_PDepthSrv = nullptr;
+
+	std::vector<RootParameter> m_RootParameters;
+	DescriptorRange m_SourceDescriptorRange;
 };
 

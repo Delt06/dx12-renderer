@@ -18,18 +18,25 @@ namespace
 		DirectX::XMMATRIX InverseProjection;
 		DirectX::XMMATRIX InverseView;
 		DirectX::XMMATRIX View;
-		DirectX::XMMATRIX ViewProjection;
+		DirectX::XMMATRIX Projection;
+
 		float MaxDistance;
 		float Resolution;
 		uint32_t Steps;
 		float Thickness;
+
+		DirectX::XMFLOAT2 TexelSize;
+		float _Padding[2];
 	};
 }
 
 SsrTrace::SsrTrace(Format renderTargetFormat)
 	: m_RenderTargetFormat(renderTargetFormat)
+	, m_RootParameters(RootParameters::NumRootParameters)
+	, m_SourceDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0)
 {
-
+	m_RootParameters[RootParameters::CBuffer].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
+	m_RootParameters[RootParameters::Source].InitAsDescriptorTable(1, &m_SourceDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
 }
 
 void SsrTrace::Execute(CommandList& commandList, const Texture& sceneColor, const Texture& normals, const Texture& depth, const RenderTarget& renderTarget, DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX projectionMatrix) const
@@ -38,14 +45,24 @@ void SsrTrace::Execute(CommandList& commandList, const Texture& sceneColor, cons
 	SetRenderTarget(commandList, renderTarget);
 
 	ParametersCBuffer cbuffer;
+
 	cbuffer.InverseProjection = XMMatrixInverse(nullptr, projectionMatrix);
 	cbuffer.InverseView = XMMatrixInverse(nullptr, viewMatrix);
 	cbuffer.View = viewMatrix;
-	cbuffer.ViewProjection = viewMatrix * projectionMatrix;
-	cbuffer.MaxDistance = 15.0f;
+	cbuffer.Projection = projectionMatrix;
+
+	cbuffer.MaxDistance = 8.0f;
 	cbuffer.Resolution = 0.3f;
-	cbuffer.Steps = 10u;
+	cbuffer.Steps = 5u;
 	cbuffer.Thickness = 0.5f;
+
+	const auto colorDesc = sceneColor.GetD3D12ResourceDesc();
+	cbuffer.TexelSize = 
+	{
+		1.0f / static_cast<float>(colorDesc.Width),
+		1.0f / static_cast<float>(colorDesc.Height),
+	};
+
 	commandList.SetGraphicsDynamicConstantBuffer(RootParameters::CBuffer, cbuffer);
 
 	commandList.SetShaderResourceView(RootParameters::Source, 0, sceneColor, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
@@ -67,11 +84,7 @@ std::wstring SsrTrace::GetPixelShaderName() const
 
 std::vector<Shader::RootParameter> SsrTrace::GetRootParameters() const
 {
-	std::vector<RootParameter> rootParameters(RootParameters::NumRootParameters);
-	DescriptorRange sourceDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
-	rootParameters[RootParameters::CBuffer].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);;
-	rootParameters[RootParameters::Source].InitAsDescriptorTable(1, &sourceDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
-	return rootParameters;
+	return m_RootParameters;
 }
 
 std::vector<Shader::StaticSampler> SsrTrace::GetStaticSamplers() const
