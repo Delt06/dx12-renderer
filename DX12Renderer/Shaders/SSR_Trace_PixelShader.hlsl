@@ -110,49 +110,28 @@ TraceOutput Trace(float2 uv)
     float3 reflectDir = normalize(reflect(viewDir, normalVS));
     
     float currentLength = 5;
-    uint loops = 10;
+    uint loops = 200;
     
     output.Fade = 1 - saturate(-dot(viewDir, reflectDir));
     output.Fade = output.Fade * output.Fade;
     
-    for (uint i = 0; i < loops && !output.Hit; ++i)
+    float3 rayOrigin = originVS + reflectDir * 2;
+    float3 rayDelta = reflectDir * 0.25;
+    
+    for (uint i = 0; i < loops; ++i)
     {
-        float3 currentPosition = originVS + reflectDir * currentLength;
-        float4 currentUV = ToScreenSpaceUV(currentPosition);
-        
+        float4 currentUV = ToScreenSpaceUV(rayOrigin);
         float3 currentGBufferPositionVS = SamplePositionVS(currentUV.xy, gBufferDepth);
-        float currentDepth = currentGBufferPositionVS.z;
         
-        for (uint j = 0; j < SAMPLES_COUNT; ++j)
+        if (gBufferDepth < 0.9999 && abs(rayOrigin.z - currentGBufferPositionVS.z) < 0.2)
         {
-            if (abs(currentPosition.z - currentDepth) < 0.01)
-            {
-                output.Hit = true;
-                output.UV = currentUV.xy;
-                
-                float3 newPosition = currentGBufferPositionVS;
-                newPosition.z = currentDepth;
-                currentLength = length(originVS - newPosition);
-                
-                output.Fade *= smoothstep(2.5, 5, currentLength);
-                return output;
-            }
-            
-            // jitter sample depth
-            currentDepth = SamplePositionVS(currentUV.xy + RANDOM_PIXEL_OFFSETS[j] * 1 * TexelSize).z;
+            output.Hit = true;
+            output.UV = currentUV.xy;
+            return output;
         }
         
-        // hit skybox
-        if (gBufferDepth > 0.9999)
-        {
-            break;
-        }
-        
-        {
-            float3 newPosition = currentGBufferPositionVS;
-            newPosition.z = currentDepth;
-            currentLength = length(originVS - newPosition);
-        }
+        rayOrigin += rayDelta;
+
     }
     
     return output;
@@ -167,7 +146,7 @@ float4 main(PixelShaderInput IN) : SV_TARGET
         float3 sceneColor = SampleSceneColor(traceOutput.UV);
         float fade = traceOutput.Fade;
         float2 centeredUV = traceOutput.UV - 0.5;
-        fade *= smoothstep(0.5, 0.4, length(centeredUV));
+        fade *= smoothstep(0.5, 0.45, length(centeredUV));
         return float4(sceneColor, fade);
     }
     
