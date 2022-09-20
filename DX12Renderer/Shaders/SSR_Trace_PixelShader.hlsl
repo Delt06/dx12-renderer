@@ -68,6 +68,7 @@ struct TraceOutput
 {
     bool Hit;
     float2 UV;
+    float Fade;
 };
 
 //https://virtexedge.design/shader-series-basic-screen-space-reflections/
@@ -96,38 +97,44 @@ static const float2 RANDOM_PIXEL_OFFSETS[SAMPLES_COUNT] =
 
 TraceOutput Trace(float2 uv)
 {
-    float3 originVS = SamplePositionVS(uv);
-    float initialDepth = originVS.z;
+    TraceOutput output = (TraceOutput) 0;
+    float gBufferDepth;
+    float3 originVS = SamplePositionVS(uv, gBufferDepth);
+    if (gBufferDepth > 0.999)
+    {
+        return output;
+    }
     float3 normalVS = SampleNormalVS(uv);
     
     float3 viewDir = normalize(originVS);
     float3 reflectDir = normalize(reflect(viewDir, normalVS));
     
-    float currentLength = 1;
+    float currentLength = 5;
     uint loops = 10;
     
-    TraceOutput output = (TraceOutput) 0;
+    output.Fade = 1 - saturate(-dot(viewDir, reflectDir));
+    output.Fade = output.Fade * output.Fade;
     
     for (uint i = 0; i < loops && !output.Hit; ++i)
     {
         float3 currentPosition = originVS + reflectDir * currentLength;
         float4 currentUV = ToScreenSpaceUV(currentPosition);
         
-        float gBufferDepth;
         float3 currentGBufferPositionVS = SamplePositionVS(currentUV.xy, gBufferDepth);
         float currentDepth = currentGBufferPositionVS.z;
         
         for (uint j = 0; j < SAMPLES_COUNT; ++j)
         {
-            if (abs(currentPosition.z - currentDepth) < 0.001)
+            if (abs(currentPosition.z - currentDepth) < 0.01)
             {
                 output.Hit = true;
                 output.UV = currentUV.xy;
+                return output;
                 break;
             }
             
             // jitter sample depth
-            currentDepth = SamplePositionVS(currentUV.xy + RANDOM_PIXEL_OFFSETS[j] * 2 * TexelSize).z;
+            currentDepth = SamplePositionVS(currentUV.xy + RANDOM_PIXEL_OFFSETS[j] * 1 * TexelSize).z;
         }
         
         // hit skybox
@@ -151,9 +158,9 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     if (traceOutput.Hit)
     {
         float3 sceneColor = SampleSceneColor(traceOutput.UV);
-        float fade = 1;
-        if (any(traceOutput.UV < 0 || traceOutput.UV > 1))
-            return 0;
+        float fade = traceOutput.Fade;
+        float2 centeredUV = traceOutput.UV - 0.5;
+        fade *= smoothstep(0.5, 0.4, length(centeredUV));
         return float4(sceneColor, fade);
     }
     
