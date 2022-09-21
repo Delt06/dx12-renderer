@@ -7,28 +7,23 @@
 #include <string>
 #include "RenderTarget.h"
 #include <vector>
+#include "EffectBase.h"
 
-class Shader
+class Shader : public EffectBase
 {
 public:
-	using IDevice = ID3D12Device2;
 	using RootParameter = CD3DX12_ROOT_PARAMETER1;
 	using DescriptorRange = CD3DX12_DESCRIPTOR_RANGE1;
 	using StaticSampler = CD3DX12_STATIC_SAMPLER_DESC;
 	using Format = DXGI_FORMAT;
 	using ScissorRect = D3D12_RECT;
 	using Viewport = CD3DX12_VIEWPORT;
+	using BlendMode = CD3DX12_BLEND_DESC;
 
 	Shader() = default;
 	virtual ~Shader();
 
-	void Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList);
-
-	Shader(const Shader& other) = delete;
-	Shader(const Shader&& other) = delete;
-
-	Shader operator=(const Shader& other) = delete;
-	Shader operator=(const Shader&& other) = delete;
+	void Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList) final;
 
 protected:
 	virtual std::wstring GetVertexShaderName() const = 0;
@@ -39,6 +34,8 @@ protected:
 
 	virtual Format GetRenderTargetFormat() const = 0;
 
+	virtual BlendMode GetBlendMode() const;
+
 	virtual void OnPostInit(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList) {};
 
 	void SetContext(CommandList& commandList) const;
@@ -48,14 +45,7 @@ protected:
 	[[nodiscard]] static ScissorRect GetAutoScissorRect();
 	[[nodiscard]] static Viewport GetAutoViewport(const RenderTarget& renderTarget);
 
-	template<typename T, size_t N>
-	static std::vector<T> ToVector(T staticArray[N])
-	{
-		std::vector<T> vector;
-		vector.resize(N);
-		memcpy(vector.data(), staticArray, sizeof(staticArray));
-		return vector;
-	}
+	[[nodiscard]] static BlendMode AdditiveBlend();
 
 private:
 	static void CombineRootSignatureFlags(D3D12_ROOT_SIGNATURE_FLAGS& flags, const std::vector<RootParameter>& rootParameters);

@@ -1,4 +1,4 @@
-#include "DeferredLightingDemo.h"
+﻿#include "DeferredLightingDemo.h"
 
 #include <Application.h>
 #include <CommandQueue.h>
@@ -442,7 +442,7 @@ bool DeferredLightingDemo::LoadContent()
 				D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
 			CD3DX12_DESCRIPTOR_RANGE1 gBufferDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, gBufferTexturesCount, 0);
-			CD3DX12_DESCRIPTOR_RANGE1 ambientDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, gBufferTexturesCount);
+			CD3DX12_DESCRIPTOR_RANGE1 ambientDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, gBufferTexturesCount);
 
 			CD3DX12_ROOT_PARAMETER1 rootParameters[DirectionalLightBufferRootParameters::NumRootParameters];
 			rootParameters[DirectionalLightBufferRootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE);
@@ -823,6 +823,12 @@ bool DeferredLightingDemo::LoadContent()
 		}
 
 		{
+			D3D12_SHADER_RESOURCE_VIEW_DESC depthTextureSrv = GetDepthTextureSrv();
+			m_Ssr = std::make_unique<Ssr>(lightBufferFormat, depthTextureSrv, m_Width, m_Height);
+			m_Ssr->Init(device, *commandList);
+		}
+
+		{
 			m_AutoExposurePso = std::make_unique<AutoExposure>(device, *commandList);
 			m_ToneMappingPso = std::make_unique<ToneMapping>(device, *commandList, resultFormat);
 		}
@@ -914,7 +920,7 @@ bool DeferredLightingDemo::LoadContent()
 			auto model = modelLoader.LoadExisting(Mesh::CreatePlane(*commandList));
 			auto material = std::make_shared<PbrMaterial>();
 			textureLoader.Init(*material);
-			material->GetConstants().Metallic = 0.02f;
+			material->GetConstants().Metallic = 1.0f;
 			material->GetConstants().TilingOffset = { 6, 6, 0, 0 };
 
 			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse,
@@ -948,7 +954,7 @@ bool DeferredLightingDemo::LoadContent()
 				L"Assets/Models/old-wooden-chest/chest_01_Metallic.png");
 
 			{
-				XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.75f, 15.0f);
+				XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.25f, 15.0f);
 				XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(90), 0, 0);
 				XMMATRIX scaleMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
 				XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
@@ -956,13 +962,27 @@ bool DeferredLightingDemo::LoadContent()
 			}
 			
 			{
-				XMMATRIX translationMatrix = XMMatrixTranslation(-50.0f, 0.75f, 15.0f);
+				XMMATRIX translationMatrix = XMMatrixTranslation(-50.0f, 0.25f, 15.0f);
 				XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(90), 0, 0);
 				XMMATRIX scaleMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
 				XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
 				m_GameObjects.push_back(GameObject(worldMatrix, model, material));
 			}
 			
+		}
+
+		{
+			auto model = modelLoader.LoadExisting(Mesh::CreatePlane(*commandList));
+			auto material = std::make_shared<PbrMaterial>();
+			textureLoader.Init(*material);
+			material->GetConstants().Metallic = 1.0f;
+			material->GetConstants().Roughness = 0.0f;
+
+			XMMATRIX translationMatrix = XMMatrixTranslation(-50.0f, 0.1f, 15.0f);
+			XMMATRIX rotationMatrix = XMMatrixIdentity();
+			XMMATRIX scaleMatrix = XMMatrixScaling(30.0f, 30.0f, 30.0f);
+			XMMATRIX worldMatrix = scaleMatrix * translationMatrix * rotationMatrix;
+			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
 		}
 
 		{
@@ -1117,6 +1137,19 @@ bool DeferredLightingDemo::LoadContent()
 		}
 	}
 
+	{
+		m_ReflectionsPass = std::make_unique<Reflections>(lightBufferFormat);
+		D3D12_SHADER_RESOURCE_VIEW_DESC preFilterEnvironmentSrvDesc;
+		preFilterEnvironmentSrvDesc.Format = m_PreFilterEnvironmentMapRt.GetTexture(Color0).GetD3D12ResourceDesc().Format;
+		preFilterEnvironmentSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		preFilterEnvironmentSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+		preFilterEnvironmentSrvDesc.TextureCube.MipLevels = -1;
+		preFilterEnvironmentSrvDesc.TextureCube.MostDetailedMip = 0;
+		preFilterEnvironmentSrvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+		m_ReflectionsPass->SetSrvDescriptors(preFilterEnvironmentSrvDesc, GetDepthTextureSrv());
+		m_ReflectionsPass->Init(device, *commandList);
+	}
+
 	Texture depthBuffer;
 
 	// Depth Stencil
@@ -1238,6 +1271,11 @@ void DeferredLightingDemo::OnResize(ResizeEventArgs& e)
 		}
 
 		m_SurfaceRenderTarget.AttachTexture(Color0, GetGBufferTexture(GBufferTextureType::Surface));
+
+		if (m_Ssr != nullptr)
+		{
+			m_Ssr->Resize(m_Width, m_Height);
+		}
 
 		if (m_Taa != nullptr)
 		{
@@ -1383,6 +1421,19 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		m_Ssao->BlurPass(*commandList, m_SurfaceRenderTarget);
 	}
 
+	if (m_SsrEnabled)
+	{
+		m_Ssr->SetMatrices(viewMatrix, projectionMatrix);
+		const auto jitterOffset = m_Taa->GetCurrentJitterOffset();
+		m_Ssr->SetJitterOffset(jitterOffset);
+
+		const Texture& normals = GetGBufferTexture(GBufferTextureType::Normals);
+		const Texture& surface = GetGBufferTexture(GBufferTextureType::Surface);
+		const Texture& depth = m_DepthTexture;
+		const RenderTarget& resultRenderTarget = m_LightBufferRenderTarget;
+		m_Ssr->Execute(*commandList, normals, surface, depth);
+	}
+
 	commandList->SetViewport(m_Viewport);
 	commandList->SetScissorRect(m_ScissorRect);
 
@@ -1421,19 +1472,16 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			irradianceSrvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
 			commandList->SetShaderResourceView(DirectionalLightBufferRootParameters::Ambient, 0, diffuseIrradianceMap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, UINT_MAX, &irradianceSrvDesc);
 
-			const auto& preFilterEnvironmentMap = m_PreFilterEnvironmentMapRt.GetTexture(Color0);
-			D3D12_SHADER_RESOURCE_VIEW_DESC preFilterEnvironmentSrvDesc;
-			preFilterEnvironmentSrvDesc.Format = diffuseIrradianceMap.GetD3D12ResourceDesc().Format;
-			preFilterEnvironmentSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			preFilterEnvironmentSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
-			preFilterEnvironmentSrvDesc.TextureCube.MipLevels = -1;
-			preFilterEnvironmentSrvDesc.TextureCube.MostDetailedMip = 0;
-			preFilterEnvironmentSrvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
-			commandList->SetShaderResourceView(DirectionalLightBufferRootParameters::Ambient, 1, preFilterEnvironmentMap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, UINT_MAX, &preFilterEnvironmentSrvDesc);
-
-			commandList->SetShaderResourceView(DirectionalLightBufferRootParameters::Ambient, 2, m_BrdfIntegrationMapRt.GetTexture(Color0), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
 			m_FullScreenMesh->Draw(*commandList);
+		}
+
+		{
+			const Texture& preFilterMap = m_PreFilterEnvironmentMapRt.GetTexture(Color0);
+			const Texture& brdfLut = m_BrdfIntegrationMapRt.GetTexture(Color0);
+			const Texture& reflections = m_SsrEnabled ? m_Ssr->GetReflectionsTexture() : m_Ssr->GetEmptyReflectionsTexture();
+			MatricesCb matrices;
+			matrices.Compute(XMMatrixIdentity(), viewMatrix, viewProjectionMatrix, projectionMatrix);
+			m_ReflectionsPass->Draw(*commandList, m_GBufferRenderTarget, m_DepthTexture, preFilterMap, brdfLut, reflections, matrices);
 		}
 
 		commandList->SetStencilRef(0);
@@ -1513,6 +1561,11 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		m_SkyboxMesh->Draw(*commandList);
 	}
 
+	if (m_SsrEnabled)
+	{
+		m_Ssr->CaptureSceneColor(*commandList, m_LightBufferRenderTarget.GetTexture(Color0));
+	}
+
 	{
 		m_AutoExposurePso->Dispatch(*commandList, m_LightBufferRenderTarget.GetTexture(Color0), m_DeltaTime);
 	}
@@ -1529,6 +1582,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 	}
 
 	// Maintain TAA data
+	if (m_TaaEnabled)
 	{
 		for (auto& go : m_GameObjects)
 		{
@@ -1759,7 +1813,11 @@ void DeferredLightingDemo::OnKeyReleased(KeyEventArgs& e)
 		break;
 	case KeyCode::T:
 		m_TaaEnabled = !m_TaaEnabled;
-		OutputDebugStringA(m_SsaoEnabled ? "TAA: On\n" : "TAA: Off\n");
+		OutputDebugStringA(m_TaaEnabled ? "TAA: On\n" : "TAA: Off\n");
+		break;
+	case KeyCode::P:
+		m_SsrEnabled = !m_SsrEnabled;
+		OutputDebugStringA(m_SsrEnabled ? "SSR: On\n" : "SSR: Off\n");
 		break;
 	}
 }

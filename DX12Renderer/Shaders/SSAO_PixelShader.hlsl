@@ -6,7 +6,7 @@ struct PixelShaderInput
     float2 UV : TEXCOORD;
 };
 
-#define SAMPLES_COUNT 64
+#define SAMPLES_COUNT 32
 #define BIAS 0.025
 
 cbuffer SSAOCBuffer : register(b0)

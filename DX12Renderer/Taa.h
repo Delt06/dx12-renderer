@@ -24,6 +24,7 @@ public:
 	void CopyResolvedTexture(CommandList& commandList, const Texture& destination);
 	[[nodiscard]] const Texture& GetResolvedTexture() const;
 
+	[[nodiscard]] DirectX::XMFLOAT2 GetCurrentJitterOffset() const;
 	void OnRenderedFrame(const DirectX::XMMATRIX& viewProjectionMatrix);
 
 private:

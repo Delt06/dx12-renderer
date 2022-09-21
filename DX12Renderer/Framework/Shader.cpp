@@ -49,6 +49,7 @@ void Shader::Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandLi
 			CD3DX12_PIPELINE_STATE_STREAM_VS Vs;
 			CD3DX12_PIPELINE_STATE_STREAM_PS Ps;
 			CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RtvFormats;
+			CD3DX12_PIPELINE_STATE_STREAM_BLEND_DESC Blend;
 		} pipelineStateStream;
 
 		D3D12_RT_FORMAT_ARRAY rtvFormats = {};
@@ -62,6 +63,7 @@ void Shader::Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandLi
 		pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
 		pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
 		pipelineStateStream.RtvFormats = rtvFormats;
+		pipelineStateStream.Blend = GetBlendMode();
 
 		const D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = {
 			sizeof(PipelineStateStream), &pipelineStateStream
@@ -70,6 +72,12 @@ void Shader::Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandLi
 		ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_PipelineState)));
 	}
 
+	OnPostInit(device, commandList);
+}
+
+Shader::BlendMode Shader::GetBlendMode() const
+{
+	return BlendMode(CD3DX12_DEFAULT());
 }
 
 void Shader::SetContext(CommandList& commandList) const
@@ -114,6 +122,20 @@ Shader::Viewport Shader::GetAutoViewport(const RenderTarget& renderTarget)
 
 	auto destinationDesc = color0Texture.IsValid() ? color0Texture.GetD3D12ResourceDesc() : depthTexture.GetD3D12ResourceDesc();
 	return Viewport(0.0f, 0.0f, static_cast<float>(destinationDesc.Width), static_cast<float>(destinationDesc.Height));
+}
+
+Shader::BlendMode Shader::AdditiveBlend()
+{
+	BlendMode desc = BlendMode(CD3DX12_DEFAULT());
+	auto& rtBlendDesc = desc.RenderTarget[0];
+	rtBlendDesc.BlendEnable = true;
+	rtBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
+	rtBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	rtBlendDesc.SrcBlend = D3D12_BLEND_ONE;
+	rtBlendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
+	rtBlendDesc.DestBlend = D3D12_BLEND_ONE;
+	rtBlendDesc.DestBlendAlpha = D3D12_BLEND_ONE;
+	return desc;
 }
 
 void Shader::CombineRootSignatureFlags(D3D12_ROOT_SIGNATURE_FLAGS& flags, const std::vector<RootParameter>& rootParameters)

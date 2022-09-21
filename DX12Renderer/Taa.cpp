@@ -169,6 +169,11 @@ const Texture& Taa::GetResolvedTexture() const
 	return m_ResolveRenderTarget.GetTexture(Color0);
 }
 
+DirectX::XMFLOAT2 Taa::GetCurrentJitterOffset() const
+{
+	return JITTER_OFFSETS[m_FrameIndex];
+}
+
 void Taa::OnRenderedFrame(const DirectX::XMMATRIX& viewProjectionMatrix)
 {
 	m_PreviousViewProjectionMatrix = viewProjectionMatrix;
