@@ -13,8 +13,8 @@ public:
 	{
 		DirectX::XMFLOAT4 Diffuse = { 1, 1, 1, 1 };
 
-		float Metallic = 0;
-		float Roughness = 0.5;
+		float Metallic = 1.0;
+		float Roughness = 1.0;
 
 		uint32_t HasDiffuseMap{};
 		uint32_t HasNormalMap{};

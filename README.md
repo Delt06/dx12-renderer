@@ -76,3 +76,4 @@
 - https://sketchfab.com/3d-models/old-wooden-chest-45f93c78e5174036801bfb535c139ac7
 - https://d1ver.artstation.com/projects/3k2
 - https://ambientcg.com/view?id=Ground047
+- https://www.cgtrader.com/free-3d-models/electronics/video/retro-television-set-c4dbe4af-960e-4a5c-ac25-2265d6a97cf6

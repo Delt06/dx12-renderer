@@ -211,10 +211,10 @@ namespace
 	{
 		// assuming minimum visible attenuation of L...
 		// 1/(c+l*d+q*d*d) = L
-		const auto l = 0.02f / GetMaxColorComponentRGB(light.Color);
+		const auto l = 0.01f / GetMaxColorComponentRGB(light.Color);
 		const auto lInv = 1 / l;
 		auto discriminant = light.LinearAttenuation * light.LinearAttenuation - 4 * light.QuadraticAttenuation * (light.ConstantAttenuation - lInv);
-		auto radius = (-light.LinearAttenuation + sqrt(discriminant)) / (2 * light.QuadraticAttenuation);
+		auto radius = 2 * (-light.LinearAttenuation + sqrt(discriminant)) / (2 * light.QuadraticAttenuation);
 		return XMMatrixScaling(radius, radius, radius) *
 			XMMatrixTranslationFromVector(XMLoadFloat4(&light.PositionWs));
 	}
@@ -921,6 +921,7 @@ bool DeferredLightingDemo::LoadContent()
 			auto material = std::make_shared<PbrMaterial>();
 			textureLoader.Init(*material);
 			material->GetConstants().Metallic = 1.0f;
+			material->GetConstants().Roughness = 0.5f;
 			material->GetConstants().TilingOffset = { 6, 6, 0, 0 };
 
 			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse,
@@ -1002,6 +1003,32 @@ bool DeferredLightingDemo::LoadContent()
 			XMMATRIX translationMatrix = XMMatrixTranslation(15.0f, 5.0f, 10.0f);
 			XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(90), XMConvertToRadians(135), XMConvertToRadians(0));
 			XMMATRIX scaleMatrix = XMMatrixScaling(0.10f, 0.10f, 0.10f);
+			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
+		}
+
+		{
+			auto model = modelLoader.Load(*commandList, "Assets/Models/tv/TV.FBX");
+			auto material = std::make_shared<PbrMaterial>();
+			textureLoader.Init(*material);
+
+			material->GetConstants().Metallic = 1.0;
+			material->GetConstants().Roughness = 1.0;
+
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse,
+				L"Assets/Models/tv/TV_Color.jpg");
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Normal,
+				L"Assets/Models/tv/TV_Normal.jpg");
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Roughness,
+				L"Assets/Models/tv/TV_Roughness.jpg");
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Metallic,
+				L"Assets/Models/tv/TV_Metallic.jpg");
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::AmbientOcclusion,
+				L"Assets/Models/tv/TV_Occlusion.jpg");
+
+			XMMATRIX translationMatrix = XMMatrixTranslation(-14.0f, 0.0f, 18.0f);
+			XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(90), XMConvertToRadians(-45), XMConvertToRadians(0));
+			XMMATRIX scaleMatrix = XMMatrixScaling(0.30f, 0.30f, 0.30f);
 			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
 			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
 		}

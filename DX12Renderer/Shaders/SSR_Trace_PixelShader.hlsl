@@ -148,6 +148,11 @@ TraceOutput Trace(float2 uv, float roughness)
     return output;
 }
 
+bool IsNaN(float x)
+{
+    return !(x < 0.f || x > 0.f || x == 0.f);
+}
+
 float4 main(PixelShaderInput IN) : SV_TARGET
 {
     float2 uv = IN.UV;
@@ -156,17 +161,19 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     UnpackSurface(surfaceSample, metallic, roughness, ao);
     
     
-    if (metallic > 0)
+    TraceOutput traceOutput = Trace(uv, roughness);
+    if (traceOutput.Hit)
     {
-        TraceOutput traceOutput = Trace(uv, roughness);
-        if (traceOutput.Hit)
-        {
-            float3 sceneColor = SampleSceneColor(traceOutput.UV);
-            float fade = traceOutput.Fade;
-            float2 centeredUV = traceOutput.UV - 0.5;
-            fade *= smoothstep(0.5, 0.499, length(centeredUV));
-            return float4(sceneColor, fade * metallic);
-        }
+        float3 sceneColor = SampleSceneColor(traceOutput.UV);
+        float fade = traceOutput.Fade;
+        float2 centeredUV = traceOutput.UV - 0.5;
+        fade *= smoothstep(0.5, 0.499, length(centeredUV));
+        
+        // prevents nans from previous frames affecting this one
+        if (IsNaN(sceneColor.x) || IsNaN(sceneColor.y) || IsNaN(sceneColor.z))
+            return 0;
+        
+        return float4(sceneColor, fade);
     }
     
     return 0;

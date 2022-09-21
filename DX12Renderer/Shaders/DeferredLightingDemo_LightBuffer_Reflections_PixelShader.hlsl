@@ -26,10 +26,8 @@ float3 ComputeBRDFReflections(in BRDFInput input, float4 ssrSample)
     static const float MAX_REFLECTION_LOD = 4.0;
     float3 prefilteredColor = prefilterMap.SampleLevel(ambientMapSampler, reflectionWS, input.Roughness * MAX_REFLECTION_LOD).rgb;
     float2 brdf = brdfLUT.Sample(ambientMapSampler, float2(max(dot(input.NormalWS, eyeWS), 0.0), input.Roughness)).rg;
-    float3 specular = prefilteredColor * (F * brdf.x + brdf.y);
-    
-    float3 reflectionColor = lerp(specular, ssrSample.rgb, ssrSample.a); // A channel stores fade amount
-    return reflectionColor * input.AmbientOcclusion;
+    float3 specular = lerp(prefilteredColor, ssrSample.rgb, ssrSample.a) * (F * brdf.x + brdf.y); // A channel stores fade amount
+    return specular * input.AmbientOcclusion;
 }
 
 struct PixelShaderInput
