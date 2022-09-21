@@ -442,7 +442,7 @@ bool DeferredLightingDemo::LoadContent()
 				D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
 			CD3DX12_DESCRIPTOR_RANGE1 gBufferDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, gBufferTexturesCount, 0);
-			CD3DX12_DESCRIPTOR_RANGE1 ambientDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, gBufferTexturesCount);
+			CD3DX12_DESCRIPTOR_RANGE1 ambientDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, gBufferTexturesCount);
 
 			CD3DX12_ROOT_PARAMETER1 rootParameters[DirectionalLightBufferRootParameters::NumRootParameters];
 			rootParameters[DirectionalLightBufferRootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE);
@@ -1470,18 +1470,6 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			irradianceSrvDesc.TextureCube.MostDetailedMip = 0;
 			irradianceSrvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
 			commandList->SetShaderResourceView(DirectionalLightBufferRootParameters::Ambient, 0, diffuseIrradianceMap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, UINT_MAX, &irradianceSrvDesc);
-
-			const auto& preFilterEnvironmentMap = m_PreFilterEnvironmentMapRt.GetTexture(Color0);
-			D3D12_SHADER_RESOURCE_VIEW_DESC preFilterEnvironmentSrvDesc;
-			preFilterEnvironmentSrvDesc.Format = diffuseIrradianceMap.GetD3D12ResourceDesc().Format;
-			preFilterEnvironmentSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			preFilterEnvironmentSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
-			preFilterEnvironmentSrvDesc.TextureCube.MipLevels = -1;
-			preFilterEnvironmentSrvDesc.TextureCube.MostDetailedMip = 0;
-			preFilterEnvironmentSrvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
-			commandList->SetShaderResourceView(DirectionalLightBufferRootParameters::Ambient, 1, preFilterEnvironmentMap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, UINT_MAX, &preFilterEnvironmentSrvDesc);
-
-			commandList->SetShaderResourceView(DirectionalLightBufferRootParameters::Ambient, 2, m_BrdfIntegrationMapRt.GetTexture(Color0), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 			m_FullScreenMesh->Draw(*commandList);
 		}
