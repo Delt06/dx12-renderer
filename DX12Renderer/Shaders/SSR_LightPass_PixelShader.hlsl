@@ -9,8 +9,8 @@ SamplerState traceSampler : register(s0);
 cbuffer ParametersCBuffer : register(b0)
 {
     float2 TexelSize;
-    int Size;
     float Separation;
+    int Size;
 }
 
 float4 Sample(float2 uv)

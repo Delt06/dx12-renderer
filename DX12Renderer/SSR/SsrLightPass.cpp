@@ -15,8 +15,8 @@ namespace
 		struct ParametersCBuffer
 		{
 			DirectX::XMFLOAT2 TexelSize;
-			int32_t Separation;
-			float Size;
+			float Separation;
+			int Size;
 		};
 	};
 }
@@ -44,8 +44,8 @@ void SsrLightPass::Execute(CommandList& commandList, const Texture& traceResult,
 		1.0f / static_cast<float>(traceResultDesc.Width),
 		1.0f / static_cast<float>(traceResultDesc.Height)
 	};
-	cbuffer.Size = 0;
-	cbuffer.Separation = 1.0f;
+	cbuffer.Size = 1;
+	cbuffer.Separation = 2.0f;
 	commandList.SetGraphics32BitConstants(RootParameters::CBuffer, cbuffer);
 
 	m_BlitMesh->Draw(commandList);
