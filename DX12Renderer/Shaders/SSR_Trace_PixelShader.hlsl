@@ -94,13 +94,14 @@ TraceOutput Trace(float2 uv, float roughness)
     float3 originWS = mul(InverseView, float4(originVS, 1.0)).xyz;
     float3 reflectDir = normalize(reflect(viewDir, normalVS) + hash33(originWS * 10) * 0.2 * (roughness + 0.1));
     
-    uint loops = 45;
+    uint loops = 35;
     
     output.Fade = 1 - saturate(-dot(viewDir, reflectDir));
     output.Fade = output.Fade * output.Fade;
     
-    float3 rayOrigin = originVS + reflectDir * 2.0;
-    float step = 0.1f;
+    
+    float step = 0.05f;
+    float3 rayOrigin = originVS + reflectDir * 0.1;
     float totalDistance = step;
     float thickness = 1.0f;
     
@@ -110,16 +111,19 @@ TraceOutput Trace(float2 uv, float roughness)
         float3 currentGBufferPositionVS = SamplePositionVS(currentUV.xy, gBufferDepth);
         
         float zDelta = (rayOrigin.z - currentGBufferPositionVS.z);
-        if (gBufferDepth < 0.9999 && zDelta < 0 && zDelta > -thickness)
+        if (gBufferDepth < 0.9999 && zDelta > 0)
         {
-            output.Hit = true;
-            output.UV = currentUV.xy;
-            output.Fade *= 1 - smoothstep(0.6, 1.0, (float) i / (float) (loops - 1));
+            if (zDelta < thickness)
+            {
+                output.Hit = true;
+                output.UV = currentUV.xy;
+                output.Fade *= 1 - smoothstep(0.95, 1.0, (float) i / (float) (loops - 1));
+            }
             break;
         }
         
-        if (totalDistance > 1.0f)
-            step += 0.03f;
+        if (totalDistance > 0.15f)
+            step += 0.03;
         rayOrigin += reflectDir * step;
         totalDistance += step;
 
@@ -127,7 +131,7 @@ TraceOutput Trace(float2 uv, float roughness)
     
     if (output.Hit)
     {
-        float originalStep = step * 0.5 * 5;
+        float originalStep = step * 0.5;
         
         float2 uv = output.UV;
         
@@ -166,8 +170,9 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     {
         float3 sceneColor = SampleSceneColor(traceOutput.UV);
         float fade = traceOutput.Fade;
-        float2 centeredUV = traceOutput.UV - 0.5;
-        fade *= smoothstep(0.5, 0.499, length(centeredUV));
+        float2 centeredUV = abs(traceOutput.UV - 0.5);
+        float2 uvFade = smoothstep(0.505, 0.5, centeredUV);
+        fade *= uvFade.x * uvFade.y;
         
         // prevents nans from previous frames affecting this one
         if (IsNaN(sceneColor.x) || IsNaN(sceneColor.y) || IsNaN(sceneColor.z))
