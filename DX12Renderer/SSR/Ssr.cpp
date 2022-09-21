@@ -4,7 +4,7 @@
 Ssr::Ssr(Shader::Format renderTargetFormat, const D3D12_SHADER_RESOURCE_VIEW_DESC& depthSrv, uint32_t width, uint32_t height)
 	: m_Trace(renderTargetFormat)
 	, m_DepthSrv(depthSrv)
-	, m_LightPass(renderTargetFormat)
+	, m_BlurPass(renderTargetFormat)
 {
 	m_Trace.SetDepthSrv(&m_DepthSrv);
 
@@ -16,6 +16,9 @@ Ssr::Ssr(Shader::Format renderTargetFormat, const D3D12_SHADER_RESOURCE_VIEW_DES
 	auto traceTexture = Texture(traceRtDesc, nullptr, TextureUsageType::RenderTarget, L"SSR Trace Result");
 	m_TraceRenderTarget.AttachTexture(Color0, traceTexture);
 
+	auto finalTexture = Texture(traceRtDesc, nullptr, TextureUsageType::RenderTarget, L"SSR Reflections");
+	m_FinalReflectionsTexture.AttachTexture(Color0, finalTexture);
+
 	const auto sceneColorDesc = CD3DX12_RESOURCE_DESC::Tex2D(
 		renderTargetFormat, width, height,
 		1, 1
@@ -26,6 +29,7 @@ Ssr::Ssr(Shader::Format renderTargetFormat, const D3D12_SHADER_RESOURCE_VIEW_DES
 void Ssr::Resize(uint32_t width, uint32_t height)
 {
 	m_TraceRenderTarget.Resize(width, height);
+	m_FinalReflectionsTexture.Resize(width, height);
 	m_SceneColor.Resize(width, height);
 }
 
@@ -45,7 +49,7 @@ void Ssr::SetJitterOffset(DirectX::XMFLOAT2 jitterOffset)
 	m_Trace.SetJitterOffset(jitterOffset);
 }
 
-void Ssr::Execute(CommandList& commandList, const Texture& normals, const Texture& surface, const Texture& depth, const RenderTarget& resultRenderTarget) const
+void Ssr::Execute(CommandList& commandList, const Texture& normals, const Texture& surface, const Texture& depth) const
 {
 	PIXScope(commandList, "SSR");
 
@@ -55,9 +59,9 @@ void Ssr::Execute(CommandList& commandList, const Texture& normals, const Textur
 	}
 
 	{
-		PIXScope(commandList, "SSR Light Pass");
+		PIXScope(commandList, "SSR Blur Pass");
 		const Texture& traceResult = m_TraceRenderTarget.GetTexture(Color0);
-		m_LightPass.Execute(commandList, traceResult, resultRenderTarget);
+		m_BlurPass.Execute(commandList, traceResult, m_FinalReflectionsTexture);
 	}
 	
 }
@@ -65,5 +69,10 @@ void Ssr::Execute(CommandList& commandList, const Texture& normals, const Textur
 void Ssr::Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList)
 {
 	m_Trace.Init(device, commandList);
-	m_LightPass.Init(device, commandList);
+	m_BlurPass.Init(device, commandList);
+}
+
+const Texture& Ssr::GetReflectionsTexture() const
+{
+	return m_FinalReflectionsTexture.GetTexture(Color0);
 }

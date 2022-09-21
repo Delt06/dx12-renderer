@@ -17,6 +17,7 @@
 #include "Ssao.h"
 #include "Taa.h"
 #include "SSR/Ssr.h"
+#include "Reflections.h"
 
 struct MatricesCb;
 class AutoExposure;
@@ -86,6 +87,7 @@ private:
 	RenderTarget m_SurfaceRenderTarget;
 
 	std::unique_ptr<Ssr> m_Ssr;
+	std::unique_ptr<Reflections> m_ReflectionsPass;
 
 	std::unique_ptr<AutoExposure> m_AutoExposurePso;
 	std::unique_ptr<ToneMapping> m_ToneMappingPso;

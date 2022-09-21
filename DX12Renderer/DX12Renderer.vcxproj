@@ -211,6 +211,7 @@
     <ClCompile Include="PBR\PbrTextureLoader.cpp" />
     <ClCompile Include="PBR\PbrMaterial.cpp" />
     <ClCompile Include="PBR\IBL\PreFilterEnvironment.cpp" />
+    <ClCompile Include="Reflections.cpp" />
     <ClCompile Include="RenderTarget.cpp" />
     <ClCompile Include="ResourceStateTracker.cpp" />
     <ClCompile Include="ResourceWrapper.cpp" />
@@ -219,7 +220,7 @@
     <ClCompile Include="LightingDemo\SceneRenderer.cpp" />
     <ClCompile Include="Animation.cpp" />
     <ClCompile Include="Ssao.cpp" />
-    <ClCompile Include="SSR\SsrLightPass.cpp" />
+    <ClCompile Include="SSR\SsrBlurPass.cpp" />
     <ClCompile Include="SSR\Ssr.cpp" />
     <ClCompile Include="SSR\SsrTrace.cpp" />
     <ClCompile Include="StructuredBuffer.cpp" />
@@ -291,6 +292,7 @@
     <ClInclude Include="PBR\PbrTextureLoader.h" />
     <ClInclude Include="PBR\PbrMaterial.h" />
     <ClInclude Include="PBR\IBL\PreFilterEnvironment.h" />
+    <ClInclude Include="Reflections.h" />
     <ClInclude Include="RenderTarget.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="ResourceStateTracker.h" />
@@ -299,7 +301,7 @@
     <ClInclude Include="LightingDemo\Scene.h" />
     <ClInclude Include="LightingDemo\SceneRenderer.h" />
     <ClInclude Include="Ssao.h" />
-    <ClInclude Include="SSR\SsrLightPass.h" />
+    <ClInclude Include="SSR\SsrBlurPass.h" />
     <ClInclude Include="SSR\Ssr.h" />
     <ClInclude Include="SSR\SsrTrace.h" />
     <ClInclude Include="StructuredBuffer.h" />
@@ -443,6 +445,12 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\DeferredLightingDemo_LightBuffer_Reflections_PixelShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Shaders\DeferredLightingDemo_LightBuffer_Spot_PixelShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
@@ -612,7 +620,7 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
-    <FxCompile Include="Shaders\SSR_LightPass_PixelShader.hlsl">
+    <FxCompile Include="Shaders\SSR_BlurPass_PixelShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>

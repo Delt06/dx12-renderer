@@ -1137,6 +1137,19 @@ bool DeferredLightingDemo::LoadContent()
 		}
 	}
 
+	{
+		m_ReflectionsPass = std::make_unique<Reflections>(lightBufferFormat);
+		D3D12_SHADER_RESOURCE_VIEW_DESC preFilterEnvironmentSrvDesc;
+		preFilterEnvironmentSrvDesc.Format = m_PreFilterEnvironmentMapRt.GetTexture(Color0).GetD3D12ResourceDesc().Format;
+		preFilterEnvironmentSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		preFilterEnvironmentSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+		preFilterEnvironmentSrvDesc.TextureCube.MipLevels = -1;
+		preFilterEnvironmentSrvDesc.TextureCube.MostDetailedMip = 0;
+		preFilterEnvironmentSrvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+		m_ReflectionsPass->SetSrvDescriptors(preFilterEnvironmentSrvDesc, GetDepthTextureSrv());
+		m_ReflectionsPass->Init(device, *commandList);
+	}
+
 	Texture depthBuffer;
 
 	// Depth Stencil
@@ -1417,7 +1430,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		const Texture& surface = GetGBufferTexture(GBufferTextureType::Surface);
 		const Texture& depth = m_DepthTexture;
 		const RenderTarget& resultRenderTarget = m_LightBufferRenderTarget;
-		m_Ssr->Execute(*commandList, normals, surface, depth, resultRenderTarget);
+		m_Ssr->Execute(*commandList, normals, surface, depth);
 	}
 
 	commandList->SetViewport(m_Viewport);
@@ -1471,6 +1484,15 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			commandList->SetShaderResourceView(DirectionalLightBufferRootParameters::Ambient, 2, m_BrdfIntegrationMapRt.GetTexture(Color0), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 			m_FullScreenMesh->Draw(*commandList);
+		}
+
+		{
+			const Texture& preFilterMap = m_PreFilterEnvironmentMapRt.GetTexture(Color0);
+			const Texture& brdfLut = m_BrdfIntegrationMapRt.GetTexture(Color0);
+			const Texture& relfections = m_Ssr->GetReflectionsTexture();
+			MatricesCb matrices;
+			matrices.Compute(XMMatrixIdentity(), viewMatrix, viewProjectionMatrix, projectionMatrix);
+			m_ReflectionsPass->Draw(*commandList, m_GBufferRenderTarget, m_DepthTexture, preFilterMap, brdfLut, relfections, matrices);
 		}
 
 		commandList->SetStencilRef(0);

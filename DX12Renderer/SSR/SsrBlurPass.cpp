@@ -1,4 +1,4 @@
-#include "SsrLightPass.h"
+#include "SsrBlurPass.h"
 #include "Mesh.h"
 
 namespace
@@ -21,7 +21,7 @@ namespace
 	};
 }
 
-SsrLightPass::SsrLightPass(Format renderTargetFormat)
+SsrBlurPass::SsrBlurPass(Format renderTargetFormat)
 	: m_RenderTargetFormat(renderTargetFormat)
 	, m_RootParameters(RootParameters::NumRootParameters)
 	, m_SourceDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0)
@@ -30,7 +30,7 @@ SsrLightPass::SsrLightPass(Format renderTargetFormat)
 	m_RootParameters[RootParameters::CBuffer].InitAsConstants(sizeof(RootParameters::ParametersCBuffer) / sizeof(float), 0, 0, D3D12_SHADER_VISIBILITY_PIXEL);
 }
 
-void SsrLightPass::Execute(CommandList& commandList, const Texture& traceResult, const RenderTarget& renderTarget) const
+void SsrBlurPass::Execute(CommandList& commandList, const Texture& traceResult, const RenderTarget& renderTarget) const
 {
 	SetContext(commandList);
 	SetRenderTarget(commandList, renderTarget);
@@ -51,22 +51,22 @@ void SsrLightPass::Execute(CommandList& commandList, const Texture& traceResult,
 	m_BlitMesh->Draw(commandList);
 }
 
-std::wstring SsrLightPass::GetVertexShaderName() const
+std::wstring SsrBlurPass::GetVertexShaderName() const
 {
 	return L"Blit_VertexShader.cso";
 }
 
-std::wstring SsrLightPass::GetPixelShaderName() const
+std::wstring SsrBlurPass::GetPixelShaderName() const
 {
-	return L"SSR_LightPass_PixelShader.cso";
+	return L"SSR_BlurPass_PixelShader.cso";
 }
 
-std::vector<Shader::RootParameter> SsrLightPass::GetRootParameters() const
+std::vector<Shader::RootParameter> SsrBlurPass::GetRootParameters() const
 {
 	return m_RootParameters;
 }
 
-std::vector<Shader::StaticSampler> SsrLightPass::GetStaticSamplers() const
+std::vector<Shader::StaticSampler> SsrBlurPass::GetStaticSamplers() const
 {
 	return
 	{
@@ -74,17 +74,12 @@ std::vector<Shader::StaticSampler> SsrLightPass::GetStaticSamplers() const
 	};
 }
 
-Shader::Format SsrLightPass::GetRenderTargetFormat() const
+Shader::Format SsrBlurPass::GetRenderTargetFormat() const
 {
 	return m_RenderTargetFormat;
 }
 
-void SsrLightPass::OnPostInit(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList)
+void SsrBlurPass::OnPostInit(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList)
 {
 	m_BlitMesh = Mesh::CreateBlitTriangle(commandList);
-}
-
-Shader::BlendMode SsrLightPass::GetBlendMode() const
-{
-	return AdditiveBlend();
 }

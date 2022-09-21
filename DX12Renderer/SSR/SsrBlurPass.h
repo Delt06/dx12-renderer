@@ -3,10 +3,10 @@
 #include "Framework/Shader.h"
 #include "Mesh.h"
 
-class SsrLightPass final : public Shader
+class SsrBlurPass final : public Shader
 {
 public:
-	explicit SsrLightPass(Shader::Format renderTargetFormat);
+	explicit SsrBlurPass(Shader::Format renderTargetFormat);
 
 	void Execute(CommandList& commandList, const Texture& traceResult, const RenderTarget& renderTarget) const;
 
@@ -23,8 +23,6 @@ protected:
 	Format GetRenderTargetFormat() const override;
 
 	void OnPostInit(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList) override;
-
-	BlendMode GetBlendMode() const override;
 
 private:
 	Shader::Format m_RenderTargetFormat;

@@ -1,6 +1,6 @@
 #pragma once
 #include "SsrTrace.h"
-#include "SsrLightPass.h"
+#include "SsrBlurPass.h"
 class Ssr final : public EffectBase
 {
 public: 
@@ -12,18 +12,21 @@ public:
 
 	void SetMatrices(DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX projectionMatrix);
 	void SetJitterOffset(DirectX::XMFLOAT2 jitterOffset);
-	void Execute(CommandList& commandList, const Texture& normals, const Texture& surface, const Texture& depth, const RenderTarget& resultRenderTarget) const;
+	void Execute(CommandList& commandList, const Texture& normals, const Texture& surface, const Texture& depth) const;
 
 	void Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList) override;
+
+	[[nodiscard]] const Texture& GetReflectionsTexture() const;
 
 private:
 	Texture m_SceneColor{};
 
 	SsrTrace m_Trace;
 	RenderTarget m_TraceRenderTarget{};
+	RenderTarget m_FinalReflectionsTexture{};
 	D3D12_SHADER_RESOURCE_VIEW_DESC m_DepthSrv;
 
-	SsrLightPass m_LightPass;
+	SsrBlurPass m_BlurPass;
 
 	DirectX::XMMATRIX m_ViewMatrix{};
 	DirectX::XMMATRIX m_ProjectionMatrix{};
