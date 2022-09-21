@@ -954,7 +954,7 @@ bool DeferredLightingDemo::LoadContent()
 				L"Assets/Models/old-wooden-chest/chest_01_Metallic.png");
 
 			{
-				XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.75f, 15.0f);
+				XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.25f, 15.0f);
 				XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(90), 0, 0);
 				XMMATRIX scaleMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
 				XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
@@ -962,7 +962,7 @@ bool DeferredLightingDemo::LoadContent()
 			}
 			
 			{
-				XMMATRIX translationMatrix = XMMatrixTranslation(-50.0f, 0.75f, 15.0f);
+				XMMATRIX translationMatrix = XMMatrixTranslation(-50.0f, 0.25f, 15.0f);
 				XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(90), 0, 0);
 				XMMATRIX scaleMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
 				XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
@@ -1394,6 +1394,14 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		m_Ssao->BlurPass(*commandList, m_SurfaceRenderTarget);
 	}
 
+	{
+		m_Ssr->SetMatrices(viewMatrix, projectionMatrix);
+		const Texture& normals = GetGBufferTexture(GBufferTextureType::Normals);
+		const Texture& depth = m_DepthTexture;
+		const RenderTarget& resultRenderTarget = m_LightBufferRenderTarget;
+		m_Ssr->Execute(*commandList, normals, depth, resultRenderTarget);
+	}
+
 	commandList->SetViewport(m_Viewport);
 	commandList->SetScissorRect(m_ScissorRect);
 
@@ -1525,12 +1533,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 	}
 
 	{
-		m_Ssr->SetMatrices(viewMatrix, projectionMatrix);
-		const Texture& sceneColor = m_LightBufferRenderTarget.GetTexture(Color0);
-		const Texture& normals = GetGBufferTexture(GBufferTextureType::Normals);
-		const Texture& depth = m_DepthTexture;
-		const RenderTarget& resultRenderTarget = m_LightBufferRenderTarget;
-		m_Ssr->Execute(*commandList, sceneColor, normals, depth, resultRenderTarget);
+		m_Ssr->CaptureSceneColor(*commandList, m_LightBufferRenderTarget.GetTexture(Color0));
 	}
 
 	{
