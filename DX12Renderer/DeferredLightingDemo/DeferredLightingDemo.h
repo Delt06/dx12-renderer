@@ -86,6 +86,7 @@ private:
 	std::unique_ptr<Ssao> m_Ssao;
 	RenderTarget m_SurfaceRenderTarget;
 
+	bool m_SsrEnabled = true;
 	std::unique_ptr<Ssr> m_Ssr;
 	std::unique_ptr<Reflections> m_ReflectionsPass;
 

@@ -1421,6 +1421,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		m_Ssao->BlurPass(*commandList, m_SurfaceRenderTarget);
 	}
 
+	if (m_SsrEnabled)
 	{
 		m_Ssr->SetMatrices(viewMatrix, projectionMatrix);
 		const auto jitterOffset = m_Taa->GetCurrentJitterOffset();
@@ -1477,10 +1478,10 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		{
 			const Texture& preFilterMap = m_PreFilterEnvironmentMapRt.GetTexture(Color0);
 			const Texture& brdfLut = m_BrdfIntegrationMapRt.GetTexture(Color0);
-			const Texture& relfections = m_Ssr->GetReflectionsTexture();
+			const Texture& reflections = m_SsrEnabled ? m_Ssr->GetReflectionsTexture() : m_Ssr->GetEmptyReflectionsTexture();
 			MatricesCb matrices;
 			matrices.Compute(XMMatrixIdentity(), viewMatrix, viewProjectionMatrix, projectionMatrix);
-			m_ReflectionsPass->Draw(*commandList, m_GBufferRenderTarget, m_DepthTexture, preFilterMap, brdfLut, relfections, matrices);
+			m_ReflectionsPass->Draw(*commandList, m_GBufferRenderTarget, m_DepthTexture, preFilterMap, brdfLut, reflections, matrices);
 		}
 
 		commandList->SetStencilRef(0);
@@ -1560,6 +1561,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		m_SkyboxMesh->Draw(*commandList);
 	}
 
+	if (m_SsrEnabled)
 	{
 		m_Ssr->CaptureSceneColor(*commandList, m_LightBufferRenderTarget.GetTexture(Color0));
 	}
@@ -1812,6 +1814,10 @@ void DeferredLightingDemo::OnKeyReleased(KeyEventArgs& e)
 	case KeyCode::T:
 		m_TaaEnabled = !m_TaaEnabled;
 		OutputDebugStringA(m_TaaEnabled ? "TAA: On\n" : "TAA: Off\n");
+		break;
+	case KeyCode::P:
+		m_SsrEnabled = !m_SsrEnabled;
+		OutputDebugStringA(m_SsrEnabled ? "SSR: On\n" : "SSR: Off\n");
 		break;
 	}
 }

@@ -19,6 +19,12 @@ Ssr::Ssr(Shader::Format renderTargetFormat, const D3D12_SHADER_RESOURCE_VIEW_DES
 	auto finalTexture = Texture(traceRtDesc, nullptr, TextureUsageType::RenderTarget, L"SSR Reflections");
 	m_FinalReflectionsTexture.AttachTexture(Color0, finalTexture);
 
+	const auto emptyDesc = CD3DX12_RESOURCE_DESC::Tex2D(
+		renderTargetFormat, 1, 1,
+		1, 1
+	);
+	m_EmptyReflections = Texture(emptyDesc, nullptr, TextureUsageType::Other, L"SSR Empty Reflections");
+
 	const auto sceneColorDesc = CD3DX12_RESOURCE_DESC::Tex2D(
 		renderTargetFormat, width, height,
 		1, 1
@@ -75,4 +81,9 @@ void Ssr::Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList)
 const Texture& Ssr::GetReflectionsTexture() const
 {
 	return m_FinalReflectionsTexture.GetTexture(Color0);
+}
+
+const Texture& Ssr::GetEmptyReflectionsTexture() const
+{
+	return m_EmptyReflections;
 }
