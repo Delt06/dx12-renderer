@@ -7,7 +7,8 @@ struct PixelShaderInput
 };
 
 #define SAMPLES_COUNT 32
-#define BIAS 0.025
+#define NORMAL_BIAS 0.2
+#define DEPTH_BIAS 0.025
 
 cbuffer SSAOCBuffer : register(b0)
 {
@@ -56,7 +57,7 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     [loop]
     for (uint i = 0; i < KernelSize; ++i)
     {
-        float3 samplePositionWS = positionWS + mul(tbn, Samples[i]) * Radius;
+        float3 samplePositionWS = positionWS + normal * NORMAL_BIAS + mul(tbn, Samples[i]) * Radius;
         
         float4 samplePositionCS = mul(ViewProjection, float4(samplePositionWS, 1.0));
         samplePositionCS /= samplePositionCS.w;
@@ -72,7 +73,7 @@ float4 main(PixelShaderInput IN) : SV_TARGET
         float3 samplePositionVS = mul(View, float4(samplePositionWS, 1.0)).xyz;
         
         float rangeCheck = smoothstep(0.0, 1.0, Radius / abs(positionVS.z - sampleDepthPositionVS.z));
-        occlusion += (samplePositionVS.z >= sampleDepthPositionVS.z + BIAS ? 1.0 : 0.0) * rangeCheck;
+        occlusion += (samplePositionVS.z >= sampleDepthPositionVS.z + DEPTH_BIAS ? 1.0 : 0.0) * rangeCheck;
     }
     
     occlusion = 1.0 - (occlusion / KernelSize);
