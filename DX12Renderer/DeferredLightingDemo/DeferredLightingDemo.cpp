@@ -1801,7 +1801,7 @@ void DeferredLightingDemo::OnKeyReleased(KeyEventArgs& e)
 		break;
 	case KeyCode::T:
 		m_TaaEnabled = !m_TaaEnabled;
-		OutputDebugStringA(m_SsaoEnabled ? "TAA: On\n" : "TAA: Off\n");
+		OutputDebugStringA(m_TaaEnabled ? "TAA: On\n" : "TAA: Off\n");
 		break;
 	}
 }
