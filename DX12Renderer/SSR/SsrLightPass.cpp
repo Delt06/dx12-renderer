@@ -44,7 +44,7 @@ void SsrLightPass::Execute(CommandList& commandList, const Texture& traceResult,
 		1.0f / static_cast<float>(traceResultDesc.Width),
 		1.0f / static_cast<float>(traceResultDesc.Height)
 	};
-	cbuffer.Size = 2;
+	cbuffer.Size = 0;
 	cbuffer.Separation = 1.0f;
 	commandList.SetGraphics32BitConstants(RootParameters::CBuffer, cbuffer);
 

@@ -11,7 +11,7 @@ public:
 	void CaptureSceneColor(CommandList& commandList, const Texture& source);
 
 	void SetMatrices(DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX projectionMatrix);
-	void Execute(CommandList& commandList, const Texture& normals, const Texture& depth, const RenderTarget& resultRenderTarget) const;
+	void Execute(CommandList& commandList, const Texture& normals, const Texture& surface, const Texture& depth, const RenderTarget& resultRenderTarget) const;
 
 	void Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList) override;
 

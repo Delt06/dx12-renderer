@@ -24,7 +24,8 @@ cbuffer ParametersCBuffer : register(b0)
 
 Texture2D sceneColor : register(t0);
 Texture2D normals : register(t1);
-Texture2D depth : register(t2);
+Texture2D surface : register(t2);
+Texture2D depth : register(t3);
 
 SamplerState defaultSampler : register(s0);
 
@@ -110,7 +111,7 @@ TraceOutput Trace(float2 uv)
         }
         
         if (totalDistance > 0.25f)
-            step += 0.005f;
+            step += 0.001f;
         rayOrigin += reflectDir * step;
         totalDistance += step;
 
@@ -122,14 +123,22 @@ TraceOutput Trace(float2 uv)
 float4 main(PixelShaderInput IN) : SV_TARGET
 {
     float2 uv = IN.UV;
-    TraceOutput traceOutput = Trace(uv);
-    if (traceOutput.Hit)
+    float4 surfaceSample = surface.Sample(defaultSampler, uv);
+    float metallic, roughness, ao;
+    UnpackSurface(surfaceSample, metallic, roughness, ao);
+    
+    
+    if (metallic > 0)
     {
-        float3 sceneColor = SampleSceneColor(traceOutput.UV);
-        float fade = traceOutput.Fade;
-        float2 centeredUV = traceOutput.UV - 0.5;
-        fade *= smoothstep(0.5, 0.45, length(centeredUV));
-        return float4(sceneColor, fade);
+        TraceOutput traceOutput = Trace(uv);
+        if (traceOutput.Hit)
+        {
+            float3 sceneColor = SampleSceneColor(traceOutput.UV);
+            float fade = traceOutput.Fade;
+            float2 centeredUV = traceOutput.UV - 0.5;
+            fade *= smoothstep(0.5, 0.45, length(centeredUV));
+            return float4(sceneColor, fade * metallic);
+        }
     }
     
     return 0;

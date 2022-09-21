@@ -40,13 +40,13 @@ void Ssr::SetMatrices(DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX projection
 	m_ProjectionMatrix = projectionMatrix;
 }
 
-void Ssr::Execute(CommandList& commandList, const Texture& normals, const Texture& depth, const RenderTarget& resultRenderTarget) const
+void Ssr::Execute(CommandList& commandList, const Texture& normals, const Texture& surface, const Texture& depth, const RenderTarget& resultRenderTarget) const
 {
 	PIXScope(commandList, "SSR");
 
 	{
 		PIXScope(commandList, "SSR Trace");
-		m_Trace.Execute(commandList, m_SceneColor, normals, depth, m_TraceRenderTarget, m_ViewMatrix, m_ProjectionMatrix);
+		m_Trace.Execute(commandList, m_SceneColor, normals, surface, depth, m_TraceRenderTarget, m_ViewMatrix, m_ProjectionMatrix);
 	}
 
 	{

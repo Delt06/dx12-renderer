@@ -8,7 +8,7 @@ namespace
 		enum RootParameters
 		{
 			CBuffer, // register(b0)
-			Source, // scene color, normals, depth : register(t0-t2)
+			Source, // scene color, normals, depth : register(t0-t3)
 			NumRootParameters
 		};
 	};
@@ -33,13 +33,13 @@ namespace
 SsrTrace::SsrTrace(Format renderTargetFormat)
 	: m_RenderTargetFormat(renderTargetFormat)
 	, m_RootParameters(RootParameters::NumRootParameters)
-	, m_SourceDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0)
+	, m_SourceDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0)
 {
 	m_RootParameters[RootParameters::CBuffer].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
 	m_RootParameters[RootParameters::Source].InitAsDescriptorTable(1, &m_SourceDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
 }
 
-void SsrTrace::Execute(CommandList& commandList, const Texture& sceneColor, const Texture& normals, const Texture& depth, const RenderTarget& renderTarget, DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX projectionMatrix) const
+void SsrTrace::Execute(CommandList& commandList, const Texture& sceneColor, const Texture& normals, const Texture& surface, const Texture& depth, const RenderTarget& renderTarget, DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX projectionMatrix) const
 {
 	SetContext(commandList);
 	SetRenderTarget(commandList, renderTarget);
@@ -67,7 +67,8 @@ void SsrTrace::Execute(CommandList& commandList, const Texture& sceneColor, cons
 
 	commandList.SetShaderResourceView(RootParameters::Source, 0, sceneColor, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	commandList.SetShaderResourceView(RootParameters::Source, 1, normals, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	commandList.SetShaderResourceView(RootParameters::Source, 2, depth, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, m_PDepthSrv);
+	commandList.SetShaderResourceView(RootParameters::Source, 2, surface, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	commandList.SetShaderResourceView(RootParameters::Source, 3, depth, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, m_PDepthSrv);
 
 	m_BlitMesh->Draw(commandList);
 }

@@ -1,4 +1,4 @@
-#include "DeferredLightingDemo.h"
+﻿#include "DeferredLightingDemo.h"
 
 #include <Application.h>
 #include <CommandQueue.h>
@@ -920,13 +920,13 @@ bool DeferredLightingDemo::LoadContent()
 			auto model = modelLoader.LoadExisting(Mesh::CreatePlane(*commandList));
 			auto material = std::make_shared<PbrMaterial>();
 			textureLoader.Init(*material);
-			material->GetConstants().Metallic = 0.02f;
+			material->GetConstants().Metallic = 1.0f;
 			material->GetConstants().TilingOffset = { 6, 6, 0, 0 };
 
 			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse,
 					L"Assets/Textures/Ground047/Ground047_1K_Color.jpg");
-			/*textureLoader.LoadMap(*material, *commandList, PbrMaterial::Normal,
-					L"Assets/Textures/Ground047/Ground047_1K_NormalDX.jpg");*/
+			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Normal,
+					L"Assets/Textures/Ground047/Ground047_1K_NormalDX.jpg");
 			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Roughness,
 				L"Assets/Textures/Ground047/Ground047_1K_Roughness.jpg");
 			textureLoader.LoadMap(*material, *commandList, PbrMaterial::AmbientOcclusion,
@@ -969,6 +969,19 @@ bool DeferredLightingDemo::LoadContent()
 				m_GameObjects.push_back(GameObject(worldMatrix, model, material));
 			}
 			
+		}
+
+		{
+			auto model = modelLoader.LoadExisting(Mesh::CreatePlane(*commandList));
+			auto material = std::make_shared<PbrMaterial>();
+			textureLoader.Init(*material);
+			material->GetConstants().Metallic = 1.0f;
+
+			XMMATRIX translationMatrix = XMMatrixTranslation(-50.0f, 0.1f, 15.0f);
+			XMMATRIX rotationMatrix = XMMatrixIdentity();
+			XMMATRIX scaleMatrix = XMMatrixScaling(30.0f, 30.0f, 30.0f);
+			XMMATRIX worldMatrix = scaleMatrix * translationMatrix * rotationMatrix;
+			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
 		}
 
 		{
@@ -1397,9 +1410,10 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 	{
 		m_Ssr->SetMatrices(viewMatrix, projectionMatrix);
 		const Texture& normals = GetGBufferTexture(GBufferTextureType::Normals);
+		const Texture& surface = GetGBufferTexture(GBufferTextureType::Surface);
 		const Texture& depth = m_DepthTexture;
 		const RenderTarget& resultRenderTarget = m_LightBufferRenderTarget;
-		m_Ssr->Execute(*commandList, normals, depth, resultRenderTarget);
+		m_Ssr->Execute(*commandList, normals, surface, depth, resultRenderTarget);
 	}
 
 	commandList->SetViewport(m_Viewport);

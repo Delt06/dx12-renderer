@@ -10,7 +10,7 @@ public:
 
 	void SetDepthSrv(const D3D12_SHADER_RESOURCE_VIEW_DESC* depthSrv);
 
-	void Execute(CommandList& commandList, const Texture& sceneColor, const Texture& normals, const Texture& depth, const RenderTarget& renderTarget, DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX projectionMatrix) const;
+	void Execute(CommandList& commandList, const Texture& sceneColor, const Texture& normals, const Texture& surface, const Texture& depth, const RenderTarget& renderTarget, DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX projectionMatrix) const;
 
 protected:
 	std::wstring GetVertexShaderName() const override;
