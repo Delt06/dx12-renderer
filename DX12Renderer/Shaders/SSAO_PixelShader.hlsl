@@ -54,7 +54,6 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     
     float occlusion = 0.0;
     
-    [loop]
     for (uint i = 0; i < KernelSize; ++i)
     {
         float3 samplePositionWS = positionWS + normal * NORMAL_BIAS + mul(tbn, Samples[i]) * Radius;
