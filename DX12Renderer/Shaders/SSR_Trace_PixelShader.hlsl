@@ -84,7 +84,7 @@ TraceOutput Trace(float2 uv, float roughness)
     TraceOutput output = (TraceOutput) 0;
     float gBufferDepth;
     float3 originVS = SamplePositionVS(uv, gBufferDepth);
-    if (gBufferDepth > 0.999)
+    if (gBufferDepth > 0.9999)
     {
         return output;
     }
@@ -94,10 +94,12 @@ TraceOutput Trace(float2 uv, float roughness)
     float3 originWS = mul(InverseView, float4(originVS, 1.0)).xyz;
     float3 reflectDir = normalize(reflect(viewDir, normalVS) + hash33(originWS * 10) * 0.2 * (roughness + 0.1));
     
-    uint loops = 35;
+    const uint loops = 35;
     
-    output.Fade = 1 - saturate(-dot(viewDir, reflectDir));
-    output.Fade = output.Fade * output.Fade;
+    const float VdotR = dot(viewDir, reflectDir);
+    const float fromCameraFade = smoothstep(1, 0.9, VdotR);
+    const float toCameraFade = smoothstep(-1, -0.9, VdotR);
+    output.Fade = fromCameraFade * toCameraFade;
     
     
     float step = 0.05f;
@@ -111,13 +113,12 @@ TraceOutput Trace(float2 uv, float roughness)
         float3 currentGBufferPositionVS = SamplePositionVS(currentUV.xy, gBufferDepth);
         
         float zDelta = (rayOrigin.z - currentGBufferPositionVS.z);
-        if (gBufferDepth < 0.9999 && zDelta > 0)
+        if (zDelta > 0)
         {
             if (zDelta < thickness)
             {
                 output.Hit = true;
                 output.UV = currentUV.xy;
-                output.Fade *= 1 - smoothstep(0.95, 1.0, (float) i / (float) (loops - 1));
             }
             break;
         }
@@ -129,16 +130,19 @@ TraceOutput Trace(float2 uv, float roughness)
 
     }
     
+    
+    
     if (output.Hit)
     {
         float originalStep = step * 0.5;
         
         float2 uv = output.UV;
+        float3 currentGBufferPositionVS = 0;
         
         for (uint j = 0; j < 5; ++j)
         {
             uv = ToScreenSpaceUV(rayOrigin).xy;
-            float3 currentGBufferPositionVS = SamplePositionVS(uv, gBufferDepth);
+            currentGBufferPositionVS = SamplePositionVS(uv, gBufferDepth);
             
             float zDelta = rayOrigin.z - currentGBufferPositionVS.z;
             originalStep *= 0.5;
@@ -147,6 +151,10 @@ TraceOutput Trace(float2 uv, float roughness)
         }
         
         output.UV = uv;
+        
+        const float maxDistance = 20.0;
+        float distanceFade = 1 - smoothstep(0.9, 1.0, distance(originVS, currentGBufferPositionVS) / maxDistance);
+        output.Fade *= distanceFade;
     }
     
     return output;
