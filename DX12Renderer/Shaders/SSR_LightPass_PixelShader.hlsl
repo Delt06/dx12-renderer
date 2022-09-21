@@ -9,7 +9,7 @@ SamplerState traceSampler : register(s0);
 cbuffer ParametersCBuffer : register(b0)
 {
     float2 TexelSize;
-    float Size;
+    int Size;
     float Separation;
 }
 

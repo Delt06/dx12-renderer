@@ -72,7 +72,15 @@ struct TraceOutput
     float Fade;
 };
 
-TraceOutput Trace(float2 uv)
+float3 hash33(float3 p3) // 3D input, 3D output
+{
+    p3 = frac(p3 * float3(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yxz + 33.33);
+    return frac((p3.xxy + p3.yxx) * p3.zyx);
+}
+
+
+TraceOutput Trace(float2 uv, float roughness)
 {
     TraceOutput output = (TraceOutput) 0;
     float gBufferDepth;
@@ -84,15 +92,16 @@ TraceOutput Trace(float2 uv)
     float3 normalVS = SampleNormalVS(uv);
     
     float3 viewDir = normalize(originVS);
-    float3 reflectDir = normalize(reflect(viewDir, normalVS));
+    float3 originWS = mul(InverseView, float4(originVS, 1.0)).xyz;
+    float3 reflectDir = normalize(reflect(viewDir, normalVS) + hash33(originWS * 10) * 0.2 * roughness);
     
-    uint loops = 200;
+    uint loops = 50;
     
     output.Fade = 1 - saturate(-dot(viewDir, reflectDir));
     output.Fade = output.Fade * output.Fade;
     
     float3 rayOrigin = originVS + reflectDir * 2.0;
-    float step = 0.05f;
+    float step = 0.2f;
     float totalDistance = step;
     float thickness = 0.5f;
     
@@ -130,7 +139,7 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     
     if (metallic > 0)
     {
-        TraceOutput traceOutput = Trace(uv);
+        TraceOutput traceOutput = Trace(uv, roughness);
         if (traceOutput.Hit)
         {
             float3 sceneColor = SampleSceneColor(traceOutput.UV);

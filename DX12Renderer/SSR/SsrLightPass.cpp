@@ -15,7 +15,7 @@ namespace
 		struct ParametersCBuffer
 		{
 			DirectX::XMFLOAT2 TexelSize;
-			float Separation;
+			int32_t Separation;
 			float Size;
 		};
 	};
@@ -44,7 +44,7 @@ void SsrLightPass::Execute(CommandList& commandList, const Texture& traceResult,
 		1.0f / static_cast<float>(traceResultDesc.Width),
 		1.0f / static_cast<float>(traceResultDesc.Height)
 	};
-	cbuffer.Size = 0;
+	cbuffer.Size = 1;
 	cbuffer.Separation = 1.0f;
 	commandList.SetGraphics32BitConstants(RootParameters::CBuffer, cbuffer);
 
@@ -70,7 +70,7 @@ std::vector<Shader::StaticSampler> SsrLightPass::GetStaticSamplers() const
 {
 	return
 	{
-		StaticSampler(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP)
+		StaticSampler(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP)
 	};
 }
 
