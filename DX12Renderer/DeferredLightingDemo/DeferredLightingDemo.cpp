@@ -976,7 +976,7 @@ bool DeferredLightingDemo::LoadContent()
 			auto material = std::make_shared<PbrMaterial>();
 			textureLoader.Init(*material);
 			material->GetConstants().Metallic = 1.0f;
-			material->GetConstants().Roughness = 0.5f;
+			material->GetConstants().Roughness = 0.0f;
 
 			XMMATRIX translationMatrix = XMMatrixTranslation(-50.0f, 0.1f, 15.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
