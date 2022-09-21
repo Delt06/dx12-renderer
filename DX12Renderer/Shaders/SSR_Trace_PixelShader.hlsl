@@ -164,7 +164,7 @@ float4 main(PixelShaderInput IN) : SV_TARGET
             float3 sceneColor = SampleSceneColor(traceOutput.UV);
             float fade = traceOutput.Fade;
             float2 centeredUV = traceOutput.UV - 0.5;
-            fade *= smoothstep(0.5, 0.45, length(centeredUV));
+            fade *= smoothstep(0.5, 0.49, length(centeredUV));
             return float4(sceneColor, fade * metallic);
         }
     }
