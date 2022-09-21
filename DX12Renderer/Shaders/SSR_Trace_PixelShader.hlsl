@@ -94,7 +94,7 @@ TraceOutput Trace(float2 uv, float roughness)
     float3 originWS = mul(InverseView, float4(originVS, 1.0)).xyz;
     float3 reflectDir = normalize(reflect(viewDir, normalVS) + hash33(originWS * 10) * 0.2 * (roughness + 0.1));
     
-    uint loops = 50;
+    uint loops = 30;
     
     output.Fade = 1 - saturate(-dot(viewDir, reflectDir));
     output.Fade = output.Fade * output.Fade;
@@ -119,7 +119,7 @@ TraceOutput Trace(float2 uv, float roughness)
         }
         
         if (totalDistance > 1.0f)
-            step += 0.01f;
+            step += 0.04f;
         rayOrigin += reflectDir * step;
         totalDistance += step;
 
@@ -127,7 +127,7 @@ TraceOutput Trace(float2 uv, float roughness)
     
     if (output.Hit)
     {
-        float originalStep = step * 0.5;
+        float originalStep = step * 0.5 * 5;
         
         float2 uv = output.UV;
         
