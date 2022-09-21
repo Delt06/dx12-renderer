@@ -40,6 +40,11 @@ void Ssr::SetMatrices(DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX projection
 	m_ProjectionMatrix = projectionMatrix;
 }
 
+void Ssr::SetJitterOffset(DirectX::XMFLOAT2 jitterOffset)
+{
+	m_Trace.SetJitterOffset(jitterOffset);
+}
+
 void Ssr::Execute(CommandList& commandList, const Texture& normals, const Texture& surface, const Texture& depth, const RenderTarget& resultRenderTarget) const
 {
 	PIXScope(commandList, "SSR");

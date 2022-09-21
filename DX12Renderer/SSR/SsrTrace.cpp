@@ -20,10 +20,9 @@ namespace
 		DirectX::XMMATRIX View;
 		DirectX::XMMATRIX Projection;
 
-		float MaxDistance;
-		float Resolution;
 		uint32_t Steps;
 		float Thickness;
+		DirectX::XMFLOAT2 JitterOffset;
 
 		DirectX::XMFLOAT2 TexelSize;
 		float _Padding[2];
@@ -51,10 +50,9 @@ void SsrTrace::Execute(CommandList& commandList, const Texture& sceneColor, cons
 	cbuffer.View = viewMatrix;
 	cbuffer.Projection = projectionMatrix;
 
-	cbuffer.MaxDistance = 8.0f;
-	cbuffer.Resolution = 0.3f;
 	cbuffer.Steps = 5u;
 	cbuffer.Thickness = 0.5f;
+	cbuffer.JitterOffset = m_JitterOffset;
 
 	const auto colorDesc = sceneColor.GetD3D12ResourceDesc();
 	cbuffer.TexelSize = 
@@ -109,4 +107,9 @@ void SsrTrace::OnPostInit(Microsoft::WRL::ComPtr<IDevice> device, CommandList& c
 void SsrTrace::SetDepthSrv(const D3D12_SHADER_RESOURCE_VIEW_DESC* pDepthSrv)
 {
 	m_PDepthSrv = pDepthSrv;
+}
+
+void SsrTrace::SetJitterOffset(DirectX::XMFLOAT2 jitterOffset)
+{
+	m_JitterOffset = jitterOffset;
 }

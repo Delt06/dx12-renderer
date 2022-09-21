@@ -13,10 +13,9 @@ cbuffer ParametersCBuffer : register(b0)
     matrix View;
     matrix Projection;
     
-    float MaxDistance;
-    float Resolution;
     uint Steps;
     float Thickness;
+    float2 JitterOffset;
     
     float2 TexelSize;
     float2 _Padding;
@@ -93,7 +92,7 @@ TraceOutput Trace(float2 uv, float roughness)
     
     float3 viewDir = normalize(originVS);
     float3 originWS = mul(InverseView, float4(originVS, 1.0)).xyz;
-    float3 reflectDir = normalize(reflect(viewDir, normalVS) + hash33(originWS * 10) * 0.2 * roughness);
+    float3 reflectDir = normalize(reflect(viewDir, normalVS) + hash33(originWS * 10) * 0.2 * (roughness + 0.1));
     
     uint loops = 50;
     
@@ -110,7 +109,7 @@ TraceOutput Trace(float2 uv, float roughness)
         float4 currentUV = ToScreenSpaceUV(rayOrigin);
         float3 currentGBufferPositionVS = SamplePositionVS(currentUV.xy, gBufferDepth);
         
-        float zDelta = rayOrigin.z - currentGBufferPositionVS.z;
+        float zDelta = (rayOrigin.z - currentGBufferPositionVS.z);
         if (gBufferDepth < 0.9999 && zDelta < 0 && zDelta > -thickness)
         {
             output.Hit = true;
@@ -120,7 +119,7 @@ TraceOutput Trace(float2 uv, float roughness)
         }
         
         if (totalDistance > 1.0f)
-            step += 0.02f;
+            step += 0.01f;
         rayOrigin += reflectDir * step;
         totalDistance += step;
 

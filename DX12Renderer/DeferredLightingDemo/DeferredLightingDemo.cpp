@@ -1410,6 +1410,9 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 
 	{
 		m_Ssr->SetMatrices(viewMatrix, projectionMatrix);
+		const auto jitterOffset = m_Taa->GetCurrentJitterOffset();
+		m_Ssr->SetJitterOffset(jitterOffset);
+
 		const Texture& normals = GetGBufferTexture(GBufferTextureType::Normals);
 		const Texture& surface = GetGBufferTexture(GBufferTextureType::Surface);
 		const Texture& depth = m_DepthTexture;
@@ -1567,6 +1570,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 	}
 
 	// Maintain TAA data
+	if (m_TaaEnabled)
 	{
 		for (auto& go : m_GameObjects)
 		{
