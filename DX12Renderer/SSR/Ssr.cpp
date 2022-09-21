@@ -41,6 +41,8 @@ void Ssr::Resize(uint32_t width, uint32_t height)
 
 void Ssr::CaptureSceneColor(CommandList& commandList, const Texture& source)
 {
+	PIXScope(commandList, "SSR: Capture Scene Color");
+
 	commandList.CopyResource(m_SceneColor, source);
 }
 

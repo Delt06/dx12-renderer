@@ -94,7 +94,7 @@ TraceOutput Trace(float2 uv, float roughness)
     float3 originWS = mul(InverseView, float4(originVS, 1.0)).xyz;
     float3 reflectDir = normalize(reflect(viewDir, normalVS) + hash33(originWS * 10) * 0.2 * (roughness + 0.1));
     
-    uint loops = 30;
+    uint loops = 45;
     
     output.Fade = 1 - saturate(-dot(viewDir, reflectDir));
     output.Fade = output.Fade * output.Fade;
@@ -114,7 +114,7 @@ TraceOutput Trace(float2 uv, float roughness)
         {
             output.Hit = true;
             output.UV = currentUV.xy;
-            output.Fade *= 1 - smoothstep(0.75, 1.0, (float) i / (float) (loops - 1));
+            output.Fade *= 1 - smoothstep(0.6, 1.0, (float) i / (float) (loops - 1));
             break;
         }
         
