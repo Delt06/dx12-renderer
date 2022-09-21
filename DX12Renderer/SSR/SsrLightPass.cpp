@@ -8,7 +8,15 @@ namespace
 		enum RootParameters
 		{
 			TraceResult, // register(t0)
+			CBuffer, // register(b0)
 			NumRootParameters
+		};
+
+		struct ParametersCBuffer
+		{
+			DirectX::XMFLOAT2 TexelSize;
+			float Separation;
+			float Size;
 		};
 	};
 }
@@ -19,6 +27,7 @@ SsrLightPass::SsrLightPass(Format renderTargetFormat)
 	, m_SourceDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0)
 {
 	m_RootParameters[RootParameters::TraceResult].InitAsDescriptorTable(1, &m_SourceDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
+	m_RootParameters[RootParameters::CBuffer].InitAsConstants(sizeof(RootParameters::ParametersCBuffer) / sizeof(float), 0, 0, D3D12_SHADER_VISIBILITY_PIXEL);
 }
 
 void SsrLightPass::Execute(CommandList& commandList, const Texture& traceResult, const RenderTarget& renderTarget) const
@@ -27,6 +36,17 @@ void SsrLightPass::Execute(CommandList& commandList, const Texture& traceResult,
 	SetRenderTarget(commandList, renderTarget);
 
 	commandList.SetShaderResourceView(RootParameters::TraceResult, 0, traceResult, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+	const auto traceResultDesc = traceResult.GetD3D12ResourceDesc();
+
+	RootParameters::ParametersCBuffer cbuffer{};
+	cbuffer.TexelSize = {
+		1.0f / static_cast<float>(traceResultDesc.Width),
+		1.0f / static_cast<float>(traceResultDesc.Height)
+	};
+	cbuffer.Size = 2;
+	cbuffer.Separation = 1.0f;
+	commandList.SetGraphics32BitConstants(RootParameters::CBuffer, cbuffer);
 
 	m_BlitMesh->Draw(commandList);
 }
@@ -50,7 +70,7 @@ std::vector<Shader::StaticSampler> SsrLightPass::GetStaticSamplers() const
 {
 	return
 	{
-		StaticSampler(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP)
+		StaticSampler(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP)
 	};
 }
 
