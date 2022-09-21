@@ -130,8 +130,7 @@ TraceOutput Trace(float2 uv, float roughness)
 
     }
     
-    
-    
+    // binary search to find a more precise collision point
     if (output.Hit)
     {
         float originalStep = step * 0.5;
