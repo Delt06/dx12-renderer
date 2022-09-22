@@ -42,6 +42,11 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     float3 normal = normalize(UnpackNormal(gBufferNormalsWS.Sample(gBufferSampler, uv).xyz));
     
     float zNDC = gBufferDepth.Sample(gBufferSampler, uv).x;
+    if (zNDC > 0.999)
+    {
+        return 1;
+    }
+    
     float3 positionNDC = ScreenSpaceUVToNDC(uv, zNDC);
     float4 positionVS = RestorePositionVS(positionNDC, InverseProjection);
     float3 positionWS = mul(InverseView, positionVS).xyz;
