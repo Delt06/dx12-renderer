@@ -23,7 +23,7 @@
 
 ![Deferred Lighting Demo Screenshot](./Screenshots/DeferredLightingDemo.jpg)
 
-### Controls
+#### Controls
 
 - Use <kbd>WASD</kbd>/Arrow Keys to move the camera;
 - Hold <kbd>LMB</kbd> and move the mouse to orient the camera;
@@ -53,7 +53,7 @@
 
 ![Lighting Demo Screenshot 2](./Screenshots/LightingDemo2.jpg)
 
-### Controls
+#### Controls
 
 - Use <kbd>WASD</kbd>/Arrow Keys to move the camera;
 - Hold <kbd>LMB</kbd> and move the mouse to orient the camera;
@@ -69,7 +69,7 @@
 
 ![Animations Demo GIF](./Screenshots/AnimationsDemo.gif)
 
-### Controls
+#### Controls
 
 - Use <kbd>WASD</kbd>/Arrow Keys to move the camera;
 - Hold <kbd>LMB</kbd> and move the mouse to orient the camera.
