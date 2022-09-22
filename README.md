@@ -2,6 +2,38 @@
 
 ## Demos
 
+### Deferred
+
+- [DeferredLightingDemo.h](./DX12Renderer/DeferredLightingDemo/DeferredLightingDemo.h)
+    - Deferred rendering pipeline:
+        - Directional, Point, Spot, and Capsule lights;
+        - Light passes are implemented using the stencil buffer;
+    - PBR:
+        - Cook-Torrance BRDF model;
+        - Image-Based Lighting:
+            - Diffuse (Irradiance Map) and Specular (Pre-Filtered Environment Map);
+            - Both maps are computed on application start based on an HDR skybox cubemap;
+    - HDR pipeline:
+        - Render targets supporting HDR (`R16G16B16A16_FLOAT`);
+        - Auto exposure via a Luminance Histogram;
+        - Tone mapping;
+    - TAA;
+    - SSAO;
+    - SSLR.
+
+![Deferred Lighting Demo Screenshot](./Screenshots/DeferredLightingDemo.jpg)
+
+### Controls
+
+- Use <kbd>WASD</kbd>/Arrow Keys to move the camera;
+- Hold <kbd>LMB</kbd> and move the mouse to orient the camera;
+- Press <kbd>L</kbd> to toggle light animation.
+- Press <kbd>T</kbd> to toggle TAA.
+- Press <kbd>O</kbd> to toggle SSAO.
+- Press <kbd>P</kbd> to toggle SSLR.
+
+### Forward
+
 - [LightingDemo.h](./DX12Renderer/LightingDemo/LightingDemo.h)
     - Models loaded from OBJ files;
     - .DDS textures loading:
@@ -21,6 +53,14 @@
 
 ![Lighting Demo Screenshot 2](./Screenshots/LightingDemo2.jpg)
 
+### Controls
+
+- Use <kbd>WASD</kbd>/Arrow Keys to move the camera;
+- Hold <kbd>LMB</kbd> and move the mouse to orient the camera;
+- Press <kbd>L</kbd> to toggle light animation.
+
+### Animations
+
 - [AnimationsDemo.h](./DX12Renderer/AnimationsDemo/AnimationsDemo.h)
     - Model and animations loaded from FBX files;
     - Skinning in the vertex shader;
@@ -33,7 +73,6 @@
 
 - Use <kbd>WASD</kbd>/Arrow Keys to move the camera;
 - Hold <kbd>LMB</kbd> and move the mouse to orient the camera;
-- Press <kbd>L</kbd> to toggle light animation.
 
 ### Requirements
 
