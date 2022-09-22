@@ -15,7 +15,7 @@
             - Both maps are computed on application start based on an HDR skybox cubemap;
     - HDR pipeline:
         - Render targets supporting HDR (`R16G16B16A16_FLOAT`);
-        - Auto exposure via a Luminance Histogram;
+        - Auto exposure via a Luminance Histogram implemented in Compute shaders;
         - Tone mapping;
     - TAA;
     - SSAO;
