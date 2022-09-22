@@ -27,9 +27,9 @@
 
 - Use <kbd>WASD</kbd>/Arrow Keys to move the camera;
 - Hold <kbd>LMB</kbd> and move the mouse to orient the camera;
-- Press <kbd>L</kbd> to toggle light animation.
-- Press <kbd>T</kbd> to toggle TAA.
-- Press <kbd>O</kbd> to toggle SSAO.
+- Press <kbd>L</kbd> to toggle light animation;
+- Press <kbd>T</kbd> to toggle TAA;
+- Press <kbd>O</kbd> to toggle SSAO;
 - Press <kbd>P</kbd> to toggle SSLR.
 
 ### Forward
@@ -72,7 +72,7 @@
 ### Controls
 
 - Use <kbd>WASD</kbd>/Arrow Keys to move the camera;
-- Hold <kbd>LMB</kbd> and move the mouse to orient the camera;
+- Hold <kbd>LMB</kbd> and move the mouse to orient the camera.
 
 ### Requirements
 
