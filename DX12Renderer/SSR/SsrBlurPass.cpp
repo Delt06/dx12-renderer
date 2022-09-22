@@ -45,7 +45,7 @@ void SsrBlurPass::Execute(CommandList& commandList, const Texture& traceResult, 
 		1.0f / static_cast<float>(traceResultDesc.Height)
 	};
 	cbuffer.Size = 1;
-	cbuffer.Separation = 2.0f;
+	cbuffer.Separation = 1.0f;
 	commandList.SetGraphics32BitConstants(RootParameters::CBuffer, cbuffer);
 
 	m_BlitMesh->Draw(commandList);
