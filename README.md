@@ -27,6 +27,10 @@
 |----------|---------|
 |![SSAO Off](./Screenshots/DeferredLightingDemo_SSAO_Off.jpg)|![SSAO On](./Screenshots/DeferredLightingDemo_SSAO_On.jpg)|
 
+| SSLR Off | SSLR On |
+|----------|---------|
+|![SSLR Off](./Screenshots/DeferredLightingDemo_SSLR_Off.jpg)|![SSLR On](./Screenshots/DeferredLightingDemo_SSLR_On.jpg)|
+
 #### Controls
 
 - Use <kbd>WASD</kbd>/Arrow Keys to move the camera;
