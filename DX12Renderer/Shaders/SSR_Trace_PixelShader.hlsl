@@ -97,8 +97,8 @@ TraceOutput Trace(float2 uv, float roughness)
     const uint loops = 35;
     
     const float VdotR = dot(viewDir, reflectDir);
-    const float fromCameraFade = smoothstep(1, 0.9, VdotR);
-    const float toCameraFade = smoothstep(-1, -0.9, VdotR);
+    const float fromCameraFade = smoothstep(1, 0.7, VdotR);
+    const float toCameraFade = smoothstep(-1, -0.7, VdotR);
     output.Fade = fromCameraFade * toCameraFade;
     
     
