@@ -23,6 +23,10 @@
 
 ![Deferred Lighting Demo Screenshot](./Screenshots/DeferredLightingDemo.jpg)
 
+| SSAO Off | SSAO On |
+|----------|---------|
+|![SSAO Off](./Screenshots/DeferredLightingDemo_SSAO_Off.jpg)|![SSAO On](./Screenshots/DeferredLightingDemo_SSAO_On.jpg)|
+
 #### Controls
 
 - Use <kbd>WASD</kbd>/Arrow Keys to move the camera;
