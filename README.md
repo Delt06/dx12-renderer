@@ -84,7 +84,10 @@
 
 ### Requirements
 
-- [assimp](https://github.com/assimp/assimp) accessible by the linker (e.g., installed via [vcpkg](https://vcpkg.io/en/index.html)).
+Packages (e.g., installed via `vcpkg`):
+- [assimp](https://github.com/assimp/assimp)
+- [DirectXTex](https://github.com/microsoft/DirectXTex)
+- [DirectXMesh](https://github.com/microsoft/DirectXMesh)
 
 ## Sources
 
