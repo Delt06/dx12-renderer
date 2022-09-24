@@ -4,7 +4,7 @@
 
 ### Deferred
 
-- [DeferredLightingDemo.h](./DX12Renderer/DeferredLightingDemo/DeferredLightingDemo.h)
+- [DeferredLightingDemo.h](./DX12Renderer/src/DeferredLightingDemo/DeferredLightingDemo.h)
     - Deferred rendering pipeline:
         - Directional, Point, Spot, and Capsule lights;
         - Light passes are implemented using the stencil buffer;
@@ -42,7 +42,7 @@
 
 ### Forward
 
-- [LightingDemo.h](./DX12Renderer/LightingDemo/LightingDemo.h)
+- [LightingDemo.h](./DX12Renderer/src/LightingDemo/LightingDemo.h)
     - Models loaded from OBJ files;
     - .DDS textures loading:
         - Textures for this demo are stored in `BC7_UNORM`.
@@ -69,7 +69,7 @@
 
 ### Animations
 
-- [AnimationsDemo.h](./DX12Renderer/AnimationsDemo/AnimationsDemo.h)
+- [AnimationsDemo.h](./DX12Renderer/src/AnimationsDemo/AnimationsDemo.h)
     - Model and animations loaded from FBX files;
     - Skinning in the vertex shader;
     - Animation state blending;
@@ -84,7 +84,10 @@
 
 ### Requirements
 
-- [assimp](https://github.com/assimp/assimp) accessible by the linker (e.g., installed via [vcpkg](https://vcpkg.io/en/index.html)).
+Packages (e.g., installed via `vcpkg`):
+- [assimp](https://github.com/assimp/assimp)
+- [DirectXTex](https://github.com/microsoft/DirectXTex)
+- [DirectXMesh](https://github.com/microsoft/DirectXMesh)
 
 ## Sources
 

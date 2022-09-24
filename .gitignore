@@ -14,3 +14,7 @@
 *.sln.DotSettings.user
 
 packages/*
+
+/**/cmake-build-*
+/**/.vs
+/**/out
