@@ -42,7 +42,7 @@
 
 ### Forward
 
-- [LightingDemo.h](./DX12Renderer/LightingDemo/LightingDemo.h)
+- [LightingDemo.h](DX12Renderer/src/LightingDemo/LightingDemo.h)
     - Models loaded from OBJ files;
     - .DDS textures loading:
         - Textures for this demo are stored in `BC7_UNORM`.
