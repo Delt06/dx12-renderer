@@ -52,8 +52,6 @@ set(EXT_LIBRARIES
     shlwapi.lib
     dxgi.lib
     dxguid.lib
-    vcruntime.lib
-    msvcrtd.lib
     "${CMAKE_CURRENT_SOURCE_DIR}/../WinPixEventRuntime/bin/WinPixEventRuntime.lib"
 )
 
