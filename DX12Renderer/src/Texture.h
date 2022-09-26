@@ -33,7 +33,7 @@
   */
 
 
-#include "ResourceWrapper.h"
+#include "Resource.h"
 #include "DescriptorAllocation.h"
 #include "TextureUsageType.h"
 
@@ -45,7 +45,7 @@
 
 #include "Application.h"
 
-class Texture : public ResourceWrapper
+class Texture : public Resource
 {
 public:
 	explicit Texture(TextureUsageType textureUsage = TextureUsageType::Albedo,

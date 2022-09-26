@@ -30,9 +30,9 @@
  *  @brief Abstract base class for buffer resources.
  */
 
-#include "ResourceWrapper.h"
+#include "Resource.h"
 
-class Buffer : public ResourceWrapper
+class Buffer : public Resource
 {
 public:
     Buffer(const std::wstring& name = L"");

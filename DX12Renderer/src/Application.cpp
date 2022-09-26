@@ -1,7 +1,7 @@
 // ReSharper disable CppRedundantQualifier
 #include "DX12LibPCH.h"
 #include "Application.h"
-#include "resource.h"
+#include "ApplicationResources.h"
 
 #include "CommandQueue.h"
 #include "Game.h"

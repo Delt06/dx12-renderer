@@ -9,7 +9,7 @@
 #include <vector>
 
 class CommandList;
-class ResourceWrapper;
+class Resource;
 
 class ResourceStateTracker
 {
@@ -34,7 +34,7 @@ public:
 		 */
 	void TransitionResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateAfter,
 	                        UINT subResource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
-	void TransitionResource(const ResourceWrapper& resource, D3D12_RESOURCE_STATES stateAfter,
+	void TransitionResource(const Resource& resource, D3D12_RESOURCE_STATES stateAfter,
 	                        UINT subResource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
 
 	/**
@@ -43,7 +43,7 @@ public:
 	 * @param resource The resource to add a UAV barrier for. Can be NULL which
 	 * indicates that any UAV access could require the barrier.
 	 */
-	void UavBarrier(const ResourceWrapper* resource = nullptr);
+	void UavBarrier(const Resource* resource = nullptr);
 
 	/**
 	 * Push an aliasing barrier for the given resource.
@@ -54,7 +54,7 @@ public:
 	 * Either the beforeResource or the afterResource parameters can be NULL which
 	 * indicates that any placed or reserved resource could cause aliasing.
 	 */
-	void AliasBarrier(const ResourceWrapper* beforeResource = nullptr, const ResourceWrapper* afterResource = nullptr);
+	void AliasBarrier(const Resource* beforeResource = nullptr, const Resource* afterResource = nullptr);
 
 	/**
 	 * Flush any pending resource barriers to the command list.

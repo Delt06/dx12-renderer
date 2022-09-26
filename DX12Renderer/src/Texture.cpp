@@ -7,7 +7,7 @@
 #include "ResourceStateTracker.h"
 
 Texture::Texture(TextureUsageType textureUsage, const std::wstring& name)
-	: ResourceWrapper(name)
+	: Resource(name)
 	, m_TextureUsage(textureUsage)
 {
 }
@@ -16,7 +16,7 @@ Texture::Texture(const D3D12_RESOURCE_DESC& resourceDesc,
 	const D3D12_CLEAR_VALUE* clearValue,
 	TextureUsageType textureUsage,
 	const std::wstring& name)
-	: ResourceWrapper(resourceDesc, clearValue, name)
+	: Resource(resourceDesc, clearValue, name)
 	, m_TextureUsage(textureUsage)
 {
 	CreateViews();
@@ -25,27 +25,27 @@ Texture::Texture(const D3D12_RESOURCE_DESC& resourceDesc,
 Texture::Texture(ComPtr<ID3D12Resource> resource,
 	TextureUsageType textureUsage,
 	const std::wstring& name)
-	: ResourceWrapper(resource, name)
+	: Resource(resource, name)
 	, m_TextureUsage(textureUsage)
 {
 	CreateViews();
 }
 
 Texture::Texture(const Texture& copy)
-	: ResourceWrapper(copy)
+	: Resource(copy)
 {
 	CreateViews();
 }
 
 Texture::Texture(Texture&& copy)
-	: ResourceWrapper(copy)
+	: Resource(copy)
 {
 	CreateViews();
 }
 
 Texture& Texture::operator=(const Texture& other)
 {
-	ResourceWrapper::operator=(other);
+	Resource::operator=(other);
 
 	CreateViews();
 
@@ -54,7 +54,7 @@ Texture& Texture::operator=(const Texture& other)
 
 Texture& Texture::operator=(Texture&& other)
 {
-	ResourceWrapper::operator=(other);
+	Resource::operator=(other);
 
 	CreateViews();
 

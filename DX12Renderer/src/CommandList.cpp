@@ -9,7 +9,7 @@
 #include "DynamicDescriptorHeap.h"
 #include "IndexBuffer.h"
 #include "RenderTarget.h"
-#include "ResourceWrapper.h"
+#include "Resource.h"
 #include "ResourceStateTracker.h"
 #include "RootSignature.h"
 #include "UploadBuffer.h"

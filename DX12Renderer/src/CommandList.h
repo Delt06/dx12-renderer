@@ -53,7 +53,7 @@ class ConstantBuffer;
 class DynamicDescriptorHeap;
 class IndexBuffer;
 class RenderTarget;
-class ResourceWrapper;
+class Resource;
 class ResourceStateTracker;
 class StructuredBuffer;
 class RootSignature;
@@ -82,8 +82,6 @@ public:
 	{
 		return m_D3d12CommandList;
 	}
-
-	using Resource = ResourceWrapper;
 
 	/**
 	 * Transition a resource to a particular state.

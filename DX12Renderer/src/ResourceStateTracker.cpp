@@ -3,7 +3,7 @@
 #include "ResourceStateTracker.h"
 
 #include "CommandList.h"
-#include "ResourceWrapper.h"
+#include "Resource.h"
 
 #include <d3d12.h>
 #include "d3dx12.h"
@@ -85,20 +85,20 @@ void ResourceStateTracker::TransitionResource(ID3D12Resource* resource, const D3
 	}
 }
 
-void ResourceStateTracker::TransitionResource(const ResourceWrapper& resource, const D3D12_RESOURCE_STATES stateAfter,
+void ResourceStateTracker::TransitionResource(const Resource& resource, const D3D12_RESOURCE_STATES stateAfter,
                                               const UINT subResource)
 {
 	TransitionResource(resource.GetD3D12Resource().Get(), stateAfter, subResource);
 }
 
 
-void ResourceStateTracker::UavBarrier(const ResourceWrapper* resource)
+void ResourceStateTracker::UavBarrier(const Resource* resource)
 {
 	ID3D12Resource* pResource = resource != nullptr ? resource->GetD3D12Resource().Get() : nullptr;
 	ResourceBarrier(CD3DX12_RESOURCE_BARRIER::UAV(pResource));
 }
 
-void ResourceStateTracker::AliasBarrier(const ResourceWrapper* beforeResource, const ResourceWrapper* afterResource)
+void ResourceStateTracker::AliasBarrier(const Resource* beforeResource, const Resource* afterResource)
 {
 	ID3D12Resource* pResourceBefore = beforeResource != nullptr ? beforeResource->GetD3D12Resource().Get() : nullptr;
 	ID3D12Resource* pResourceAfter = afterResource != nullptr ? afterResource->GetD3D12Resource().Get() : nullptr;

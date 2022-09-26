@@ -1,17 +1,17 @@
 ﻿#include "DX12LibPCH.h"
 
-#include "ResourceWrapper.h"
+#include "Resource.h"
 
 #include "Application.h"
 #include "ResourceStateTracker.h"
 
-ResourceWrapper::ResourceWrapper(const std::wstring& name)
+Resource::Resource(const std::wstring& name)
 	: m_FormatSupport({})
 	, m_ResourceName(name)
 {
 }
 
-ResourceWrapper::ResourceWrapper(const D3D12_RESOURCE_DESC& resourceDesc, const D3D12_CLEAR_VALUE* clearValue,
+Resource::Resource(const D3D12_RESOURCE_DESC& resourceDesc, const D3D12_CLEAR_VALUE* clearValue,
 	const std::wstring& name)
 {
 	if (clearValue)
@@ -37,7 +37,7 @@ ResourceWrapper::ResourceWrapper(const D3D12_RESOURCE_DESC& resourceDesc, const 
 	SetName(name);
 }
 
-ResourceWrapper::ResourceWrapper(ComPtr<ID3D12Resource> resource, const std::wstring& name)
+Resource::Resource(ComPtr<ID3D12Resource> resource, const std::wstring& name)
 	: m_d3d12Resource(resource)
 	, m_FormatSupport({})
 {
@@ -45,7 +45,7 @@ ResourceWrapper::ResourceWrapper(ComPtr<ID3D12Resource> resource, const std::wst
 	SetName(name);
 }
 
-ResourceWrapper::ResourceWrapper(const ResourceWrapper& copy)
+Resource::Resource(const Resource& copy)
 	: m_d3d12Resource(copy.m_d3d12Resource)
 	, m_FormatSupport(copy.m_FormatSupport)
 	, m_ResourceName(copy.m_ResourceName)
@@ -54,7 +54,7 @@ ResourceWrapper::ResourceWrapper(const ResourceWrapper& copy)
 		m_d3d12ClearValue = std::make_unique<D3D12_CLEAR_VALUE>(*copy.m_d3d12ClearValue);
 }
 
-ResourceWrapper::ResourceWrapper(ResourceWrapper&& copy)
+Resource::Resource(Resource&& copy)
 	: m_d3d12Resource(std::move(copy.m_d3d12Resource))
 	, m_FormatSupport(copy.m_FormatSupport)
 	, m_d3d12ClearValue(std::move(copy.m_d3d12ClearValue))
@@ -62,7 +62,7 @@ ResourceWrapper::ResourceWrapper(ResourceWrapper&& copy)
 {
 }
 
-ResourceWrapper& ResourceWrapper::operator=(const ResourceWrapper& other)
+Resource& Resource::operator=(const Resource& other)
 {
 	if (this != &other)
 	{
@@ -78,7 +78,7 @@ ResourceWrapper& ResourceWrapper::operator=(const ResourceWrapper& other)
 	return *this;
 }
 
-ResourceWrapper& ResourceWrapper::operator=(ResourceWrapper&& other) noexcept
+Resource& Resource::operator=(Resource&& other) noexcept
 {
 	if (this != &other)
 	{
@@ -94,11 +94,11 @@ ResourceWrapper& ResourceWrapper::operator=(ResourceWrapper&& other) noexcept
 }
 
 
-ResourceWrapper::~ResourceWrapper()
+Resource::~Resource()
 {
 }
 
-void ResourceWrapper::SetD3D12Resource(ComPtr<ID3D12Resource> d3d12Resource, const D3D12_CLEAR_VALUE* clearValue)
+void Resource::SetD3D12Resource(ComPtr<ID3D12Resource> d3d12Resource, const D3D12_CLEAR_VALUE* clearValue)
 {
 	m_d3d12Resource = d3d12Resource;
 	if (m_d3d12ClearValue)
@@ -113,7 +113,7 @@ void ResourceWrapper::SetD3D12Resource(ComPtr<ID3D12Resource> d3d12Resource, con
 	SetName(m_ResourceName);
 }
 
-void ResourceWrapper::SetName(const std::wstring& name)
+void Resource::SetName(const std::wstring& name)
 {
 	m_ResourceName = name;
 	if (m_d3d12Resource && !m_ResourceName.empty())
@@ -122,7 +122,7 @@ void ResourceWrapper::SetName(const std::wstring& name)
 	}
 }
 
-void ResourceWrapper::Reset()
+void Resource::Reset()
 {
 	m_d3d12Resource.Reset();
 	m_FormatSupport = {};
@@ -130,17 +130,17 @@ void ResourceWrapper::Reset()
 	m_ResourceName.clear();
 }
 
-bool ResourceWrapper::CheckFormatSupport(D3D12_FORMAT_SUPPORT1 formatSupport) const
+bool Resource::CheckFormatSupport(D3D12_FORMAT_SUPPORT1 formatSupport) const
 {
 	return (m_FormatSupport.Support1 & formatSupport) != 0;
 }
 
-bool ResourceWrapper::CheckFormatSupport(D3D12_FORMAT_SUPPORT2 formatSupport) const
+bool Resource::CheckFormatSupport(D3D12_FORMAT_SUPPORT2 formatSupport) const
 {
 	return (m_FormatSupport.Support2 & formatSupport) != 0;
 }
 
-void ResourceWrapper::CheckFeatureSupport()
+void Resource::CheckFeatureSupport()
 {
 	if (m_d3d12Resource)
 	{
