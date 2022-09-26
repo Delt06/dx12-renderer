@@ -1,10 +1,9 @@
 #include "AutoExposure.h"
-#include "HDR_AutoExposure_BuildLuminanceHistogram_CS.h"
-#include "HDR_AutoExposure_AverageLuminanceHistogram_CS.h"
 #include "../CommandList.h"
 #include <d3d12.h>
 #include "../Helpers.h"
 #include "../StructuredBuffer.h"
+#include "../ShaderUtils.h"
 
 namespace
 {
@@ -49,7 +48,7 @@ namespace
 		};
 	}
 
-	
+
 }
 
 AutoExposure::AutoExposure(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList)
@@ -96,7 +95,8 @@ AutoExposure::AutoExposure(Microsoft::WRL::ComPtr<ID3D12Device2> device, Command
 		} pipelineStateStream;
 
 		pipelineStateStream.PRootSignature = m_BuildLuminanceHistogramRootSignature.GetRootSignature().Get();
-		pipelineStateStream.Cs = { HDR_AutoExposure_BuildLuminanceHistogram_CS, sizeof HDR_AutoExposure_BuildLuminanceHistogram_CS };
+		const auto computeShader = ShaderUtils::LoadShaderFromFile(L"HDR_AutoExposure_BuildLuminanceHistogram_CS.cso");
+		pipelineStateStream.Cs = CD3DX12_SHADER_BYTECODE(computeShader.Get());
 
 		const D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc{ sizeof(PipelineStateStream), &pipelineStateStream };
 		ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_BuildLuminanceHistogramPipelineState)));
@@ -143,7 +143,8 @@ AutoExposure::AutoExposure(Microsoft::WRL::ComPtr<ID3D12Device2> device, Command
 		} pipelineStateStream;
 
 		pipelineStateStream.PRootSignature = m_AverageLuminanceHistogramRootSignature.GetRootSignature().Get();
-		pipelineStateStream.Cs = { HDR_AutoExposure_AverageLuminanceHistogram_CS, sizeof HDR_AutoExposure_AverageLuminanceHistogram_CS };
+		const auto computeShader = ShaderUtils::LoadShaderFromFile(L"HDR_AutoExposure_AverageLuminanceHistogram_CS.cso");
+		pipelineStateStream.Cs = CD3DX12_SHADER_BYTECODE(computeShader.Get());
 
 		const D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc{ sizeof(PipelineStateStream), &pipelineStateStream };
 		ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_AverageLuminanceHistogramPipelineState)));

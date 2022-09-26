@@ -2,12 +2,11 @@
 
 #include "GenerateMipsPso.h"
 
-#include <GenerateMips_CS.h>
-
 #include "Application.h"
 #include "Helpers.h"
 
 #include "d3dx12.h"
+#include "ShaderUtils.h"
 
 GenerateMipsPso::GenerateMipsPso()
 {
@@ -57,7 +56,9 @@ GenerateMipsPso::GenerateMipsPso()
 	} pipelineStateStream;
 
 	pipelineStateStream.PRootSignature = m_RootSignature.GetRootSignature().Get();
-	pipelineStateStream.Cs = {GenerateMips_CS, sizeof GenerateMips_CS};
+
+	const auto computeShader = ShaderUtils::LoadShaderFromFile(L"GenerateMips_CS.cso");
+	pipelineStateStream.Cs = CD3DX12_SHADER_BYTECODE(computeShader.Get());
 
 	const D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc{sizeof(PipelineStateStream), &pipelineStateStream};
 	ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_PipelineState)));
