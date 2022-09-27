@@ -5,7 +5,7 @@
 #include <d3dx12.h>
 
 #include <DX12Library/Helpers.h>
-#include <Mesh.h>
+#include <Framework/Mesh.h>
 #include <DX12Library/Texture.h>
 
 #include <DirectXMath.h>

@@ -12,7 +12,7 @@
 #include <Light.h>
 #include <GameObject.h>
 #include <GraphicsSettings.h>
-#include <Mesh.h>
+#include <Framework/Mesh.h>
 
 class Animation;
 

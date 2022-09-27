@@ -1,6 +1,6 @@
 #include "Animation.h"
-#include "Mesh.h"
-#include "Bone.h"
+#include <Framework/Mesh.h>
+#include <Framework/Bone.h>
 #include <DirectXMath.h>
 
 #include <set>

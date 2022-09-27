@@ -461,7 +461,7 @@ std::shared_ptr<Mesh> Mesh::CreateVerticalQuad(CommandList& commandList, float w
 
 std::shared_ptr<Mesh> Mesh::CreateSpotlightPyramid(CommandList& commandList, float size, float depth, bool rhCoords)
 {
-	float halfSize = size * 0.5;
+	const float halfSize = size * 0.5f;
 	VertexCollectionType vertices =
 	{
 		{

@@ -3,7 +3,7 @@
 
 #include <DX12Library/Helpers.h>
 #include <Model.h>
-#include <Mesh.h>
+#include <Framework/Mesh.h>
 #include <MatricesCb.h>
 #include <DX12Library/Cubemap.h>
 #include <DX12Library/ShaderUtils.h>

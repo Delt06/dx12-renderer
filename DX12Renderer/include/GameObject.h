@@ -4,7 +4,7 @@
 #include <functional>
 #include <memory>
 
-#include "Geometry/Aabb.h"
+#include <Framework/Aabb.h>
 
 class Model;
 class CommandList;

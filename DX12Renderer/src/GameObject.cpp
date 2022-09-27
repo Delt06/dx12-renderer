@@ -1,5 +1,5 @@
 #include "GameObject.h"
-#include "Mesh.h"
+#include <Framework/Mesh.h>
 #include "Model.h"
 #include "MaterialBase.h"
 

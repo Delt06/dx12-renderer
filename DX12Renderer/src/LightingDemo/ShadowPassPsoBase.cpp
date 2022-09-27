@@ -3,7 +3,7 @@
 #include <DX12Library/CommandList.h>
 #include <GameObject.h>
 #include <DX12Library/Helpers.h>
-#include <Mesh.h>
+#include <Framework/Mesh.h>
 #include <Model.h>
 #include <DX12Library/ShaderUtils.h>
 

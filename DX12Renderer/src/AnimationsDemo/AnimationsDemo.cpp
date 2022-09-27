@@ -5,7 +5,7 @@
 #include <DX12Library/CommandList.h>
 #include <DX12Library/Helpers.h>
 #include <DX12Library/Window.h>
-#include <Bone.h>
+#include <Framework/Bone.h>
 #include <Animation.h>
 #include <GameObject.h>
 #include <Light.h>

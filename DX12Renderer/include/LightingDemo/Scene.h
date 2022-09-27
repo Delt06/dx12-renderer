@@ -5,7 +5,7 @@
 #include <DX12Library/Camera.h>
 #include <GameObject.h>
 #include <Light.h>
-#include <Geometry/BoundingSphere.h>
+#include <Framework/BoundingSphere.h>
 #include "ParticleSystem.h"
 
 struct Scene

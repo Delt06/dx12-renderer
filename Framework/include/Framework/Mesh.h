@@ -33,7 +33,7 @@
 #include <DX12Library/CommandList.h>
 #include <DX12Library/VertexBuffer.h>
 #include <DX12Library/IndexBuffer.h>
-#include "Bone.h"
+#include <Framework/Bone.h>
 
 #include <DirectXMath.h>
 #include <d3d12.h>
@@ -45,7 +45,7 @@
 #include <map>
 #include <string>
 
-#include "Geometry/Aabb.h"
+#include <Framework/Aabb.h>
 
 struct Bone;
 
