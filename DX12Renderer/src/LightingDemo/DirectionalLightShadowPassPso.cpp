@@ -11,7 +11,7 @@
 #include <DirectXMath.h>
 
 #include <Light.h>
-#include <Model.h>
+#include <Framework/Model.h>
 
 using namespace Microsoft::WRL;
 using namespace DirectX;

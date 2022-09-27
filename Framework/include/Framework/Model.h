@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <vector>
-#include <Material.h>
 #include <cstdint>
 
 #include <DX12Library/DescriptorAllocation.h>

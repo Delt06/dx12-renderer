@@ -4,7 +4,7 @@
 #include <GameObject.h>
 #include <DX12Library/Helpers.h>
 #include <Framework/Mesh.h>
-#include <Model.h>
+#include <Framework/Model.h>
 #include <DX12Library/ShaderUtils.h>
 
 using namespace DirectX;

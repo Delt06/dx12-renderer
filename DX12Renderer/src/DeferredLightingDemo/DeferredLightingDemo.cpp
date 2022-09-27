@@ -15,7 +15,7 @@
 #include <wrl.h>
 
 #include <GraphicsSettings.h>
-#include <Model.h>
+#include <Framework/Model.h>
 #include <ModelLoader.h>
 
 using namespace Microsoft::WRL;

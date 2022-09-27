@@ -1,6 +1,6 @@
 #include "GameObject.h"
 #include <Framework/Mesh.h>
-#include "Model.h"
+#include <Framework/Model.h>
 #include "MaterialBase.h"
 
 GameObject::GameObject(const DirectX::XMMATRIX worldMatrix, const std::shared_ptr<Model> model, std::shared_ptr<MaterialBase> material)

@@ -5,7 +5,7 @@
 #include <Framework/Mesh.h>
 #include <DX12Library/Helpers.h>
 
-#include <Model.h>
+#include <Framework/Model.h>
 #include <Framework/Bone.h>
 #include <Animation.h>
 

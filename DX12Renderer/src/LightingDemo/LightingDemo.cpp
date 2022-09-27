@@ -12,7 +12,7 @@
 #include <wrl.h>
 
 #include <GraphicsSettings.h>
-#include <Model.h>
+#include <Framework/Model.h>
 #include <ModelLoader.h>
 #include <LightingDemo/ParticleSystem.h>
 #include <LightingDemo/PointLightShadowPassPso.h>
