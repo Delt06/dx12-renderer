@@ -40,8 +40,4 @@ add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
         $<TARGET_FILE_DIR:${TARGET_NAME}>
 )
 
-# Copy Assets
-add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/../Assets/
-        $<TARGET_FILE_DIR:${TARGET_NAME}>/Assets)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../ProjectBase/CopyAssets/CMakeLists.txt)
