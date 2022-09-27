@@ -10,10 +10,10 @@
 #include <DX12Library/VertexBuffer.h>
 
 #include <Framework/Mesh.h>
-#include <Light.h>
+#include <Framework/Light.h>
 
-#include <GameObject.h>
-#include <GraphicsSettings.h>
+#include <Framework/GameObject.h>
+#include <Framework/GraphicsSettings.h>
 #include <HDR/ToneMapping.h>
 #include <Ssao.h>
 #include <Taa.h>

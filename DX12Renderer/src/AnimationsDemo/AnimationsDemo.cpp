@@ -6,24 +6,23 @@
 #include <DX12Library/Helpers.h>
 #include <DX12Library/Window.h>
 #include <Framework/Bone.h>
-#include <Animation.h>
-#include <GameObject.h>
-#include <Light.h>
+#include <Framework/Animation.h>
+#include <Framework/GameObject.h>
+#include <Framework/Light.h>
 #include <Material.h>
 
 #include <wrl.h>
 
-#include <GraphicsSettings.h>
+#include <Framework/GraphicsSettings.h>
 #include <Framework/Model.h>
-#include <ModelLoader.h>
+#include <Framework/ModelLoader.h>
 
 using namespace Microsoft::WRL;
 
 #include <d3d12.h>
 #include <d3dx12.h>
-#include <d3dcompiler.h>
 #include <DirectXColors.h>
-#include <MatricesCb.h>
+#include <Framework/MatricesCb.h>
 
 using namespace DirectX;
 

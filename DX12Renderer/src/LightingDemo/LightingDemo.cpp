@@ -4,25 +4,24 @@
 #include <DX12Library/CommandQueue.h>
 #include <DX12Library/CommandList.h>
 #include <DX12Library/Helpers.h>
-#include <Light.h>
+#include <Framework/Light.h>
 #include <Material.h>
 #include <DX12Library/Window.h>
-#include <GameObject.h>
+#include <Framework/GameObject.h>
 
 #include <wrl.h>
 
-#include <GraphicsSettings.h>
+#include <Framework/GraphicsSettings.h>
 #include <Framework/Model.h>
-#include <ModelLoader.h>
+#include <Framework/ModelLoader.h>
 #include <LightingDemo/ParticleSystem.h>
 #include <LightingDemo/PointLightShadowPassPso.h>
 using namespace Microsoft::WRL;
 
 #include <d3d12.h>
 #include <d3dx12.h>
-#include <d3dcompiler.h>
 #include <DirectXColors.h>
-#include <MatricesCb.h>
+#include <Framework/MatricesCb.h>
 
 using namespace DirectX;
 

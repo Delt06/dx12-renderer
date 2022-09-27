@@ -8,7 +8,7 @@
 
 #include <dxgidebug.h>
 
-#include <GraphicsSettings.h>
+#include <Framework/GraphicsSettings.h>
 #include <LightingDemo/LightingDemo.h>
 #include <AnimationsDemo/AnimationsDemo.h>
 #include <DeferredLightingDemo/DeferredLightingDemo.h>

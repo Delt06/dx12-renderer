@@ -9,9 +9,9 @@
 #include <DX12Library/Texture.h>
 #include <DX12Library/VertexBuffer.h>
 
-#include <Light.h>
-#include <GameObject.h>
-#include <GraphicsSettings.h>
+#include <Framework/Light.h>
+#include <Framework/GameObject.h>
+#include <Framework/GraphicsSettings.h>
 #include <Framework/Mesh.h>
 
 class Animation;

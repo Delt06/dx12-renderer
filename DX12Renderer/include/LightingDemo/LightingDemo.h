@@ -10,12 +10,12 @@
 #include <DX12Library/Texture.h>
 #include <DX12Library/VertexBuffer.h>
 
-#include <Light.h>
+#include <Framework/Light.h>
 #include <Framework/Mesh.h>
 
 #include "DirectionalLightShadowPassPso.h"
-#include "../GameObject.h"
-#include "../GraphicsSettings.h"
+#include <Framework/GameObject.h>
+#include <Framework/GraphicsSettings.h>
 #include "ParticleSystemPso.h"
 #include "PointLightPso.h"
 #include "Scene.h"

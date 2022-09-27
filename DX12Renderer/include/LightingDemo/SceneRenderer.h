@@ -12,7 +12,7 @@
 #include "PointLightShadowPassPso.h"
 #include "SpotLightShadowPassPso.h"
 #include <DX12Library/Cubemap.h>
-#include <GraphicsSettings.h>
+#include <Framework/GraphicsSettings.h>
 #include "PointLightPso.h"
 
 

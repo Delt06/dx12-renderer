@@ -17,6 +17,7 @@ set(HEADER_FILES
         include/Framework/ModelLoader.h
         include/Framework/MaterialBase.h
         include/Framework/Animation.h
+        include/Framework/GraphicsSettings.h
         )
 
 set(SOURCE_FILES
