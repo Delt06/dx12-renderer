@@ -1,4 +1,4 @@
-#include <LightingDemo/BloomPso.h>
+#include <BloomPso.h>
 
 #include <DX12Library/CommandList.h>
 #include <DX12Library/RenderTarget.h>

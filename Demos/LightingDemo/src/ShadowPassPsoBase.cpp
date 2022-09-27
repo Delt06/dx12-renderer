@@ -1,4 +1,4 @@
-﻿#include <LightingDemo/ShadowPassPsoBase.h>
+﻿#include <ShadowPassPsoBase.h>
 
 #include <DX12Library/CommandList.h>
 #include <Framework/GameObject.h>

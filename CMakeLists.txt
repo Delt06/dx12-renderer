@@ -10,13 +10,17 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin) # Output directory f
 
 project(LearningDirectX12 LANGUAGES CXX)
 
+# Libraries
 add_subdirectory(DX12Library)
 add_subdirectory(Framework)
 add_subdirectory(PhongLighting)
+
+# Demos
+add_subdirectory(Demos/AnimationsDemo)
 add_subdirectory(Demos/DeferredLightingDemo)
-add_subdirectory(DX12Renderer)
+add_subdirectory(Demos/LightingDemo)
 
 # Set the startup project.
 set_directory_properties(PROPERTIES
-        VS_STARTUP_PROJECT DeferredLightingDemo
+        VS_STARTUP_PROJECT LightingDemo
         )

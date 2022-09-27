@@ -1,4 +1,4 @@
-﻿#include <LightingDemo/DirectionalLightShadowPassPso.h>
+﻿#include <DirectionalLightShadowPassPso.h>
 
 #include <d3d12.h>
 #include <d3dcompiler.h>

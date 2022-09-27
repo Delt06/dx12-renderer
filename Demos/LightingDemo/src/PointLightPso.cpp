@@ -1,4 +1,4 @@
-﻿#include <LightingDemo/PointLightPso.h>
+﻿#include <PointLightPso.h>
 
 #include <DX12Library/CommandList.h>
 #include <DX12Library/Helpers.h>

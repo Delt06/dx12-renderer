@@ -1,4 +1,4 @@
-#include <LightingDemo/Scene.h>
+#include <Scene.h>
 
 #include <Framework/Aabb.h>
 

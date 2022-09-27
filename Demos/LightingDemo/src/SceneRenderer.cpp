@@ -1,4 +1,4 @@
-#include <LightingDemo/SceneRenderer.h>
+#include <SceneRenderer.h>
 #include <memory>
 
 #include <DX12Library/Helpers.h>

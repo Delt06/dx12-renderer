@@ -1,4 +1,4 @@
-#include <LightingDemo/LightingDemo.h>
+#include <LightingDemo.h>
 
 #include <DX12Library/Application.h>
 #include <DX12Library/CommandQueue.h>
@@ -14,8 +14,8 @@
 #include <Framework/GraphicsSettings.h>
 #include <Framework/Model.h>
 #include <Framework/ModelLoader.h>
-#include <LightingDemo/ParticleSystem.h>
-#include <LightingDemo/PointLightShadowPassPso.h>
+#include <ParticleSystem.h>
+#include <PointLightShadowPassPso.h>
 using namespace Microsoft::WRL;
 
 #include <d3d12.h>
@@ -29,7 +29,7 @@ using namespace DirectX;
 #if defined(min)
 #undef min
 #endif
-#include <LightingDemo/SceneRenderer.h>
+#include <SceneRenderer.h>
 #include <PhongLighting/TextureLoader.h>
 
 #if defined(max)

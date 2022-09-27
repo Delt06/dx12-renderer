@@ -1,5 +1,5 @@
-﻿#include <LightingDemo/PointLightShadowPassPso.h>
-#include <LightingDemo/ShadowPassPsoBase.h>
+﻿#include <PointLightShadowPassPso.h>
+#include <ShadowPassPsoBase.h>
 
 #include <DX12Library/CommandList.h>
 #include <Framework/Light.h>

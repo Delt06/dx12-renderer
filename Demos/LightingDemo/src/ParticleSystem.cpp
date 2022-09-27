@@ -1,4 +1,4 @@
-﻿#include <LightingDemo/ParticleSystem.h>
+﻿#include <ParticleSystem.h>
 
 #include <cmath>
 #include <DirectXMath.h>

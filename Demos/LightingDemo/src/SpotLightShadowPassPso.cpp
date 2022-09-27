@@ -1,4 +1,4 @@
-﻿#include <LightingDemo/SpotLightShadowPassPso.h>
+﻿#include <SpotLightShadowPassPso.h>
 
 #include <DX12Library/CommandList.h>
 

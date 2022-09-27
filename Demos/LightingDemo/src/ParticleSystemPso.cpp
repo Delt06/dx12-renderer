@@ -1,4 +1,4 @@
-﻿#include <LightingDemo/ParticleSystemPso.h>
+﻿#include <ParticleSystemPso.h>
 
 #include <DX12Library/Helpers.h>
 #include <d3d12.h>
