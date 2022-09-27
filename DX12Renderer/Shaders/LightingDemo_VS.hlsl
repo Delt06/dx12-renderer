@@ -10,7 +10,7 @@ struct Matrices
     float4 CameraPosition;
 };
 
-#include "Shadows.hlsli"
+#include <ShaderLibrary/Shadows.hlsli>
 
 ConstantBuffer<Matrices> matricesCb : register(b0);
 ConstantBuffer<ShadowReceiverParameters> shadowReceiverParameters : register(b3);

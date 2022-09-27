@@ -1,7 +1,7 @@
 #ifndef IBL_UTILS_HLSLI
 #define IBL_UTILS_HLSLI
 
-#include "Math.hlsli"
+#include <ShaderLibrary/Math.hlsli>
 
 // https://github.com/JoeyDeVries/LearnOpenGL/blob/master/src/6.pbr/2.2.1.ibl_specular/2.2.1.brdf.fs
 

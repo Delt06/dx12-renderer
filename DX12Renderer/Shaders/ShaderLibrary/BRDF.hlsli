@@ -1,7 +1,7 @@
 #ifndef BRDF_HLSLI
 #define BRDF_HLSLI
 
-#include "Math.hlsli"
+#include <ShaderLibrary/Math.hlsli>
 
 struct BRDFInput
 {

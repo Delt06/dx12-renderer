@@ -37,6 +37,7 @@ set_source_files_properties(${SHADER_FILES}
         VS_SHADER_MODEL 5.1
         VS_SHADER_DISABLE_OPTIMIZATIONS $<$<CONFIG:Debug>:ON>
         VS_SHADER_ENABLE_DEBUG $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:ON>
+        VS_SHADER_FLAGS "/I ${CMAKE_CURRENT_SOURCE_DIR}/../Shaders" # include shader library
         )
 
 set_source_files_properties(${SHADER_FILES_VERTEX} PROPERTIES

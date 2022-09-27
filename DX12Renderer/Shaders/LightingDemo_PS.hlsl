@@ -1,4 +1,4 @@
-#include "Shadows.hlsli"
+#include <ShaderLibrary/Shadows.hlsli>
 
 struct PixelShaderInput
 {
@@ -17,8 +17,8 @@ struct DirectionalLight
     float4 Color;
 };
 
-#include "ShaderLibrary/PointLight.hlsli"
-#include "ShaderLibrary/SpotLight.hlsli"
+#include <ShaderLibrary/PointLight.hlsli>
+#include <ShaderLibrary/SpotLight.hlsli>
 
 struct LightingResult
 {
@@ -32,7 +32,7 @@ struct LightPropertiesCb
     uint NumSpotLights;
 };
 
-#include "ShaderLibrary/Material.hlsli"
+#include <ShaderLibrary/Material.hlsli>
 
 ConstantBuffer<Material> materialCb : register(b0, space1);
 ConstantBuffer<DirectionalLight> dirLightCb : register(b1, space1);
@@ -65,14 +65,14 @@ struct Light
     float ShadowAttenuation;
 };
 
-#include "ShadowsPoissonSampling.hlsli"
+#include <ShaderLibrary/ShadowsPoissonSampling.hlsli>
 
 #define POISSON_SAMPLING_POINT_LIGHT
-#include "ShadowsPoissonSampling.hlsli"
+#include <ShaderLibrary/ShadowsPoissonSampling.hlsli>
 #undef POISSON_SAMPLING_POINT_LIGHT
 
 #define POISSON_SAMPLING_SPOT_LIGHT
-#include "ShadowsPoissonSampling.hlsli"
+#include <ShaderLibrary/ShadowsPoissonSampling.hlsli>
 #undef POISSON_SAMPLING_SPOT_LIGHT
 
 Light GetMainLight(const float4 shadowCoords)
