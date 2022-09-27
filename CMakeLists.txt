@@ -8,7 +8,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib) # Output directory f
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin) # Output directory for shared lib (.DLL)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin) # Output directory for executables (.EXE)
 
-project( LearningDirectX12 LANGUAGES CXX )
+project(LearningDirectX12 LANGUAGES CXX)
 
 add_subdirectory(DX12Library)
 add_subdirectory(Framework)
@@ -17,4 +17,4 @@ add_subdirectory(DX12Renderer)
 # Set the startup project.
 set_directory_properties(PROPERTIES
         VS_STARTUP_PROJECT DX12Renderer
-)
+        )
