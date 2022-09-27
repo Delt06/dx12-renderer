@@ -4,8 +4,8 @@
 #include <wrl.h>
 #include <memory>
 
-#include "../d3dx12.h"
-#include "../RootSignature.h"
+#include <d3dx12.h>
+#include <RootSignature.h>
 
 class CommandList;
 class Mesh;

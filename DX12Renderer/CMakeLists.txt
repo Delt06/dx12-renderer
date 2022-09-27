@@ -7,15 +7,10 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../ProjectBase/CMakeLists.txt)
 
 # External headers and libraries
 set(EXT_HEADER_FILES 
-	d3dcompiler.h
+
 )
-set(EXT_LIBRARIES 
-	d3d12.lib
-    d3dcompiler.lib
-    shlwapi.lib
-    dxgi.lib
-    dxguid.lib
-    "${CMAKE_CURRENT_SOURCE_DIR}/../WinPixEventRuntime/bin/WinPixEventRuntime.lib"
+set(EXT_LIBRARIES
+    DX12Library
 )
 
 # Add source to this project's executable.
@@ -28,11 +23,11 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
 
 # Includes and libraries
 target_include_directories(${TARGET_NAME}
-        PRIVATE ${EXT_HEADER_FILES}  # headers of external libraries
-        PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../WinPixEventRuntime/Include/WinPixEventRuntime/"
+        PUBLIC ${EXT_HEADER_FILES}  # headers of external libraries
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../WinPixEventRuntime/Include/WinPixEventRuntime/"
 )
 target_link_libraries(${TARGET_NAME}
-        PRIVATE ${EXT_LIBRARIES}
+        PUBLIC ${EXT_LIBRARIES}
 )
 
 
@@ -68,7 +63,3 @@ add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_NAME}.args.json
         ${CMAKE_BINARY_DIR})
-
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 20)
-endif()

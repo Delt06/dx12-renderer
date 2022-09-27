@@ -34,7 +34,7 @@
 #include "Buffer.h"
 #include "DescriptorAllocation.h"
 
-#include "d3dx12.h"
+#include <d3dx12.h>
 
 class ByteAddressBuffer : public Buffer
 {

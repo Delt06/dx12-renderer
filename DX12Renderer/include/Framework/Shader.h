@@ -2,10 +2,10 @@
 
 #include <wrl.h>
 #include <d3d12.h>
-#include "../d3dx12.h"
-#include "../CommandList.h"
+#include <d3dx12.h>
+#include <CommandList.h>
 #include <string>
-#include "../RenderTarget.h"
+#include <RenderTarget.h>
 #include <vector>
 #include "EffectBase.h"
 
