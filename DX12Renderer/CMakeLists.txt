@@ -33,18 +33,6 @@ target_link_libraries(${TARGET_NAME}
 
 # Packages
 
-# assimp
-find_package(assimp CONFIG REQUIRED)
-target_link_libraries(${TARGET_NAME} PRIVATE assimp::assimp)
-
-# DirectXTex
-find_package(directxtex CONFIG REQUIRED)
-target_link_libraries(${TARGET_NAME} PRIVATE Microsoft::DirectXTex)
-
-# DirectXMesh
-find_package(directxmesh CONFIG REQUIRED)
-target_link_libraries(${TARGET_NAME} PRIVATE Microsoft::DirectXMesh)
-
 # WinPixEventRuntime
 add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -57,9 +45,3 @@ add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_CURRENT_SOURCE_DIR}/../Assets/
         $<TARGET_FILE_DIR:${TARGET_NAME}>/Assets)
-
-# Copy command list presets
-add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_NAME}.args.json
-        ${CMAKE_BINARY_DIR})
