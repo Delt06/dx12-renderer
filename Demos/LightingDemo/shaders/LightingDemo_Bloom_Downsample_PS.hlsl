@@ -1,4 +1,4 @@
-#include "PostFX.hlsli"
+#include <ShaderLibrary/PostFX.hlsli>
 
 struct Parameters
 {
