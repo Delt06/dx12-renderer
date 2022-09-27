@@ -4,7 +4,7 @@
 
 ### Deferred
 
-- [DeferredLightingDemo.h](./DX12Renderer/src/DeferredLightingDemo/DeferredLightingDemo.h)
+- [DeferredLightingDemo](./Demos/DeferredLightingDemo)
     - Deferred rendering pipeline:
         - Directional, Point, Spot, and Capsule lights;
         - Light passes are implemented using the stencil buffer;
@@ -42,7 +42,7 @@
 
 ### Forward
 
-- [LightingDemo.h](./DX12Renderer/src/LightingDemo/LightingDemo.h)
+- [LightingDemo](./Demos/LightingDemo)
     - Models loaded from OBJ files;
     - .DDS textures loading:
         - Textures for this demo are stored in `BC7_UNORM`.
@@ -69,7 +69,7 @@
 
 ### Animations
 
-- [AnimationsDemo.h](./DX12Renderer/src/AnimationsDemo/AnimationsDemo.h)
+- [AnimationsDemo](./Demos/AnimationsDemo)
     - Model and animations loaded from FBX files;
     - Skinning in the vertex shader;
     - Animation state blending;

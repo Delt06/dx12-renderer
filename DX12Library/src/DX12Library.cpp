@@ -1,0 +1,1 @@
+// ensure there is at least one source file to produce a static library
