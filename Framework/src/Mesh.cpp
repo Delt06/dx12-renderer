@@ -1,6 +1,6 @@
 ﻿#include <DX12Library/DX12LibPCH.h>
-#include <Mesh.h>
-#include <Bone.h>
+#include <Framework/Mesh.h>
+#include <Framework/Bone.h>
 
 #include <DX12Library/Application.h>
 

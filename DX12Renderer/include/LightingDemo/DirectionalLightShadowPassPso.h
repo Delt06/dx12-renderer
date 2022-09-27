@@ -4,7 +4,7 @@
 #include <d3d12.h>
 #include <DirectXMath.h>
 
-#include <GameObject.h>
+#include <Framework/GameObject.h>
 #include <DX12Library/RenderTarget.h>
 #include "Scene.h"
 #include "ShadowPassPsoBase.h"

@@ -3,8 +3,8 @@
 #include <vector>
 
 #include <DX12Library/Camera.h>
-#include <GameObject.h>
-#include <Light.h>
+#include <Framework/GameObject.h>
+#include <Framework/Light.h>
 #include <Framework/BoundingSphere.h>
 #include "ParticleSystem.h"
 

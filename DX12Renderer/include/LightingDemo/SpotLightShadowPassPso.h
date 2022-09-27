@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include <Light.h>
+#include <Framework/Light.h>
 #include <DX12Library/RenderTarget.h>
 #include "ShadowPassPsoBase.h"
 

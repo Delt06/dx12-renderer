@@ -4,7 +4,7 @@
 
 #include <DX12Library/ResourceStateTracker.h>
 #include <DX12Library/RootSignature.h>
-#include <Light.h>
+#include <Framework/Light.h>
 
 class CommandList;
 class Mesh;

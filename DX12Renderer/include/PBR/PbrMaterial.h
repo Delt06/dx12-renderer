@@ -2,7 +2,7 @@
 
 #include <DirectXMath.h>
 #include <memory>
-#include "../MaterialBase.h"
+#include <Framework/MaterialBase.h>
 
 class Texture;
 

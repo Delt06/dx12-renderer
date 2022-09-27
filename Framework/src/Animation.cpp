@@ -1,4 +1,4 @@
-#include "Animation.h"
+#include <Framework/Animation.h>
 #include <Framework/Mesh.h>
 #include <Framework/Bone.h>
 #include <DirectXMath.h>

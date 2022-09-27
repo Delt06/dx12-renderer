@@ -1,13 +1,13 @@
 ﻿#include <DX12Library/DX12LibPCH.h>
 #include <DX12Library/Texture.h>
 
-#include <ModelLoader.h>
+#include <Framework/ModelLoader.h>
 #include <Framework/Mesh.h>
 #include <DX12Library/Helpers.h>
 
 #include <Framework/Model.h>
 #include <Framework/Bone.h>
-#include <Animation.h>
+#include <Framework/Animation.h>
 
 #include <assimp/Importer.hpp>      // C++ importer interface
 #include <assimp/scene.h>           // Output data structure

@@ -11,6 +11,12 @@ set(HEADER_FILES
         include/Framework/Mesh.h
         include/Framework/Model.h
         include/Framework/Shader.h
+        include/Framework/GameObject.h
+        include/Framework/Light.h
+        include/Framework/MatricesCb.h
+        include/Framework/ModelLoader.h
+        include/Framework/MaterialBase.h
+        include/Framework/Animation.h
         )
 
 set(SOURCE_FILES
@@ -22,6 +28,11 @@ set(SOURCE_FILES
         src/Mesh.cpp
         src/Model.cpp
         src/Shader.cpp
+        src/GameObject.cpp
+        src/Light.cpp
+        src/MatricesCb.cpp
+        src/ModelLoader.cpp
+        src/Animation.cpp
         )
 
 set(SHADER_FILES_VERTEX

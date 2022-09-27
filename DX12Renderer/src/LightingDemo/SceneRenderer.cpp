@@ -4,7 +4,7 @@
 #include <DX12Library/Helpers.h>
 #include <Framework/Model.h>
 #include <Framework/Mesh.h>
-#include <MatricesCb.h>
+#include <Framework/MatricesCb.h>
 #include <Material.h>
 #include <DX12Library/Cubemap.h>
 #include <DX12Library/ShaderUtils.h>

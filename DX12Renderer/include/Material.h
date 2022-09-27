@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include <DirectXMath.h>
-#include "MaterialBase.h"
+#include <Framework/MaterialBase.h>
 
 class Material final : public MaterialBase
 {

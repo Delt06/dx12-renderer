@@ -6,8 +6,8 @@
 
 #include <d3d12.h>
 
-#include <Light.h>
-#include <MatricesCb.h>
+#include <Framework/Light.h>
+#include <Framework/MatricesCb.h>
 #include <DX12Library/ShaderUtils.h>
 
 using namespace Microsoft::WRL;

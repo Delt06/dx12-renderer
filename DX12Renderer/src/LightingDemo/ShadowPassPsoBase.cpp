@@ -1,7 +1,7 @@
 ﻿#include <LightingDemo/ShadowPassPsoBase.h>
 
 #include <DX12Library/CommandList.h>
-#include <GameObject.h>
+#include <Framework/GameObject.h>
 #include <DX12Library/Helpers.h>
 #include <Framework/Mesh.h>
 #include <Framework/Model.h>

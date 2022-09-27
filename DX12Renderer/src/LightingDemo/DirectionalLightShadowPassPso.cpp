@@ -10,7 +10,7 @@
 
 #include <DirectXMath.h>
 
-#include <Light.h>
+#include <Framework/Light.h>
 #include <Framework/Model.h>
 
 using namespace Microsoft::WRL;
