@@ -13,7 +13,7 @@ set(HEADER_FILES
         include/Framework/Shader.h
         )
 
-set(HEADER_FILES
+set(SOURCE_FILES
         src/Aabb.cpp
         src/Blit.cpp
         src/Bone.cpp
@@ -29,7 +29,7 @@ set(SHADER_FILES_VERTEX
         )
 
 set(SHADER_FILES_PIXEL
-        ./shaders/Blit_PS.hlsl
+        shaders/Blit_PS.hlsl
         )
 
 set(SHADER_FILES_COMPUTE
