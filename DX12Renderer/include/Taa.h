@@ -1,11 +1,11 @@
 #pragma once
 
-#include "RootSignature.h"
+#include <DX12Library/RootSignature.h>
 #include <wrl.h>
 #include <d3d12.h>
 #include <memory>
-#include "Texture.h"
-#include "RenderTarget.h"
+#include <DX12Library/Texture.h>
+#include <DX12Library/RenderTarget.h>
 #include <DirectXMath.h>
 
 class CommandList;

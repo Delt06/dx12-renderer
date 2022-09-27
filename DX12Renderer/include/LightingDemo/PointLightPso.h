@@ -2,9 +2,9 @@
 #include <DirectXMath.h>
 #include <wrl.h>
 
-#include "../ResourceStateTracker.h"
-#include "../RootSignature.h"
-#include "../Light.h"
+#include <DX12Library/ResourceStateTracker.h>
+#include <DX12Library/RootSignature.h>
+#include <Light.h>
 
 class CommandList;
 class Mesh;

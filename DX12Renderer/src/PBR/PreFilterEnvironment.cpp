@@ -1,12 +1,11 @@
 #include <PBR/PreFilterEnvironment.h>
-#include <d3dcompiler.h>
-#include <Helpers.h>
+#include <DX12Library/Helpers.h>
 #include <DirectXMath.h>
 #include <Mesh.h>
-#include <Texture.h>
-#include <RenderTarget.h>
-#include <Cubemap.h>
-#include <ShaderUtils.h>
+#include <DX12Library/Texture.h>
+#include <DX12Library/RenderTarget.h>
+#include <DX12Library/Cubemap.h>
+#include <DX12Library/ShaderUtils.h>
 
 using namespace Microsoft::WRL;
 using namespace DirectX;

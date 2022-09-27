@@ -2,8 +2,8 @@
 
 #include <d3d12.h>
 #include <wrl.h>
-#include "RenderTarget.h"
-#include "RootSignature.h"
+#include <DX12Library/RenderTarget.h>
+#include <DX12Library/RootSignature.h>
 #include <cstdint>
 #include <DirectXMath.h>
 

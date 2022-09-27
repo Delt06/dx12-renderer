@@ -6,7 +6,7 @@
 #include "Resource.h"
 
 #include <d3d12.h>
-#include "d3dx12.h"
+#include <d3dx12.h>
 
 std::mutex ResourceStateTracker::GlobalMutex;
 bool ResourceStateTracker::IsLocked;

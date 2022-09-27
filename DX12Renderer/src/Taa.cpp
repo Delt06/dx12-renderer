@@ -1,10 +1,9 @@
 #include "Taa.h"
-#include "Mesh.h"
-#include "Helpers.h"
-#include <d3dcompiler.h>
-#include "CommandList.h"
-#include "Texture.h"
-#include "ShaderUtils.h"
+#include <Mesh.h>
+#include <DX12Library/Helpers.h>
+#include <DX12Library/CommandList.h>
+#include <DX12Library/Texture.h>
+#include <DX12Library/ShaderUtils.h>
 
 using namespace Microsoft::WRL;
 

@@ -1,15 +1,15 @@
 #include <AnimationsDemo/AnimationsDemo.h>
 
-#include <Application.h>
-#include <CommandQueue.h>
-#include <CommandList.h>
-#include <Helpers.h>
-#include <Light.h>
-#include <Material.h>
-#include <Window.h>
-#include <GameObject.h>
+#include <DX12Library/Application.h>
+#include <DX12Library/CommandQueue.h>
+#include <DX12Library/CommandList.h>
+#include <DX12Library/Helpers.h>
+#include <DX12Library/Window.h>
 #include <Bone.h>
 #include <Animation.h>
+#include <GameObject.h>
+#include <Light.h>
+#include <Material.h>
 
 #include <wrl.h>
 
@@ -33,7 +33,7 @@ using namespace DirectX;
 #endif
 #include <LightingDemo/SceneRenderer.h>
 #include <TextureLoader.h>
-#include <ShaderUtils.h>
+#include <DX12Library/ShaderUtils.h>
 
 #if defined(max)
 #undef max

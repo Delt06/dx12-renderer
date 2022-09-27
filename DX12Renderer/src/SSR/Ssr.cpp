@@ -1,5 +1,5 @@
 #include <SSR/Ssr.h>
-#include <Helpers.h>
+#include <DX12Library/Helpers.h>
 
 Ssr::Ssr(Shader::Format renderTargetFormat, const D3D12_SHADER_RESOURCE_VIEW_DESC& depthSrv, uint32_t width, uint32_t height)
 	: m_Trace(renderTargetFormat)

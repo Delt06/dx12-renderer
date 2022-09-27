@@ -11,8 +11,8 @@
 #include "DirectionalLightShadowPassPso.h"
 #include "PointLightShadowPassPso.h"
 #include "SpotLightShadowPassPso.h"
-#include "../Cubemap.h"
-#include "../GraphicsSettings.h"
+#include <DX12Library/Cubemap.h>
+#include <GraphicsSettings.h>
 #include "PointLightPso.h"
 
 

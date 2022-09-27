@@ -1,13 +1,12 @@
 #include <LightingDemo/SceneRenderer.h>
 #include <memory>
-#include <d3dcompiler.h>
 
-#include <Helpers.h>
+#include <DX12Library/Helpers.h>
 #include <Model.h>
 #include <Mesh.h>
 #include <MatricesCb.h>
-#include <Cubemap.h>
-#include <ShaderUtils.h>
+#include <DX12Library/Cubemap.h>
+#include <DX12Library/ShaderUtils.h>
 
 using namespace DirectX;
 using namespace Microsoft::WRL;

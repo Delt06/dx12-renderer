@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
-#include "Texture.h"
-#include "CommandList.h"
+#include <DX12Library/Texture.h>
+#include <DX12Library/CommandList.h>
 
 class MaterialBase
 {

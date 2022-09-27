@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include "../Light.h"
-#include "../RenderTarget.h"
+#include <Light.h>
+#include <DX12Library/RenderTarget.h>
 #include "ShadowPassPsoBase.h"
 
 class SpotLightShadowPassPso final : public ShadowPassPsoBase

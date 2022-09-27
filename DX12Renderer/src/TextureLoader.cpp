@@ -1,5 +1,5 @@
-#include "TextureLoader.h"
-#include "CommandList.h"
+#include <TextureLoader.h>
+#include <DX12Library/CommandList.h>
 #include <memory>
 
 TextureLoader::TextureLoader(std::shared_ptr<Texture> emptyTexture)

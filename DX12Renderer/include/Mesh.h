@@ -30,9 +30,9 @@
   *  @brief A mesh class encapsulates the index and vertex buffers for a geometric primitive.
   */
 
-#include "CommandList.h"
-#include "VertexBuffer.h"
-#include "IndexBuffer.h"
+#include <DX12Library/CommandList.h>
+#include <DX12Library/VertexBuffer.h>
+#include <DX12Library/IndexBuffer.h>
 #include "Bone.h"
 
 #include <DirectXMath.h>

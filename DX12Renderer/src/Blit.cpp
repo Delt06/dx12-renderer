@@ -1,10 +1,9 @@
 #include "Blit.h"
-#include "Mesh.h"
-#include "CommandList.h"
-#include <d3dcompiler.h>
-#include "Helpers.h"
-#include "Texture.h"
-#include "RenderTarget.h"
+#include <Mesh.h>
+#include <DX12Library/CommandList.h>
+#include <DX12Library/Helpers.h>
+#include <DX12Library/Texture.h>
+#include <DX12Library/RenderTarget.h>
 
 using namespace Microsoft::WRL;
 

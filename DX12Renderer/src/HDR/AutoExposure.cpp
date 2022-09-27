@@ -1,9 +1,9 @@
 #include <HDR/AutoExposure.h>
-#include <CommandList.h>
+#include <DX12Library/CommandList.h>
 #include <d3d12.h>
-#include <Helpers.h>
-#include <StructuredBuffer.h>
-#include <ShaderUtils.h>
+#include <DX12Library/Helpers.h>
+#include <DX12Library/StructuredBuffer.h>
+#include <DX12Library/ShaderUtils.h>
 
 namespace
 {

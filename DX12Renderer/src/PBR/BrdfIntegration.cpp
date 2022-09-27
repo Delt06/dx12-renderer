@@ -3,9 +3,9 @@
 #include <PBR/BrdfIntegration.h>
 
 #include <Mesh.h>
-#include <Helpers.h>
-#include <RenderTarget.h>
-#include <ShaderUtils.h>
+#include <DX12Library/Helpers.h>
+#include <DX12Library/RenderTarget.h>
+#include <DX12Library/ShaderUtils.h>
 
 using namespace Microsoft::WRL;
 

@@ -2,12 +2,12 @@
 #include <d3dcompiler.h>
 
 #include "BlurPso.h"
-#include "Texture.h"
-#include "RenderTarget.h"
+#include <DX12Library/Texture.h>
+#include <DX12Library/RenderTarget.h>
 
-#include "Mesh.h"
-#include "Helpers.h"
-#include "ShaderUtils.h"
+#include <Mesh.h>
+#include <DX12Library/Helpers.h>
+#include <DX12Library/ShaderUtils.h>
 
 using namespace Microsoft::WRL;
 using namespace DirectX;

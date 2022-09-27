@@ -1,8 +1,7 @@
 #include <Framework/Shader.h>
-#include <Helpers.h>
-#include <d3dcompiler.h>
+#include <DX12Library/Helpers.h>
 #include <Mesh.h>
-#include <ShaderUtils.h>
+#include <DX12Library/ShaderUtils.h>
 
 using namespace Microsoft::WRL;
 

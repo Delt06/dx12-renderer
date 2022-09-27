@@ -2,7 +2,7 @@
 
 #include <d3d12.h>
 #include <wrl.h>
-#include "../CommandList.h"
+#include <DX12Library/CommandList.h>
 
 class EffectBase
 {

@@ -3,9 +3,9 @@
 #include <wrl.h>
 #include <d3d12.h>
 #include <d3dx12.h>
-#include <CommandList.h>
+#include <DX12Library/CommandList.h>
 #include <string>
-#include <RenderTarget.h>
+#include <DX12Library/RenderTarget.h>
 #include <vector>
 #include "EffectBase.h"
 

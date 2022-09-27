@@ -1,6 +1,6 @@
 #include "Reflections.h"
 #include "Mesh.h"
-#include "Helpers.h"
+#include <DX12Library/Helpers.h>
 
 namespace
 {

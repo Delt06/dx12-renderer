@@ -1,16 +1,16 @@
 ﻿#include <DeferredLightingDemo/DeferredLightingDemo.h>
 
-#include <Application.h>
-#include <CommandQueue.h>
-#include <CommandList.h>
-#include <Helpers.h>
+#include <DX12Library/Application.h>
+#include <DX12Library/CommandQueue.h>
+#include <DX12Library/CommandList.h>
+#include <DX12Library/Helpers.h>
 #include <Light.h>
 #include <Material.h>
-#include <Window.h>
+#include <DX12Library/Window.h>
 #include <GameObject.h>
 #include <Bone.h>
 #include <Animation.h>
-#include <Cubemap.h>
+#include <DX12Library/Cubemap.h>
 
 #include <wrl.h>
 
@@ -41,7 +41,7 @@ using namespace DirectX;
 #include <HDR/AutoExposure.h>
 #include <TaaCBuffer.h>
 #include <Taa.h>
-#include <ShaderUtils.h>
+#include <DX12Library/ShaderUtils.h>
 
 #if defined(max)
 #undef max

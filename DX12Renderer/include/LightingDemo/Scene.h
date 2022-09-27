@@ -2,10 +2,10 @@
 
 #include <vector>
 
-#include "../GameObject.h"
-#include "../Light.h"
-#include "../Camera.h"
-#include "../Geometry/BoundingSphere.h"
+#include <DX12Library/Camera.h>
+#include <GameObject.h>
+#include <Light.h>
+#include <Geometry/BoundingSphere.h>
 #include "ParticleSystem.h"
 
 struct Scene

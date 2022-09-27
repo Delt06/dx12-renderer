@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <string>
 
-#include "../RootSignature.h"
+#include <DX12Library/RootSignature.h>
 
 class Mesh;
 class CommandList;

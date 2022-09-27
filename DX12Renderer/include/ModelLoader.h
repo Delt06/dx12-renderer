@@ -1,7 +1,8 @@
 ﻿#pragma once
 #include <string>
 
-#include "CommandList.h"
+#include <DX12Library/CommandList.h>
+#include <memory>
 
 class Model;
 class Mesh;

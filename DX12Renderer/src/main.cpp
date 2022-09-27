@@ -4,14 +4,14 @@
 #include <Shlwapi.h>
 #include <shellapi.h>
 
-#include "Application.h"
+#include <DX12Library/Application.h>
 
 #include <dxgidebug.h>
 
-#include "GraphicsSettings.h"
-#include "LightingDemo/LightingDemo.h"
-#include "AnimationsDemo/AnimationsDemo.h"
-#include "DeferredLightingDemo/DeferredLightingDemo.h"
+#include <GraphicsSettings.h>
+#include <LightingDemo/LightingDemo.h>
+#include <AnimationsDemo/AnimationsDemo.h>
+#include <DeferredLightingDemo/DeferredLightingDemo.h>
 
 void ReportLiveObjects()
 {

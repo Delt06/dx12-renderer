@@ -1,15 +1,13 @@
-#include <d3dcompiler.h>
-
 #include <PBR/DiffuseIrradiance.h>
 
 #include <Mesh.h>
-#include <CommandList.h>
-#include <Helpers.h>
-#include <RenderTarget.h>
+#include <DX12Library/CommandList.h>
+#include <DX12Library/Helpers.h>
+#include <DX12Library/RenderTarget.h>
 #include <d3dx12.h>
-#include <Texture.h>
-#include <Cubemap.h>
-#include <ShaderUtils.h>
+#include <DX12Library/Texture.h>
+#include <DX12Library/Cubemap.h>
+#include <DX12Library/ShaderUtils.h>
 
 using namespace Microsoft::WRL;
 using namespace DirectX;

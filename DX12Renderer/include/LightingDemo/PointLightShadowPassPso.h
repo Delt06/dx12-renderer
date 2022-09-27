@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "../RenderTarget.h"
+#include <DX12Library/RenderTarget.h>
 #include "ShadowPassPsoBase.h"
 
 struct PointLight;

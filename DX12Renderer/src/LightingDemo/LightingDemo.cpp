@@ -1,12 +1,12 @@
 #include <LightingDemo/LightingDemo.h>
 
-#include <Application.h>
-#include <CommandQueue.h>
-#include <CommandList.h>
-#include <Helpers.h>
+#include <DX12Library/Application.h>
+#include <DX12Library/CommandQueue.h>
+#include <DX12Library/CommandList.h>
+#include <DX12Library/Helpers.h>
 #include <Light.h>
 #include <Material.h>
-#include <Window.h>
+#include <DX12Library/Window.h>
 #include <GameObject.h>
 
 #include <wrl.h>

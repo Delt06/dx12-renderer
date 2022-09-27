@@ -2,9 +2,9 @@
 
 #include <d3d12.h>
 #include <wrl.h>
-#include "../RootSignature.h"
-#include "../StructuredBuffer.h"
-#include "../Texture.h"
+#include <DX12Library/RootSignature.h>
+#include <DX12Library/StructuredBuffer.h>
+#include <DX12Library/Texture.h>
 
 class CommandList;
 

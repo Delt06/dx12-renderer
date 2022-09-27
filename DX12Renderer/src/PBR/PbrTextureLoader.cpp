@@ -1,8 +1,8 @@
 #include <PBR/PbrTextureLoader.h>
-#include <CommandList.h>
+#include <DX12Library/CommandList.h>
 #include <PBR/PbrMaterial.h>
 #include <memory>
-#include <Texture.h>
+#include <DX12Library/Texture.h>
 
 PbrTextureLoader::PbrTextureLoader(std::shared_ptr<Texture> emptyTexture)
 	: m_EmptyTexture(emptyTexture)

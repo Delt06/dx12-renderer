@@ -1,7 +1,7 @@
-#include "Model.h"
-#include "CommandList.h"
-#include "Mesh.h"
-#include "Texture.h"
+#include <Model.h>
+#include <Mesh.h>
+#include <DX12Library/CommandList.h>
+#include <DX12Library/Texture.h>
 
 Model::Model(const MeshCollectionType& meshes)
 	: m_Meshes(meshes)

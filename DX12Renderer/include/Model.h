@@ -2,10 +2,10 @@
 
 #include <memory>
 #include <vector>
-#include "Material.h"
+#include <Material.h>
 #include <cstdint>
 
-#include "DescriptorAllocation.h"
+#include <DX12Library/DescriptorAllocation.h>
 
 
 class Mesh;

@@ -1,15 +1,17 @@
 #pragma once
 
-#include "../Camera.h"
-#include "../Game.h"
-#include "../IndexBuffer.h"
-#include "../Light.h"
-#include "../Window.h"
-#include "../Mesh.h"
-#include "../RenderTarget.h"
-#include "../RootSignature.h"
-#include "../Texture.h"
-#include "../VertexBuffer.h"
+#include <DX12Library/Camera.h>
+#include <DX12Library/Game.h>
+#include <DX12Library/IndexBuffer.h>
+#include <DX12Library/Window.h>
+
+#include <DX12Library/RenderTarget.h>
+#include <DX12Library/RootSignature.h>
+#include <DX12Library/Texture.h>
+#include <DX12Library/VertexBuffer.h>
+
+#include <Light.h>
+#include <Mesh.h>
 
 #include "DirectionalLightShadowPassPso.h"
 #include "../GameObject.h"
@@ -18,7 +20,7 @@
 #include "PointLightPso.h"
 #include "Scene.h"
 #include "SpotLightShadowPassPso.h"
-#include "../Cubemap.h"
+#include <DX12Library/Cubemap.h>
 
 #include "PostFxPso.h"
 #include "BloomPso.h"

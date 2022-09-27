@@ -5,8 +5,8 @@
 #include <DirectXMath.h>
 #include <memory>
 
-#include "../RootSignature.h"
-#include "../VertexBuffer.h"
+#include <DX12Library/RootSignature.h>
+#include <DX12Library/VertexBuffer.h>
 
 class Texture;
 class CommandList;

@@ -1,8 +1,8 @@
-﻿#include "DX12LibPCH.h"
-#include "Mesh.h"
-#include "Bone.h"
+﻿#include <DX12Library/DX12LibPCH.h>
+#include <Mesh.h>
+#include <Bone.h>
 
-#include "Application.h"
+#include <DX12Library/Application.h>
 
 #include <DirectXMesh.h>
 

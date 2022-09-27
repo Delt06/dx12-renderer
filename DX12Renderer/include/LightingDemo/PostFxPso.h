@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "../RootSignature.h"
+#include <DX12Library/RootSignature.h>
 
 class Mesh;
 class CommandList;

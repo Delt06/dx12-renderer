@@ -23,6 +23,10 @@ add_library(${TARGET_NAME} STATIC ${HEADER_FILES} ${SOURCE_FILES} ${SHADER_FILES
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../ProjectBase/Post/CMakeLists.txt)
 
+target_include_directories(${TARGET_NAME}
+		PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/DX12Library
+)
+
 # Includes and libraries
 target_include_directories(${TARGET_NAME}
         PUBLIC ${EXT_HEADER_FILES}  # headers of external libraries

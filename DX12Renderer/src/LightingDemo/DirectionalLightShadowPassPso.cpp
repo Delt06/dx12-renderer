@@ -4,9 +4,9 @@
 #include <d3dcompiler.h>
 #include <d3dx12.h>
 
-#include <Helpers.h>
+#include <DX12Library/Helpers.h>
 #include <Mesh.h>
-#include <Texture.h>
+#include <DX12Library/Texture.h>
 
 #include <DirectXMath.h>
 
