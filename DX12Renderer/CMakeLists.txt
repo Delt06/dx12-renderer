@@ -3,7 +3,7 @@
 project("DX12Renderer")
 
 set(TARGET_NAME DX12Renderer)
-include(${CMAKE_CURRENT_SOURCE_DIR}/../ProjectBase/CMakeLists.txt)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../CMakeIncludes/ProjectBase.cmake)
 
 # External headers and libraries
 set(EXT_HEADER_FILES 
@@ -16,7 +16,7 @@ set(EXT_LIBRARIES
 # Add source to this project's executable.
 add_executable(${TARGET_NAME} ${HEADER_FILES} ${SOURCE_FILES} ${SHADER_FILES} ${SHADERS_HEADER_FILES})
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/../ProjectBase/Post/CMakeLists.txt)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../CMakeIncludes/ProjectBasePost.cmake)
 
 # Setup as Windows app
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
@@ -40,4 +40,4 @@ add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
         $<TARGET_FILE_DIR:${TARGET_NAME}>
 )
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/../ProjectBase/CopyAssets/CMakeLists.txt)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../CMakeIncludes/CopyAssets.cmake)

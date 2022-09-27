@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.8.0)
 project("DX12Library")
 
 set(TARGET_NAME DX12Library)
-include(${CMAKE_CURRENT_SOURCE_DIR}/../ProjectBase/CMakeLists.txt)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../CMakeIncludes/ProjectBase.cmake)
 
 # External headers and libraries
 set(EXT_HEADER_FILES 
@@ -21,7 +21,7 @@ set(EXT_LIBRARIES
 # Add source to this project's executable.
 add_library(${TARGET_NAME} STATIC ${HEADER_FILES} ${SOURCE_FILES} ${SHADER_FILES} ${SHADERS_HEADER_FILES})
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/../ProjectBase/Post/CMakeLists.txt)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../CMakeIncludes/ProjectBasePost.cmake)
 
 target_include_directories(${TARGET_NAME}
 		PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/DX12Library
