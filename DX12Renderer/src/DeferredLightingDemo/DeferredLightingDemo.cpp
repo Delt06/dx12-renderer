@@ -8,7 +8,7 @@
 #include <Material.h>
 #include <DX12Library/Window.h>
 #include <GameObject.h>
-#include <Bone.h>
+#include <Framework/Bone.h>
 #include <Animation.h>
 #include <DX12Library/Cubemap.h>
 
@@ -37,7 +37,7 @@ using namespace DirectX;
 #include <PBR/PbrTextureLoader.h>
 #include <PBR/BrdfIntegration.h>
 #include <PBR/PreFilterEnvironment.h>
-#include <Blit.h>
+#include <Framework/Blit.h>
 #include <HDR/AutoExposure.h>
 #include <TaaCBuffer.h>
 #include <Taa.h>

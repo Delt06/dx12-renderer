@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../Framework/Shader.h"
-#include "../Mesh.h"
+#include <Framework/Shader.h>
+#include <Framework/Mesh.h>
 
 class SsrBlurPass final : public Shader
 {

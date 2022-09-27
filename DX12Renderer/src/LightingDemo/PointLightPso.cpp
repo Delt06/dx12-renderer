@@ -2,7 +2,7 @@
 
 #include <DX12Library/CommandList.h>
 #include <DX12Library/Helpers.h>
-#include <Mesh.h>
+#include <Framework/Mesh.h>
 
 #include <d3d12.h>
 

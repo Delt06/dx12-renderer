@@ -1,6 +1,6 @@
 #include <PBR/DiffuseIrradiance.h>
 
-#include <Mesh.h>
+#include <Framework/Mesh.h>
 #include <DX12Library/CommandList.h>
 #include <DX12Library/Helpers.h>
 #include <DX12Library/RenderTarget.h>

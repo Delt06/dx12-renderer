@@ -1,7 +1,7 @@
 ﻿#include <DirectXMath.h>
 
 #include <LightingDemo/PostFxPso.h>
-#include <Mesh.h>
+#include <Framework/Mesh.h>
 #include <DX12Library/CommandList.h>
 #include <DX12Library/Helpers.h>
 #include <d3dx12.h>

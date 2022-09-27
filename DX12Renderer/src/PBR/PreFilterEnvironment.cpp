@@ -1,7 +1,7 @@
 #include <PBR/PreFilterEnvironment.h>
 #include <DX12Library/Helpers.h>
 #include <DirectXMath.h>
-#include <Mesh.h>
+#include <Framework/Mesh.h>
 #include <DX12Library/Texture.h>
 #include <DX12Library/RenderTarget.h>
 #include <DX12Library/Cubemap.h>

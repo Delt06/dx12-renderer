@@ -1,5 +1,5 @@
 #include <SSR/SsrBlurPass.h>
-#include <Mesh.h>
+#include <Framework/Mesh.h>
 
 namespace
 {

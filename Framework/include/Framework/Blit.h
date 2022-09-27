@@ -15,7 +15,7 @@ class RenderTarget;
 class Blit : public Shader
 {
 public:
-	Blit(Shader::Format renderTargetFormat, bool linearFilter = false);
+	[[maybe_unused]] Blit(Shader::Format renderTargetFormat, bool linearFilter = false);
 
 	void Execute(CommandList& commandList, const Texture& source, RenderTarget& destination, UINT destinationTexArrayIndex=-1);
 

@@ -9,7 +9,7 @@
 #include <DX12Library/Texture.h>
 #include <DX12Library/VertexBuffer.h>
 
-#include <Mesh.h>
+#include <Framework/Mesh.h>
 #include <Light.h>
 
 #include <GameObject.h>

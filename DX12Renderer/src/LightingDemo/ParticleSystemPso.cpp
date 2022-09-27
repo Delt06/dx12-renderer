@@ -3,7 +3,7 @@
 #include <DX12Library/Helpers.h>
 #include <d3d12.h>
 #include <d3dx12.h>
-#include <Mesh.h>
+#include <Framework/Mesh.h>
 #include <DX12Library/Texture.h>
 
 #include <MatricesCb.h>

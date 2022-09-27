@@ -1,5 +1,5 @@
 #pragma once
-#include "../Framework/Shader.h"
+#include <Framework/Shader.h>
 #include <DirectXMath.h>
 
 class Mesh;

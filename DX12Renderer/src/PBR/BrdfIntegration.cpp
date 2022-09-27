@@ -2,7 +2,7 @@
 
 #include <PBR/BrdfIntegration.h>
 
-#include <Mesh.h>
+#include <Framework/Mesh.h>
 #include <DX12Library/Helpers.h>
 #include <DX12Library/RenderTarget.h>
 #include <DX12Library/ShaderUtils.h>

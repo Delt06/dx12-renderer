@@ -11,7 +11,7 @@
 #include <DX12Library/VertexBuffer.h>
 
 #include <Light.h>
-#include <Mesh.h>
+#include <Framework/Mesh.h>
 
 #include "DirectionalLightShadowPassPso.h"
 #include "../GameObject.h"

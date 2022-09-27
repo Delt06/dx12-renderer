@@ -1,5 +1,5 @@
 #include <Model.h>
-#include <Mesh.h>
+#include <Framework/Mesh.h>
 #include <DX12Library/CommandList.h>
 #include <DX12Library/Texture.h>
 

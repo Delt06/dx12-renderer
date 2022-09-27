@@ -1,5 +1,5 @@
-#include "Blit.h"
-#include <Mesh.h>
+#include <Framework/Blit.h>
+#include <Framework/Mesh.h>
 #include <DX12Library/CommandList.h>
 #include <DX12Library/Helpers.h>
 #include <DX12Library/Texture.h>
@@ -20,7 +20,7 @@ namespace
 	}
 }
 
-Blit::Blit(Shader::Format renderTargetFormat, bool linearFilter /*= false*/)
+[[maybe_unused]] Blit::Blit(Shader::Format renderTargetFormat, bool linearFilter /*= false*/)
 	: m_RenderTargetFormat(renderTargetFormat)
 	, m_LinearFilter(linearFilter)
 {
