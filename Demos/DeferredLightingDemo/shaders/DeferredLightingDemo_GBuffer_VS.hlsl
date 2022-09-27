@@ -1,5 +1,5 @@
-#include "ShaderLibrary/MatricesCB.hlsli"
-#include "ShaderLibrary/TAABuffer.hlsli"
+#include <ShaderLibrary/MatricesCB.hlsli>
+#include <ShaderLibrary/TAABuffer.hlsli>
 
 ConstantBuffer<Matrices> matricesCB : register(b0);
 ConstantBuffer<TAABuffer> taaCB : register(b1, space1);

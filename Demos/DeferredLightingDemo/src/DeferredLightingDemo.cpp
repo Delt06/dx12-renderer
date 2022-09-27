@@ -1,4 +1,4 @@
-﻿#include <DeferredLightingDemo/DeferredLightingDemo.h>
+﻿#include <DeferredLightingDemo.h>
 
 #include <DX12Library/Application.h>
 #include <DX12Library/CommandQueue.h>

@@ -18,6 +18,7 @@ set(HEADER_FILES
         include/Framework/MaterialBase.h
         include/Framework/Animation.h
         include/Framework/GraphicsSettings.h
+        include/Framework/DemoMain.h
         )
 
 set(SOURCE_FILES
