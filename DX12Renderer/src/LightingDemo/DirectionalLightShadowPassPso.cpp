@@ -1,17 +1,17 @@
-﻿#include "DirectionalLightShadowPassPso.h"
+﻿#include <LightingDemo/DirectionalLightShadowPassPso.h>
 
 #include <d3d12.h>
 #include <d3dcompiler.h>
-#include "../d3dx12.h"
+#include <d3dx12.h>
 
-#include "../Helpers.h"
-#include "../Mesh.h"
-#include "../Texture.h"
+#include <Helpers.h>
+#include <Mesh.h>
+#include <Texture.h>
 
 #include <DirectXMath.h>
 
-#include "../Light.h"
-#include "../Model.h"
+#include <Light.h>
+#include <Model.h>
 
 using namespace Microsoft::WRL;
 using namespace DirectX;

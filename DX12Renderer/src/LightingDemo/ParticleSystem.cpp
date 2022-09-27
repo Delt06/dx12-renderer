@@ -1,9 +1,9 @@
-﻿#include "ParticleSystem.h"
+﻿#include <LightingDemo/ParticleSystem.h>
 
 #include <cmath>
 #include <DirectXMath.h>
 
-#include "../Helpers.h"
+#include <Helpers.h>
 
 using namespace DirectX;
 

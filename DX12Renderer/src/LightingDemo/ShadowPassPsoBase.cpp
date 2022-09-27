@@ -1,13 +1,13 @@
-﻿#include "ShadowPassPsoBase.h"
+﻿#include <LightingDemo/ShadowPassPsoBase.h>
 
 #include <d3dcompiler.h>
 
-#include "../CommandList.h"
-#include "../GameObject.h"
-#include "../Helpers.h"
-#include "../Mesh.h"
-#include "../Model.h"
-#include "../ShaderUtils.h"
+#include <CommandList.h>
+#include <GameObject.h>
+#include <Helpers.h>
+#include <Mesh.h>
+#include <Model.h>
+#include <ShaderUtils.h>
 
 using namespace DirectX;
 using namespace Microsoft::WRL;

@@ -1,5 +1,5 @@
-#include "SsrTrace.h"
-#include "../Mesh.h"
+#include <SSR/SsrTrace.h>
+#include <Mesh.h>
 
 namespace
 {

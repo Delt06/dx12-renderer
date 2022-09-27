@@ -1,28 +1,28 @@
-#include "LightingDemo.h"
+#include <LightingDemo/LightingDemo.h>
 
-#include "../Application.h"
-#include "../CommandQueue.h"
-#include "../CommandList.h"
-#include "../Helpers.h"
-#include "../Light.h"
-#include "../Material.h"
-#include "../Window.h"
-#include "../GameObject.h"
+#include <Application.h>
+#include <CommandQueue.h>
+#include <CommandList.h>
+#include <Helpers.h>
+#include <Light.h>
+#include <Material.h>
+#include <Window.h>
+#include <GameObject.h>
 
 #include <wrl.h>
 
-#include "../GraphicsSettings.h"
-#include "../Model.h"
-#include "../ModelLoader.h"
-#include "ParticleSystem.h"
-#include "PointLightShadowPassPso.h"
+#include <GraphicsSettings.h>
+#include <Model.h>
+#include <ModelLoader.h>
+#include <LightingDemo/ParticleSystem.h>
+#include <LightingDemo/PointLightShadowPassPso.h>
 using namespace Microsoft::WRL;
 
 #include <d3d12.h>
-#include "../d3dx12.h"
+#include <d3dx12.h>
 #include <d3dcompiler.h>
 #include <DirectXColors.h>
-#include "../MatricesCb.h"
+#include <MatricesCb.h>
 
 using namespace DirectX;
 
@@ -30,8 +30,8 @@ using namespace DirectX;
 #if defined(min)
 #undef min
 #endif
-#include "SceneRenderer.h"
-#include "../TextureLoader.h"
+#include <LightingDemo/SceneRenderer.h>
+#include <TextureLoader.h>
 
 #if defined(max)
 #undef max

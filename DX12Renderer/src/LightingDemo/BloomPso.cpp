@@ -1,13 +1,13 @@
-#include "BloomPso.h"
+#include <LightingDemo/BloomPso.h>
 
 #include <d3dcompiler.h>
 
-#include "../CommandList.h"
-#include "../RenderTarget.h"
-#include "../Mesh.h"
-#include "../d3dx12.h"
-#include "../Helpers.h"
-#include "../ShaderUtils.h"
+#include <CommandList.h>
+#include <RenderTarget.h>
+#include <Mesh.h>
+#include <d3dx12.h>
+#include <Helpers.h>
+#include <ShaderUtils.h>
 
 using namespace Microsoft::WRL;
 using namespace DirectX;

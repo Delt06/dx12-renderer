@@ -1,5 +1,5 @@
-#include "PbrMaterial.h"
-#include "../CommandList.h"
+#include <PBR/PbrMaterial.h>
+#include <CommandList.h>
 
 
 PbrMaterial::Constants& PbrMaterial::GetConstants()

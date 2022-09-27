@@ -1,6 +1,6 @@
-﻿#include "SpotLightShadowPassPso.h"
+﻿#include <LightingDemo/SpotLightShadowPassPso.h>
 
-#include "../CommandList.h"
+#include <CommandList.h>
 
 using namespace Microsoft::WRL;
 using namespace DirectX;

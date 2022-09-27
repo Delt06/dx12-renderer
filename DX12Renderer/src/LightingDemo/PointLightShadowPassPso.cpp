@@ -1,10 +1,9 @@
-﻿#include "PointLightShadowPassPso.h"
+﻿#include <LightingDemo/PointLightShadowPassPso.h>
+#include <LightingDemo/ShadowPassPsoBase.h>
 
-#include "ShadowPassPsoBase.h"
-
-#include "../CommandList.h"
-#include "../Light.h"
-#include "../Cubemap.h"
+#include <CommandList.h>
+#include <Light.h>
+#include <Cubemap.h>
 
 using namespace Microsoft::WRL;
 using namespace DirectX;

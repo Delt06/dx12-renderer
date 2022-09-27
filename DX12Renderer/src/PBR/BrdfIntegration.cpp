@@ -1,11 +1,11 @@
 #include <d3dcompiler.h>
 
-#include "BrdfIntegration.h"
+#include <PBR/BrdfIntegration.h>
 
-#include "../../Mesh.h"
-#include "../../Helpers.h"
-#include "../../RenderTarget.h"
-#include "../../ShaderUtils.h"
+#include <Mesh.h>
+#include <Helpers.h>
+#include <RenderTarget.h>
+#include <ShaderUtils.h>
 
 using namespace Microsoft::WRL;
 

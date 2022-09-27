@@ -1,9 +1,9 @@
-#include "ToneMapping.h"
+#include <HDR/ToneMapping.h>
 #include <d3dcompiler.h>
-#include "../Helpers.h"
-#include "../Mesh.h"
-#include "../RenderTarget.h"
-#include "../ShaderUtils.h"
+#include <Helpers.h>
+#include <Mesh.h>
+#include <RenderTarget.h>
+#include <ShaderUtils.h>
 
 using namespace Microsoft::WRL;
 

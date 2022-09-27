@@ -4,7 +4,7 @@
 #include <d3d12.h>
 #include <memory>
 
-#include "../../RootSignature.h"
+#include <RootSignature.h>
 
 class CommandList;
 class RenderTarget;

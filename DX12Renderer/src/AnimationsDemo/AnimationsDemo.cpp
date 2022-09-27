@@ -1,29 +1,29 @@
-#include "AnimationsDemo.h"
+#include <AnimationsDemo/AnimationsDemo.h>
 
-#include "../Application.h"
-#include "../CommandQueue.h"
-#include "../CommandList.h"
-#include "../Helpers.h"
-#include "../Light.h"
-#include "../Material.h"
-#include "../Window.h"
-#include "../GameObject.h"
-#include "../Bone.h"
-#include "../Animation.h"
+#include <Application.h>
+#include <CommandQueue.h>
+#include <CommandList.h>
+#include <Helpers.h>
+#include <Light.h>
+#include <Material.h>
+#include <Window.h>
+#include <GameObject.h>
+#include <Bone.h>
+#include <Animation.h>
 
 #include <wrl.h>
 
-#include "../GraphicsSettings.h"
-#include "../Model.h"
-#include "../ModelLoader.h"
+#include <GraphicsSettings.h>
+#include <Model.h>
+#include <ModelLoader.h>
 
 using namespace Microsoft::WRL;
 
 #include <d3d12.h>
-#include "../d3dx12.h"
+#include <d3dx12.h>
 #include <d3dcompiler.h>
 #include <DirectXColors.h>
-#include "../MatricesCb.h"
+#include <MatricesCb.h>
 
 using namespace DirectX;
 
@@ -31,9 +31,9 @@ using namespace DirectX;
 #if defined(min)
 #undef min
 #endif
-#include "../LightingDemo/SceneRenderer.h"
-#include "../TextureLoader.h"
-#include "../ShaderUtils.h"
+#include <LightingDemo/SceneRenderer.h>
+#include <TextureLoader.h>
+#include <ShaderUtils.h>
 
 #if defined(max)
 #undef max

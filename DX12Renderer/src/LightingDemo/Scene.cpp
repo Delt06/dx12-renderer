@@ -1,6 +1,6 @@
-#include "Scene.h"
+#include <LightingDemo/Scene.h>
 
-#include "../Geometry/Aabb.h"
+#include <Geometry/Aabb.h>
 
 using namespace DirectX;
 

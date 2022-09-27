@@ -1,14 +1,14 @@
-﻿#include "ParticleSystemPso.h"
+﻿#include <LightingDemo/ParticleSystemPso.h>
 
-#include "../Helpers.h"
+#include <Helpers.h>
 #include <d3d12.h>
 #include <d3dcompiler.h>
-#include "../d3dx12.h"
-#include "../Mesh.h"
-#include "../Texture.h"
+#include <d3dx12.h>
+#include <Mesh.h>
+#include <Texture.h>
 
-#include "../MatricesCb.h"
-#include "../ShaderUtils.h"
+#include <MatricesCb.h>
+#include <ShaderUtils.h>
 
 using namespace Microsoft::WRL;
 

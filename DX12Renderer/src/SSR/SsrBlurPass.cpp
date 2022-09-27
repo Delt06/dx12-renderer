@@ -1,5 +1,5 @@
-#include "SsrBlurPass.h"
-#include "../Mesh.h"
+#include <SSR/SsrBlurPass.h>
+#include <Mesh.h>
 
 namespace
 {

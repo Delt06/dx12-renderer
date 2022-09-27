@@ -1,12 +1,15 @@
-#include "PreFilterEnvironment.h"
 #include <d3dcompiler.h>
-#include "../../Helpers.h"
-#include <DirectXMath.h>
-#include "../../Mesh.h"
-#include "../../Texture.h"
-#include "../../RenderTarget.h"
-#include "../../Cubemap.h"
-#include "../../ShaderUtils.h"
+
+#include <PBR/DiffuseIrradiance.h>
+
+#include <Mesh.h>
+#include <CommandList.h>
+#include <Helpers.h>
+#include <RenderTarget.h>
+#include <d3dx12.h>
+#include <Texture.h>
+#include <Cubemap.h>
+#include <ShaderUtils.h>
 
 using namespace Microsoft::WRL;
 using namespace DirectX;
@@ -29,21 +32,17 @@ namespace
 	{
 		XMFLOAT4 Forward;
 		XMFLOAT4 Up;
-
-		float Roughness;
-		XMFLOAT2 SourceResolution;
-		float _Padding;
 	};
 }
 
-PreFilterEnvironment::PreFilterEnvironment(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT renderTargetFormat)
+DiffuseIrradiance::DiffuseIrradiance(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT renderTargetFormat)
 	: m_BlitMesh(Mesh::CreateBlitTriangle(commandList))
 	, m_ScissorRect(CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX))
 {
 	// create root signature and PSO
 	{
 		ComPtr<ID3DBlob> vertexShaderBlob = ShaderUtils::LoadShaderFromFile(L"IBL_CubeMapSideBlit_VS.cso");
-		ComPtr<ID3DBlob> pixelShaderBlob = ShaderUtils::LoadShaderFromFile(L"IBL_PreFilterEnvironment_PS.cso");
+		ComPtr<ID3DBlob> pixelShaderBlob = ShaderUtils::LoadShaderFromFile(L"IBL_DiffuseIrradiance_PS.cso");
 
 		// Create a root signature.
 		D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData;
@@ -63,7 +62,7 @@ PreFilterEnvironment::PreFilterEnvironment(Microsoft::WRL::ComPtr<ID3D12Device2>
 
 		CD3DX12_ROOT_PARAMETER1 rootParameters[RootParameters::NumRootParameters];
 		rootParameters[RootParameters::Source].InitAsDescriptorTable(1, &sourceDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
-		rootParameters[RootParameters::ParametersCB].InitAsConstants(sizeof(Parameters) / sizeof(float), 0, 0);
+		rootParameters[RootParameters::ParametersCB].InitAsConstants(sizeof(Parameters) / sizeof(float), 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 
 		CD3DX12_STATIC_SAMPLER_DESC samplers[] = {
 			// linear clamp
@@ -105,56 +104,45 @@ PreFilterEnvironment::PreFilterEnvironment(Microsoft::WRL::ComPtr<ID3D12Device2>
 
 		ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_PipelineState)));
 	}
-
 }
 
-void PreFilterEnvironment::SetContext(CommandList& commandList)
+void DiffuseIrradiance::SetContext(CommandList& commandList)
 {
 	commandList.SetGraphicsRootSignature(m_RootSignature);
 	commandList.SetPipelineState(m_PipelineState);
 	commandList.SetScissorRect(m_ScissorRect);
 }
 
-void PreFilterEnvironment::SetSourceCubemap(CommandList& commandList, Texture& texture)
+void DiffuseIrradiance::SetSourceCubemap(CommandList& commandList, Texture& texture)
 {
 	const auto sourceDesc = texture.GetD3D12ResourceDesc();
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
 	srvDesc.Format = sourceDesc.Format;
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
-	srvDesc.TextureCube.MipLevels = -1;
+	srvDesc.TextureCube.MipLevels = 1;
 	srvDesc.TextureCube.MostDetailedMip = 0;
 	srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
 	commandList.SetShaderResourceView(RootParameters::Source, 0, texture, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, UINT_MAX, &srvDesc);
-
-	m_SourceWidth = sourceDesc.Width;
-	m_SourceHeight = sourceDesc.Height;
 }
 
-void PreFilterEnvironment::SetRenderTarget(CommandList& commandList, RenderTarget& renderTarget, UINT texArrayIndex, UINT mipLevel)
+void DiffuseIrradiance::SetRenderTarget(CommandList& commandList, RenderTarget& renderTarget, UINT texArrayIndex /*= -1*/)
 {
 	const auto rtColorDesc = renderTarget.GetTexture(Color0).GetD3D12ResourceDesc();
-	const float sizeScale = pow(2, mipLevel);
-	const auto width = static_cast<float>(rtColorDesc.Width) / sizeScale;
-	const auto height = static_cast<float>(rtColorDesc.Height) / sizeScale;
+	const auto width = static_cast<float>(rtColorDesc.Width);
+	const auto height = static_cast<float>(rtColorDesc.Height);
 
 	auto viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, width, height);
 	commandList.SetViewport(viewport);
-	commandList.SetRenderTarget(renderTarget, texArrayIndex, mipLevel);
+	commandList.SetRenderTarget(renderTarget, texArrayIndex);
 }
 
-void PreFilterEnvironment::Draw(CommandList& commandList, float roughness, uint32_t cubemapSideIndex)
+void DiffuseIrradiance::Draw(CommandList& commandList, uint32_t cubemapSideIndex)
 {
-	Parameters parameters;
-
 	const auto orientation = Cubemap::SIDE_ORIENTATIONS[cubemapSideIndex];
+	Parameters parameters;
 	XMStoreFloat4(&parameters.Forward, orientation.Forward);
 	XMStoreFloat4(&parameters.Up, orientation.Up);
-
-	parameters.Roughness = roughness;
-
-	parameters.SourceResolution = { m_SourceWidth, m_SourceHeight };
-
 	commandList.SetGraphics32BitConstants(RootParameters::ParametersCB, parameters);
 	m_BlitMesh->Draw(commandList);
 }

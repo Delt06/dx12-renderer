@@ -1,4 +1,4 @@
-#include "BoundingSphere.h"
+#include <Geometry/BoundingSphere.h>
 
 BoundingSphere::BoundingSphere(const float radius, const DirectX::XMVECTOR center)
 	: m_Radius(radius)

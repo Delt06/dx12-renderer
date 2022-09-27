@@ -1,13 +1,13 @@
-#include "SceneRenderer.h"
+#include <LightingDemo/SceneRenderer.h>
 #include <memory>
 #include <d3dcompiler.h>
 
-#include "../Helpers.h"
-#include "../Model.h"
-#include "../Mesh.h"
-#include "../MatricesCb.h"
-#include "../Cubemap.h"
-#include "../ShaderUtils.h"
+#include <Helpers.h>
+#include <Model.h>
+#include <Mesh.h>
+#include <MatricesCb.h>
+#include <Cubemap.h>
+#include <ShaderUtils.h>
 
 using namespace DirectX;
 using namespace Microsoft::WRL;

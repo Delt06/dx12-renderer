@@ -1,17 +1,17 @@
-﻿#include "PointLightPso.h"
+﻿#include <LightingDemo/PointLightPso.h>
 
 #include <d3dcompiler.h>
 
-#include "../CommandList.h"
-#include "../Helpers.h"
-#include "../Mesh.h"
+#include <CommandList.h>
+#include <Helpers.h>
+#include <Mesh.h>
 
 #include <d3d12.h>
 
-#include "../Application.h"
-#include "../Light.h"
-#include "../MatricesCb.h"
-#include "../ShaderUtils.h"
+#include <Application.h>
+#include <Light.h>
+#include <MatricesCb.h>
+#include <ShaderUtils.h>
 
 using namespace Microsoft::WRL;
 using namespace DirectX;

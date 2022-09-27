@@ -1,8 +1,8 @@
-#include "Shader.h"
-#include "../Helpers.h"
+#include <Framework/Shader.h>
+#include <Helpers.h>
 #include <d3dcompiler.h>
-#include "../Mesh.h"
-#include "../ShaderUtils.h"
+#include <Mesh.h>
+#include <ShaderUtils.h>
 
 using namespace Microsoft::WRL;
 

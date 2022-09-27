@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../RootSignature.h"
+#include <RootSignature.h>
 #include <wrl.h>
 
 class Mesh;

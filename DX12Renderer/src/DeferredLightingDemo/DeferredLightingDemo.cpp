@@ -1,30 +1,30 @@
-﻿#include "DeferredLightingDemo.h"
+﻿#include <DeferredLightingDemo/DeferredLightingDemo.h>
 
-#include "../Application.h"
-#include "../CommandQueue.h"
-#include "../CommandList.h"
-#include "../Helpers.h"
-#include "../Light.h"
-#include "../Material.h"
-#include "../Window.h"
-#include "../GameObject.h"
-#include "../Bone.h"
-#include "../Animation.h"
-#include "../Cubemap.h"
+#include <Application.h>
+#include <CommandQueue.h>
+#include <CommandList.h>
+#include <Helpers.h>
+#include <Light.h>
+#include <Material.h>
+#include <Window.h>
+#include <GameObject.h>
+#include <Bone.h>
+#include <Animation.h>
+#include <Cubemap.h>
 
 #include <wrl.h>
 
-#include "../GraphicsSettings.h"
-#include "../Model.h"
-#include "../ModelLoader.h"
+#include <GraphicsSettings.h>
+#include <Model.h>
+#include <ModelLoader.h>
 
 using namespace Microsoft::WRL;
 
 #include <d3d12.h>
-#include "../d3dx12.h"
+#include <d3dx12.h>
 #include <d3dcompiler.h>
 #include <DirectXColors.h>
-#include "../MatricesCb.h"
+#include <MatricesCb.h>
 
 using namespace DirectX;
 
@@ -33,15 +33,15 @@ using namespace DirectX;
 #undef min
 #endif
 
-#include "../PBR/IBL/DiffuseIrradiance.h"
-#include "../PBR/PbrTextureLoader.h"
-#include "../PBR/IBL/BrdfIntegration.h"
-#include "../PBR/IBL/PreFilterEnvironment.h"
-#include "../Blit.h"
-#include "../HDR/AutoExposure.h"
-#include "../TaaCBuffer.h"
-#include "../Taa.h"
-#include "../ShaderUtils.h"
+#include <PBR/DiffuseIrradiance.h>
+#include <PBR/PbrTextureLoader.h>
+#include <PBR/BrdfIntegration.h>
+#include <PBR/PreFilterEnvironment.h>
+#include <Blit.h>
+#include <HDR/AutoExposure.h>
+#include <TaaCBuffer.h>
+#include <Taa.h>
+#include <ShaderUtils.h>
 
 #if defined(max)
 #undef max
