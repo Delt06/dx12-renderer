@@ -5,7 +5,7 @@
 #include <DX12Library/CommandList.h>
 #include <DX12Library/Helpers.h>
 #include <Framework/Light.h>
-#include <Material.h>
+#include <PhongLighting/Material.h>
 #include <DX12Library/Window.h>
 #include <Framework/GameObject.h>
 
@@ -30,7 +30,7 @@ using namespace DirectX;
 #undef min
 #endif
 #include <LightingDemo/SceneRenderer.h>
-#include <TextureLoader.h>
+#include <PhongLighting/TextureLoader.h>
 
 #if defined(max)
 #undef max

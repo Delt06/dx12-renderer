@@ -12,6 +12,7 @@ project(LearningDirectX12 LANGUAGES CXX)
 
 add_subdirectory(DX12Library)
 add_subdirectory(Framework)
+add_subdirectory(PhongLighting)
 add_subdirectory(DX12Renderer)
 
 # Set the startup project.

@@ -20,6 +20,7 @@ target_include_directories(${TARGET_NAME}
         )
 target_link_libraries(${TARGET_NAME}
         PUBLIC Framework
+        PUBLIC PhongLighting
         )
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../CMakeIncludes/CopyPixDLL.cmake)

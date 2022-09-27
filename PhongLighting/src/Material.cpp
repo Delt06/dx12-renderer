@@ -1,4 +1,4 @@
-#include "Material.h"
+#include <PhongLighting/Material.h>
 
 Material::Constants& Material::GetConstants()
 {

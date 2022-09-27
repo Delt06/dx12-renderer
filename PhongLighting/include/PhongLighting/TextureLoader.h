@@ -1,5 +1,5 @@
 #pragma once
-#include "Material.h"
+#include <PhongLighting/Material.h>
 #include <string>
 #include <memory>
 

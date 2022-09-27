@@ -5,7 +5,6 @@
 #include <DX12Library/CommandList.h>
 #include <DX12Library/Helpers.h>
 #include <Framework/Light.h>
-#include <Material.h>
 #include <DX12Library/Window.h>
 #include <Framework/GameObject.h>
 #include <Framework/Bone.h>

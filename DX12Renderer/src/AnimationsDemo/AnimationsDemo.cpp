@@ -9,7 +9,7 @@
 #include <Framework/Animation.h>
 #include <Framework/GameObject.h>
 #include <Framework/Light.h>
-#include <Material.h>
+#include <PhongLighting/Material.h>
 
 #include <wrl.h>
 
@@ -31,7 +31,7 @@ using namespace DirectX;
 #undef min
 #endif
 #include <LightingDemo/SceneRenderer.h>
-#include <TextureLoader.h>
+#include <PhongLighting/TextureLoader.h>
 #include <DX12Library/ShaderUtils.h>
 
 #if defined(max)

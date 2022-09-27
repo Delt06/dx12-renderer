@@ -6,7 +6,7 @@
 #include <Framework/Mesh.h>
 #include <DX12Library/Texture.h>
 
-#include <MatricesCb.h>
+#include <Framework/MatricesCb.h>
 #include <DX12Library/ShaderUtils.h>
 
 using namespace Microsoft::WRL;
