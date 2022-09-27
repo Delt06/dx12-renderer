@@ -156,11 +156,6 @@ void Taa::Resize(uint32_t width, uint32_t height)
 	m_ResolveRenderTarget.Resize(width, height);
 }
 
-void Taa::CopyResolvedTexture(CommandList& commandList, const Texture& destination)
-{
-	commandList.CopyResource(destination, GetResolvedTexture());
-}
-
 const Texture& Taa::GetResolvedTexture() const
 {
 	return m_ResolveRenderTarget.GetTexture(Color0);

@@ -189,7 +189,7 @@ namespace
 
 	CD3DX12_BLEND_DESC AdditiveBlending()
 	{
-		CD3DX12_BLEND_DESC desc = CD3DX12_BLEND_DESC(CD3DX12_DEFAULT());
+		auto desc = CD3DX12_BLEND_DESC(CD3DX12_DEFAULT());
 		auto& rtBlendDesc = desc.RenderTarget[0];
 		rtBlendDesc.BlendEnable = true;
 		rtBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
