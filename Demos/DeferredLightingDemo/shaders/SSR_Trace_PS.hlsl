@@ -94,7 +94,7 @@ TraceOutput Trace(float2 uv, float roughness)
     float3 originWS = mul(InverseView, float4(originVS, 1.0)).xyz;
     float3 reflectDir = normalize(reflect(viewDir, normalVS) + hash33(originWS * 50) * 0.3 * roughness);
     
-    const uint loops = 35;
+    const uint loops = 50;
     
     const float VdotR = dot(viewDir, reflectDir);
     const float fromCameraFade = smoothstep(1, 0.7, VdotR);
@@ -102,60 +102,59 @@ TraceOutput Trace(float2 uv, float roughness)
     output.Fade = fromCameraFade * toCameraFade;
     
     
-    float step = 1.5f;
-    float3 rayOrigin = originVS + reflectDir * 0.5;
+    float step = 0.2;
+    float3 rayOrigin = originVS + reflectDir * step;
     float totalDistance = step;
+    float distanceThreshold = 0.05;
     bool hit1 = false;
+    uint i;
+    float zDelta;
     
-    for (uint i = 0; i < loops; ++i)
+    for (i = 0; i < loops; ++i)
     {
         float4 currentUV = ToScreenSpaceUV(rayOrigin);
         float3 currentGBufferPositionVS = SamplePositionVS(currentUV.xy, gBufferDepth);
         
-        float zDelta = (rayOrigin.z - currentGBufferPositionVS.z);
+        zDelta = (rayOrigin.z - currentGBufferPositionVS.z);
+        if (abs(zDelta) < distanceThreshold)
+        {
+            output.Hit = true;
+            output.UV = currentUV.xy;
+            return output;
+        }
+        
         if (zDelta > 0.01)
         {
             hit1 = true;
             break;
         }
         
-        step += 0.05;
         rayOrigin += reflectDir * step;
         totalDistance += step;
-
+        step *= 1.01;
     }
     
-    // binary search to find a more precise collision point
+    // binary search
     if (hit1)
     {
-        float originalStep = 0.2;
-        float2 uv = output.UV;
-        float3 currentGBufferPositionVS = 0;
-        float minDistance = 0.05;
-        
-        for (uint j = 0; j < 32; ++j)
+        for (i = 0; i < 5; ++i)
         {
-            uv = ToScreenSpaceUV(rayOrigin).xy;
-            currentGBufferPositionVS = SamplePositionVS(uv, gBufferDepth);
-            
-            float zDelta = rayOrigin.z - currentGBufferPositionVS.z;
-            originalStep *= 0.95;
-            
-            rayOrigin += reflectDir * (zDelta > 0 ? -originalStep : originalStep);
-            
-            float distance = abs(zDelta);
-            if (distance < minDistance)
+            step *= 0.5;
+            rayOrigin -= step * reflectDir * sign(zDelta);
+        
+            float4 currentUV = ToScreenSpaceUV(rayOrigin);
+            float3 currentGBufferPositionVS = SamplePositionVS(currentUV.xy, gBufferDepth);
+        
+            zDelta = (rayOrigin.z - currentGBufferPositionVS.z);
+            if (abs(zDelta) < distanceThreshold)
             {
-                minDistance = distance;
                 output.Hit = true;
-                output.UV = uv;
+                output.UV = currentUV.xy;
+                return output;
             }
         }
-        
-        const float maxDistance = 20.0;
-        float distanceFade = 1 - smoothstep(0.9, 1.0, distance(originVS, currentGBufferPositionVS) / maxDistance);
-        output.Fade *= distanceFade;
     }
+    
     
     return output;
 }
