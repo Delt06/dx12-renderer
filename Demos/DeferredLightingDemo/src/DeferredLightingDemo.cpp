@@ -961,12 +961,26 @@ bool DeferredLightingDemo::LoadContent()
 			auto material = std::make_shared<PbrMaterial>();
 			textureLoader.Init(*material);
 			material->GetConstants().Metallic = 1.0f;
-			material->GetConstants().Roughness = 0.1f;
+			material->GetConstants().Roughness = 0.0f;
 
 			XMMATRIX translationMatrix = XMMatrixTranslation(-50.0f, 0.1f, 15.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
 			XMMATRIX scaleMatrix = XMMatrixScaling(30.0f, 30.0f, 30.0f);
 			XMMATRIX worldMatrix = scaleMatrix * translationMatrix * rotationMatrix;
+			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
+		}
+
+		{
+			auto model = modelLoader.LoadExisting(Mesh::CreateCube(*commandList));
+			auto material = std::make_shared<PbrMaterial>();
+			textureLoader.Init(*material);
+			material->GetConstants().Metallic = 0.01f;
+			material->GetConstants().Roughness = 0.25f;
+
+			XMMATRIX translationMatrix = XMMatrixTranslation(-54.0f, 2.5f, 7.0f);
+			XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(0, 0, 0);
+			XMMATRIX scaleMatrix = XMMatrixScaling(5.0f, 5.0f, 5.0f);
+			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
 			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
 		}
 
