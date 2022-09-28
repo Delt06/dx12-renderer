@@ -10,10 +10,13 @@
 
 #include <Framework/GraphicsSettings.h>
 
-#define TO_STR(VAR) L ## #VAR
 
 #ifdef DEMO_TYPE
-#define DEMO_NAME TO_STR(DEMO_TYPE)
+
+#define STR_VALUE(arg)      L#arg
+#define TYPE_STR_VALUE(name) STR_VALUE(name)
+
+#define DEMO_NAME TYPE_STR_VALUE(DEMO_TYPE)
 #endif
 
 void ReportLiveObjects()
