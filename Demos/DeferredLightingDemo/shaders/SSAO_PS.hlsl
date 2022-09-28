@@ -6,7 +6,7 @@ struct PixelShaderInput
     float2 UV : TEXCOORD;
 };
 
-#define SAMPLES_COUNT 32
+#define SAMPLES_COUNT 64
 #define NORMAL_BIAS 0.2
 #define DEPTH_BIAS 0.025
 
@@ -61,7 +61,7 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     
     for (uint i = 0; i < KernelSize; ++i)
     {
-        float3 samplePositionWS = positionWS + normal * NORMAL_BIAS + mul(tbn, Samples[i]) * Radius;
+        float3 samplePositionWS = positionWS + normal * Radius * 0.5 + mul(tbn, Samples[i]) * Radius;
         
         float4 samplePositionCS = mul(ViewProjection, float4(samplePositionWS, 1.0));
         samplePositionCS /= samplePositionCS.w;
@@ -70,7 +70,7 @@ float4 main(PixelShaderInput IN) : SV_TARGET
         sampleScreenSpaceUV = sampleScreenSpaceUV * 0.5 + 0.5;
         sampleScreenSpaceUV.y = 1 - sampleScreenSpaceUV.y;
         
-        float sampleDepthZNDC = gBufferDepth.Sample(gBufferSampler, sampleScreenSpaceUV).x;
+        float sampleDepthZNDC = gBufferDepth.SampleLevel(gBufferSampler, sampleScreenSpaceUV, 0).x;
         float3 sampleDepthPositionNDC = ScreenSpaceUVToNDC(sampleScreenSpaceUV, sampleDepthZNDC);
         float3 sampleDepthPositionVS = RestorePositionVS(sampleDepthPositionNDC, InverseProjection).xyz;
         

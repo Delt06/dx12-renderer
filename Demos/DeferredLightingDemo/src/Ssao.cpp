@@ -29,7 +29,7 @@ namespace
 
 		struct SSAOCBuffer
 		{
-			static constexpr size_t SAMPLES_COUNT = 32;
+			static constexpr size_t SAMPLES_COUNT = 64;
 
 			XMFLOAT2 NoiseScale;
 			float Radius;
