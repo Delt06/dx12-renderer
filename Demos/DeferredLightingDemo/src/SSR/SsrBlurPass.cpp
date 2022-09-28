@@ -1,5 +1,6 @@
 #include <SSR/SsrBlurPass.h>
 #include <Framework/Mesh.h>
+#include <Framework/Blit_VS.h>
 
 namespace
 {
@@ -25,6 +26,7 @@ SsrBlurPass::SsrBlurPass(Format renderTargetFormat)
 	: m_RenderTargetFormat(renderTargetFormat)
 	, m_RootParameters(RootParameters::NumRootParameters)
 	, m_SourceDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0)
+	, m_PixelShader(LoadShaderFromFile(L"SSR_BlurPass_PS.cso"))
 {
 	m_RootParameters[RootParameters::TraceResult].InitAsDescriptorTable(1, &m_SourceDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
 	m_RootParameters[RootParameters::CBuffer].InitAsConstants(sizeof(RootParameters::ParametersCBuffer) / sizeof(float), 0, 0, D3D12_SHADER_VISIBILITY_PIXEL);
@@ -51,16 +53,6 @@ void SsrBlurPass::Execute(CommandList& commandList, const Texture& traceResult, 
 	m_BlitMesh->Draw(commandList);
 }
 
-std::wstring SsrBlurPass::GetVertexShaderName() const
-{
-	return L"Blit_VS.cso";
-}
-
-std::wstring SsrBlurPass::GetPixelShaderName() const
-{
-	return L"SSR_BlurPass_PS.cso";
-}
-
 std::vector<Shader::RootParameter> SsrBlurPass::GetRootParameters() const
 {
 	return m_RootParameters;
@@ -82,4 +74,14 @@ Shader::Format SsrBlurPass::GetRenderTargetFormat() const
 void SsrBlurPass::OnPostInit(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList)
 {
 	m_BlitMesh = Mesh::CreateBlitTriangle(commandList);
+}
+
+Shader::ShaderBytecode SsrBlurPass::GetVertexShaderBytecode() const
+{
+	return ShaderBytecode(ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS);
+}
+
+Shader::ShaderBytecode SsrBlurPass::GetPixelShaderBytecode() const
+{
+	return ShaderBytecode(m_PixelShader.Get());
 }

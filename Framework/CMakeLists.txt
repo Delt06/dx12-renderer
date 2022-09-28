@@ -50,12 +50,13 @@ set(SHADER_FILES_COMPUTE
         )
 
 set(TARGET_NAME Framework)
-include(${CMAKE_CURRENT_SOURCE_DIR}/../CMakeIncludes/ProjectBase.cmake)
+set(SHADERS_OUTPUT_HEADERS TRUE)
+include(${CMAKE_SOURCE_DIR}/CMakeIncludes/ProjectBase.cmake)
 
 # Add source to this project's executable.
 add_library(${TARGET_NAME} STATIC ${HEADER_FILES} ${SOURCE_FILES} ${SHADER_FILES} ${SHADERS_HEADER_FILES})
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/../CMakeIncludes/ProjectBasePost.cmake)
+include(${CMAKE_SOURCE_DIR}/CMakeIncludes/ProjectBasePost.cmake)
 
 target_include_directories(${TARGET_NAME}
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/Framework

@@ -33,12 +33,26 @@ source_group("Resources\\Shaders" FILES ${SHADER_FILES})
 
 set_source_files_properties(${SHADER_FILES}
         PROPERTIES
-        VS_SHADER_OBJECT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/Shaders/%(Filename).cso"
         VS_SHADER_MODEL 5.1
         VS_SHADER_DISABLE_OPTIMIZATIONS $<$<CONFIG:Debug>:ON>
         VS_SHADER_ENABLE_DEBUG $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:ON>
         VS_SHADER_FLAGS "/I ${CMAKE_SOURCE_DIR}/Shaders" # include shader library
         )
+
+if (${SHADERS_OUTPUT_HEADERS}) 
+    # use headers
+    set_source_files_properties(${SHADER_FILES}
+        PROPERTIES
+                VS_SHADER_VARIABLE_NAME "ShaderBytecode_%(Filename)"
+                VS_SHADER_OUTPUT_HEADER_FILE "${CMAKE_CURRENT_BINARY_DIR}/Shaders/${TARGET_NAME}/%(Filename).h"
+        )
+else()
+    # use object files
+    set_source_files_properties(${SHADER_FILES}
+        PROPERTIES
+                VS_SHADER_OBJECT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/Shaders/%(Filename).cso"
+        )
+endif()
 
 set_source_files_properties(${SHADER_FILES_VERTEX} PROPERTIES
         VS_SHADER_TYPE Vertex

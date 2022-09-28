@@ -4,6 +4,8 @@
 #include <DX12Library/Helpers.h>
 #include <DX12Library/Texture.h>
 #include <DX12Library/RenderTarget.h>
+#include <Framework/Blit_PS.h>
+#include <Framework/Blit_VS.h>
 
 using namespace Microsoft::WRL;
 
@@ -39,16 +41,6 @@ void Blit::Execute(CommandList& commandList, const Texture& source, RenderTarget
 	m_BlitMesh->Draw(commandList);
 }
 
-std::wstring Blit::GetVertexShaderName() const
-{
-	return L"Blit_VS.cso";
-}
-
-std::wstring Blit::GetPixelShaderName() const
-{
-	return L"Blit_PS.cso";
-}
-
 std::vector<Shader::RootParameter> Blit::GetRootParameters() const
 {
 	DescriptorRange sourceDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
@@ -73,4 +65,14 @@ Shader::Format Blit::GetRenderTargetFormat() const
 void Blit::OnPostInit(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList)
 {
 	m_BlitMesh = Mesh::CreateBlitTriangle(commandList);
+}
+
+Shader::ShaderBytecode Blit::GetVertexShaderBytecode() const
+{
+	return ShaderBytecode(ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS);
+}
+
+Shader::ShaderBytecode Blit::GetPixelShaderBytecode() const
+{
+	return ShaderBytecode(ShaderBytecode_Blit_PS, sizeof ShaderBytecode_Blit_PS);
 }

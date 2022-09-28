@@ -1,5 +1,6 @@
 #include <SSR/SsrTrace.h>
 #include <Framework/Mesh.h>
+#include <Framework/Blit_VS.h>
 
 namespace
 {
@@ -33,6 +34,7 @@ SsrTrace::SsrTrace(Format renderTargetFormat)
 	: m_RenderTargetFormat(renderTargetFormat)
 	, m_RootParameters(RootParameters::NumRootParameters)
 	, m_SourceDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0)
+	, m_PixelShader(LoadShaderFromFile(L"SSR_Trace_PS.cso"))
 {
 	m_RootParameters[RootParameters::CBuffer].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
 	m_RootParameters[RootParameters::Source].InitAsDescriptorTable(1, &m_SourceDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
@@ -71,16 +73,6 @@ void SsrTrace::Execute(CommandList& commandList, const Texture& sceneColor, cons
 	m_BlitMesh->Draw(commandList);
 }
 
-std::wstring SsrTrace::GetVertexShaderName() const
-{
-	return L"Blit_VS.cso";
-}
-
-std::wstring SsrTrace::GetPixelShaderName() const
-{
-	return L"SSR_Trace_PS.cso";
-}
-
 std::vector<Shader::RootParameter> SsrTrace::GetRootParameters() const
 {
 	return m_RootParameters;
@@ -102,6 +94,16 @@ Shader::Format SsrTrace::GetRenderTargetFormat() const
 void SsrTrace::OnPostInit(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList)
 {
 	m_BlitMesh = Mesh::CreateBlitTriangle(commandList);
+}
+
+Shader::ShaderBytecode SsrTrace::GetVertexShaderBytecode() const
+{
+	return ShaderBytecode(ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS);
+}
+
+Shader::ShaderBytecode SsrTrace::GetPixelShaderBytecode() const
+{
+	return ShaderBytecode(m_PixelShader.Get());
 }
 
 void SsrTrace::SetDepthSrv(const D3D12_SHADER_RESOURCE_VIEW_DESC* pDepthSrv)

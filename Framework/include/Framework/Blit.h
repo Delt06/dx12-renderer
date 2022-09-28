@@ -12,7 +12,7 @@ class Mesh;
 class Texture;
 class RenderTarget;
 
-class Blit : public Shader
+class Blit final : public Shader
 {
 public:
 	[[maybe_unused]] Blit(Shader::Format renderTargetFormat, bool linearFilter = false);
@@ -20,10 +20,6 @@ public:
 	void Execute(CommandList& commandList, const Texture& source, RenderTarget& destination, UINT destinationTexArrayIndex=-1);
 
 protected:
-	std::wstring GetVertexShaderName() const override;
-
-
-	std::wstring GetPixelShaderName() const override;
 
 
 	std::vector<RootParameter> GetRootParameters() const override;
@@ -36,6 +32,10 @@ protected:
 
 
 	void OnPostInit(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList) override;
+
+	ShaderBytecode GetVertexShaderBytecode() const override;
+
+	ShaderBytecode GetPixelShaderBytecode() const override;
 
 private:
 	Shader::Format m_RenderTargetFormat;

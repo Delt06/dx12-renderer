@@ -19,6 +19,8 @@ public:
 	using ScissorRect = D3D12_RECT;
 	using Viewport = CD3DX12_VIEWPORT;
 	using BlendMode = CD3DX12_BLEND_DESC;
+	using ShaderBytecode = CD3DX12_SHADER_BYTECODE;
+	using ShaderBlob = Microsoft::WRL::ComPtr<ID3DBlob>;
 
 	Shader() = default;
 	virtual ~Shader();
@@ -26,8 +28,8 @@ public:
 	void Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList) final;
 
 protected:
-	virtual std::wstring GetVertexShaderName() const = 0;
-	virtual std::wstring GetPixelShaderName() const = 0;
+	virtual ShaderBytecode GetVertexShaderBytecode() const = 0;
+	virtual ShaderBytecode GetPixelShaderBytecode() const = 0;
 
 	virtual std::vector<RootParameter> GetRootParameters() const = 0;
 	virtual std::vector<StaticSampler> GetStaticSamplers() const = 0;
@@ -41,6 +43,8 @@ protected:
 	void SetContext(CommandList& commandList) const;
 	static void SetRenderTarget(CommandList& commandList, const RenderTarget& renderTarget, bool autoViewport = true, bool autoScissorRect = true);
 	static void SetRenderTarget(CommandList& commandList, const RenderTarget& renderTarget, UINT arrayIndex, bool autoViewport = true, bool autoScissorRect = true);
+
+	[[nodiscard]] static ShaderBlob LoadShaderFromFile(const std::wstring& fileName);
 
 	[[nodiscard]] static ScissorRect GetAutoScissorRect();
 	[[nodiscard]] static Viewport GetAutoViewport(const RenderTarget& renderTarget);

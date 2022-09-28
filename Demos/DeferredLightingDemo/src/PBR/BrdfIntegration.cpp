@@ -6,6 +6,7 @@
 #include <DX12Library/Helpers.h>
 #include <DX12Library/RenderTarget.h>
 #include <DX12Library/ShaderUtils.h>
+#include <Framework/Blit_VS.h>
 
 using namespace Microsoft::WRL;
 
@@ -15,7 +16,6 @@ BrdfIntegration::BrdfIntegration(Microsoft::WRL::ComPtr<ID3D12Device2> device, C
 {
 	// create root signature and PSO
 	{
-		ComPtr<ID3DBlob> vertexShaderBlob = ShaderUtils::LoadShaderFromFile(L"Blit_VS.cso");
 		ComPtr<ID3DBlob> pixelShaderBlob = ShaderUtils::LoadShaderFromFile(L"IBL_BRDFIntegration_PS.cso");
 
 		// Create a root signature.
@@ -66,7 +66,7 @@ BrdfIntegration::BrdfIntegration(Microsoft::WRL::ComPtr<ID3D12Device2> device, C
 
 		pipelineStateStream.InputLayout = { VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT };
 		pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
+		pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS);
 		pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
 		pipelineStateStream.RtvFormats = rtvFormats;
 

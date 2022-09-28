@@ -4,6 +4,7 @@
 #include <DX12Library/Helpers.h>
 #include <DX12Library/Texture.h>
 #include <DX12Library/ShaderUtils.h>
+#include <Framework/Blit_VS.h>
 #include <random>
 
 using namespace Microsoft::WRL;
@@ -78,7 +79,6 @@ Ssao::Ssao(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandLis
 
 	// SSAO Pass
 	{
-		ComPtr<ID3DBlob> vertexShaderBlob = ShaderUtils::LoadShaderFromFile(L"Blit_VS.cso");
 		ComPtr<ID3DBlob> pixelShaderBlob = ShaderUtils::LoadShaderFromFile(L"SSAO_PS.cso");
 
 		// Create a root signature.
@@ -136,7 +136,7 @@ Ssao::Ssao(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandLis
 
 		pipelineStateStream.InputLayout = { VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT };
 		pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
+		pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS);
 		pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
 		pipelineStateStream.RtvFormats = rtvFormats;
 
@@ -148,7 +148,6 @@ Ssao::Ssao(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandLis
 	}
 
 	{
-		ComPtr<ID3DBlob> vertexShaderBlob = ShaderUtils::LoadShaderFromFile(L"Blit_VS.cso");
 		ComPtr<ID3DBlob> pixelShaderBlob = ShaderUtils::LoadShaderFromFile(L"SSAO_Blur_PS.cso");
 
 		// Create a root signature.
@@ -203,7 +202,7 @@ Ssao::Ssao(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandLis
 
 		pipelineStateStream.InputLayout = { VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT };
 		pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
+		pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS);
 		pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
 		pipelineStateStream.RtvFormats = rtvFormats;
 

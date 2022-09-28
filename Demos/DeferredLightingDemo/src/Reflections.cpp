@@ -1,6 +1,7 @@
 #include "Reflections.h"
 #include <Framework/Mesh.h>
 #include <DX12Library/Helpers.h>
+#include <Framework/Blit_VS.h>
 
 namespace
 {
@@ -22,6 +23,7 @@ Reflections::Reflections(Shader::Format renderTargetFormat)
 	, m_BlitMesh(nullptr)
 	, m_PreFilterSrvDesc()
 	, m_DepthSrvDesc()
+	, m_PixelShader(LoadShaderFromFile(L"DeferredLightingDemo_LightBuffer_Reflections_PS.cso"))
 {
 	const UINT gBufferTexturesCount = 4;
 	m_GBufferDescriptorRange = Shader::DescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, gBufferTexturesCount, 0);
@@ -58,16 +60,6 @@ void Reflections::Draw(CommandList& commandList, const RenderTarget& gBufferRend
 	m_BlitMesh->Draw(commandList);
 }
 
-std::wstring Reflections::GetVertexShaderName() const
-{
-	return L"Blit_VS.cso";
-}
-
-std::wstring Reflections::GetPixelShaderName() const
-{
-	return L"DeferredLightingDemo_LightBuffer_Reflections_PS.cso";
-}
-
 std::vector<Shader::RootParameter> Reflections::GetRootParameters() const
 {
 	return m_RootParameters;
@@ -97,4 +89,14 @@ Shader::BlendMode Reflections::GetBlendMode() const
 void Reflections::OnPostInit(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList)
 {
 	m_BlitMesh = Mesh::CreateBlitTriangle(commandList);
+}
+
+Shader::ShaderBytecode Reflections::GetVertexShaderBytecode() const
+{
+	return ShaderBytecode(ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS);
+}
+
+Shader::ShaderBytecode Reflections::GetPixelShaderBytecode() const
+{
+	return ShaderBytecode(m_PixelShader.Get());
 }

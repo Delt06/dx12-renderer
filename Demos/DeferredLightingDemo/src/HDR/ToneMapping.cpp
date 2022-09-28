@@ -3,6 +3,7 @@
 #include <DX12Library/Helpers.h>
 #include <DX12Library/RenderTarget.h>
 #include <Framework/Mesh.h>
+#include <Framework/Blit_VS.h>
 
 using namespace Microsoft::WRL;
 
@@ -29,7 +30,6 @@ ToneMapping::ToneMapping(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandLi
 	: m_BlitMesh(Mesh::CreateBlitTriangle(commandList))
 	, m_ScissorRect(CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX))
 {
-	ComPtr<ID3DBlob> vertexShaderBlob = ShaderUtils::LoadShaderFromFile(L"Blit_VS.cso");
 	ComPtr<ID3DBlob> pixelShaderBlob = ShaderUtils::LoadShaderFromFile(L"HDR_ToneMapping_PS.cso");
 
 	// Create a root signature.
@@ -83,7 +83,7 @@ ToneMapping::ToneMapping(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandLi
 
 	pipelineStateStream.InputLayout = { VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT };
 	pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
+	pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS);
 	pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
 	pipelineStateStream.RtvFormats = rtvFormats;
 

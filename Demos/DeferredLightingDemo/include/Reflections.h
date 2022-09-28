@@ -14,10 +14,6 @@ public:
 
 protected:
 
-	std::wstring GetVertexShaderName() const override;
-
-	std::wstring GetPixelShaderName() const override;
-
 	std::vector<RootParameter> GetRootParameters() const override;
 
 	std::vector<StaticSampler> GetStaticSamplers() const override;
@@ -27,6 +23,10 @@ protected:
 	BlendMode GetBlendMode() const override;
 
 	void OnPostInit(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList) override;
+
+	ShaderBytecode GetVertexShaderBytecode() const override;
+
+	ShaderBytecode GetPixelShaderBytecode() const override;
 
 
 private:
@@ -39,5 +39,7 @@ private:
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC m_PreFilterSrvDesc;
 	D3D12_SHADER_RESOURCE_VIEW_DESC m_DepthSrvDesc;
+
+	ShaderBlob m_PixelShader;
 };
 

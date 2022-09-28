@@ -15,10 +15,6 @@ public:
 	void Execute(CommandList& commandList, const Texture& sceneColor, const Texture& normals, const Texture& surface, const Texture& depth, const RenderTarget& renderTarget, DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX projectionMatrix) const;
 
 protected:
-	std::wstring GetVertexShaderName() const override;
-
-	std::wstring GetPixelShaderName() const override;
-
 	std::vector<RootParameter> GetRootParameters() const override;
 
 	std::vector<StaticSampler> GetStaticSamplers() const override;
@@ -26,7 +22,12 @@ protected:
 	Format GetRenderTargetFormat() const override;
 
 	void OnPostInit(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList) override;
-	
+
+	ShaderBytecode GetVertexShaderBytecode() const override;
+
+	ShaderBytecode GetPixelShaderBytecode() const override;
+
+
 private:
 	std::shared_ptr<Mesh> m_BlitMesh;
 	Format m_RenderTargetFormat;
@@ -35,5 +36,7 @@ private:
 
 	std::vector<RootParameter> m_RootParameters;
 	DescriptorRange m_SourceDescriptorRange;
+
+	ShaderBlob m_PixelShader;
 };
 

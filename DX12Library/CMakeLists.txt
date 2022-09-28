@@ -84,6 +84,7 @@ set(SHADER_FILES_COMPUTE
         )
 
 set(TARGET_NAME DX12Library)
+set(SHADERS_OUTPUT_HEADERS TRUE)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../CMakeIncludes/ProjectBase.cmake)
 
 # External headers and libraries

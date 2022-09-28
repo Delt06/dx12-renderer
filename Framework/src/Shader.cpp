@@ -10,12 +10,6 @@ Shader::~Shader() = default;
 void Shader::Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList)
 {
 	{
-		const std::wstring vertexShaderName = GetVertexShaderName();
-		ComPtr<ID3DBlob> vertexShaderBlob = ShaderUtils::LoadShaderFromFile(vertexShaderName);
-
-		const std::wstring pixelShaderName = GetPixelShaderName();
-		ComPtr<ID3DBlob> pixelShaderBlob = ShaderUtils::LoadShaderFromFile(pixelShaderName);
-
 		// Create a root signature.
 		D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData;
 		featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
@@ -58,8 +52,8 @@ void Shader::Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandLi
 
 		pipelineStateStream.InputLayout = { VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT };
 		pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
-		pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
+		pipelineStateStream.Vs = GetVertexShaderBytecode();
+		pipelineStateStream.Ps = GetPixelShaderBytecode();
 		pipelineStateStream.RtvFormats = rtvFormats;
 		pipelineStateStream.Blend = GetBlendMode();
 
@@ -102,6 +96,11 @@ void Shader::SetRenderTarget(CommandList& commandList, const RenderTarget& rende
 	{
 		commandList.SetScissorRect(GetAutoScissorRect());
 	}
+}
+
+Shader::ShaderBlob Shader::LoadShaderFromFile(const std::wstring& fileName)
+{
+	return ShaderUtils::LoadShaderFromFile(fileName);
 }
 
 Shader::ScissorRect Shader::GetAutoScissorRect()
