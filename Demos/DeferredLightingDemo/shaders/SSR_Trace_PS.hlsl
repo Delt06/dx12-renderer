@@ -152,8 +152,6 @@ TraceOutput Trace(float2 uv, float roughness)
             }
         }
         
-        output.UV = uv;
-        
         const float maxDistance = 20.0;
         float distanceFade = 1 - smoothstep(0.9, 1.0, distance(originVS, currentGBufferPositionVS) / maxDistance);
         output.Fade *= distanceFade;
