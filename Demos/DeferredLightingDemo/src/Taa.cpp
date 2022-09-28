@@ -109,8 +109,8 @@ DirectX::XMFLOAT2 Taa::ComputeJitterOffset(uint32_t width, uint32_t height) cons
 {
 	DirectX::XMFLOAT2 jitterOffset = JITTER_OFFSETS[m_FrameIndex];
 	DirectX::XMFLOAT2 viewSize = { static_cast<float>(width), static_cast<float>(width) };
-	jitterOffset.x = ((jitterOffset.x - 0.5f) / viewSize.x) * 2;
-	jitterOffset.y = ((jitterOffset.y - 0.5f) / viewSize.y) * 2;
+	jitterOffset.x = ((jitterOffset.x - 0.5f) / viewSize.x);
+	jitterOffset.y = ((jitterOffset.y - 0.5f) / viewSize.y);
 
 	return jitterOffset;
 }

@@ -35,7 +35,14 @@ private:
 	Texture m_HistoryBuffer;
 
 	constexpr static DirectX::XMFLOAT2 JITTER_OFFSETS[]{
-		{0.500000f, 0.333333f},
+		// Quincunx
+		{0, 0},
+		{0.5f, 0.5f},
+		{0.5f, -0.5f},
+		{-0.5f, -0.5f},
+		{-0.5f, 0.5f},
+		// Halton sequence
+		/*{0.500000f, 0.333333f},
 		{0.250000f, 0.666667f},
 		{0.750000f, 0.111111f},
 		{0.125000f, 0.444444f},
@@ -50,7 +57,7 @@ private:
 		{0.687500f, 0.481481f},
 		{0.437500f, 0.814815f},
 		{0.937500f, 0.259259f},
-		{0.031250f, 0.592593f},
+		{0.031250f, 0.592593f},*/
 	};
 	constexpr static uint32_t JITTER_OFFSETS_COUNT = _countof(JITTER_OFFSETS);
 	DirectX::XMMATRIX m_PreviousViewProjectionMatrix;
