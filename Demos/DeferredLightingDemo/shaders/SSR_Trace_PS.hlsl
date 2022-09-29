@@ -1,5 +1,6 @@
 #include "ShaderLibrary/GBufferUtils.hlsli"
 #include "ShaderLibrary/ScreenParameters.hlsli"
+#include "ShaderLibrary/Math.hlsli"
 
 struct PixelShaderInput
 {
@@ -159,10 +160,7 @@ TraceOutput Trace(float2 uv, float roughness)
     return output;
 }
 
-bool IsNaN(float x)
-{
-    return !(x < 0.f || x > 0.f || x == 0.f);
-}
+
 
 float4 main(PixelShaderInput IN) : SV_TARGET
 {
@@ -182,7 +180,7 @@ float4 main(PixelShaderInput IN) : SV_TARGET
         fade *= uvFade.x * uvFade.y;
         
         // prevents nans from previous frames affecting this one
-        if (IsNaN(sceneColor.x) || IsNaN(sceneColor.y) || IsNaN(sceneColor.z))
+        if (IsNaNAny(sceneColor))
             return 0;
         
         return float4(sceneColor, fade);

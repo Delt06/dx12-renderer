@@ -5,7 +5,6 @@ project("LightingDemo")
 set(HEADER_FILES
         include/LightingDemo.h
 
-        include/BloomPso.h
         include/DirectionalLightShadowPassPso.h
         include/ParticleSystem.h
         include/ParticleSystemPso.h
@@ -22,7 +21,6 @@ set(SOURCE_FILES
         src/LightingDemo.cpp
         src/main.cpp
 
-        src/BloomPso.cpp
         src/DirectionalLightShadowPassPso.cpp
         src/ParticleSystem.cpp
         src/ParticleSystemPso.cpp
@@ -44,8 +42,6 @@ set(SHADER_FILES_VERTEX
         )
 
 set(SHADER_FILES_PIXEL
-        shaders/LightingDemo_Bloom_Downsample_PS.hlsl
-        shaders/LightingDemo_Bloom_Prefilter_PS.hlsl
         shaders/LightingDemo_ParticleSystem_PS.hlsl
         shaders/LightingDemo_PointLight_PS.hlsl
         shaders/LightingDemo_PostFX_PS.hlsl

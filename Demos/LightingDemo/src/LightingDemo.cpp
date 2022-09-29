@@ -296,7 +296,8 @@ bool LightingDemo::LoadContent()
 
 	// Bloom
 	{
-		m_BloomPso = std::make_unique<BloomPso>(device, *commandList, m_Width, m_Height, backBufferFormat);
+		m_Bloom = std::make_unique<Bloom>(m_Width, m_Height, backBufferFormat);
+		m_Bloom->Init(device, *commandList);
 	}
 
 	auto fenceValue = commandQueue->ExecuteCommandList(commandList);
@@ -323,8 +324,8 @@ void LightingDemo::OnResize(ResizeEventArgs& e)
 		m_RenderTarget.Resize(m_Width, m_Height);
 		m_PostFxRenderTarget.Resize(m_Width, m_Height);
 
-		if (m_BloomPso != nullptr)
-			m_BloomPso->Resize(m_Width, m_Height);
+		if (m_Bloom != nullptr)
+			m_Bloom->Resize(m_Width, m_Height);
 	}
 }
 
@@ -460,11 +461,11 @@ void LightingDemo::OnRender(RenderEventArgs& e)
 	}
 
 	{
-		BloomPso::Parameters parameters;
+		BloomParameters parameters{};
 		parameters.Threshold = 1.25f;
 		parameters.SoftThreshold = 0.3f;
-		parameters.Intensity = 1.5f;
-		m_BloomPso->Draw(*commandList, m_PostFxRenderTarget.GetTexture(Color0), m_PostFxRenderTarget, parameters);
+		parameters.Intensity = 30.0f;
+		m_Bloom->Draw(*commandList, m_PostFxRenderTarget.GetTexture(Color0), m_PostFxRenderTarget, parameters);
 	}
 
 	commandQueue->ExecuteCommandList(commandList);

@@ -23,7 +23,7 @@
 #include <DX12Library/Cubemap.h>
 
 #include "PostFxPso.h"
-#include "BloomPso.h"
+#include <Framework/Bloom.h>
 
 class PointLightShadowPassPso;
 class ParticleSystem;
@@ -59,7 +59,7 @@ private:
 	std::shared_ptr<SceneRenderer> m_SceneRenderer;
 	std::shared_ptr<Cubemap> m_ReflectionCubemap;
 	std::unique_ptr<PostFxPso> m_PostFxPso;
-	std::unique_ptr<BloomPso> m_BloomPso;
+	std::unique_ptr<Bloom> m_Bloom;
 
 	D3D12_VIEWPORT m_Viewport;
 	D3D12_RECT m_ScissorRect;

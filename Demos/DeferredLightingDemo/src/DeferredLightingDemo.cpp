@@ -48,7 +48,7 @@ using namespace DirectX;
 namespace
 {
 	// Clamp a value between a min and max range.
-	template <typename T>
+	template<typename T>
 	constexpr const T& Clamp(const T& val, const T& min, const T& max)
 	{
 		return val < min ? min : val > max ? max : val;
@@ -91,7 +91,11 @@ namespace
 	constexpr FLOAT LIGHT_BUFFER_CLEAR_COLOR[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 	// Builds a look-at (world) matrix from a point, up and direction vectors.
-	XMMATRIX XM_CALLCONV LookAtMatrix(FXMVECTOR position, FXMVECTOR direction, FXMVECTOR up)
+	XMMATRIX XM_CALLCONV
+		LookAtMatrix(FXMVECTOR
+			position,
+			FXMVECTOR direction, FXMVECTOR
+			up)
 	{
 		assert(!XMVector3Equal(direction, XMVectorZero()));
 		assert(!XMVector3IsInfinite(direction));
@@ -107,7 +111,8 @@ namespace
 
 		XMMATRIX M(R0, R1, R2, position);
 
-		return M;
+		return
+			M;
 	}
 
 	struct BoneSbItem
@@ -212,7 +217,8 @@ namespace
 		// 1/(c+l*d+q*d*d) = L
 		const auto l = 0.01f / GetMaxColorComponentRGB(light.Color);
 		const auto lInv = 1 / l;
-		auto discriminant = light.LinearAttenuation * light.LinearAttenuation - 4 * light.QuadraticAttenuation * (light.ConstantAttenuation - lInv);
+		auto discriminant = light.LinearAttenuation * light.LinearAttenuation
+			- 4 * light.QuadraticAttenuation * (light.ConstantAttenuation - lInv);
 		auto radius = 2 * (-light.LinearAttenuation + sqrt(discriminant)) / (2 * light.QuadraticAttenuation);
 		return XMMatrixScaling(radius, radius, radius) *
 			XMMatrixTranslationFromVector(XMLoadFloat4(&light.PositionWs));
@@ -266,20 +272,27 @@ namespace
 
 	auto GetSkyboxSampler(UINT shaderRegister)
 	{
-		auto skyboxSampler = CD3DX12_STATIC_SAMPLER_DESC(shaderRegister, D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
+		auto skyboxSampler = CD3DX12_STATIC_SAMPLER_DESC(shaderRegister,
+			D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_LINEAR,
+			D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+			D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+			D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
 		skyboxSampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 		return skyboxSampler;
 	}
 }
 
-DeferredLightingDemo::DeferredLightingDemo(const std::wstring& name, int width, int height, GraphicsSettings graphicsSettings)
-	: Base(name, width, height, graphicsSettings.VSync)
-	, m_Viewport(CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height)))
-	, m_ScissorRect(CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX))
-	, m_GraphicsSettings(graphicsSettings)
-	, m_CameraController{}
-	, m_Width(0)
-	, m_Height(0)
+DeferredLightingDemo::DeferredLightingDemo(const std::wstring& name,
+	int width,
+	int height,
+	GraphicsSettings graphicsSettings)
+	: Base(name, width, height, graphicsSettings.VSync),
+	m_Viewport(CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height))),
+	m_ScissorRect(CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX)),
+	m_GraphicsSettings(graphicsSettings),
+	m_CameraController{},
+	m_Width(0),
+	m_Height(0)
 {
 	const XMVECTOR cameraPos = XMVectorSet(0, 5, -20, 1);
 	const XMVECTOR cameraTarget = XMVectorSet(0, 5, 0, 1);
@@ -347,13 +360,25 @@ bool DeferredLightingDemo::LoadContent()
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
-		CD3DX12_DESCRIPTOR_RANGE1 texturesDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, PbrMaterial::TotalNumMaps, 0);
+		CD3DX12_DESCRIPTOR_RANGE1
+			texturesDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, PbrMaterial::TotalNumMaps, 0);
 
 		CD3DX12_ROOT_PARAMETER1 rootParameters[GBufferRootParameters::NumRootParameters];
-		rootParameters[GBufferRootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
-		rootParameters[GBufferRootParameters::MaterialCb].InitAsConstantBufferView(1, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
-		rootParameters[GBufferRootParameters::TaaBufferCb].InitAsConstantBufferView(1, 1, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
-		rootParameters[GBufferRootParameters::Textures].InitAsDescriptorTable(1, &texturesDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
+		rootParameters[GBufferRootParameters::MatricesCb].InitAsConstantBufferView(0,
+			0,
+			D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
+			D3D12_SHADER_VISIBILITY_VERTEX);
+		rootParameters[GBufferRootParameters::MaterialCb].InitAsConstantBufferView(1,
+			0,
+			D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
+			D3D12_SHADER_VISIBILITY_PIXEL);
+		rootParameters[GBufferRootParameters::TaaBufferCb].InitAsConstantBufferView(1,
+			1,
+			D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
+			D3D12_SHADER_VISIBILITY_VERTEX);
+		rootParameters[GBufferRootParameters::Textures].InitAsDescriptorTable(1,
+			&texturesDescriptorRange,
+			D3D12_SHADER_VISIBILITY_PIXEL);
 
 		CD3DX12_STATIC_SAMPLER_DESC samplers[] = {
 			// linear repeat
@@ -361,7 +386,10 @@ bool DeferredLightingDemo::LoadContent()
 		};
 
 		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
-		rootSignatureDescription.Init_1_1(GBufferRootParameters::NumRootParameters, rootParameters, _countof(samplers), samplers,
+		rootSignatureDescription.Init_1_1(GBufferRootParameters::NumRootParameters,
+			rootParameters,
+			_countof(samplers),
+			samplers,
 			rootSignatureFlags);
 
 		m_GBufferPassRootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
@@ -395,9 +423,10 @@ bool DeferredLightingDemo::LoadContent()
 		pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
 		pipelineStateStream.DsvFormat = depthBufferFormat;
 		pipelineStateStream.RtvFormats = rtvFormats;
-		pipelineStateStream.Rasterizer = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_BACK, FALSE, 0, 0,
-			0, TRUE, FALSE, FALSE, 0,
-			D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+		pipelineStateStream.Rasterizer =
+			CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_BACK, FALSE, 0, 0,
+				0, TRUE, FALSE, FALSE, 0,
+				D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
 
 		const D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = {
 			sizeof(PipelineStateStream), &pipelineStateStream
@@ -410,15 +439,20 @@ bool DeferredLightingDemo::LoadContent()
 	{
 		CD3DX12_STATIC_SAMPLER_DESC lightPassSamplers[] = {
 			// GBuffer sampler : point clamp
-			CD3DX12_STATIC_SAMPLER_DESC(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
+			CD3DX12_STATIC_SAMPLER_DESC(0,
+				D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT,
+				D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+				D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
 		};
 
 		// directional light pass
 		{
 			m_FullScreenMesh = Mesh::CreateBlitTriangle(*commandList);
 
-			ComPtr<ID3DBlob> vertexShaderBlob = ShaderUtils::LoadShaderFromFile(L"DeferredLightingDemo_LightBuffer_Directional_VS.cso");
-			ComPtr<ID3DBlob> pixelShaderBlob = ShaderUtils::LoadShaderFromFile(L"DeferredLightingDemo_LightBuffer_Directional_PS.cso");
+			ComPtr<ID3DBlob> vertexShaderBlob =
+				ShaderUtils::LoadShaderFromFile(L"DeferredLightingDemo_LightBuffer_Directional_VS.cso");
+			ComPtr<ID3DBlob> pixelShaderBlob =
+				ShaderUtils::LoadShaderFromFile(L"DeferredLightingDemo_LightBuffer_Directional_PS.cso");
 
 			// Create a root signature.
 			D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData;
@@ -438,11 +472,19 @@ bool DeferredLightingDemo::LoadContent()
 			CD3DX12_DESCRIPTOR_RANGE1 ambientDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, gBufferTexturesCount);
 
 			CD3DX12_ROOT_PARAMETER1 rootParameters[DirectionalLightBufferRootParameters::NumRootParameters];
-			rootParameters[DirectionalLightBufferRootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE);
-			rootParameters[DirectionalLightBufferRootParameters::DirectionalLightCb].InitAsConstants(sizeof(DirectionalLight) / sizeof(float), 1, 0, D3D12_SHADER_VISIBILITY_PIXEL);
-			rootParameters[DirectionalLightBufferRootParameters::ScreenParametersCb].InitAsConstants(sizeof(ScreenParameters) / sizeof(float), 2, 0, D3D12_SHADER_VISIBILITY_PIXEL);
-			rootParameters[DirectionalLightBufferRootParameters::GBuffer].InitAsDescriptorTable(1, &gBufferDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
-			rootParameters[DirectionalLightBufferRootParameters::Ambient].InitAsDescriptorTable(1, &ambientDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
+			rootParameters[DirectionalLightBufferRootParameters::MatricesCb].InitAsConstantBufferView(0,
+				0,
+				D3D12_ROOT_DESCRIPTOR_FLAG_NONE);
+			rootParameters[DirectionalLightBufferRootParameters::DirectionalLightCb].InitAsConstants(
+				sizeof(DirectionalLight) / sizeof(float), 1, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+			rootParameters[DirectionalLightBufferRootParameters::ScreenParametersCb].InitAsConstants(
+				sizeof(ScreenParameters) / sizeof(float), 2, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+			rootParameters[DirectionalLightBufferRootParameters::GBuffer].InitAsDescriptorTable(1,
+				&gBufferDescriptorRange,
+				D3D12_SHADER_VISIBILITY_PIXEL);
+			rootParameters[DirectionalLightBufferRootParameters::Ambient].InitAsDescriptorTable(1,
+				&ambientDescriptorRange,
+				D3D12_SHADER_VISIBILITY_PIXEL);
 
 			CD3DX12_STATIC_SAMPLER_DESC samplers[] = {
 				lightPassSamplers[0],
@@ -450,10 +492,14 @@ bool DeferredLightingDemo::LoadContent()
 			};
 
 			CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
-			rootSignatureDescription.Init_1_1(DirectionalLightBufferRootParameters::NumRootParameters, rootParameters, _countof(samplers), samplers,
+			rootSignatureDescription.Init_1_1(DirectionalLightBufferRootParameters::NumRootParameters,
+				rootParameters,
+				_countof(samplers),
+				samplers,
 				rootSignatureFlags);
 
-			m_DirectionalLightPassRootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
+			m_DirectionalLightPassRootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1,
+				featureData.HighestVersion);
 
 			// Setup the pipeline state.
 			struct PipelineStateStream
@@ -476,15 +522,17 @@ bool DeferredLightingDemo::LoadContent()
 
 			pipelineStateStream.RootSignature = m_DirectionalLightPassRootSignature.GetRootSignature().Get();
 
-			pipelineStateStream.InputLayout = { VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT };
+			pipelineStateStream.InputLayout =
+			{ VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT };
 			pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 			pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
 			pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
 			pipelineStateStream.DsvFormat = depthBufferFormat;
 			pipelineStateStream.RtvFormats = rtvFormats;
-			pipelineStateStream.Rasterizer = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_BACK, FALSE, 0, 0,
-				0, TRUE, FALSE, FALSE, 0,
-				D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+			pipelineStateStream.Rasterizer =
+				CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_BACK, FALSE, 0, 0,
+					0, TRUE, FALSE, FALSE, 0,
+					D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
 			pipelineStateStream.Blend = AdditiveBlending();
 
 			auto depthStencil = CD3DX12_DEPTH_STENCIL_DESC(CD3DX12_DEFAULT());
@@ -496,13 +544,16 @@ bool DeferredLightingDemo::LoadContent()
 				sizeof(PipelineStateStream), &pipelineStateStream
 			};
 
-			ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_DirectionalLightPassPipelineState)));
+			ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc,
+				IID_PPV_ARGS(&m_DirectionalLightPassPipelineState)));
 		}
 
 		// light stencil pass
 		{
-			ComPtr<ID3DBlob> vertexShaderBlob = ShaderUtils::LoadShaderFromFile(L"DeferredLightingDemo_LightBuffer_LightStencil_VS.cso");
-			ComPtr<ID3DBlob> pixelShaderBlob = ShaderUtils::LoadShaderFromFile(L"DeferredLightingDemo_LightBuffer_LightStencil_PS.cso");
+			ComPtr<ID3DBlob> vertexShaderBlob =
+				ShaderUtils::LoadShaderFromFile(L"DeferredLightingDemo_LightBuffer_LightStencil_VS.cso");
+			ComPtr<ID3DBlob> pixelShaderBlob =
+				ShaderUtils::LoadShaderFromFile(L"DeferredLightingDemo_LightBuffer_LightStencil_PS.cso");
 
 			// Create a root signature.
 			D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData;
@@ -517,19 +568,22 @@ bool DeferredLightingDemo::LoadContent()
 				D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
 				D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 				D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
-				D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS
-				;
+				D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
 
 			CD3DX12_DESCRIPTOR_RANGE1 texturesDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, gBufferTexturesCount, 0);
 
 			CD3DX12_ROOT_PARAMETER1 rootParameters[LightStencilRootParameters::NumRootParameters];
-			rootParameters[LightStencilRootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
+			rootParameters[LightStencilRootParameters::MatricesCb].InitAsConstantBufferView(0,
+				0,
+				D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
+				D3D12_SHADER_VISIBILITY_VERTEX);
 
 			CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
 			rootSignatureDescription.Init_1_1(LightStencilRootParameters::NumRootParameters, rootParameters, 0, nullptr,
 				rootSignatureFlags);
 
-			m_LightStencilPassRootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
+			m_LightStencilPassRootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1,
+				featureData.HighestVersion);
 
 			// Setup the pipeline state.
 			struct PipelineStateStream
@@ -551,7 +605,8 @@ bool DeferredLightingDemo::LoadContent()
 
 			pipelineStateStream.RootSignature = m_LightStencilPassRootSignature.GetRootSignature().Get();
 
-			pipelineStateStream.InputLayout = { VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT };
+			pipelineStateStream.InputLayout =
+			{ VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT };
 			pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 			pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
 			pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
@@ -560,9 +615,10 @@ bool DeferredLightingDemo::LoadContent()
 
 			// https://ogldev.org/www/tutorial37/tutorial37.html
 			// no back-face culling
-			pipelineStateStream.Rasterizer = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_NONE, FALSE, 0, 0,
-				0, TRUE, FALSE, FALSE, 0,
-				D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+			pipelineStateStream.Rasterizer =
+				CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_NONE, FALSE, 0, 0,
+					0, TRUE, FALSE, FALSE, 0,
+					D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
 			pipelineStateStream.Blend = AdditiveBlending();
 
 			auto depthStencil = CD3DX12_DEPTH_STENCIL_DESC(CD3DX12_DEFAULT());
@@ -591,10 +647,13 @@ bool DeferredLightingDemo::LoadContent()
 				sizeof(PipelineStateStream), &pipelineStateStream
 			};
 
-			ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_LightStencilPassPipelineState)));
+			ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc,
+				IID_PPV_ARGS(&m_LightStencilPassPipelineState)));
 		}
 
-		const auto initLightPass = [&lightPassSamplers](ComPtr<ID3D12Device2> device, const std::wstring& vertexShaderPath, const std::wstring& pixelShaderPath,
+		const auto initLightPass = [&lightPassSamplers](ComPtr<ID3D12Device2> device,
+			const std::wstring& vertexShaderPath,
+			const std::wstring& pixelShaderPath,
 			RootSignature& rootSignature,
 			ComPtr<ID3D12PipelineState>& pipelineState
 			)
@@ -619,13 +678,24 @@ bool DeferredLightingDemo::LoadContent()
 			CD3DX12_DESCRIPTOR_RANGE1 texturesDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, gBufferTexturesCount, 0);
 
 			CD3DX12_ROOT_PARAMETER1 rootParameters[LightPassRootParameters::NumRootParameters];
-			rootParameters[LightPassRootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE);
-			rootParameters[LightPassRootParameters::LightCb].InitAsConstantBufferView(1, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
-			rootParameters[LightPassRootParameters::ScreenParametersCb].InitAsConstants(sizeof(ScreenParameters) / sizeof(float), 2, 0, D3D12_SHADER_VISIBILITY_PIXEL);
-			rootParameters[LightPassRootParameters::GBuffer].InitAsDescriptorTable(1, &texturesDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
+			rootParameters[LightPassRootParameters::MatricesCb].InitAsConstantBufferView(0,
+				0,
+				D3D12_ROOT_DESCRIPTOR_FLAG_NONE);
+			rootParameters[LightPassRootParameters::LightCb].InitAsConstantBufferView(1,
+				0,
+				D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
+				D3D12_SHADER_VISIBILITY_PIXEL);
+			rootParameters[LightPassRootParameters::ScreenParametersCb].InitAsConstants(
+				sizeof(ScreenParameters) / sizeof(float), 2, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+			rootParameters[LightPassRootParameters::GBuffer].InitAsDescriptorTable(1,
+				&texturesDescriptorRange,
+				D3D12_SHADER_VISIBILITY_PIXEL);
 
 			CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
-			rootSignatureDescription.Init_1_1(LightPassRootParameters::NumRootParameters, rootParameters, _countof(lightPassSamplers), lightPassSamplers,
+			rootSignatureDescription.Init_1_1(LightPassRootParameters::NumRootParameters,
+				rootParameters,
+				_countof(lightPassSamplers),
+				lightPassSamplers,
 				rootSignatureFlags);
 
 			rootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
@@ -651,15 +721,17 @@ bool DeferredLightingDemo::LoadContent()
 
 			pipelineStateStream.RootSignature = rootSignature.GetRootSignature().Get();
 
-			pipelineStateStream.InputLayout = { VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT };
+			pipelineStateStream.InputLayout =
+			{ VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT };
 			pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 			pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
 			pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
 			pipelineStateStream.DsvFormat = depthBufferFormat;
 			pipelineStateStream.RtvFormats = rtvFormats;
-			pipelineStateStream.Rasterizer = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_FRONT, FALSE, 0, 0,
-				0, TRUE, FALSE, FALSE, 0,
-				D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+			pipelineStateStream.Rasterizer =
+				CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_FRONT, FALSE, 0, 0,
+					0, TRUE, FALSE, FALSE, 0,
+					D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
 			pipelineStateStream.Blend = AdditiveBlending();
 
 			auto depthStencil = CD3DX12_DEPTH_STENCIL_DESC(CD3DX12_DEFAULT());
@@ -747,18 +819,27 @@ bool DeferredLightingDemo::LoadContent()
 			CD3DX12_DESCRIPTOR_RANGE1 texturesDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
 			CD3DX12_ROOT_PARAMETER1 rootParameters[SkyboxPassRootParameters::NumRootParameters];
-			rootParameters[SkyboxPassRootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
-			rootParameters[SkyboxPassRootParameters::SkyboxCubemap].InitAsDescriptorTable(1, &texturesDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
+			rootParameters[SkyboxPassRootParameters::MatricesCb].InitAsConstantBufferView(0,
+				0,
+				D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
+				D3D12_SHADER_VISIBILITY_VERTEX);
+			rootParameters[SkyboxPassRootParameters::SkyboxCubemap].InitAsDescriptorTable(1,
+				&texturesDescriptorRange,
+				D3D12_SHADER_VISIBILITY_PIXEL);
 
 			D3D12_STATIC_SAMPLER_DESC samplers[] = {
 				GetSkyboxSampler(0)
 			};
 
 			CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
-			rootSignatureDescription.Init_1_1(SkyboxPassRootParameters::NumRootParameters, rootParameters, _countof(samplers), samplers,
+			rootSignatureDescription.Init_1_1(SkyboxPassRootParameters::NumRootParameters,
+				rootParameters,
+				_countof(samplers),
+				samplers,
 				rootSignatureFlags);
 
-			m_SkyboxPassRootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
+			m_SkyboxPassRootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1,
+				featureData.HighestVersion);
 
 			// Setup the pipeline state.
 			struct PipelineStateStream
@@ -780,15 +861,17 @@ bool DeferredLightingDemo::LoadContent()
 
 			pipelineStateStream.RootSignature = m_SkyboxPassRootSignature.GetRootSignature().Get();
 
-			pipelineStateStream.InputLayout = { VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT };
+			pipelineStateStream.InputLayout =
+			{ VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT };
 			pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 			pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
 			pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
 			pipelineStateStream.DsvFormat = depthBufferFormat;
 			pipelineStateStream.RtvFormats = rtvFormats;
-			pipelineStateStream.Rasterizer = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_FRONT, FALSE, 0, 0,
-				0, TRUE, FALSE, FALSE, 0,
-				D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+			pipelineStateStream.Rasterizer =
+				CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_FRONT, FALSE, 0, 0,
+					0, TRUE, FALSE, FALSE, 0,
+					D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
 
 			auto depthStencil = CD3DX12_DEPTH_STENCIL_DESC(CD3DX12_DEFAULT());
 			depthStencil.DepthEnable = true; // read
@@ -799,7 +882,8 @@ bool DeferredLightingDemo::LoadContent()
 				sizeof(PipelineStateStream), &pipelineStateStream
 			};
 
-			ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_SkyboxPassPipelineState)));
+			ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc,
+				IID_PPV_ARGS(&m_SkyboxPassPipelineState)));
 		}
 
 		{
@@ -810,6 +894,11 @@ bool DeferredLightingDemo::LoadContent()
 			D3D12_SHADER_RESOURCE_VIEW_DESC depthTextureSrv = GetDepthTextureSrv();
 			m_Ssr = std::make_unique<Ssr>(lightBufferFormat, depthTextureSrv, m_Width, m_Height);
 			m_Ssr->Init(device, *commandList);
+		}
+
+		{
+			m_Bloom = std::make_unique<Bloom>(m_Width, m_Height, lightBufferFormat, 4);
+			m_Bloom->Init(device, *commandList);
 		}
 
 		{
@@ -909,9 +998,9 @@ bool DeferredLightingDemo::LoadContent()
 			material->GetConstants().TilingOffset = { 6, 6, 0, 0 };
 
 			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse,
-					L"Assets/Textures/Ground047/Ground047_1K_Color.jpg");
+				L"Assets/Textures/Ground047/Ground047_1K_Color.jpg");
 			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Normal,
-					L"Assets/Textures/Ground047/Ground047_1K_NormalDX.jpg");
+				L"Assets/Textures/Ground047/Ground047_1K_NormalDX.jpg");
 			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Roughness,
 				L"Assets/Textures/Ground047/Ground047_1K_Roughness.jpg");
 			textureLoader.LoadMap(*material, *commandList, PbrMaterial::AmbientOcclusion,
@@ -945,7 +1034,7 @@ bool DeferredLightingDemo::LoadContent()
 				XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
 				m_GameObjects.push_back(GameObject(worldMatrix, model, material));
 			}
-			
+
 			{
 				XMMATRIX translationMatrix = XMMatrixTranslation(-50.0f, 0.25f, 15.0f);
 				XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(90), 0, 0);
@@ -953,7 +1042,7 @@ bool DeferredLightingDemo::LoadContent()
 				XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
 				m_GameObjects.push_back(GameObject(worldMatrix, model, material));
 			}
-			
+
 		}
 
 		{
@@ -999,7 +1088,8 @@ bool DeferredLightingDemo::LoadContent()
 				L"Assets/Models/cerberus/Cerberus_M.jpg");
 
 			XMMATRIX translationMatrix = XMMatrixTranslation(15.0f, 5.0f, 10.0f);
-			XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(90), XMConvertToRadians(135), XMConvertToRadians(0));
+			XMMATRIX rotationMatrix =
+				XMMatrixRotationRollPitchYaw(XMConvertToRadians(90), XMConvertToRadians(135), XMConvertToRadians(0));
 			XMMATRIX scaleMatrix = XMMatrixScaling(0.10f, 0.10f, 0.10f);
 			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
 			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
@@ -1025,7 +1115,8 @@ bool DeferredLightingDemo::LoadContent()
 				L"Assets/Models/tv/TV_Occlusion.jpg");
 
 			XMMATRIX translationMatrix = XMMatrixTranslation(-14.0f, 0.0f, 18.0f);
-			XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(90), XMConvertToRadians(-45), XMConvertToRadians(0));
+			XMMATRIX rotationMatrix =
+				XMMatrixRotationRollPitchYaw(XMConvertToRadians(90), XMConvertToRadians(-45), XMConvertToRadians(0));
 			XMMATRIX scaleMatrix = XMMatrixScaling(0.30f, 0.30f, 0.30f);
 			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
 			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
@@ -1042,7 +1133,7 @@ bool DeferredLightingDemo::LoadContent()
 					textureLoader.Init(*material);
 					material->GetConstants().Metallic = static_cast<float>(x) / (steps - 1);
 					material->GetConstants().Roughness = static_cast<float>(y) / (steps - 1);
-					
+
 					XMMATRIX translationMatrix = XMMatrixTranslation(x * 1.5f, 5.0f + y * 2.0f, 25.0f);
 					XMMATRIX worldMatrix = translationMatrix;
 					m_GameObjects.push_back(GameObject(worldMatrix, model, material));
@@ -1051,7 +1142,7 @@ bool DeferredLightingDemo::LoadContent()
 		}
 
 		{
-			for (const auto&pointLight : m_PointLights)
+			for (const auto& pointLight : m_PointLights)
 			{
 				auto mesh = modelLoader.LoadExisting(Mesh::CreateSphere(*commandList, 0.5f));
 				auto material = std::make_shared<PbrMaterial>();
@@ -1165,7 +1256,8 @@ bool DeferredLightingDemo::LoadContent()
 	{
 		m_ReflectionsPass = std::make_unique<Reflections>(lightBufferFormat);
 		D3D12_SHADER_RESOURCE_VIEW_DESC preFilterEnvironmentSrvDesc;
-		preFilterEnvironmentSrvDesc.Format = m_PreFilterEnvironmentMapRt.GetTexture(Color0).GetD3D12ResourceDesc().Format;
+		preFilterEnvironmentSrvDesc.Format =
+			m_PreFilterEnvironmentMapRt.GetTexture(Color0).GetD3D12ResourceDesc().Format;
 		preFilterEnvironmentSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		preFilterEnvironmentSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 		preFilterEnvironmentSrvDesc.TextureCube.MipLevels = -1;
@@ -1220,11 +1312,16 @@ bool DeferredLightingDemo::LoadContent()
 			TextureUsageType::RenderTarget,
 			L"GBuffer-Velocity");
 
-		m_GBufferRenderTarget.AttachTexture(GetGBufferTextureAttachmentPoint(GBufferTextureType::Diffuse), diffuseTexture);
-		m_GBufferRenderTarget.AttachTexture(GetGBufferTextureAttachmentPoint(GBufferTextureType::Normals), normalTexture);
-		m_GBufferRenderTarget.AttachTexture(GetGBufferTextureAttachmentPoint(GBufferTextureType::Surface), surfaceTexture);
-		m_GBufferRenderTarget.AttachTexture(GetGBufferTextureAttachmentPoint(GBufferTextureType::Velocity), velocityTexture);
-		m_GBufferRenderTarget.AttachTexture(GetGBufferTextureAttachmentPoint(GBufferTextureType::DepthStencil), depthBuffer);
+		m_GBufferRenderTarget.AttachTexture(GetGBufferTextureAttachmentPoint(GBufferTextureType::Diffuse),
+			diffuseTexture);
+		m_GBufferRenderTarget.AttachTexture(GetGBufferTextureAttachmentPoint(GBufferTextureType::Normals),
+			normalTexture);
+		m_GBufferRenderTarget.AttachTexture(GetGBufferTextureAttachmentPoint(GBufferTextureType::Surface),
+			surfaceTexture);
+		m_GBufferRenderTarget.AttachTexture(GetGBufferTextureAttachmentPoint(GBufferTextureType::Velocity),
+			velocityTexture);
+		m_GBufferRenderTarget.AttachTexture(GetGBufferTextureAttachmentPoint(GBufferTextureType::DepthStencil),
+			depthBuffer);
 
 		m_SurfaceRenderTarget.AttachTexture(Color0, GetGBufferTexture(GBufferTextureType::Surface));
 	}
@@ -1293,6 +1390,11 @@ void DeferredLightingDemo::OnResize(ResizeEventArgs& e)
 		if (m_Ssao != nullptr)
 		{
 			m_Ssao->Resize(m_Width, m_Height);
+		}
+
+		if (m_Bloom != nullptr)
+		{
+			m_Bloom->Resize(m_Width, m_Height);
 		}
 
 		m_SurfaceRenderTarget.AttachTexture(Color0, GetGBufferTexture(GBufferTextureType::Surface));
@@ -1380,7 +1482,9 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 
 		{
 			PIXScope(*commandList, "Clear GBuffer");
-			commandList->ClearRenderTarget(m_GBufferRenderTarget, CLEAR_COLOR, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL);
+			commandList->ClearRenderTarget(m_GBufferRenderTarget,
+				CLEAR_COLOR,
+				D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL);
 			commandList->ClearTexture(GetGBufferTexture(GBufferTextureType::Velocity), VELOCITY_CLEAR_COLOR);
 		}
 
@@ -1404,7 +1508,6 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		commandList->SetGraphicsRootSignature(m_GBufferPassRootSignature);
 		commandList->SetPipelineState(m_GBufferPassPipelineState);
 
-
 		TaaCBuffer taaBuffer;
 		taaBuffer.JitterOffset = m_TaaEnabled ? m_Taa->ComputeJitterOffset(m_Width, m_Height) : XMFLOAT2(0.0f, 0.0f);
 
@@ -1418,7 +1521,8 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			material->SetDynamicConstantBuffer(*commandList, GBufferRootParameters::MaterialCb);
 			material->SetShaderResourceViews(*commandList, GBufferRootParameters::Textures);
 
-			taaBuffer.PreviousModelViewProjectionMatrix = go.GetPreviousWorldMatrix() * m_Taa->GetPreviousViewProjectionMatrix();
+			taaBuffer.PreviousModelViewProjectionMatrix =
+				go.GetPreviousWorldMatrix() * m_Taa->GetPreviousViewProjectionMatrix();
 			commandList->SetGraphicsDynamicConstantBuffer(GBufferRootParameters::TaaBufferCb, taaBuffer);
 
 			const auto& model = go.GetModel();
@@ -1442,7 +1546,14 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		D3D12_SHADER_RESOURCE_VIEW_DESC depthTextureSrv = GetDepthTextureSrv();
 		constexpr float radius = 0.5f;
 		constexpr float power = 4.0f;
-		m_Ssao->SsaoPass(*commandList, GetGBufferTexture(GBufferTextureType::Normals), m_DepthTexture, viewMatrix, projectionMatrix, &depthTextureSrv, radius, power);
+		m_Ssao->SsaoPass(*commandList,
+			GetGBufferTexture(GBufferTextureType::Normals),
+			m_DepthTexture,
+			viewMatrix,
+			projectionMatrix,
+			&depthTextureSrv,
+			radius,
+			power);
 		m_Ssao->BlurPass(*commandList, m_SurfaceRenderTarget);
 	}
 
@@ -1482,10 +1593,11 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			matricesCb.Compute(XMMatrixIdentity(), viewMatrix, viewProjectionMatrix, projectionMatrix);
 
 			commandList->SetGraphicsDynamicConstantBuffer(DirectionalLightBufferRootParameters::MatricesCb, matricesCb);
-			commandList->SetGraphics32BitConstants(DirectionalLightBufferRootParameters::DirectionalLightCb, m_DirectionalLight);
-			commandList->SetGraphics32BitConstants(DirectionalLightBufferRootParameters::ScreenParametersCb, screenParameters);
+			commandList->SetGraphics32BitConstants(DirectionalLightBufferRootParameters::DirectionalLightCb,
+				m_DirectionalLight);
+			commandList->SetGraphics32BitConstants(DirectionalLightBufferRootParameters::ScreenParametersCb,
+				screenParameters);
 			BindGBufferAsSRV(*commandList, DirectionalLightBufferRootParameters::GBuffer);
-
 
 			const auto& diffuseIrradianceMap = m_DiffuseIrradianceMapRt.GetTexture(Color0);
 			D3D12_SHADER_RESOURCE_VIEW_DESC irradianceSrvDesc;
@@ -1495,7 +1607,13 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			irradianceSrvDesc.TextureCube.MipLevels = 1;
 			irradianceSrvDesc.TextureCube.MostDetailedMip = 0;
 			irradianceSrvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
-			commandList->SetShaderResourceView(DirectionalLightBufferRootParameters::Ambient, 0, diffuseIrradianceMap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, UINT_MAX, &irradianceSrvDesc);
+			commandList->SetShaderResourceView(DirectionalLightBufferRootParameters::Ambient,
+				0,
+				diffuseIrradianceMap,
+				D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+				0,
+				UINT_MAX,
+				&irradianceSrvDesc);
 
 			m_FullScreenMesh->Draw(*commandList);
 		}
@@ -1503,10 +1621,17 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		{
 			const Texture& preFilterMap = m_PreFilterEnvironmentMapRt.GetTexture(Color0);
 			const Texture& brdfLut = m_BrdfIntegrationMapRt.GetTexture(Color0);
-			const Texture& reflections = m_SsrEnabled ? m_Ssr->GetReflectionsTexture() : m_Ssr->GetEmptyReflectionsTexture();
+			const Texture
+				& reflections = m_SsrEnabled ? m_Ssr->GetReflectionsTexture() : m_Ssr->GetEmptyReflectionsTexture();
 			MatricesCb matrices;
 			matrices.Compute(XMMatrixIdentity(), viewMatrix, viewProjectionMatrix, projectionMatrix);
-			m_ReflectionsPass->Draw(*commandList, m_GBufferRenderTarget, m_DepthTexture, preFilterMap, brdfLut, reflections, matrices);
+			m_ReflectionsPass->Draw(*commandList,
+				m_GBufferRenderTarget,
+				m_DepthTexture,
+				preFilterMap,
+				brdfLut,
+				reflections,
+				matrices);
 		}
 
 		commandList->SetStencilRef(0);
@@ -1564,7 +1689,8 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		commandList->SetPipelineState(m_SkyboxPassPipelineState);
 
 		MatricesCb matricesCb;
-		const XMMATRIX modelMatrix = XMMatrixScaling(2, 2, 2) * XMMatrixTranslationFromVector(m_Camera.GetTranslation());
+		const XMMATRIX
+			modelMatrix = XMMatrixScaling(2, 2, 2) * XMMatrixTranslationFromVector(m_Camera.GetTranslation());
 		matricesCb.Compute(modelMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
 		commandList->SetGraphicsDynamicConstantBuffer(SkyboxPassRootParameters::MatricesCb, matricesCb);
 
@@ -1589,6 +1715,14 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 	if (m_SsrEnabled)
 	{
 		m_Ssr->CaptureSceneColor(*commandList, m_LightBufferRenderTarget.GetTexture(Color0));
+	}
+
+	{
+		BloomParameters parameters{};
+		parameters.Threshold = 1.0f;
+		parameters.SoftThreshold = 0.1f;
+		parameters.Intensity = 0.35f;
+		m_Bloom->Draw(*commandList, m_LightBufferRenderTarget.GetTexture(Color0), m_LightBufferRenderTarget, parameters);
 	}
 
 	{
@@ -1624,12 +1758,27 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 
 void DeferredLightingDemo::BindGBufferAsSRV(CommandList& commandList, uint32_t rootParameterIndex)
 {
-	commandList.SetShaderResourceView(rootParameterIndex, 0, GetGBufferTexture(GBufferTextureType::Diffuse), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	commandList.SetShaderResourceView(rootParameterIndex, 1, GetGBufferTexture(GBufferTextureType::Normals), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	commandList.SetShaderResourceView(rootParameterIndex, 2, GetGBufferTexture(GBufferTextureType::Surface), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	commandList.SetShaderResourceView(rootParameterIndex,
+		0,
+		GetGBufferTexture(GBufferTextureType::Diffuse),
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	commandList.SetShaderResourceView(rootParameterIndex,
+		1,
+		GetGBufferTexture(GBufferTextureType::Normals),
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	commandList.SetShaderResourceView(rootParameterIndex,
+		2,
+		GetGBufferTexture(GBufferTextureType::Surface),
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 	auto depthStencilSrvDesc = GetDepthTextureSrv();
-	commandList.SetShaderResourceView(rootParameterIndex, 3, m_DepthTexture, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, &depthStencilSrvDesc);
+	commandList.SetShaderResourceView(rootParameterIndex,
+		3,
+		m_DepthTexture,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+		0,
+		1,
+		&depthStencilSrvDesc);
 }
 
 AttachmentPoint DeferredLightingDemo::GetGBufferTextureAttachmentPoint(GBufferTextureType type)
@@ -1656,7 +1805,9 @@ const Texture& DeferredLightingDemo::GetGBufferTexture(GBufferTextureType type)
 	return m_GBufferRenderTarget.GetTexture(GetGBufferTextureAttachmentPoint(type));
 }
 
-void DeferredLightingDemo::LightStencilPass(CommandList& commandList, const MatricesCb& matricesCb, std::shared_ptr<Mesh> mesh)
+void DeferredLightingDemo::LightStencilPass(CommandList& commandList,
+	const MatricesCb& matricesCb,
+	std::shared_ptr<Mesh> mesh)
 {
 	PIXScope(commandList, "Light Stencil Pass");
 
@@ -1684,7 +1835,11 @@ D3D12_SHADER_RESOURCE_VIEW_DESC DeferredLightingDemo::GetDepthTextureSrv() const
 	return depthStencilSrvDesc;
 }
 
-void DeferredLightingDemo::PointLightPass(CommandList& commandList, const MatricesCb& matricesCb, const PointLight& pointLight, const ScreenParameters& screenParameters, std::shared_ptr<Mesh> mesh)
+void DeferredLightingDemo::PointLightPass(CommandList& commandList,
+	const MatricesCb& matricesCb,
+	const PointLight& pointLight,
+	const ScreenParameters& screenParameters,
+	std::shared_ptr<Mesh> mesh)
 {
 	commandList.SetRenderTarget(m_LightBufferRenderTarget);
 
@@ -1700,7 +1855,11 @@ void DeferredLightingDemo::PointLightPass(CommandList& commandList, const Matric
 	mesh->Draw(commandList);
 }
 
-void DeferredLightingDemo::SpotLightPass(CommandList& commandList, const MatricesCb& matricesCb, const SpotLight& spotLight, const ScreenParameters& screenParameters, const std::shared_ptr<Mesh> mesh)
+void DeferredLightingDemo::SpotLightPass(CommandList& commandList,
+	const MatricesCb& matricesCb,
+	const SpotLight& spotLight,
+	const ScreenParameters& screenParameters,
+	const std::shared_ptr<Mesh> mesh)
 {
 	commandList.SetRenderTarget(m_LightBufferRenderTarget);
 
@@ -1716,7 +1875,11 @@ void DeferredLightingDemo::SpotLightPass(CommandList& commandList, const Matrice
 	mesh->Draw(commandList);
 }
 
-void DeferredLightingDemo::CapsuleLightPass(CommandList& commandList, const MatricesCb& matricesCb, const CapsuleLight& capsuleLight, const ScreenParameters& screenParameters, const std::shared_ptr<Mesh> mesh)
+void DeferredLightingDemo::CapsuleLightPass(CommandList& commandList,
+	const MatricesCb& matricesCb,
+	const CapsuleLight& capsuleLight,
+	const ScreenParameters& screenParameters,
+	const std::shared_ptr<Mesh> mesh)
 {
 	commandList.SetRenderTarget(m_LightBufferRenderTarget);
 
