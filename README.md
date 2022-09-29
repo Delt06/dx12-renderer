@@ -39,6 +39,7 @@
 - Press <kbd>T</kbd> to toggle TAA;
 - Press <kbd>O</kbd> to toggle SSAO;
 - Press <kbd>P</kbd> to toggle SSLR.
+- Press <kbd>B</kbd> to toggle Bloom.
 
 ### Forward
 
