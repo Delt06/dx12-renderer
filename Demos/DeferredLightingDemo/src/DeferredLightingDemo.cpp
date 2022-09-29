@@ -1717,6 +1717,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		m_Ssr->CaptureSceneColor(*commandList, m_LightBufferRenderTarget.GetTexture(Color0));
 	}
 
+	if (m_BloomEnabled)
 	{
 		BloomParameters parameters{};
 		parameters.Threshold = 1.0f;
@@ -2006,6 +2007,10 @@ void DeferredLightingDemo::OnKeyReleased(KeyEventArgs& e)
 	case KeyCode::P:
 		m_SsrEnabled = !m_SsrEnabled;
 		OutputDebugStringA(m_SsrEnabled ? "SSR: On\n" : "SSR: Off\n");
+		break;
+	case KeyCode::B:
+		m_BloomEnabled = !m_BloomEnabled;
+		OutputDebugStringA(m_BloomEnabled ? "Bloom: On\n" : "Bloom: Off\n");
 		break;
 	}
 }

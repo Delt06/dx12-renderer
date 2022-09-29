@@ -92,6 +92,7 @@ private:
 	std::unique_ptr<Ssr> m_Ssr;
 	std::unique_ptr<Reflections> m_ReflectionsPass;
 
+	bool m_BloomEnabled = true;
 	std::unique_ptr<Bloom> m_Bloom;
 
 	std::unique_ptr<AutoExposure> m_AutoExposurePso;
