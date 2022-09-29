@@ -32,7 +32,6 @@ struct Parameters
 {
 	int m_ClientWidth = 1280;
 	int m_ClientHeight = 720;
-	std::string m_DemoName;
 
 	GraphicsSettings m_GraphicsSettings;
 };
@@ -52,16 +51,6 @@ void ParseCommandLineArguments(Parameters& parameters)
 		if (wcscmp(argv[i], L"-h") == 0 || wcscmp(argv[i], L"--height") == 0)
 		{
 			parameters.m_ClientHeight = wcstol(argv[++i], nullptr, 10);
-		}
-
-		if (wcscmp(argv[i], L"-d") == 0 || wcscmp(argv[i], L"--demo") == 0)
-		{
-			std::wstring arg = argv[++i];
-			parameters.m_DemoName = std::string(arg.begin(), arg.end());
-		}
-		else
-		{
-			parameters.m_DemoName = "LightingDemo";
 		}
 
 		if (wcscmp(argv[i], L"--shadowResolution") == 0)
