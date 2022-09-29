@@ -46,7 +46,7 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     
     historyColor = clamp(historyColor, boxMin, boxMax);
     
-    float modulationFactor = 0.8f;
+    float modulationFactor = 0.9f;
     
     float3 resultColor = lerp(currentColor, historyColor, modulationFactor);
     return float4(resultColor, 1.0);
