@@ -24,7 +24,8 @@ inline void ThrowIfNegative(const int value)
 	}
 }
 
-#define PIXScope(commandList, eventName) PIXScopedEvent((commandList).GetGraphicsCommandList().Get(), PIX_COLOR_DEFAULT, eventName)
+#define PIXScope(commandList, eventName) PIXScopedEvent((commandList).GetGraphicsCommandList().Get(), PIX_COLOR_DEFAULT, eventName);
+#define PIXScopeCPU(eventName) PIXScopedEvent(PIX_COLOR_DEFAULT, eventName);
 
 // Hashers for view descriptions.
 namespace std

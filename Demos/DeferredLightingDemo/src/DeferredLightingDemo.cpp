@@ -1478,278 +1478,283 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 	const auto commandList = commandQueue->GetCommandList();
 
 	{
-		PIXScope(*commandList, "Clear Render Targets");
+		PIXScope(*commandList, "OnRender");
+
 
 		{
-			PIXScope(*commandList, "Clear GBuffer");
-			commandList->ClearRenderTarget(m_GBufferRenderTarget,
-				CLEAR_COLOR,
-				D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL);
-			commandList->ClearTexture(GetGBufferTexture(GBufferTextureType::Velocity), VELOCITY_CLEAR_COLOR);
-		}
+			PIXScope(*commandList, "Clear Render Targets");
 
-		{
-			PIXScope(*commandList, "Clear Light Buffer");
-			commandList->ClearTexture(m_LightBufferRenderTarget.GetTexture(Color0), LIGHT_BUFFER_CLEAR_COLOR);
-		}
-	}
-
-	commandList->SetViewport(m_Viewport);
-	commandList->SetScissorRect(m_ScissorRect);
-
-	const XMMATRIX viewMatrix = m_Camera.GetViewMatrix();
-	const XMMATRIX projectionMatrix = m_Camera.GetProjectionMatrix();
-	const XMMATRIX viewProjectionMatrix = viewMatrix * projectionMatrix;
-
-	{
-		PIXScope(*commandList, "GBuffer Pass");
-
-		commandList->SetRenderTarget(m_GBufferRenderTarget);
-		commandList->SetGraphicsRootSignature(m_GBufferPassRootSignature);
-		commandList->SetPipelineState(m_GBufferPassPipelineState);
-
-		TaaCBuffer taaBuffer;
-		taaBuffer.JitterOffset = m_TaaEnabled ? m_Taa->ComputeJitterOffset(m_Width, m_Height) : XMFLOAT2(0.0f, 0.0f);
-
-		for (const auto& go : m_GameObjects)
-		{
-			MatricesCb matricesCb;
-			matricesCb.Compute(go.GetWorldMatrix(), viewMatrix, viewProjectionMatrix, projectionMatrix);
-			commandList->SetGraphicsDynamicConstantBuffer(GBufferRootParameters::MatricesCb, matricesCb);
-
-			auto material = go.GetMaterial<PbrMaterial>();
-			material->SetDynamicConstantBuffer(*commandList, GBufferRootParameters::MaterialCb);
-			material->SetShaderResourceViews(*commandList, GBufferRootParameters::Textures);
-
-			taaBuffer.PreviousModelViewProjectionMatrix =
-				go.GetPreviousWorldMatrix() * m_Taa->GetPreviousViewProjectionMatrix();
-			commandList->SetGraphicsDynamicConstantBuffer(GBufferRootParameters::TaaBufferCb, taaBuffer);
-
-			const auto& model = go.GetModel();
-			for (const auto& mesh : model->GetMeshes())
 			{
-				mesh->Draw(*commandList);
+				PIXScope(*commandList, "Clear GBuffer");
+				commandList->ClearRenderTarget(m_GBufferRenderTarget,
+					CLEAR_COLOR,
+					D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL);
+				commandList->ClearTexture(GetGBufferTexture(GBufferTextureType::Velocity), VELOCITY_CLEAR_COLOR);
+			}
+
+			{
+				PIXScope(*commandList, "Clear Light Buffer");
+				commandList->ClearTexture(m_LightBufferRenderTarget.GetTexture(Color0), LIGHT_BUFFER_CLEAR_COLOR);
 			}
 		}
-	}
 
-	{
-		PIXScope(*commandList, "Copy Depth Buffer to Depth Texture");
+		commandList->SetViewport(m_Viewport);
+		commandList->SetScissorRect(m_ScissorRect);
 
-		commandList->CopyResource(m_DepthTexture, m_GBufferRenderTarget.GetTexture(DepthStencil));
-	}
-
-	if (m_SsaoEnabled)
-	{
-		PIXScope(*commandList, "SSAO");
-
-		D3D12_SHADER_RESOURCE_VIEW_DESC depthTextureSrv = GetDepthTextureSrv();
-		constexpr float radius = 0.5f;
-		constexpr float power = 4.0f;
-		m_Ssao->SsaoPass(*commandList,
-			GetGBufferTexture(GBufferTextureType::Normals),
-			m_DepthTexture,
-			viewMatrix,
-			projectionMatrix,
-			&depthTextureSrv,
-			radius,
-			power);
-		m_Ssao->BlurPass(*commandList, m_SurfaceRenderTarget);
-	}
-
-	if (m_SsrEnabled)
-	{
-		m_Ssr->SetMatrices(viewMatrix, projectionMatrix);
-		const auto jitterOffset = m_Taa->GetCurrentJitterOffset();
-		m_Ssr->SetJitterOffset(jitterOffset);
-
-		const Texture& normals = GetGBufferTexture(GBufferTextureType::Normals);
-		const Texture& surface = GetGBufferTexture(GBufferTextureType::Surface);
-		const Texture& depth = m_DepthTexture;
-		const RenderTarget& resultRenderTarget = m_LightBufferRenderTarget;
-		m_Ssr->Execute(*commandList, normals, surface, depth);
-	}
-
-	commandList->SetViewport(m_Viewport);
-	commandList->SetScissorRect(m_ScissorRect);
-
-	{
-		PIXScope(*commandList, "Light Passes");
-
-		commandList->SetRenderTarget(m_LightBufferRenderTarget);
-		ScreenParameters screenParameters;
-		screenParameters.Width = static_cast<float>(m_Width);
-		screenParameters.Height = static_cast<float>(m_Height);
-		screenParameters.OneOverWidth = 1.0f / m_Width;
-		screenParameters.OneOverHeight = 1.0f / m_Height;
+		const XMMATRIX viewMatrix = m_Camera.GetViewMatrix();
+		const XMMATRIX projectionMatrix = m_Camera.GetProjectionMatrix();
+		const XMMATRIX viewProjectionMatrix = viewMatrix * projectionMatrix;
 
 		{
-			PIXScope(*commandList, "Directional Light Pass");
+			PIXScope(*commandList, "GBuffer Pass");
 
-			commandList->SetGraphicsRootSignature(m_DirectionalLightPassRootSignature);
-			commandList->SetPipelineState(m_DirectionalLightPassPipelineState);
+			commandList->SetRenderTarget(m_GBufferRenderTarget);
+			commandList->SetGraphicsRootSignature(m_GBufferPassRootSignature);
+			commandList->SetPipelineState(m_GBufferPassPipelineState);
 
-			MatricesCb matricesCb;
-			matricesCb.Compute(XMMatrixIdentity(), viewMatrix, viewProjectionMatrix, projectionMatrix);
+			TaaCBuffer taaBuffer;
+			taaBuffer.JitterOffset = m_TaaEnabled ? m_Taa->ComputeJitterOffset(m_Width, m_Height) : XMFLOAT2(0.0f, 0.0f);
 
-			commandList->SetGraphicsDynamicConstantBuffer(DirectionalLightBufferRootParameters::MatricesCb, matricesCb);
-			commandList->SetGraphics32BitConstants(DirectionalLightBufferRootParameters::DirectionalLightCb,
-				m_DirectionalLight);
-			commandList->SetGraphics32BitConstants(DirectionalLightBufferRootParameters::ScreenParametersCb,
-				screenParameters);
-			BindGBufferAsSRV(*commandList, DirectionalLightBufferRootParameters::GBuffer);
+			for (const auto& go : m_GameObjects)
+			{
+				MatricesCb matricesCb;
+				matricesCb.Compute(go.GetWorldMatrix(), viewMatrix, viewProjectionMatrix, projectionMatrix);
+				commandList->SetGraphicsDynamicConstantBuffer(GBufferRootParameters::MatricesCb, matricesCb);
 
-			const auto& diffuseIrradianceMap = m_DiffuseIrradianceMapRt.GetTexture(Color0);
-			D3D12_SHADER_RESOURCE_VIEW_DESC irradianceSrvDesc;
-			irradianceSrvDesc.Format = diffuseIrradianceMap.GetD3D12ResourceDesc().Format;
-			irradianceSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			irradianceSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
-			irradianceSrvDesc.TextureCube.MipLevels = 1;
-			irradianceSrvDesc.TextureCube.MostDetailedMip = 0;
-			irradianceSrvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
-			commandList->SetShaderResourceView(DirectionalLightBufferRootParameters::Ambient,
-				0,
-				diffuseIrradianceMap,
-				D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-				0,
-				UINT_MAX,
-				&irradianceSrvDesc);
+				auto material = go.GetMaterial<PbrMaterial>();
+				material->SetDynamicConstantBuffer(*commandList, GBufferRootParameters::MaterialCb);
+				material->SetShaderResourceViews(*commandList, GBufferRootParameters::Textures);
 
-			m_FullScreenMesh->Draw(*commandList);
+				taaBuffer.PreviousModelViewProjectionMatrix =
+					go.GetPreviousWorldMatrix() * m_Taa->GetPreviousViewProjectionMatrix();
+				commandList->SetGraphicsDynamicConstantBuffer(GBufferRootParameters::TaaBufferCb, taaBuffer);
+
+				const auto& model = go.GetModel();
+				for (const auto& mesh : model->GetMeshes())
+				{
+					mesh->Draw(*commandList);
+				}
+			}
 		}
 
 		{
-			const Texture& preFilterMap = m_PreFilterEnvironmentMapRt.GetTexture(Color0);
-			const Texture& brdfLut = m_BrdfIntegrationMapRt.GetTexture(Color0);
-			const Texture
-				& reflections = m_SsrEnabled ? m_Ssr->GetReflectionsTexture() : m_Ssr->GetEmptyReflectionsTexture();
-			MatricesCb matrices;
-			matrices.Compute(XMMatrixIdentity(), viewMatrix, viewProjectionMatrix, projectionMatrix);
-			m_ReflectionsPass->Draw(*commandList,
-				m_GBufferRenderTarget,
+			PIXScope(*commandList, "Copy Depth Buffer to Depth Texture");
+
+			commandList->CopyResource(m_DepthTexture, m_GBufferRenderTarget.GetTexture(DepthStencil));
+		}
+
+		if (m_SsaoEnabled)
+		{
+			PIXScope(*commandList, "SSAO");
+
+			D3D12_SHADER_RESOURCE_VIEW_DESC depthTextureSrv = GetDepthTextureSrv();
+			constexpr float radius = 0.5f;
+			constexpr float power = 4.0f;
+			m_Ssao->SsaoPass(*commandList,
+				GetGBufferTexture(GBufferTextureType::Normals),
 				m_DepthTexture,
-				preFilterMap,
-				brdfLut,
-				reflections,
-				matrices);
+				viewMatrix,
+				projectionMatrix,
+				&depthTextureSrv,
+				radius,
+				power);
+			m_Ssao->BlurPass(*commandList, m_SurfaceRenderTarget);
 		}
 
-		commandList->SetStencilRef(0);
+		if (m_SsrEnabled)
+		{
+			m_Ssr->SetMatrices(viewMatrix, projectionMatrix);
+			const auto jitterOffset = m_Taa->GetCurrentJitterOffset();
+			m_Ssr->SetJitterOffset(jitterOffset);
+
+			const Texture& normals = GetGBufferTexture(GBufferTextureType::Normals);
+			const Texture& surface = GetGBufferTexture(GBufferTextureType::Surface);
+			const Texture& depth = m_DepthTexture;
+			const RenderTarget& resultRenderTarget = m_LightBufferRenderTarget;
+			m_Ssr->Execute(*commandList, normals, surface, depth);
+		}
+
+		commandList->SetViewport(m_Viewport);
+		commandList->SetScissorRect(m_ScissorRect);
 
 		{
-			PIXScope(*commandList, "Point Light Pass");
+			PIXScope(*commandList, "Light Passes");
 
-			for (const auto& pointLight : m_PointLights)
+			commandList->SetRenderTarget(m_LightBufferRenderTarget);
+			ScreenParameters screenParameters;
+			screenParameters.Width = static_cast<float>(m_Width);
+			screenParameters.Height = static_cast<float>(m_Height);
+			screenParameters.OneOverWidth = 1.0f / m_Width;
+			screenParameters.OneOverHeight = 1.0f / m_Height;
+
 			{
-				MatricesCb matricesCb;
-				XMMATRIX modelMatrix = GetModelMatrix(pointLight);
-				matricesCb.Compute(modelMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
+				PIXScope(*commandList, "Directional Light Pass");
 
-				const auto mesh = m_PointLightMesh;
-				LightStencilPass(*commandList, matricesCb, mesh);
-				PointLightPass(*commandList, matricesCb, pointLight, screenParameters, mesh);
+				commandList->SetGraphicsRootSignature(m_DirectionalLightPassRootSignature);
+				commandList->SetPipelineState(m_DirectionalLightPassPipelineState);
+
+				MatricesCb matricesCb;
+				matricesCb.Compute(XMMatrixIdentity(), viewMatrix, viewProjectionMatrix, projectionMatrix);
+
+				commandList->SetGraphicsDynamicConstantBuffer(DirectionalLightBufferRootParameters::MatricesCb, matricesCb);
+				commandList->SetGraphics32BitConstants(DirectionalLightBufferRootParameters::DirectionalLightCb,
+					m_DirectionalLight);
+				commandList->SetGraphics32BitConstants(DirectionalLightBufferRootParameters::ScreenParametersCb,
+					screenParameters);
+				BindGBufferAsSRV(*commandList, DirectionalLightBufferRootParameters::GBuffer);
+
+				const auto& diffuseIrradianceMap = m_DiffuseIrradianceMapRt.GetTexture(Color0);
+				D3D12_SHADER_RESOURCE_VIEW_DESC irradianceSrvDesc;
+				irradianceSrvDesc.Format = diffuseIrradianceMap.GetD3D12ResourceDesc().Format;
+				irradianceSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+				irradianceSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+				irradianceSrvDesc.TextureCube.MipLevels = 1;
+				irradianceSrvDesc.TextureCube.MostDetailedMip = 0;
+				irradianceSrvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+				commandList->SetShaderResourceView(DirectionalLightBufferRootParameters::Ambient,
+					0,
+					diffuseIrradianceMap,
+					D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+					0,
+					UINT_MAX,
+					&irradianceSrvDesc);
+
+				m_FullScreenMesh->Draw(*commandList);
+			}
+
+			{
+				const Texture& preFilterMap = m_PreFilterEnvironmentMapRt.GetTexture(Color0);
+				const Texture& brdfLut = m_BrdfIntegrationMapRt.GetTexture(Color0);
+				const Texture
+					& reflections = m_SsrEnabled ? m_Ssr->GetReflectionsTexture() : m_Ssr->GetEmptyReflectionsTexture();
+				MatricesCb matrices;
+				matrices.Compute(XMMatrixIdentity(), viewMatrix, viewProjectionMatrix, projectionMatrix);
+				m_ReflectionsPass->Draw(*commandList,
+					m_GBufferRenderTarget,
+					m_DepthTexture,
+					preFilterMap,
+					brdfLut,
+					reflections,
+					matrices);
+			}
+
+			commandList->SetStencilRef(0);
+
+			{
+				PIXScope(*commandList, "Point Light Pass");
+
+				for (const auto& pointLight : m_PointLights)
+				{
+					MatricesCb matricesCb;
+					XMMATRIX modelMatrix = GetModelMatrix(pointLight);
+					matricesCb.Compute(modelMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
+
+					const auto mesh = m_PointLightMesh;
+					LightStencilPass(*commandList, matricesCb, mesh);
+					PointLightPass(*commandList, matricesCb, pointLight, screenParameters, mesh);
+				}
+			}
+
+			{
+				PIXScope(*commandList, "Spot Light Pass");
+
+				for (const auto& spotLight : m_SpotLights)
+				{
+					MatricesCb matricesCb;
+					XMMATRIX modelMatrix = GetModelMatrix(spotLight);
+					matricesCb.Compute(modelMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
+
+					const auto mesh = m_SpotLightMesh;
+					LightStencilPass(*commandList, matricesCb, mesh);
+					SpotLightPass(*commandList, matricesCb, spotLight, screenParameters, mesh);
+				}
+			}
+
+			{
+				PIXScope(*commandList, "Capsule Light Pass");
+
+				for (const auto& capsuleLight : m_CapsuleLights)
+				{
+					MatricesCb matricesCb;
+					XMMATRIX modelMatrix = GetModelMatrix(capsuleLight);
+					matricesCb.Compute(modelMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
+
+					const auto mesh = m_CapsuleLightMesh;
+					LightStencilPass(*commandList, matricesCb, mesh);
+					CapsuleLightPass(*commandList, matricesCb, capsuleLight, screenParameters, mesh);
+				}
 			}
 		}
 
 		{
-			PIXScope(*commandList, "Spot Light Pass");
+			PIXScope(*commandList, "Skybox Pass");
 
-			for (const auto& spotLight : m_SpotLights)
-			{
-				MatricesCb matricesCb;
-				XMMATRIX modelMatrix = GetModelMatrix(spotLight);
-				matricesCb.Compute(modelMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
+			commandList->SetGraphicsRootSignature(m_SkyboxPassRootSignature);
+			commandList->SetPipelineState(m_SkyboxPassPipelineState);
 
-				const auto mesh = m_SpotLightMesh;
-				LightStencilPass(*commandList, matricesCb, mesh);
-				SpotLightPass(*commandList, matricesCb, spotLight, screenParameters, mesh);
-			}
+			MatricesCb matricesCb;
+			const XMMATRIX
+				modelMatrix = XMMatrixScaling(2, 2, 2) * XMMatrixTranslationFromVector(m_Camera.GetTranslation());
+			matricesCb.Compute(modelMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
+			commandList->SetGraphicsDynamicConstantBuffer(SkyboxPassRootParameters::MatricesCb, matricesCb);
+
+			const auto& skybox = m_Skybox;
+
+			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
+			srvDesc.Format = skybox.GetD3D12ResourceDesc().Format;
+			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+			srvDesc.TextureCube.MipLevels = 1;
+			srvDesc.TextureCube.MostDetailedMip = 0;
+			srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+
+			commandList->SetShaderResourceView(SkyboxPassRootParameters::SkyboxCubemap, 0, skybox,
+				D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+				0, UINT_MAX, &srvDesc
+			);
+
+			m_SkyboxMesh->Draw(*commandList);
+		}
+
+		if (m_SsrEnabled)
+		{
+			m_Ssr->CaptureSceneColor(*commandList, m_LightBufferRenderTarget.GetTexture(Color0));
+		}
+
+		if (m_BloomEnabled)
+		{
+			BloomParameters parameters{};
+			parameters.Threshold = 1.0f;
+			parameters.SoftThreshold = 0.1f;
+			parameters.Intensity = 0.35f;
+			m_Bloom->Draw(*commandList, m_LightBufferRenderTarget.GetTexture(Color0), m_LightBufferRenderTarget, parameters);
 		}
 
 		{
-			PIXScope(*commandList, "Capsule Light Pass");
-
-			for (const auto& capsuleLight : m_CapsuleLights)
-			{
-				MatricesCb matricesCb;
-				XMMATRIX modelMatrix = GetModelMatrix(capsuleLight);
-				matricesCb.Compute(modelMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
-
-				const auto mesh = m_CapsuleLightMesh;
-				LightStencilPass(*commandList, matricesCb, mesh);
-				CapsuleLightPass(*commandList, matricesCb, capsuleLight, screenParameters, mesh);
-			}
+			m_AutoExposurePso->Dispatch(*commandList, m_LightBufferRenderTarget.GetTexture(Color0), m_DeltaTime);
 		}
-	}
 
-	{
-		PIXScope(*commandList, "Skybox Pass");
-
-		commandList->SetGraphicsRootSignature(m_SkyboxPassRootSignature);
-		commandList->SetPipelineState(m_SkyboxPassPipelineState);
-
-		MatricesCb matricesCb;
-		const XMMATRIX
-			modelMatrix = XMMatrixScaling(2, 2, 2) * XMMatrixTranslationFromVector(m_Camera.GetTranslation());
-		matricesCb.Compute(modelMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
-		commandList->SetGraphicsDynamicConstantBuffer(SkyboxPassRootParameters::MatricesCb, matricesCb);
-
-		const auto& skybox = m_Skybox;
-
-		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
-		srvDesc.Format = skybox.GetD3D12ResourceDesc().Format;
-		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
-		srvDesc.TextureCube.MipLevels = 1;
-		srvDesc.TextureCube.MostDetailedMip = 0;
-		srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
-
-		commandList->SetShaderResourceView(SkyboxPassRootParameters::SkyboxCubemap, 0, skybox,
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-			0, UINT_MAX, &srvDesc
-		);
-
-		m_SkyboxMesh->Draw(*commandList);
-	}
-
-	if (m_SsrEnabled)
-	{
-		m_Ssr->CaptureSceneColor(*commandList, m_LightBufferRenderTarget.GetTexture(Color0));
-	}
-
-	if (m_BloomEnabled)
-	{
-		BloomParameters parameters{};
-		parameters.Threshold = 1.0f;
-		parameters.SoftThreshold = 0.1f;
-		parameters.Intensity = 0.35f;
-		m_Bloom->Draw(*commandList, m_LightBufferRenderTarget.GetTexture(Color0), m_LightBufferRenderTarget, parameters);
-	}
-
-	{
-		m_AutoExposurePso->Dispatch(*commandList, m_LightBufferRenderTarget.GetTexture(Color0), m_DeltaTime);
-	}
-
-	{
-		auto& source = m_LightBufferRenderTarget.GetTexture(Color0);
-		m_ToneMappingPso->Blit(*commandList, source, m_AutoExposurePso->GetLuminanceOutput(), m_ResultRenderTarget);
-	}
-
-	if (m_TaaEnabled)
-	{
-		const Texture& currentBuffer = m_ResultRenderTarget.GetTexture(Color0);
-		m_Taa->Resolve(*commandList, currentBuffer, GetGBufferTexture(GBufferTextureType::Velocity));
-	}
-
-	// Maintain TAA data
-	if (m_TaaEnabled)
-	{
-		for (auto& go : m_GameObjects)
 		{
-			go.OnRenderedFrame();
+			auto& source = m_LightBufferRenderTarget.GetTexture(Color0);
+			m_ToneMappingPso->Blit(*commandList, source, m_AutoExposurePso->GetLuminanceOutput(), m_ResultRenderTarget);
 		}
 
-		m_Taa->OnRenderedFrame(viewProjectionMatrix);
+		if (m_TaaEnabled)
+		{
+			const Texture& currentBuffer = m_ResultRenderTarget.GetTexture(Color0);
+			m_Taa->Resolve(*commandList, currentBuffer, GetGBufferTexture(GBufferTextureType::Velocity));
+		}
+
+		// Maintain TAA data
+		if (m_TaaEnabled)
+		{
+			for (auto& go : m_GameObjects)
+			{
+				go.OnRenderedFrame();
+			}
+
+			m_Taa->OnRenderedFrame(viewProjectionMatrix);
+		}
 	}
 
 	commandQueue->ExecuteCommandList(commandList);

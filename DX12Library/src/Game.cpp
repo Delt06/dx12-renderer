@@ -4,6 +4,7 @@
 
 #include "Application.h"
 #include "Window.h"
+#include "Helpers.h"
 
 Game::Game(const std::wstring& name, const int width, const int height, const bool vSync)
 	: Name(name)
@@ -53,10 +54,12 @@ int Game::GetClientHeight() const
 
 void Game::OnUpdate(UpdateEventArgs& e)
 {
+	PIXScopeCPU("OnUpdate");
 }
 
 void Game::OnRender(RenderEventArgs& e)
 {
+	PIXScopeCPU("OnRender");
 }
 
 void Game::OnKeyPressed(KeyEventArgs& e)

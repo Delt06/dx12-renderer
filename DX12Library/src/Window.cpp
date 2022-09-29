@@ -9,16 +9,17 @@
 #include "RenderTarget.h"
 #include "ResourceStateTracker.h"
 #include "Texture.h"
+#include "Helpers.h"
 
 Window::Window(HWND hWnd, const std::wstring& windowName, int clientWidth, int clientHeight, bool vSync)
 	: HWnd(hWnd)
-	  , WindowName(windowName)
-	  , ClientWidth(clientWidth)
-	  , ClientHeight(clientHeight)
-	  , VSync(vSync)
-	  , Fullscreen(false)
-	  , FenceValues{0}
-	  , FrameValues{0}
+	, WindowName(windowName)
+	, ClientWidth(clientWidth)
+	, ClientHeight(clientHeight)
+	, VSync(vSync)
+	, Fullscreen(false)
+	, FenceValues{ 0 }
+	, FrameValues{ 0 }
 {
 	Application& app = Application::Get();
 
@@ -142,11 +143,11 @@ void Window::SetFullscreen(bool fullscreen)
 			::GetMonitorInfo(hMonitor, &monitorInfo);
 
 			SetWindowPos(HWnd, HWND_TOP,
-			             monitorInfo.rcMonitor.left,
-			             monitorInfo.rcMonitor.top,
-			             monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
-			             monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top,
-			             SWP_FRAMECHANGED | SWP_NOACTIVATE);
+				monitorInfo.rcMonitor.left,
+				monitorInfo.rcMonitor.top,
+				monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
+				monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top,
+				SWP_FRAMECHANGED | SWP_NOACTIVATE);
 
 			ShowWindow(HWnd, SW_MAXIMIZE);
 		}
@@ -156,11 +157,11 @@ void Window::SetFullscreen(bool fullscreen)
 			::SetWindowLong(HWnd, GWL_STYLE, WS_OVERLAPPEDWINDOW);
 
 			SetWindowPos(HWnd, HWND_NOTOPMOST,
-			             WindowRect.left,
-			             WindowRect.top,
-			             WindowRect.right - WindowRect.left,
-			             WindowRect.bottom - WindowRect.top,
-			             SWP_FRAMECHANGED | SWP_NOACTIVATE);
+				WindowRect.left,
+				WindowRect.top,
+				WindowRect.right - WindowRect.left,
+				WindowRect.bottom - WindowRect.top,
+				SWP_FRAMECHANGED | SWP_NOACTIVATE);
 
 			ShowWindow(HWnd, SW_NORMAL);
 		}
@@ -185,7 +186,7 @@ void Window::OnUpdate(UpdateEventArgs& e)
 	if (auto pGame = PGame.lock())
 	{
 		UpdateEventArgs updateEventArgs(UpdateClock.GetDeltaSeconds(), UpdateClock.GetTotalSeconds(),
-		                                e.FrameNumber);
+			e.FrameNumber);
 		pGame->OnUpdate(updateEventArgs);
 	}
 }
@@ -197,7 +198,7 @@ void Window::OnRender(RenderEventArgs& e)
 	if (auto pGame = PGame.lock())
 	{
 		RenderEventArgs renderEventArgs(RenderClock.GetDeltaSeconds(), RenderClock.GetTotalSeconds(),
-		                                e.FrameNumber);
+			e.FrameNumber);
 		pGame->OnRender(renderEventArgs);
 	}
 }
@@ -284,8 +285,8 @@ void Window::OnResize(ResizeEventArgs& e)
 		DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
 		ThrowIfFailed(DxgiSwapChain->GetDesc(&swapChainDesc));
 		ThrowIfFailed(DxgiSwapChain->ResizeBuffers(BUFFER_COUNT, ClientWidth,
-		                                           ClientHeight, swapChainDesc.BufferDesc.Format,
-		                                           swapChainDesc.Flags));
+			ClientHeight, swapChainDesc.BufferDesc.Format,
+			swapChainDesc.Flags));
 
 		CurrentBackBufferIndex = DxgiSwapChain->GetCurrentBackBufferIndex();
 
@@ -316,7 +317,7 @@ ComPtr<IDXGISwapChain4> Window::CreateSwapChain()
 	swapChainDesc.Height = ClientHeight;
 	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	swapChainDesc.Stereo = FALSE;
-	swapChainDesc.SampleDesc = {1, 0};
+	swapChainDesc.SampleDesc = { 1, 0 };
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	swapChainDesc.BufferCount = BUFFER_COUNT;
 	swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
@@ -371,24 +372,30 @@ UINT Window::Present(const Texture& texture)
 	auto commandQueue = Application::Get().GetCommandQueue(D3D12_COMMAND_LIST_TYPE_DIRECT);
 	auto commandList = commandQueue->GetCommandList();
 
-	auto& backBuffer = BackBufferTextures[CurrentBackBufferIndex];
+	PIXScopeCPU("Present");
 
-	if (texture.IsValid())
 	{
-		if (texture.GetD3D12ResourceDesc().SampleDesc.Count > 1)
+		PIXScope(*commandList, "Present");
+		auto& backBuffer = BackBufferTextures[CurrentBackBufferIndex];
+
+		if (texture.IsValid())
 		{
-			commandList->ResolveSubresource(backBuffer, texture);
+			if (texture.GetD3D12ResourceDesc().SampleDesc.Count > 1)
+			{
+				commandList->ResolveSubresource(backBuffer, texture);
+			}
+			else
+			{
+				commandList->CopyResource(backBuffer, texture);
+			}
 		}
-		else
-		{
-			commandList->CopyResource(backBuffer, texture);
-		}
+
+		RenderTarget renderTarget;
+		renderTarget.AttachTexture(Color0, backBuffer);
+
+		commandList->TransitionBarrier(backBuffer, D3D12_RESOURCE_STATE_PRESENT);
 	}
 
-	RenderTarget renderTarget;
-	renderTarget.AttachTexture(Color0, backBuffer);
-
-	commandList->TransitionBarrier(backBuffer, D3D12_RESOURCE_STATE_PRESENT);
 	commandQueue->ExecuteCommandList(commandList);
 
 	UINT syncInterval = VSync ? 1 : 0;
@@ -397,11 +404,8 @@ UINT Window::Present(const Texture& texture)
 
 	FenceValues[CurrentBackBufferIndex] = commandQueue->Signal();
 	FrameValues[CurrentBackBufferIndex] = Application::GetFrameCount();
-
 	CurrentBackBufferIndex = DxgiSwapChain->GetCurrentBackBufferIndex();
-
 	commandQueue->WaitForFenceValue(FenceValues[CurrentBackBufferIndex]);
-
 	Application::Get().ReleaseStaleDescriptors(FrameValues[CurrentBackBufferIndex]);
 
 	return CurrentBackBufferIndex;
