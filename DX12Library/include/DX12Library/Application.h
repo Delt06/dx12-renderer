@@ -23,13 +23,13 @@
  *  IN THE SOFTWARE.
  */
 
-/**
- *  @file Application.h
- *  @date October 22, 2018
- *  @author Jeremiah van Oosten
- *
- *  @brief The application class is used to create windows for our application.
- */
+ /**
+  *  @file Application.h
+  *  @date October 22, 2018
+  *  @author Jeremiah van Oosten
+  *
+  *  @brief The application class is used to create windows for our application.
+  */
 
 #include "DescriptorAllocation.h"
 
@@ -71,8 +71,8 @@ public:
 	 * Check if the requested multisample quality is supported for the given format.
 	 */
 	DXGI_SAMPLE_DESC GetMultisampleQualityLevels(DXGI_FORMAT format, UINT numSamples,
-	                                             D3D12_MULTISAMPLE_QUALITY_LEVEL_FLAGS flags =
-		                                             D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE) const;
+		D3D12_MULTISAMPLE_QUALITY_LEVEL_FLAGS flags =
+		D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE) const;
 
 	/**
 	* Create a new DirectX11 render window instance.
@@ -86,7 +86,7 @@ public:
 	* returned.
 	*/
 	std::shared_ptr<Window> CreateRenderWindow(const std::wstring& windowName, int clientWidth, int clientHeight,
-	                                           bool vSync = true);
+		bool vSync = true);
 
 	/**
 	* Destroy a window given the window name.

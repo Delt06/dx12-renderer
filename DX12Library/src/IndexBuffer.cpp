@@ -6,9 +6,9 @@
 
 IndexBuffer::IndexBuffer(const std::wstring& name)
 	: Buffer(name)
-	  , NumIndices(0)
-	  , IndexFormat(DXGI_FORMAT_UNKNOWN)
-	  , IndexBufferView({})
+	, NumIndices(0)
+	, IndexFormat(DXGI_FORMAT_UNKNOWN)
+	, IndexBufferView({})
 {
 }
 

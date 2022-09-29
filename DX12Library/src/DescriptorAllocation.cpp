@@ -6,7 +6,7 @@
 #include "DescriptorAllocatorPage.h"
 
 DescriptorAllocation::DescriptorAllocation() :
-	Descriptor{0},
+	Descriptor{ 0 },
 	NumHandles(0),
 	DescriptorSize(0),
 	Page(nullptr)
@@ -14,9 +14,9 @@ DescriptorAllocation::DescriptorAllocation() :
 }
 
 DescriptorAllocation::DescriptorAllocation(const D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle,
-                                           const uint32_t numHandles,
-                                           const uint32_t descriptorSize,
-                                           const std::shared_ptr<DescriptorAllocatorPage> page) :
+	const uint32_t numHandles,
+	const uint32_t descriptorSize,
+	const std::shared_ptr<DescriptorAllocatorPage> page) :
 	Descriptor(descriptorHandle),
 	NumHandles(numHandles),
 	DescriptorSize(descriptorSize),
@@ -81,7 +81,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE DescriptorAllocation::GetDescriptorHandle(const uint
 	if (offset >= NumHandles)
 		throw std::exception("Descriptor offset out of range.");
 
-	return {Descriptor.ptr + static_cast<SIZE_T>(DescriptorSize) * offset};
+	return { Descriptor.ptr + static_cast<SIZE_T>(DescriptorSize) * offset };
 }
 
 uint32_t DescriptorAllocation::GetNumHandles() const

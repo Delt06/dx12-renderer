@@ -9,8 +9,8 @@ Ssr::Ssr(Shader::Format renderTargetFormat, const D3D12_SHADER_RESOURCE_VIEW_DES
 	m_Trace.SetDepthSrv(&m_DepthSrv);
 
 	const auto traceRtDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-		renderTargetFormat, width, height, 
-		1, 1, 1, 0, 
+		renderTargetFormat, width, height,
+		1, 1, 1, 0,
 		D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET
 	);
 	auto traceTexture = Texture(traceRtDesc, nullptr, TextureUsageType::RenderTarget, L"SSR Trace Result");
@@ -71,7 +71,7 @@ void Ssr::Execute(CommandList& commandList, const Texture& normals, const Textur
 		const Texture& traceResult = m_TraceRenderTarget.GetTexture(Color0);
 		m_BlurPass.Execute(commandList, traceResult, m_FinalReflectionsTexture);
 	}
-	
+
 }
 
 void Ssr::Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList)

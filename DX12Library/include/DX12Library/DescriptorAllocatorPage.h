@@ -78,7 +78,7 @@ private:
 
 	struct FreeBlockInfo
 	{
-		explicit FreeBlockInfo(const SizeType size): Size(size)
+		explicit FreeBlockInfo(const SizeType size) : Size(size)
 		{
 		}
 
@@ -88,7 +88,7 @@ private:
 
 	struct StaleDescriptorInfo
 	{
-		StaleDescriptorInfo(const OffsetType offset, const SizeType size, const uint64_t frameNumber): Offset(offset),
+		StaleDescriptorInfo(const OffsetType offset, const SizeType size, const uint64_t frameNumber) : Offset(offset),
 			Size(size), FrameNumber(frameNumber)
 		{
 		}

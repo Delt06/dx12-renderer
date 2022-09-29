@@ -21,13 +21,13 @@ GenerateMipsPso::GenerateMipsPso()
 	}
 
 	const CD3DX12_DESCRIPTOR_RANGE1 srcMip(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0,
-	                                       D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE);
+		D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE);
 	const CD3DX12_DESCRIPTOR_RANGE1 outMip(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, MAX_MIP_LEVELS_AT_ONCE, 0, 0,
-	                                       D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE);
+		D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE);
 
 	CD3DX12_ROOT_PARAMETER1 rootParameters[GenerateMips::NumRootParameters];
 	rootParameters[GenerateMips::GenerateMipsCb].InitAsConstants(sizeof(GenerateMipsCb) / sizeof(float),
-	                                                             0);
+		0);
 	rootParameters[GenerateMips::SrcMip].InitAsDescriptorTable(1, &srcMip);
 	rootParameters[GenerateMips::OutMip].InitAsDescriptorTable(1, &outMip);
 
@@ -61,7 +61,7 @@ GenerateMipsPso::GenerateMipsPso()
 	const auto computeShader = ShaderUtils::LoadShaderFromFile(L"GenerateMips_CS.cso");
 	pipelineStateStream.Cs = CD3DX12_SHADER_BYTECODE(ShaderBytecode_GenerateMips_CS, sizeof ShaderBytecode_GenerateMips_CS);
 
-	const D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc{sizeof(PipelineStateStream), &pipelineStateStream};
+	const D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc{ sizeof(PipelineStateStream), &pipelineStateStream };
 	ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_PipelineState)));
 
 	// Create some default texture UAV's to pad any unused UAV's during mip map generation.

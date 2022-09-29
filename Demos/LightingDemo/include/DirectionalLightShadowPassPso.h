@@ -24,7 +24,7 @@ public:
 	void SetRenderTarget(CommandList& commandList) const override;
 	void ClearShadowMap(CommandList& commandList) const override;
 	void SetShadowMapShaderResourceView(CommandList& commandList, uint32_t rootParameterIndex,
-	                                    uint32_t descriptorOffset = 0) const override;
+		uint32_t descriptorOffset = 0) const override;
 
 private:
 	[[nodiscard]] const Texture& GetShadowMapAsTexture() const;

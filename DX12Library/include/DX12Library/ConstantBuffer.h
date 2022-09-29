@@ -22,13 +22,13 @@
  *  IN THE SOFTWARE.
  */
 
-/**
- *  @file ConstantBuffer.h
- *  @date October 22, 2018
- *  @author Jeremiah van Oosten
- *
- *  @brief Constant buffer resource.
- */
+ /**
+  *  @file ConstantBuffer.h
+  *  @date October 22, 2018
+  *  @author Jeremiah van Oosten
+  *
+  *  @brief Constant buffer resource.
+  */
 
 #include "Buffer.h"
 #include "DescriptorAllocation.h"
@@ -56,13 +56,13 @@ public:
 	* Get the SRV for a resource.
 	*/
 	D3D12_CPU_DESCRIPTOR_HANDLE
-	GetShaderResourceView(const D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc = nullptr) const override;
+		GetShaderResourceView(const D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc = nullptr) const override;
 
 	/**
 	* Get the UAV for a (sub)resource.
 	*/
 	D3D12_CPU_DESCRIPTOR_HANDLE
-	GetUnorderedAccessView(const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc = nullptr) const override;
+		GetUnorderedAccessView(const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc = nullptr) const override;
 
 
 protected:

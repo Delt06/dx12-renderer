@@ -8,8 +8,8 @@
 
 CommandQueue::CommandQueue(D3D12_COMMAND_LIST_TYPE type)
 	: m_CommandListType(type)
-	  , m_FenceValue(0)
-	  , m_IsProcessingInFlightCommandLists(true)
+	, m_FenceValue(0)
+	, m_IsProcessingInFlightCommandLists(true)
 {
 	auto device = Application::Get().GetDevice();
 
@@ -106,7 +106,7 @@ std::shared_ptr<CommandList> CommandQueue::GetCommandList()
 // Returns the fence value to wait for for this command list.
 uint64_t CommandQueue::ExecuteCommandList(std::shared_ptr<CommandList> commandList)
 {
-	return ExecuteCommandLists(std::vector<std::shared_ptr<CommandList>>({commandList}));
+	return ExecuteCommandLists(std::vector<std::shared_ptr<CommandList>>({ commandList }));
 }
 
 uint64_t CommandQueue::ExecuteCommandLists(const std::vector<std::shared_ptr<CommandList>>& commandLists)
@@ -157,7 +157,7 @@ uint64_t CommandQueue::ExecuteCommandLists(const std::vector<std::shared_ptr<Com
 	// Queue command lists for reuse.
 	for (auto commandList : toBeQueued)
 	{
-		m_InFlightCommandLists.Push({fenceValue, commandList});
+		m_InFlightCommandLists.Push({ fenceValue, commandList });
 	}
 
 	// If there are any command lists that generate mips then execute those

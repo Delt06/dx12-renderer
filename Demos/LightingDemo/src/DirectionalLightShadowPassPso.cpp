@@ -17,23 +17,23 @@ using namespace Microsoft::WRL;
 using namespace DirectX;
 
 DirectionalLightShadowPassPso::DirectionalLightShadowPassPso(const ComPtr<ID3D12Device2> device,
-                                                             const UINT resolution) :
+	const UINT resolution) :
 	ShadowPassPsoBase(device, resolution)
 {
 	m_ShadowPassParameters.LightType = ShadowPassParameters::DirectionalLight;
 
 	const auto shadowMapDesc = CD3DX12_RESOURCE_DESC::Tex2D(SHADOW_MAP_FORMAT,
-	                                                        m_Resolution, m_Resolution,
-	                                                        1, 1,
-	                                                        1, 0,
-	                                                        D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+		m_Resolution, m_Resolution,
+		1, 1,
+		1, 0,
+		D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 	D3D12_CLEAR_VALUE depthClearValue;
 	depthClearValue.Format = shadowMapDesc.Format;
-	depthClearValue.DepthStencil = {1.0f, 0};
+	depthClearValue.DepthStencil = { 1.0f, 0 };
 
 	const auto shadowMap = Texture(shadowMapDesc, &depthClearValue,
-	                               TextureUsageType::Depth,
-	                               L"Shadow Map");
+		TextureUsageType::Depth,
+		L"Shadow Map");
 	m_ShadowMap.AttachTexture(DepthStencil, shadowMap);
 }
 
@@ -46,7 +46,7 @@ void DirectionalLightShadowPassPso::ComputePassParameters(
 
 
 	const auto viewMatrix = XMMatrixLookToLH(2.0f * radius * lightDirection, -lightDirection,
-	                                         XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+		XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
 	XMFLOAT3 sceneCenterVs{};
 	XMStoreFloat3(&sceneCenterVs, XMVector3TransformCoord(sceneBounds.GetCenter(), viewMatrix));
 
@@ -58,8 +58,8 @@ void DirectionalLightShadowPassPso::ComputePassParameters(
 	const float projFar = sceneCenterVs.z + radius;
 
 	const auto projectionMatrix = XMMatrixOrthographicOffCenterLH(projLeft, projRight,
-	                                                              projBottom, projTop,
-	                                                              projNear, projFar
+		projBottom, projTop,
+		projNear, projFar
 	);
 	const auto viewProjection = viewMatrix * projectionMatrix;
 
@@ -73,8 +73,8 @@ void DirectionalLightShadowPassPso::ClearShadowMap(CommandList& commandList) con
 }
 
 void DirectionalLightShadowPassPso::SetShadowMapShaderResourceView(CommandList& commandList,
-                                                                   const uint32_t rootParameterIndex,
-                                                                   const uint32_t descriptorOffset) const
+	const uint32_t rootParameterIndex,
+	const uint32_t descriptorOffset) const
 {
 	constexpr auto stateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 
@@ -87,7 +87,7 @@ void DirectionalLightShadowPassPso::SetShadowMapShaderResourceView(CommandList& 
 	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 	srvDesc.Texture2D.PlaneSlice = 0;
 	commandList.SetShaderResourceView(rootParameterIndex, descriptorOffset, GetShadowMapAsTexture(), stateAfter, 0, 1,
-	                                  &srvDesc);
+		&srvDesc);
 }
 
 XMMATRIX DirectionalLightShadowPassPso::ComputeShadowModelViewProjectionMatrix(

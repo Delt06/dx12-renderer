@@ -35,7 +35,7 @@
 #include "DescriptorAllocation.h"
 #include "ByteAddressBuffer.h"
 
-class StructuredBuffer final : public Buffer 
+class StructuredBuffer final : public Buffer
 {
 public:
 	explicit StructuredBuffer(const std::wstring& name = L"");

@@ -23,16 +23,16 @@
  *  IN THE SOFTWARE.
  */
 
-/**
- *  @file RootSignature.h
- *  @date October 24, 2018
- *  @author Jeremiah van Oosten
- *
- *  @brief The RootSignature class encapsulates both the ID3D12RootSignature and
- *  the D3D12_ROOT_SIGNATURE_DESC used to create it. This provides the
- *  functionality necessary for the DynamicDescriptorHeap to determine the
- *  layout of the root signature at runtime.
- */
+ /**
+  *  @file RootSignature.h
+  *  @date October 24, 2018
+  *  @author Jeremiah van Oosten
+  *
+  *  @brief The RootSignature class encapsulates both the ID3D12RootSignature and
+  *  the D3D12_ROOT_SIGNATURE_DESC used to create it. This provides the
+  *  functionality necessary for the DynamicDescriptorHeap to determine the
+  *  layout of the root signature at runtime.
+  */
 
 
 #include <d3dx12.h>

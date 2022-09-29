@@ -190,7 +190,7 @@ void Texture::CreateViews()
 					device->CreateRenderTargetView(m_d3d12Resource.Get(), &rtvDesc,
 						m_RenderTargetView.GetDescriptorHandle(offset));
 				}
-				
+
 			}
 		}
 		if ((desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) != 0 &&

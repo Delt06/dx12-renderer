@@ -4,7 +4,7 @@
 
 HighResolutionClock::HighResolutionClock()
 	: DeltaTime(0)
-	  , TotalTime(0)
+	, TotalTime(0)
 {
 	T0 = std::chrono::high_resolution_clock::now();
 }

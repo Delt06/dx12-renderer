@@ -41,7 +41,7 @@ set(HEADER_FILES
         )
 
 set(SOURCE_FILES
-        src/DX12Library.cpp
+        
         src/Application.cpp
         src/Buffer.cpp
         src/ByteAddressBuffer.cpp

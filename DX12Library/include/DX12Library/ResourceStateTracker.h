@@ -33,9 +33,9 @@ public:
 		 * which indicates that all subresources should be transitioned to the same state.
 		 */
 	void TransitionResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateAfter,
-	                        UINT subResource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
+		UINT subResource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
 	void TransitionResource(const Resource& resource, D3D12_RESOURCE_STATES stateAfter,
-	                        UINT subResource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
+		UINT subResource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
 
 	/**
 	 * Push a UAV resource barrier for the given resource.

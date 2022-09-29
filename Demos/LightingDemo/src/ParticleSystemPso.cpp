@@ -71,14 +71,14 @@ ParticleSystemPso::ParticleSystemPso(const ComPtr<ID3D12Device2> device, Command
 
 	CD3DX12_ROOT_PARAMETER1 rootParameters[RootParameters::NumRootParameters];
 	rootParameters[RootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
-	                                                                    D3D12_SHADER_VISIBILITY_VERTEX);
+		D3D12_SHADER_VISIBILITY_VERTEX);
 	rootParameters[RootParameters::Textures].InitAsDescriptorTable(1, &descriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	CD3DX12_STATIC_SAMPLER_DESC linearRepeatSampler(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR);
 
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
 	rootSignatureDescription.Init_1_1(RootParameters::NumRootParameters, rootParameters, 1, &linearRepeatSampler,
-	                                  rootSignatureFlags);
+		rootSignatureFlags);
 
 	m_RootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
 
@@ -108,10 +108,10 @@ ParticleSystemPso::ParticleSystemPso(const ComPtr<ID3D12Device2> device, Command
 	D3D12_INPUT_ELEMENT_DESC inputElements[inputElementsCount];
 	std::copy_n(VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT, inputElements);
 	std::copy_n(INSTANCE_INPUT_ELEMENTS, INSTANCE_INPUT_ELEMENT_COUNT,
-	            inputElements + VertexAttributes::INPUT_ELEMENT_COUNT);
+		inputElements + VertexAttributes::INPUT_ELEMENT_COUNT);
 
 	pipelineStateStream.RootSignature = m_RootSignature.GetRootSignature().Get();
-	pipelineStateStream.InputLayout = {inputElements, inputElementsCount};
+	pipelineStateStream.InputLayout = { inputElements, inputElementsCount };
 	pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
 	pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
@@ -151,20 +151,20 @@ void ParticleSystemPso::SetContext(CommandList& commandList) const
 	commandList.SetPipelineState(m_PipelineState);
 	commandList.SetGraphicsRootSignature(m_RootSignature);
 	commandList.SetShaderResourceView(RootParameters::Textures, 0, *m_Texture,
-	                                  D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 }
 
 void ParticleSystemPso::UploadInstanceData(CommandList& commandList,
-                                           const ParticleInstanceData* instanceData, const uint32_t instancesCount)
+	const ParticleInstanceData* instanceData, const uint32_t instancesCount)
 {
 	m_InstancesCount = instancesCount;
 	commandList.CopyVertexBuffer(m_InstanceDataVertexBuffer, instancesCount, sizeof(ParticleInstanceData),
-	                             instanceData);
+		instanceData);
 }
 
 void ParticleSystemPso::Draw(CommandList& commandList,
-                             const DirectX::XMMATRIX viewMatrix, const DirectX::XMMATRIX viewProjectionMatrix,
-                             const DirectX::XMMATRIX projectionMatrix) const
+	const DirectX::XMMATRIX viewMatrix, const DirectX::XMMATRIX viewProjectionMatrix,
+	const DirectX::XMMATRIX projectionMatrix) const
 {
 	MatricesCb matricesCb;
 	matricesCb.Compute(DirectX::XMMatrixIdentity(), viewMatrix, viewProjectionMatrix, projectionMatrix);

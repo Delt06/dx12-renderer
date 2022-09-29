@@ -22,13 +22,13 @@
  *  IN THE SOFTWARE.
  */
 
-/**
- *  @file ThreadSafeQueue.h
- *  @date January 7, 2016
- *  @author Jeremiah
- *
- *  @brief Thread safe queue.
- */
+ /**
+  *  @file ThreadSafeQueue.h
+  *  @date January 7, 2016
+  *  @author Jeremiah
+  *
+  *  @brief Thread safe queue.
+  */
 
 #include <queue>
 #include <mutex>

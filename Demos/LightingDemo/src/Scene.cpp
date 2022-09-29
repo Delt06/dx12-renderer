@@ -27,5 +27,5 @@ BoundingSphere Scene::ComputeBoundingSphere() const
 		radius = max(distance, radius);
 	}
 
-	return {radius, center};
+	return { radius, center };
 }

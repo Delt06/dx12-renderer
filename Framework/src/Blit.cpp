@@ -37,7 +37,7 @@ void Blit::Execute(CommandList& commandList, const Texture& source, RenderTarget
 	SetRenderTarget(commandList, destination, destinationTexArrayIndex);
 
 	commandList.SetShaderResourceView(RootParameters::Source, 0, source, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, UINT_MAX);
-	
+
 	m_BlitMesh->Draw(commandList);
 }
 

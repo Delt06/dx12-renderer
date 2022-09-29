@@ -2,7 +2,7 @@
 
 BoundingSphere::BoundingSphere(const float radius, const DirectX::XMVECTOR center)
 	: m_Radius(radius)
-	  , m_Center(center)
+	, m_Center(center)
 {
 }
 

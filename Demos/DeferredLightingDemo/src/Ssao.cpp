@@ -294,7 +294,7 @@ void Ssao::SsaoPass(CommandList& commandList, const Texture& gBufferNormals, con
 	commandList.SetGraphicsRootSignature(m_SsaoPassRootSignature);
 	commandList.SetPipelineState(m_SsaoPassPipelineState);
 	commandList.SetScissorRect(m_ScissorRect);
-	
+
 
 	const auto& ssaoTexture = m_RenderTarget.GetTexture(Color0);
 	const auto ssaoTextureDesc = ssaoTexture.GetD3D12ResourceDesc();
@@ -333,8 +333,8 @@ void Ssao::BlurPass(CommandList& commandList, const RenderTarget& surfaceRenderT
 	commandList.SetGraphicsRootSignature(m_BlurPassRootSignature);
 	commandList.SetPipelineState(m_BlurPassPipelineState);
 	commandList.SetScissorRect(m_ScissorRect);
-	
-;	const auto rtDesc = surfaceRenderTarget.GetTexture(Color0).GetD3D12ResourceDesc();
+
+	;	const auto rtDesc = surfaceRenderTarget.GetTexture(Color0).GetD3D12ResourceDesc();
 	D3D12_VIEWPORT viewport(0.0f, 0.0f, static_cast<float>(rtDesc.Width), static_cast<float>(rtDesc.Height));
 	commandList.SetViewport(viewport);
 	commandList.SetRenderTarget(surfaceRenderTarget);

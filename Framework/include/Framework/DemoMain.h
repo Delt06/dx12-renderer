@@ -71,7 +71,7 @@ std::shared_ptr<Game> CreateGame(const Parameters& parameters)
 {
 #ifdef DEMO_TYPE
 	return std::make_shared<DEMO_TYPE>(DEMO_NAME, parameters.m_ClientWidth, parameters.m_ClientHeight,
-			parameters.m_GraphicsSettings);
+		parameters.m_GraphicsSettings);
 #else
 	throw std::exception("DEMO_TYPE was not defined.");
 #endif

@@ -15,5 +15,5 @@ struct MatricesCb
 	DirectX::XMMATRIX InverseView;
 
 	void XM_CALLCONV Compute(DirectX::CXMMATRIX model, DirectX::CXMMATRIX view,
-	                         DirectX::CXMMATRIX viewProjection, DirectX::CXMMATRIX projection);
+		DirectX::CXMMATRIX viewProjection, DirectX::CXMMATRIX projection);
 };

@@ -26,9 +26,9 @@ public:
 
 	void SetContext(CommandList& commandList) const;
 	void UploadInstanceData(CommandList& commandList, const ParticleInstanceData* instanceData,
-	                        uint32_t instancesCount);
+		uint32_t instancesCount);
 	void Draw(CommandList& commandList, DirectX::XMMATRIX viewMatrix,
-	          DirectX::XMMATRIX viewProjectionMatrix, DirectX::XMMATRIX projectionMatrix) const;
+		DirectX::XMMATRIX viewProjectionMatrix, DirectX::XMMATRIX projectionMatrix) const;
 
 private:
 	std::shared_ptr<Mesh> m_QuadMesh;

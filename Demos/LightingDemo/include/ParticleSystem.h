@@ -13,8 +13,8 @@ public:
 
 	void Update(double deltaTime);
 	void Draw(CommandList& commandList, DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX viewProjectionMatrix,
-	          DirectX::XMMATRIX
-	          projectionMatrix) const;
+		DirectX::XMMATRIX
+		projectionMatrix) const;
 
 private:
 	void Emit(double deltaTime);

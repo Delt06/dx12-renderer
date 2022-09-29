@@ -79,7 +79,7 @@ std::shared_ptr<Model> ModelLoader::Load(CommandList& commandList, const std::st
 		aiProcess_SortByPType |
 		aiProcess_GenSmoothNormals |
 		aiProcess_PopulateArmatureData |
-		aiProcess_LimitBoneWeights 
+		aiProcess_LimitBoneWeights
 		;
 
 	const aiScene* scene = importer.ReadFile(path.c_str(), flags);

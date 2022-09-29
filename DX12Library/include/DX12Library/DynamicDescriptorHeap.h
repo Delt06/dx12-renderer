@@ -33,7 +33,7 @@ public:
 	 * the CommitStagedDescriptors function is called.
 	 */
 	void StageDescriptors(uint32_t rootParameterIndex, uint32_t offset, uint32_t numDescriptors,
-	                      D3D12_CPU_DESCRIPTOR_HANDLE srcDescriptor);
+		D3D12_CPU_DESCRIPTOR_HANDLE srcDescriptor);
 
 
 	/**
@@ -48,8 +48,8 @@ public:
 	 * be passed as an argument to the function.
 	 */
 	void CommitStagedDescriptors(CommandList& commandList,
-	                             std::function<void(ID3D12GraphicsCommandList*, UINT, D3D12_GPU_DESCRIPTOR_HANDLE)>
-	                             setFunc);
+		std::function<void(ID3D12GraphicsCommandList*, UINT, D3D12_GPU_DESCRIPTOR_HANDLE)>
+		setFunc);
 	void CommitStagedDescriptorsForDraw(CommandList& commandList);
 	void CommitStagedDescriptorsForDispatch(CommandList& commandList);
 

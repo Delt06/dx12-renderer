@@ -58,7 +58,7 @@ namespace
 }
 
 ParticleSystem::ParticleSystem(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList,
-                               const XMVECTOR origin) :
+	const XMVECTOR origin) :
 	m_Origin(origin)
 {
 	m_Pso = std::make_unique<ParticleSystemPso>(device, commandList);
@@ -79,8 +79,8 @@ void ParticleSystem::Update(const double deltaTime)
 }
 
 void ParticleSystem::Draw(CommandList& commandList, const XMMATRIX viewMatrix, const XMMATRIX viewProjectionMatrix,
-                          const XMMATRIX
-                          projectionMatrix) const
+	const XMMATRIX
+	projectionMatrix) const
 {
 	if (m_LiveInstancesCount == 0) return;
 
@@ -91,7 +91,7 @@ void ParticleSystem::Draw(CommandList& commandList, const XMMATRIX viewMatrix, c
 		m_Pso->UploadInstanceData(commandList, m_InstanceData.get(), m_LiveInstancesCount);
 		m_GpuBufferIsDirty = false;
 	}
-	
+
 	m_Pso->Draw(commandList, viewMatrix, viewProjectionMatrix, projectionMatrix);
 }
 
@@ -127,7 +127,7 @@ void ParticleSystem::EmitOne()
 		*
 		RandomRange(0.5f, 1.0f);
 	const auto color = LerpColor(XMFLOAT4(0.9f, 0.9f, 0.9f, 0.35f), XMFLOAT4(0.6f, 0.6f, 0.6f, 0.1f),
-	                             RandomRange(0.0f, 1.0f));
+		RandomRange(0.0f, 1.0f));
 	m_SimulationData[index] = {
 		m_Origin + offset,
 		velocity,

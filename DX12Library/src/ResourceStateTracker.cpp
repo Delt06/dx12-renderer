@@ -76,7 +76,7 @@ void ResourceStateTracker::ResourceBarrier(const D3D12_RESOURCE_BARRIER& barrier
 }
 
 void ResourceStateTracker::TransitionResource(ID3D12Resource* resource, const D3D12_RESOURCE_STATES stateAfter,
-                                              const UINT subResource)
+	const UINT subResource)
 {
 	if (resource)
 	{
@@ -86,7 +86,7 @@ void ResourceStateTracker::TransitionResource(ID3D12Resource* resource, const D3
 }
 
 void ResourceStateTracker::TransitionResource(const Resource& resource, const D3D12_RESOURCE_STATES stateAfter,
-                                              const UINT subResource)
+	const UINT subResource)
 {
 	TransitionResource(resource.GetD3D12Resource().Get(), stateAfter, subResource);
 }
@@ -143,7 +143,7 @@ uint32_t ResourceStateTracker::FlushPendingResourceBarriers(const CommandList& c
 				auto& resourceState = iter->second;
 				if (pendingTransition.Subresource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES &&
 					!resourceState.SubresourceStates.empty()
-				)
+					)
 				{
 					// Transition all subresources
 					for (const auto subresourceState : resourceState.SubresourceStates)

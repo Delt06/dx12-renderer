@@ -16,8 +16,8 @@ public:
 	GameObject(DirectX::XMMATRIX worldMatrix, std::shared_ptr<Model> model, std::shared_ptr<MaterialBase> material);
 
 	void Draw(const std::function<void(CommandList& commandList, DirectX::XMMATRIX worldMatrix)>& setMatricesFunc,
-	          CommandList& commandList,
-	          uint32_t materialRootParameterIndex, uint32_t mapsRootParameterIndex) const;
+		CommandList& commandList,
+		uint32_t materialRootParameterIndex, uint32_t mapsRootParameterIndex) const;
 
 	[[nodiscard]] const DirectX::XMMATRIX& GetWorldMatrix() const;
 	[[nodiscard]] std::shared_ptr<const Model> GetModel() const;

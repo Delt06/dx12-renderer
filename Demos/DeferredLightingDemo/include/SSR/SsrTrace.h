@@ -6,7 +6,7 @@ class Mesh;
 
 class SsrTrace final : public Shader
 {
-public: 
+public:
 	explicit SsrTrace(Format renderTargetFormat);
 
 	void SetDepthSrv(const D3D12_SHADER_RESOURCE_VIEW_DESC* depthSrv);

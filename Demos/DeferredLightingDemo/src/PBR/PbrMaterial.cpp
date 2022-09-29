@@ -14,7 +14,7 @@ void PbrMaterial::SetDynamicConstantBuffer(CommandList& commandList, uint32_t ro
 
 void PbrMaterial::SetMapsEmpty(std::shared_ptr<Texture> emptyMap)
 {
-	for (auto & Map : m_Maps)
+	for (auto& Map : m_Maps)
 	{
 		Map = emptyMap;
 	}

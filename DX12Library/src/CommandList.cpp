@@ -576,7 +576,7 @@ void CommandList::CopyTextureSubresource(const Texture& texture, const uint32_t 
 		static_cast<UINT>(firstSubresource),
 		static_cast<UINT>(numSubresources),
 		subresourceData
-		);
+	);
 
 	TrackObject(intermediateResource);
 	TrackObject(destinationResource);

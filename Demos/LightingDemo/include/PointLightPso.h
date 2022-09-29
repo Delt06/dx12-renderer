@@ -16,7 +16,7 @@ public:
 
 	void Set(CommandList& commandList) const;
 	void Draw(CommandList& commandList, const PointLight& pointLight, DirectX::XMMATRIX viewMatrix,
-	          DirectX::XMMATRIX viewProjectionMatrix, DirectX::XMMATRIX projectionMatrix, float scale = 0.5f) const;
+		DirectX::XMMATRIX viewProjectionMatrix, DirectX::XMMATRIX projectionMatrix, float scale = 0.5f) const;
 
 private:
 	RootSignature m_RootSignature;

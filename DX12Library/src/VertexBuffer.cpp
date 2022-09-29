@@ -5,9 +5,9 @@
 
 VertexBuffer::VertexBuffer(const std::wstring& name)
 	: Buffer(name)
-	  , NumVertices(0)
-	  , VertexStride(0)
-	  , VertexBufferView({})
+	, NumVertices(0)
+	, VertexStride(0)
+	, VertexBufferView({})
 {
 }
 

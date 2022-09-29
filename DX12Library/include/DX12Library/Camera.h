@@ -22,13 +22,13 @@
  *  IN THE SOFTWARE.
  */
 
-/**
- *  @file Camera.h
- *  @date October 24, 2018
- *  @author Jeremiah van Oosten
- *
- *  @brief DirectX 12 Camera class.
- */
+ /**
+  *  @file Camera.h
+  *  @date October 24, 2018
+  *  @author Jeremiah van Oosten
+  *
+  *  @brief DirectX 12 Camera class.
+  */
 
 #include <DirectXMath.h>
 

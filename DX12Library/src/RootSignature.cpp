@@ -7,7 +7,7 @@
 RootSignature::RootSignature()
 	:
 	RootSignatureDesc{}
-	, NumDescriptorsPerTable{0}
+	, NumDescriptorsPerTable{ 0 }
 	, SamplerTableBitMask(0)
 	, DescriptorTableBitMask(0)
 {
@@ -16,9 +16,9 @@ RootSignature::RootSignature()
 RootSignature::RootSignature(
 	const D3D12_ROOT_SIGNATURE_DESC1& rootSignatureDesc, const D3D_ROOT_SIGNATURE_VERSION rootSignatureVersion)
 	: RootSignatureDesc{}
-	  , NumDescriptorsPerTable{0}
-	  , SamplerTableBitMask(0)
-	  , DescriptorTableBitMask(0)
+	, NumDescriptorsPerTable{ 0 }
+	, SamplerTableBitMask(0)
+	, DescriptorTableBitMask(0)
 {
 	SetRootSignatureDesc(rootSignatureDesc, rootSignatureVersion);
 }
@@ -76,11 +76,11 @@ void RootSignature::SetRootSignatureDesc(
 		{
 			const UINT numDescriptorRanges = rootParameter.DescriptorTable.NumDescriptorRanges;
 			D3D12_DESCRIPTOR_RANGE1* pDescriptorRanges = numDescriptorRanges > 0
-				                                             ? new D3D12_DESCRIPTOR_RANGE1[numDescriptorRanges]
-				                                             : nullptr;
+				? new D3D12_DESCRIPTOR_RANGE1[numDescriptorRanges]
+				: nullptr;
 
 			memcpy(pDescriptorRanges, rootParameter.DescriptorTable.pDescriptorRanges,
-			       sizeof(D3D12_DESCRIPTOR_RANGE1) * numDescriptorRanges);
+				sizeof(D3D12_DESCRIPTOR_RANGE1) * numDescriptorRanges);
 
 			pParameters[i].DescriptorTable.NumDescriptorRanges = numDescriptorRanges;
 			pParameters[i].DescriptorTable.pDescriptorRanges = pDescriptorRanges;
@@ -114,13 +114,13 @@ void RootSignature::SetRootSignatureDesc(
 
 	UINT numStaticSamplers = rootSignatureDesc.NumStaticSamplers;
 	D3D12_STATIC_SAMPLER_DESC* pStaticSamplers = numStaticSamplers > 0
-		                                             ? new D3D12_STATIC_SAMPLER_DESC[numStaticSamplers]
-		                                             : nullptr;
+		? new D3D12_STATIC_SAMPLER_DESC[numStaticSamplers]
+		: nullptr;
 
 	if (pStaticSamplers)
 	{
 		memcpy(pStaticSamplers, rootSignatureDesc.pStaticSamplers,
-		       sizeof(D3D12_STATIC_SAMPLER_DESC) * numStaticSamplers);
+			sizeof(D3D12_STATIC_SAMPLER_DESC) * numStaticSamplers);
 	}
 
 	RootSignatureDesc.NumStaticSamplers = numStaticSamplers;
@@ -139,14 +139,14 @@ void RootSignature::SetRootSignatureDesc(
 		rootSignatureVersion, &rootSignatureBlob, &errorBlob);
 	if (FAILED(hResult))
 	{
-		char* error = (char *) errorBlob->GetBufferPointer();
+		char* error = (char*)errorBlob->GetBufferPointer();
 		ThrowIfFailed(hResult);
 	}
-	
+
 
 	// Create the root signature.
 	ThrowIfFailed(device->CreateRootSignature(0, rootSignatureBlob->GetBufferPointer(),
-	                                          rootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&D3d12RootSignature)));
+		rootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&D3d12RootSignature)));
 }
 
 uint32_t RootSignature::GetDescriptorTableBitMask(const D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType) const

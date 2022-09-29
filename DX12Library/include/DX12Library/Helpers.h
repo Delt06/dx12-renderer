@@ -107,10 +107,10 @@ namespace std
 				hash_combine(seed, srvDesc.TextureCubeArray.NumCubes);
 				hash_combine(seed, srvDesc.TextureCubeArray.ResourceMinLODClamp);
 				break;
-			// TODO: Update Visual Studio?
-			//case D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE:
-			//    hash_combine(seed, srvDesc.RaytracingAccelerationStructure.Location);
-			//    break;
+				// TODO: Update Visual Studio?
+				//case D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE:
+				//    hash_combine(seed, srvDesc.RaytracingAccelerationStructure.Location);
+				//    break;
 			}
 
 			return seed;

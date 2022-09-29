@@ -57,7 +57,7 @@ void SsrTrace::Execute(CommandList& commandList, const Texture& sceneColor, cons
 	cbuffer.JitterOffset = m_JitterOffset;
 
 	const auto colorDesc = sceneColor.GetD3D12ResourceDesc();
-	cbuffer.TexelSize = 
+	cbuffer.TexelSize =
 	{
 		1.0f / static_cast<float>(colorDesc.Width),
 		1.0f / static_cast<float>(colorDesc.Height),
@@ -80,9 +80,9 @@ std::vector<Shader::RootParameter> SsrTrace::GetRootParameters() const
 
 std::vector<Shader::StaticSampler> SsrTrace::GetStaticSamplers() const
 {
-	return 
+	return
 	{
-		StaticSampler(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP) 
+		StaticSampler(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP)
 	};
 }
 

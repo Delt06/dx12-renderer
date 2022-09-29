@@ -17,7 +17,7 @@ class Blit final : public Shader
 public:
 	[[maybe_unused]] Blit(Shader::Format renderTargetFormat, bool linearFilter = false);
 
-	void Execute(CommandList& commandList, const Texture& source, RenderTarget& destination, UINT destinationTexArrayIndex=-1);
+	void Execute(CommandList& commandList, const Texture& source, RenderTarget& destination, UINT destinationTexArrayIndex = -1);
 
 protected:
 

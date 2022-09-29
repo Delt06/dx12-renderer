@@ -10,14 +10,14 @@
 #include "RootSignature.h"
 
 DynamicDescriptorHeap::DynamicDescriptorHeap(const D3D12_DESCRIPTOR_HEAP_TYPE heapType,
-                                             const uint32_t numDescriptorsPerHeap)
+	const uint32_t numDescriptorsPerHeap)
 	: DescriptorHeapType(heapType)
-	  , NumDescriptorsPerHeap(numDescriptorsPerHeap)
-	  , DescriptorTableBitMask(0)
-	  , StaleDescriptorTableBitMask(0)
-	  , CurrentGpuDescriptorHandle(D3D12_DEFAULT)
-	  , CurrentCpuDescriptorHandle(D3D12_DEFAULT)
-	  , NumFreeHandles(0)
+	, NumDescriptorsPerHeap(numDescriptorsPerHeap)
+	, DescriptorTableBitMask(0)
+	, StaleDescriptorTableBitMask(0)
+	, CurrentGpuDescriptorHandle(D3D12_DEFAULT)
+	, CurrentCpuDescriptorHandle(D3D12_DEFAULT)
+	, NumFreeHandles(0)
 {
 	DescriptorHandleIncrementSize = Application::Get().GetDescriptorHandleIncrementSize(heapType);
 
@@ -64,7 +64,7 @@ void DynamicDescriptorHeap::ParseRootSignature(const RootSignature& rootSignatur
 }
 
 void DynamicDescriptorHeap::StageDescriptors(const uint32_t rootParameterIndex, uint32_t offset,
-                                             const uint32_t numDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE srcDescriptor)
+	const uint32_t numDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE srcDescriptor)
 {
 	// Cannot stage more than the maximum number of descriptors per heap.
 	// Cannot stage more than MaxDescriptorTables root parameters.
@@ -142,8 +142,8 @@ ComPtr<ID3D12DescriptorHeap> DynamicDescriptorHeap::CreateDescriptorHeap() const
 }
 
 void DynamicDescriptorHeap::CommitStagedDescriptors(CommandList& commandList,
-                                                    std::function<void(ID3D12GraphicsCommandList*, UINT,
-                                                                       D3D12_GPU_DESCRIPTOR_HANDLE)> setFunc)
+	std::function<void(ID3D12GraphicsCommandList*, UINT,
+		D3D12_GPU_DESCRIPTOR_HANDLE)> setFunc)
 {
 	uint32_t numDescriptorsToCommit = ComputeStaleDescriptorCount();
 
@@ -184,7 +184,7 @@ void DynamicDescriptorHeap::CommitStagedDescriptors(CommandList& commandList,
 
 			// Copy the staged CPU visible descriptors to the GPU visible descriptor heap.
 			device->CopyDescriptors(1, pDestDescriptorRangeStarts, pDestDescriptorRangeSizes, numSrcDescriptors,
-			                        pSrcDescriptorHandles, nullptr, DescriptorHeapType);
+				pSrcDescriptorHandles, nullptr, DescriptorHeapType);
 
 			// Set the descriptors on the command list using the passed-in setter function.
 			setFunc(graphicsCommandList, rootIndex, CurrentGpuDescriptorHandle);
@@ -209,7 +209,7 @@ void DynamicDescriptorHeap::CommitStagedDescriptorsForDispatch(CommandList& comm
 }
 
 D3D12_GPU_DESCRIPTOR_HANDLE DynamicDescriptorHeap::CopyDescriptor(CommandList& commandList,
-                                                                  D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptor)
+	D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptor)
 {
 	if (!CurrentDescriptorHeap || NumFreeHandles < 1)
 	{

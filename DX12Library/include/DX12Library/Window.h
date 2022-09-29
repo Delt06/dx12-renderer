@@ -22,13 +22,13 @@
  *  IN THE SOFTWARE.
  */
 
-/**
- *  @file Window.h
- *  @date October 24, 2018
- *  @author Jeremiah van Oosten
- *
- *  @brief A window for our application.
- */
+ /**
+  *  @file Window.h
+  *  @date October 24, 2018
+  *  @author Jeremiah van Oosten
+  *
+  *  @brief A window for our application.
+  */
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>

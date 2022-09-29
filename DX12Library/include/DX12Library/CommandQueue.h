@@ -23,13 +23,13 @@
  *  IN THE SOFTWARE.
  */
 
-/**
- *  @file CommandQueue.h
- *  @date October 22, 2018
- *  @author Jeremiah van Oosten
- *
- *  @brief Wrapper class for a ID3D12CommandQueue.
- */
+ /**
+  *  @file CommandQueue.h
+  *  @date October 22, 2018
+  *  @author Jeremiah van Oosten
+  *
+  *  @brief Wrapper class for a ID3D12CommandQueue.
+  */
 
 
 #include <d3d12.h>              // For ID3D12CommandQueue, ID3D12Device2, and ID3D12Fence

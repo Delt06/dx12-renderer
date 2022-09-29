@@ -21,7 +21,7 @@ public:
 	DescriptorAllocation();
 
 	explicit DescriptorAllocation(D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle, uint32_t numHandles,
-	                              uint32_t descriptorSize, std::shared_ptr<DescriptorAllocatorPage> page);
+		uint32_t descriptorSize, std::shared_ptr<DescriptorAllocatorPage> page);
 
 	/**
 	 * \brief Automatically frees the allocation.

@@ -60,12 +60,12 @@ void BloomUpsample::Execute(CommandList& commandList, const BloomParameters& par
 
 Shader::ShaderBytecode BloomUpsample::GetVertexShaderBytecode() const
 {
-	return {ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS};
+	return { ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS };
 }
 
 Shader::ShaderBytecode BloomUpsample::GetPixelShaderBytecode() const
 {
-	return {ShaderBytecode_Bloom_Downsample_PS, sizeof ShaderBytecode_Bloom_Downsample_PS};
+	return { ShaderBytecode_Bloom_Downsample_PS, sizeof ShaderBytecode_Bloom_Downsample_PS };
 }
 
 std::vector<Shader::RootParameter> BloomUpsample::GetRootParameters() const

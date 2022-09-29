@@ -24,8 +24,8 @@ public:
 	virtual void SetRenderTarget(CommandList& commandList) const = 0;
 	virtual void ClearShadowMap(CommandList& commandList) const = 0;
 	virtual void SetShadowMapShaderResourceView(CommandList& commandList,
-	                                            uint32_t rootParameterIndex,
-	                                            uint32_t descriptorOffset) const = 0;
+		uint32_t rootParameterIndex,
+		uint32_t descriptorOffset) const = 0;
 
 protected:
 	static constexpr DXGI_FORMAT SHADOW_MAP_FORMAT = DXGI_FORMAT_D32_FLOAT;

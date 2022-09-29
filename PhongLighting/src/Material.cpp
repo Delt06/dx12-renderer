@@ -24,7 +24,7 @@ void Material::SetMapsEmpty(std::shared_ptr<Texture> emptyMap)
 	{
 		Map = emptyMap;
 	}
-	
+
 	m_Constants.HasDiffuseMap = false;
 	m_Constants.HasNormalMap = false;
 	m_Constants.HasSpecularMap = false;

@@ -39,7 +39,7 @@ protected:
 	void OnUpdate(UpdateEventArgs& e) override;
 	void OnRender(RenderEventArgs& e) override;
 
-	
+
 
 	void OnKeyPressed(KeyEventArgs& e) override;
 	void OnKeyReleased(KeyEventArgs& e) override;

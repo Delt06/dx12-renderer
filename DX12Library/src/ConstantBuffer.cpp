@@ -8,7 +8,7 @@
 
 ConstantBuffer::ConstantBuffer(const std::wstring& name)
 	: Buffer(name)
-	  , SizeInBytes(0)
+	, SizeInBytes(0)
 {
 	ConstantBufferView = Application::Get().AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 }

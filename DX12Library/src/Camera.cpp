@@ -4,13 +4,13 @@ using namespace DirectX;
 
 Camera::Camera()
 	: VFov(45.0f)
-	  , AspectRatio(1.0f)
-	  , ZNear(0.1f)
-	  , ZFar(100.0f)
-	  , ViewDirty(true)
-	  , InverseViewDirty(true)
-	  , ProjectionDirty(true)
-	  , InverseProjectionDirty(true)
+	, AspectRatio(1.0f)
+	, ZNear(0.1f)
+	, ZFar(100.0f)
+	, ViewDirty(true)
+	, InverseViewDirty(true)
+	, ProjectionDirty(true)
+	, InverseProjectionDirty(true)
 {
 	PData = static_cast<AlignedData*>(_aligned_malloc(sizeof(AlignedData), ALIGNMENT));
 	PData->Translation = XMVectorZero();
@@ -125,16 +125,16 @@ void Camera::Translate(FXMVECTOR translation, const Space space)
 	switch (space)
 	{
 	case Space::Local:
-		{
-			PData->Translation += XMVector3Rotate(translation, PData->QRotation);
-		}
-		break;
+	{
+		PData->Translation += XMVector3Rotate(translation, PData->QRotation);
+	}
+	break;
 	case Space::World:
-		{
-			PData->Translation += translation;
-		}
-		break;
-	default: ;
+	{
+		PData->Translation += translation;
+	}
+	break;
+	default:;
 	}
 
 	PData->Translation = XMVectorSetW(PData->Translation, 1.0f);
