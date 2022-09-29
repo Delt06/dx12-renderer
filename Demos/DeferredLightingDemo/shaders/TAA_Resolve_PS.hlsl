@@ -34,7 +34,7 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     float2 previousPixelUv = uv - velocity;
     
     float3 currentColor = SampleColorBuffer(uv);
-    float3 historyColor = historyColorBuffer.Sample(linearSampler, uv).rgb;
+    float3 historyColor = historyColorBuffer.Sample(linearSampler, previousPixelUv).rgb;
     
     float3 nearColor0 = SampleColorBufferOffset(uv, int2(1, 0));
     float3 nearColor1 = SampleColorBufferOffset(uv, int2(0, 1));
