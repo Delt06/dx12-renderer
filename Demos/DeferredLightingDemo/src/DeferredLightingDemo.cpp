@@ -1056,7 +1056,7 @@ bool DeferredLightingDemo::LoadContent()
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
 			XMMATRIX scaleMatrix = XMMatrixScaling(30.0f, 30.0f, 30.0f);
 			XMMATRIX worldMatrix = scaleMatrix * translationMatrix * rotationMatrix;
-			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
+			m_GameObjects.emplace_back(worldMatrix, model, material);
 		}
 
 		{
@@ -1070,7 +1070,7 @@ bool DeferredLightingDemo::LoadContent()
 			XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(0, 0, 0);
 			XMMATRIX scaleMatrix = XMMatrixScaling(5.0f, 5.0f, 5.0f);
 			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
+			m_GameObjects.emplace_back(worldMatrix, model, material);
 		}
 
 		{
@@ -1092,7 +1092,7 @@ bool DeferredLightingDemo::LoadContent()
 				XMMatrixRotationRollPitchYaw(XMConvertToRadians(90), XMConvertToRadians(135), XMConvertToRadians(0));
 			XMMATRIX scaleMatrix = XMMatrixScaling(0.10f, 0.10f, 0.10f);
 			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
+			m_GameObjects.emplace_back(worldMatrix, model, material);
 		}
 
 		{
@@ -1119,7 +1119,7 @@ bool DeferredLightingDemo::LoadContent()
 				XMMatrixRotationRollPitchYaw(XMConvertToRadians(90), XMConvertToRadians(-45), XMConvertToRadians(0));
 			XMMATRIX scaleMatrix = XMMatrixScaling(0.30f, 0.30f, 0.30f);
 			XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-			m_GameObjects.push_back(GameObject(worldMatrix, model, material));
+			m_GameObjects.emplace_back(worldMatrix, model, material);
 		}
 
 		{
@@ -1136,7 +1136,7 @@ bool DeferredLightingDemo::LoadContent()
 
 					XMMATRIX translationMatrix = XMMatrixTranslation(x * 1.5f, 5.0f + y * 2.0f, 25.0f);
 					XMMATRIX worldMatrix = translationMatrix;
-					m_GameObjects.push_back(GameObject(worldMatrix, model, material));
+					m_GameObjects.emplace_back(worldMatrix, model, material);
 				}
 			}
 		}
@@ -1155,7 +1155,7 @@ bool DeferredLightingDemo::LoadContent()
 
 				auto positionWS = XMLoadFloat4(&pointLight.PositionWs);
 				auto modelMatrix = XMMatrixTranslationFromVector(positionWS);
-				m_GameObjects.push_back(GameObject(modelMatrix, mesh, material));
+				m_GameObjects.emplace_back(modelMatrix, mesh, material);
 			}
 		}
 
@@ -1209,7 +1209,6 @@ bool DeferredLightingDemo::LoadContent()
 			L"BRDF Integration Map");
 		m_BrdfIntegrationMapRt.AttachTexture(Color0, brdfIntegrationMap);
 
-		auto device = Application::Get().GetDevice();
 		BrdfIntegration brdfIntegrationPso(device, *commandList, diffuseIrradianceMapDesc.Format);
 		brdfIntegrationPso.SetContext(*commandList);
 		brdfIntegrationPso.SetRenderTarget(*commandList, m_BrdfIntegrationMapRt);
@@ -1430,7 +1429,7 @@ void DeferredLightingDemo::OnUpdate(UpdateEventArgs& e)
 
 	if (totalTime > 1.0)
 	{
-		double fps = frameCount / totalTime;
+		double fps = static_cast<double>(frameCount) / totalTime;
 
 		char buffer[512];
 		sprintf_s(buffer, "FPS: %f\n", fps);
@@ -1512,12 +1511,12 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			commandList->SetGraphicsRootSignature(m_GBufferPassRootSignature);
 			commandList->SetPipelineState(m_GBufferPassPipelineState);
 
-			TaaCBuffer taaBuffer;
+			TaaCBuffer taaBuffer{};
 			taaBuffer.JitterOffset = m_TaaEnabled ? m_Taa->ComputeJitterOffset(m_Width, m_Height) : XMFLOAT2(0.0f, 0.0f);
 
 			for (const auto& go : m_GameObjects)
 			{
-				MatricesCb matricesCb;
+				MatricesCb matricesCb{};
 				matricesCb.Compute(go.GetWorldMatrix(), viewMatrix, viewProjectionMatrix, projectionMatrix);
 				commandList->SetGraphicsDynamicConstantBuffer(GBufferRootParameters::MatricesCb, matricesCb);
 
@@ -1581,11 +1580,11 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			PIXScope(*commandList, "Light Passes");
 
 			commandList->SetRenderTarget(m_LightBufferRenderTarget);
-			ScreenParameters screenParameters;
+			ScreenParameters screenParameters{};
 			screenParameters.Width = static_cast<float>(m_Width);
 			screenParameters.Height = static_cast<float>(m_Height);
-			screenParameters.OneOverWidth = 1.0f / m_Width;
-			screenParameters.OneOverHeight = 1.0f / m_Height;
+			screenParameters.OneOverWidth = 1.0f / static_cast<float>(m_Width);
+			screenParameters.OneOverHeight = 1.0f / static_cast<float>(m_Height);
 
 			{
 				PIXScope(*commandList, "Directional Light Pass");
@@ -1645,7 +1644,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 
 				for (const auto& pointLight : m_PointLights)
 				{
-					MatricesCb matricesCb;
+					MatricesCb matricesCb{};
 					XMMATRIX modelMatrix = GetModelMatrix(pointLight);
 					matricesCb.Compute(modelMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
 
@@ -1660,7 +1659,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 
 				for (const auto& spotLight : m_SpotLights)
 				{
-					MatricesCb matricesCb;
+					MatricesCb matricesCb{};
 					XMMATRIX modelMatrix = GetModelMatrix(spotLight);
 					matricesCb.Compute(modelMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
 
@@ -1675,7 +1674,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 
 				for (const auto& capsuleLight : m_CapsuleLights)
 				{
-					MatricesCb matricesCb;
+					MatricesCb matricesCb{};
 					XMMATRIX modelMatrix = GetModelMatrix(capsuleLight);
 					matricesCb.Compute(modelMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
 
@@ -1692,7 +1691,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			commandList->SetGraphicsRootSignature(m_SkyboxPassRootSignature);
 			commandList->SetPipelineState(m_SkyboxPassPipelineState);
 
-			MatricesCb matricesCb;
+			MatricesCb matricesCb{};
 			const XMMATRIX
 				modelMatrix = XMMatrixScaling(2, 2, 2) * XMMatrixTranslationFromVector(m_Camera.GetTranslation());
 			matricesCb.Compute(modelMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);

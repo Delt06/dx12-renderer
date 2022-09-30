@@ -64,7 +64,7 @@ private:
 		DepthStencil
 	};
 
-	AttachmentPoint GetGBufferTextureAttachmentPoint(GBufferTextureType type);
+	static AttachmentPoint GetGBufferTextureAttachmentPoint(GBufferTextureType type);
 	const Texture& GetGBufferTexture(GBufferTextureType type);
 
 	void LightStencilPass(CommandList& commandList, const MatricesCb& matricesCb, std::shared_ptr<Mesh> mesh);
