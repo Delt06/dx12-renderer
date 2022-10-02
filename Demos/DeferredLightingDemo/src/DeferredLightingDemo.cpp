@@ -40,10 +40,31 @@ using namespace DirectX;
 #include <TaaCBuffer.h>
 #include <Taa.h>
 #include <DX12Library/ShaderUtils.h>
+#include <DX12Library/ClearValue.h>
 
 #if defined(max)
 #undef max
 #endif
+
+namespace
+{
+	constexpr DXGI_FORMAT gBufferFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	constexpr DXGI_FORMAT lightBufferFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	constexpr DXGI_FORMAT resultFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	constexpr DXGI_FORMAT depthBufferFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	constexpr UINT gBufferTexturesCount = 5;
+
+	namespace ClearColors
+	{
+		constexpr FLOAT CLEAR_COLOR[] = { 0.4f, 0.6f, 0.9f, 1.0f };
+		constexpr FLOAT VELOCITY_CLEAR_COLOR[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+		constexpr FLOAT LIGHT_BUFFER_CLEAR_COLOR[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	}
+
+	static ClearValue gBufferColorClearValue = ClearValue(gBufferFormat, ClearColors::CLEAR_COLOR);
+	static ClearValue velocityColorClearValue = ClearValue(gBufferFormat, ClearColors::VELOCITY_CLEAR_COLOR);
+	static ClearValue lightBufferColorClearValue = ClearValue(lightBufferFormat, ClearColors::LIGHT_BUFFER_CLEAR_COLOR);
+}
 
 namespace
 {
@@ -86,9 +107,6 @@ namespace
 	}
 
 	bool allowFullscreenToggle = true;
-	constexpr FLOAT CLEAR_COLOR[] = { 0.4f, 0.6f, 0.9f, 1.0f };
-	constexpr FLOAT VELOCITY_CLEAR_COLOR[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	constexpr FLOAT LIGHT_BUFFER_CLEAR_COLOR[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 	// Builds a look-at (world) matrix from a point, up and direction vectors.
 	XMMATRIX XM_CALLCONV
@@ -322,24 +340,6 @@ bool DeferredLightingDemo::LoadContent()
 		m_WhiteTexture2d = std::make_shared<Texture>();
 		commandList->LoadTextureFromFile(*m_WhiteTexture2d, L"Assets/Textures/white.png");
 	}
-
-	constexpr DXGI_FORMAT gBufferFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	constexpr DXGI_FORMAT lightBufferFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	constexpr DXGI_FORMAT resultFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-	constexpr DXGI_FORMAT depthBufferFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	constexpr UINT gBufferTexturesCount = 5;
-
-	D3D12_CLEAR_VALUE gBufferColorClearValue;
-	gBufferColorClearValue.Format = gBufferFormat;
-	memcpy(gBufferColorClearValue.Color, CLEAR_COLOR, sizeof CLEAR_COLOR);
-
-	D3D12_CLEAR_VALUE velocityColorClearValue;
-	velocityColorClearValue.Format = gBufferFormat;
-	memcpy(velocityColorClearValue.Color, VELOCITY_CLEAR_COLOR, sizeof VELOCITY_CLEAR_COLOR);
-
-	D3D12_CLEAR_VALUE lightBufferColorClearValue{};
-	lightBufferColorClearValue.Format = lightBufferFormat;
-	memcpy(lightBufferColorClearValue.Color, LIGHT_BUFFER_CLEAR_COLOR, sizeof LIGHT_BUFFER_CLEAR_COLOR);
 
 	// create GBuffer root signature and pipeline state
 	{
@@ -1295,19 +1295,19 @@ bool DeferredLightingDemo::LoadContent()
 			1, 0,
 			D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 
-		auto diffuseTexture = Texture(colorDesc, &gBufferColorClearValue,
+		auto diffuseTexture = Texture(colorDesc, gBufferColorClearValue,
 			TextureUsageType::RenderTarget,
 			L"GBuffer-Diffuse");
 
-		auto normalTexture = Texture(colorDesc, &gBufferColorClearValue,
+		auto normalTexture = Texture(colorDesc, gBufferColorClearValue,
 			TextureUsageType::RenderTarget,
 			L"GBuffer-Normal");
 
-		auto surfaceTexture = Texture(colorDesc, &gBufferColorClearValue,
+		auto surfaceTexture = Texture(colorDesc, gBufferColorClearValue,
 			TextureUsageType::RenderTarget,
 			L"GBuffer-Surface");
 
-		auto velocityTexture = Texture(colorDesc, &velocityColorClearValue,
+		auto velocityTexture = Texture(colorDesc, velocityColorClearValue,
 			TextureUsageType::RenderTarget,
 			L"GBuffer-Velocity");
 
@@ -1333,7 +1333,7 @@ bool DeferredLightingDemo::LoadContent()
 			1, 0,
 			D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 
-		auto lightBuffer = Texture(colorDesc, &lightBufferColorClearValue,
+		auto lightBuffer = Texture(colorDesc, lightBufferColorClearValue,
 			TextureUsageType::RenderTarget,
 			L"Light Buffer");
 
@@ -1486,14 +1486,14 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			{
 				PIXScope(*commandList, "Clear GBuffer");
 				commandList->ClearRenderTarget(m_GBufferRenderTarget,
-					CLEAR_COLOR,
+					gBufferColorClearValue,
 					D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL);
-				commandList->ClearTexture(GetGBufferTexture(GBufferTextureType::Velocity), VELOCITY_CLEAR_COLOR);
+				commandList->ClearTexture(GetGBufferTexture(GBufferTextureType::Velocity), velocityColorClearValue);
 			}
 
 			{
 				PIXScope(*commandList, "Clear Light Buffer");
-				commandList->ClearTexture(m_LightBufferRenderTarget.GetTexture(Color0), LIGHT_BUFFER_CLEAR_COLOR);
+				commandList->ClearTexture(m_LightBufferRenderTarget.GetTexture(Color0), lightBufferColorClearValue);
 			}
 		}
 

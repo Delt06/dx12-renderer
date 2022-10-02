@@ -396,6 +396,11 @@ void CommandList::ClearTexture(const Texture& texture, const float clearColor[4]
 	TrackResource(texture);
 }
 
+void CommandList::ClearTexture(const Texture& texture, const ClearValue& clearValue)
+{
+	ClearTexture(texture, clearValue.GetColor());
+}
+
 void CommandList::ClearDepthStencilTexture(const Texture& texture, const D3D12_CLEAR_FLAGS clearFlags,
 	const float depth, const uint8_t stencil)
 {
@@ -824,6 +829,11 @@ void CommandList::ClearRenderTarget(const RenderTarget& renderTarget, const floa
 	{
 		ClearDepthStencilTexture(depthTexture, clearFlags);
 	}
+}
+
+void CommandList::ClearRenderTarget(const RenderTarget& renderTarget, const ClearValue& clearColor, D3D12_CLEAR_FLAGS clearFlags)
+{
+	ClearRenderTarget(renderTarget, clearColor.GetColor(), clearFlags);
 }
 
 void CommandList::Draw(const uint32_t vertexCount, const uint32_t instanceCount, const uint32_t startVertex,

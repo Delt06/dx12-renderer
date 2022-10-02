@@ -46,6 +46,7 @@
 #include <vector> // for std::vector
 
 #include "GenerateMipsPso.h"
+#include "ClearValue.h"
 
 class Buffer;
 class ByteAddressBuffer;
@@ -200,6 +201,7 @@ public:
 	 * Clear a texture.
 	 */
 	void ClearTexture(const Texture& texture, const float clearColor[4]);
+	void ClearTexture(const Texture& texture, const ClearValue& clearValue);
 
 	/**
 	 * Clear depth/stencil texture.
@@ -376,6 +378,7 @@ public:
 	void SetRenderTarget(const RenderTarget& renderTarget, UINT texArrayIndex = -1, UINT mipLevel = 0, bool useDepth = true);
 
 	void ClearRenderTarget(const RenderTarget& renderTarget, const float* clearColor, const D3D12_CLEAR_FLAGS clearFlags);
+	void ClearRenderTarget(const RenderTarget& renderTarget, const ClearValue& clearValue, const D3D12_CLEAR_FLAGS clearFlags);
 
 	/**
 	 * Draw geometry.

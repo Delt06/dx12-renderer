@@ -44,6 +44,7 @@
 #include <unordered_map>
 
 #include "Application.h"
+#include "ClearValue.h"
 
 class Texture : public Resource
 {
@@ -52,6 +53,10 @@ public:
 		const std::wstring& name = L"");
 	explicit Texture(const D3D12_RESOURCE_DESC& resourceDesc,
 		const D3D12_CLEAR_VALUE* clearValue = nullptr,
+		TextureUsageType textureUsage = TextureUsageType::Albedo,
+		const std::wstring& name = L"");
+	explicit Texture(const D3D12_RESOURCE_DESC& resourceDesc,
+		const ClearValue& clearValue = {},
 		TextureUsageType textureUsage = TextureUsageType::Albedo,
 		const std::wstring& name = L"");
 	explicit Texture(Microsoft::WRL::ComPtr<ID3D12Resource> resource,

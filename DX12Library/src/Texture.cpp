@@ -12,6 +12,12 @@ Texture::Texture(TextureUsageType textureUsage, const std::wstring& name)
 {
 }
 
+Texture::Texture(const D3D12_RESOURCE_DESC& resourceDesc, const ClearValue& clearValue /*= {}*/, TextureUsageType textureUsage /*= TextureUsageType::Albedo*/, const std::wstring& name /*= L""*/)
+	: Texture(resourceDesc, clearValue.GetD3D12ClearValue(), textureUsage, name)
+{
+
+}
+
 Texture::Texture(const D3D12_RESOURCE_DESC& resourceDesc,
 	const D3D12_CLEAR_VALUE* clearValue,
 	TextureUsageType textureUsage,
@@ -42,6 +48,8 @@ Texture::Texture(Texture&& copy)
 {
 	CreateViews();
 }
+
+
 
 Texture& Texture::operator=(const Texture& other)
 {
