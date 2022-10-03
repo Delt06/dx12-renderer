@@ -1,11 +1,24 @@
 #include <SSR/Ssr.h>
 #include <DX12Library/Helpers.h>
 
-Ssr::Ssr(Shader::Format renderTargetFormat, const D3D12_SHADER_RESOURCE_VIEW_DESC& depthSrv, uint32_t width, uint32_t height)
+Ssr::Ssr(Shader::Format renderTargetFormat, const D3D12_SHADER_RESOURCE_VIEW_DESC& depthSrv, uint32_t width, uint32_t height, bool downsample)
 	: m_Trace(renderTargetFormat)
+	, m_Downsample(downsample)
 	, m_DepthSrv(depthSrv)
 	, m_BlurPass(renderTargetFormat)
 {
+	const auto sceneColorDesc = CD3DX12_RESOURCE_DESC::Tex2D(
+		renderTargetFormat, width, height,
+		1, 1
+	);
+	m_SceneColor = Texture(sceneColorDesc, nullptr, TextureUsageType::Other, L"SSR Scene Color");
+
+	if (m_Downsample)
+	{
+		width >>= 1;
+		height >>= 1;
+	}
+	
 	m_Trace.SetDepthSrv(&m_DepthSrv);
 
 	const auto traceRtDesc = CD3DX12_RESOURCE_DESC::Tex2D(
@@ -24,19 +37,20 @@ Ssr::Ssr(Shader::Format renderTargetFormat, const D3D12_SHADER_RESOURCE_VIEW_DES
 		1, 1
 	);
 	m_EmptyReflections = Texture(emptyDesc, nullptr, TextureUsageType::Other, L"SSR Empty Reflections");
-
-	const auto sceneColorDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-		renderTargetFormat, width, height,
-		1, 1
-	);
-	m_SceneColor = Texture(sceneColorDesc, nullptr, TextureUsageType::Other, L"SSR Scene Color");
 }
 
 void Ssr::Resize(uint32_t width, uint32_t height)
 {
+	m_SceneColor.Resize(width, height);
+
+	if (m_Downsample)
+	{
+		width >>= 1;
+		height >>= 1;
+	}
+
 	m_TraceRenderTarget.Resize(width, height);
 	m_FinalReflectionsTexture.Resize(width, height);
-	m_SceneColor.Resize(width, height);
 }
 
 void Ssr::CaptureSceneColor(CommandList& commandList, const Texture& source)

@@ -13,7 +13,7 @@ class Mesh;
 class Ssao
 {
 public:
-	explicit Ssao(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT gBufferFormat, uint32_t width, uint32_t height);
+	explicit Ssao(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT gBufferFormat, uint32_t width, uint32_t height, bool downsample);
 
 	void Resize(uint32_t width, uint32_t height);
 
@@ -21,6 +21,8 @@ public:
 	void BlurPass(CommandList& commandList, const RenderTarget& surfaceRenderTarget);
 
 private:
+	bool m_Downsample;
+
 	RenderTarget m_RenderTarget;
 	std::shared_ptr<Mesh> m_BlitMesh;
 	D3D12_RECT m_ScissorRect;

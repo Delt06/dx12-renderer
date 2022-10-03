@@ -64,11 +64,18 @@ namespace
 	}
 }
 
-Ssao::Ssao(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT gBufferFormat, uint32_t width, uint32_t height)
+Ssao::Ssao(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT gBufferFormat, uint32_t width, uint32_t height, bool downsample)
 	: m_BlitMesh(Mesh::CreateBlitTriangle(commandList))
+	, m_Downsample(downsample)
 	, m_ScissorRect(CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX))
 {
 	DXGI_FORMAT ssaoFormat = DXGI_FORMAT_R8_UNORM;
+
+	if (m_Downsample)
+	{
+		width >>= 1;
+		height >>= 1;
+	}
 
 	// Create SSAO RT
 	{
@@ -284,6 +291,12 @@ Ssao::Ssao(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandLis
 
 void Ssao::Resize(uint32_t width, uint32_t height)
 {
+	if (m_Downsample)
+	{
+		width >>= 1;
+		height >>= 1;
+	}
+
 	m_RenderTarget.Resize(width, height);
 }
 

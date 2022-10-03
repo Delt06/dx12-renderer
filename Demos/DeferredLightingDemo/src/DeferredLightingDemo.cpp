@@ -887,12 +887,12 @@ bool DeferredLightingDemo::LoadContent()
 		}
 
 		{
-			m_Ssao = std::make_unique<Ssao>(device, *commandList, gBufferFormat, m_Width, m_Height);
+			m_Ssao = std::make_unique<Ssao>(device, *commandList, gBufferFormat, m_Width, m_Height, true);
 		}
 
 		{
 			D3D12_SHADER_RESOURCE_VIEW_DESC depthTextureSrv = GetDepthTextureSrv();
-			m_Ssr = std::make_unique<Ssr>(lightBufferFormat, depthTextureSrv, m_Width, m_Height);
+			m_Ssr = std::make_unique<Ssr>(lightBufferFormat, depthTextureSrv, m_Width, m_Height, true);
 			m_Ssr->Init(device, *commandList);
 		}
 

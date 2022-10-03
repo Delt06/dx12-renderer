@@ -1,4 +1,4 @@
-#define BLUR_KERNEL_HALF_SIZE 2
+#define BLUR_KERNEL_HALF_SIZE 3
 #define BLUR_KERNEL_SIZE (BLUR_KERNEL_HALF_SIZE * 2)
 
 struct PixelShaderInput

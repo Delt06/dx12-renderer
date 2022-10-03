@@ -4,7 +4,7 @@
 class Ssr final : public EffectBase
 {
 public:
-	explicit Ssr(Shader::Format renderTargetFormat, const D3D12_SHADER_RESOURCE_VIEW_DESC& depthSrv, uint32_t width, uint32_t height);
+	explicit Ssr(Shader::Format renderTargetFormat, const D3D12_SHADER_RESOURCE_VIEW_DESC& depthSrv, uint32_t width, uint32_t height, bool downsample);
 
 	void Resize(uint32_t width, uint32_t height);
 
@@ -20,6 +20,8 @@ public:
 	[[nodiscard]] const Texture& GetEmptyReflectionsTexture() const;
 
 private:
+	bool m_Downsample;
+
 	Texture m_SceneColor{};
 
 	SsrTrace m_Trace;

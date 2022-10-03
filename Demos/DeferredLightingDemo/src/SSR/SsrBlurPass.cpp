@@ -47,7 +47,7 @@ void SsrBlurPass::Execute(CommandList& commandList, const Texture& traceResult, 
 		1.0f / static_cast<float>(traceResultDesc.Height)
 	};
 	cbuffer.Size = 1;
-	cbuffer.Separation = 1.0f;
+	cbuffer.Separation = 0.5f;
 	commandList.SetGraphics32BitConstants(RootParameters::CBuffer, cbuffer);
 
 	m_BlitMesh->Draw(commandList);
@@ -62,7 +62,7 @@ std::vector<Shader::StaticSampler> SsrBlurPass::GetStaticSamplers() const
 {
 	return
 	{
-		StaticSampler(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP)
+		StaticSampler(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP)
 	};
 }
 
