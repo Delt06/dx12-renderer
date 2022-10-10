@@ -121,9 +121,6 @@ public:
 	bool CheckFormatSupport(D3D12_FORMAT_SUPPORT1 formatSupport) const;
 	bool CheckFormatSupport(D3D12_FORMAT_SUPPORT2 formatSupport) const;
 
-	int m_Abc;
-
-
 protected:
 	// The underlying D3D12 resource.
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_d3d12Resource;

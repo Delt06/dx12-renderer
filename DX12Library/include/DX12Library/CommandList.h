@@ -47,6 +47,7 @@
 
 #include "GenerateMipsPso.h"
 #include "ClearValue.h"
+#include "RenderTargetFormats.h"
 
 class Buffer;
 class ByteAddressBuffer;
@@ -335,7 +336,7 @@ public:
 	/**
 	 * Set the pipeline state object on the command list.
 	 */
-	void SetPipelineState(Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState);
+	void SetPipelineState(const Microsoft::WRL::ComPtr<ID3D12PipelineState>& pipelineState);
 
 	/**
 	 * Set the current root signature on the command list.
@@ -434,9 +435,11 @@ public:
 
 	void SetComputeRootUnorderedAccessView(UINT rootParameterIndex, const Resource& resource);
 
+	const RenderTargetFormats& GetLastRenderTargetFormats() const { return m_LastRenderTargetFormats; }
+
 protected:
 private:
-	void TrackObject(Microsoft::WRL::ComPtr<ID3D12Object> object);
+	void TrackObject(const Microsoft::WRL::ComPtr<ID3D12Object>& object);
 	void TrackResource(const Resource& res);
 
 	// Generate mips for UAV compatible textures.
@@ -498,6 +501,8 @@ private:
 	// is stored. The referenced objects are released when the command list is
 	// reset.
 	TrackedObjectsType m_TrackedObjects;
+
+	RenderTargetFormats m_LastRenderTargetFormats;
 
 	// Keep track of loaded textures to avoid loading the same texture multiple times.
 	static std::map<std::wstring, ID3D12Resource*> m_TextureCache;

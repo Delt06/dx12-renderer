@@ -1,12 +1,12 @@
 #pragma once
 
-#include <Framework/Shader.h>
+#include <Framework/CompositeEffect.h>
 #include <Framework/Mesh.h>
 
-class SsrBlurPass final : public Shader
+class SsrBlurPass final : public CompositeEffect
 {
 public:
-	explicit SsrBlurPass(Shader::Format renderTargetFormat);
+	explicit SsrBlurPass(CompositeEffect::Format renderTargetFormat);
 
 	void Execute(CommandList& commandList, const Texture& traceResult, const RenderTarget& renderTarget) const;
 
@@ -25,7 +25,7 @@ protected:
 	ShaderBytecode GetPixelShaderBytecode() const override;
 
 private:
-	Shader::Format m_RenderTargetFormat;
+	CompositeEffect::Format m_RenderTargetFormat;
 	std::shared_ptr<Mesh> m_BlitMesh = nullptr;
 
 	std::vector<RootParameter> m_RootParameters;

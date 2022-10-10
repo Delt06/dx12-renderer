@@ -1,6 +1,7 @@
 #include <Model.h>
 #include <Framework/Mesh.h>
 #include <DX12Library/CommandList.h>
+#include <Framework/Material.h>
 
 Model::Model(const MeshCollectionType& meshes)
 	: m_Meshes(meshes)
@@ -22,6 +23,11 @@ Model::~Model() = default;
 
 void Model::Draw(CommandList& commandList) const
 {
+	if (m_Material != nullptr)
+	{
+		m_Material->Bind(commandList);
+	}
+
 	for (const auto& mesh : m_Meshes)
 	{
 		mesh->Draw(commandList);

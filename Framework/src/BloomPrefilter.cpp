@@ -62,27 +62,27 @@ void BloomPrefilter::Execute(CommandList& commandList, const BloomParameters& pa
 	m_BlitMesh->Draw(commandList);
 }
 
-Shader::ShaderBytecode BloomPrefilter::GetVertexShaderBytecode() const
+CompositeEffect::ShaderBytecode BloomPrefilter::GetVertexShaderBytecode() const
 {
 	return ShaderBytecode(ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS);
 }
 
-Shader::ShaderBytecode BloomPrefilter::GetPixelShaderBytecode() const
+CompositeEffect::ShaderBytecode BloomPrefilter::GetPixelShaderBytecode() const
 {
 	return ShaderBytecode(ShaderBytecode_Bloom_Prefilter_PS, sizeof ShaderBytecode_Bloom_Prefilter_PS);
 }
 
-std::vector<Shader::RootParameter> BloomPrefilter::GetRootParameters() const
+std::vector<CompositeEffect::RootParameter> BloomPrefilter::GetRootParameters() const
 {
 	return m_RootParameters;
 }
 
-std::vector<Shader::StaticSampler> BloomPrefilter::GetStaticSamplers() const
+std::vector<CompositeEffect::StaticSampler> BloomPrefilter::GetStaticSamplers() const
 {
 	return m_StaticSamplers;
 }
 
-Shader::Format BloomPrefilter::GetRenderTargetFormat() const
+CompositeEffect::Format BloomPrefilter::GetRenderTargetFormat() const
 {
 	return m_BackBufferFormat;
 }

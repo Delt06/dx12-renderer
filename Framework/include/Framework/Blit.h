@@ -5,17 +5,17 @@
 #include <wrl.h>
 #include <DX12Library/RootSignature.h>
 #include <memory>
-#include "Framework/Shader.h"
+#include "Framework/CompositeEffect.h"
 
 class CommandList;
 class Mesh;
 class Texture;
 class RenderTarget;
 
-class Blit final : public Shader
+class Blit final : public CompositeEffect
 {
 public:
-	[[maybe_unused]] Blit(Shader::Format renderTargetFormat, bool linearFilter = false);
+	[[maybe_unused]] Blit(CompositeEffect::Format renderTargetFormat, bool linearFilter = false);
 
 	void Execute(CommandList& commandList, const Texture& source, RenderTarget& destination, UINT destinationTexArrayIndex = -1);
 
@@ -38,7 +38,7 @@ protected:
 	ShaderBytecode GetPixelShaderBytecode() const override;
 
 private:
-	Shader::Format m_RenderTargetFormat;
+	CompositeEffect::Format m_RenderTargetFormat;
 	bool m_LinearFilter;
 	std::shared_ptr<Mesh> m_BlitMesh = nullptr;
 };

@@ -10,7 +10,7 @@ set(HEADER_FILES
         "include/Framework/EffectBase.h"
         "include/Framework/Mesh.h"
         "include/Framework/Model.h"
-        "include/Framework/Shader.h"
+        "include/Framework/CompositeEffect.h"
         "include/Framework/GameObject.h"
         "include/Framework/Light.h"
         "include/Framework/MatricesCb.h"
@@ -22,7 +22,8 @@ set(HEADER_FILES
         "include/Framework/Bloom.h"
         "include/Framework/BloomPrefilter.h"
         "include/Framework/BloomDownsample.h"
-        "include/Framework/BloomUpsample.h")
+        "include/Framework/BloomUpsample.h" 
+        "include/Framework/CommonRootSignature.h" "include/Framework/PipelineStateBuilder.h" "include/Framework/Shader.h" "include/Framework/Material.h" "include/Framework/ShaderResourceView.h")
 
 set(SOURCE_FILES
         "src/Aabb.cpp"
@@ -32,7 +33,7 @@ set(SOURCE_FILES
         "src/Framework.cpp"
         "src/Mesh.cpp"
         "src/Model.cpp"
-        "src/Shader.cpp"
+        "src/CompositeEffect.cpp"
         "src/GameObject.cpp"
         "src/Light.cpp"
         "src/MatricesCb.cpp"
@@ -41,7 +42,8 @@ set(SOURCE_FILES
         "src/Bloom.cpp"
         "src/BloomPrefilter.cpp"
         "src/BloomDownsample.cpp"
-        "src/BloomUpsample.cpp")
+        "src/BloomUpsample.cpp" 
+        "src/CommonRootSignature.cpp" "src/PipelineStateBuilder.cpp" "src/Shader.cpp" "src/Material.cpp")
 
 set(SHADER_FILES_VERTEX
         "shaders/Blit_VS.hlsl"

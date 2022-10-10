@@ -1,10 +1,10 @@
 #pragma once
-#include <Framework/Shader.h>
+#include <Framework/CompositeEffect.h>
 #include <DirectXMath.h>
 
 class Mesh;
 
-class SsrTrace final : public Shader
+class SsrTrace final : public CompositeEffect
 {
 public:
 	explicit SsrTrace(Format renderTargetFormat);

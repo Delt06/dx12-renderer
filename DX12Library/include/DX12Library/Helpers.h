@@ -24,6 +24,14 @@ inline void ThrowIfNegative(const int value)
 	}
 }
 
+inline void Assert(const bool condition, const char* message)
+{
+	if (condition)
+	{
+		throw std::exception(message);
+	}
+}
+
 #define PIXScope(commandList, eventName) PIXScopedEvent((commandList).GetGraphicsCommandList().Get(), PIX_COLOR_DEFAULT, eventName);
 #define PIXScopeCPU(eventName) PIXScopedEvent(PIX_COLOR_DEFAULT, eventName);
 

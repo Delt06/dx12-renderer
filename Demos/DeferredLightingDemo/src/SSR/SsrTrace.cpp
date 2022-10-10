@@ -73,12 +73,12 @@ void SsrTrace::Execute(CommandList& commandList, const Texture& sceneColor, cons
 	m_BlitMesh->Draw(commandList);
 }
 
-std::vector<Shader::RootParameter> SsrTrace::GetRootParameters() const
+std::vector<CompositeEffect::RootParameter> SsrTrace::GetRootParameters() const
 {
 	return m_RootParameters;
 }
 
-std::vector<Shader::StaticSampler> SsrTrace::GetStaticSamplers() const
+std::vector<CompositeEffect::StaticSampler> SsrTrace::GetStaticSamplers() const
 {
 	return
 	{
@@ -86,7 +86,7 @@ std::vector<Shader::StaticSampler> SsrTrace::GetStaticSamplers() const
 	};
 }
 
-Shader::Format SsrTrace::GetRenderTargetFormat() const
+CompositeEffect::Format SsrTrace::GetRenderTargetFormat() const
 {
 	return m_RenderTargetFormat;
 }
@@ -96,12 +96,12 @@ void SsrTrace::OnPostInit(Microsoft::WRL::ComPtr<IDevice> device, CommandList& c
 	m_BlitMesh = Mesh::CreateBlitTriangle(commandList);
 }
 
-Shader::ShaderBytecode SsrTrace::GetVertexShaderBytecode() const
+CompositeEffect::ShaderBytecode SsrTrace::GetVertexShaderBytecode() const
 {
 	return ShaderBytecode(ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS);
 }
 
-Shader::ShaderBytecode SsrTrace::GetPixelShaderBytecode() const
+CompositeEffect::ShaderBytecode SsrTrace::GetPixelShaderBytecode() const
 {
 	return ShaderBytecode(m_PixelShader.Get());
 }

@@ -22,7 +22,7 @@ namespace
 	}
 }
 
-[[maybe_unused]] Blit::Blit(Shader::Format renderTargetFormat, bool linearFilter /*= false*/)
+[[maybe_unused]] Blit::Blit(CompositeEffect::Format renderTargetFormat, bool linearFilter /*= false*/)
 	: m_RenderTargetFormat(renderTargetFormat)
 	, m_LinearFilter(linearFilter)
 {
@@ -41,7 +41,7 @@ void Blit::Execute(CommandList& commandList, const Texture& source, RenderTarget
 	m_BlitMesh->Draw(commandList);
 }
 
-std::vector<Shader::RootParameter> Blit::GetRootParameters() const
+std::vector<CompositeEffect::RootParameter> Blit::GetRootParameters() const
 {
 	DescriptorRange sourceDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
@@ -51,13 +51,13 @@ std::vector<Shader::RootParameter> Blit::GetRootParameters() const
 	return rootParameters;
 }
 
-std::vector<Shader::StaticSampler> Blit::GetStaticSamplers() const
+std::vector<CompositeEffect::StaticSampler> Blit::GetStaticSamplers() const
 {
 	auto filter = m_LinearFilter ? D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR : D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT;
-	return { Shader::StaticSampler(0, filter, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP) };
+	return { CompositeEffect::StaticSampler(0, filter, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP) };
 }
 
-Shader::Format Blit::GetRenderTargetFormat() const
+CompositeEffect::Format Blit::GetRenderTargetFormat() const
 {
 	return m_RenderTargetFormat;
 }
@@ -67,12 +67,12 @@ void Blit::OnPostInit(Microsoft::WRL::ComPtr<IDevice> device, CommandList& comma
 	m_BlitMesh = Mesh::CreateBlitTriangle(commandList);
 }
 
-Shader::ShaderBytecode Blit::GetVertexShaderBytecode() const
+CompositeEffect::ShaderBytecode Blit::GetVertexShaderBytecode() const
 {
 	return ShaderBytecode(ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS);
 }
 
-Shader::ShaderBytecode Blit::GetPixelShaderBytecode() const
+CompositeEffect::ShaderBytecode Blit::GetPixelShaderBytecode() const
 {
 	return ShaderBytecode(ShaderBytecode_Blit_PS, sizeof ShaderBytecode_Blit_PS);
 }

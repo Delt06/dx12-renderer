@@ -38,7 +38,7 @@ set(HEADER_FILES
         include/DX12Library/UploadBuffer.h
         include/DX12Library/VertexBuffer.h
         include/DX12Library/Window.h
-        include/DX12Library/ClearValue.h)
+        include/DX12Library/ClearValue.h "include/DX12Library/RenderTargetFormats.h")
 
 set(SOURCE_FILES
         

@@ -672,7 +672,7 @@ void CommandList::SetScissorRects(const std::vector<D3D12_RECT>& scissorRects)
 		scissorRects.data());
 }
 
-void CommandList::SetPipelineState(const ComPtr<ID3D12PipelineState> pipelineState)
+void CommandList::SetPipelineState(const Microsoft::WRL::ComPtr<ID3D12PipelineState>& pipelineState)
 {
 	m_D3d12CommandList->SetPipelineState(pipelineState.Get());
 
@@ -808,6 +808,8 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, UINT texArra
 
 	m_D3d12CommandList->OMSetRenderTargets(static_cast<UINT>(renderTargetDescriptors.size()),
 		renderTargetDescriptors.data(), FALSE, pDsv);
+
+	m_LastRenderTargetFormats = RenderTargetFormats(renderTarget);
 }
 
 void CommandList::ClearRenderTarget(const RenderTarget& renderTarget, const float* clearColor, D3D12_CLEAR_FLAGS clearFlags)
@@ -916,7 +918,7 @@ void CommandList::Reset()
 	m_ComputeCommandList = nullptr;
 }
 
-void CommandList::TrackObject(const ComPtr<ID3D12Object> object)
+void CommandList::TrackObject(const Microsoft::WRL::ComPtr<ID3D12Object>& object)
 {
 	m_TrackedObjects.push_back(object);
 }

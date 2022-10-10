@@ -1,5 +1,5 @@
 #pragma once
-#include "Shader.h"
+#include "CompositeEffect.h"
 #include <memory>
 #include <vector>
 #include <Framework/BloomParameters.h>
@@ -9,7 +9,7 @@
 
 class Mesh;
 
-class BloomDownsample final : public Shader
+class BloomDownsample final : public CompositeEffect
 {
 public:
 	explicit BloomDownsample(Format backBufferFormat);

@@ -1,11 +1,11 @@
 #pragma once
 
-#include <Framework/Shader.h>
+#include <Framework/CompositeEffect.h>
 #include "BloomParameters.h"
 
 class Mesh;
 
-class BloomUpsample final : public Shader
+class BloomUpsample final : public CompositeEffect
 {
 public:
 	explicit BloomUpsample(Format backBufferFormat);

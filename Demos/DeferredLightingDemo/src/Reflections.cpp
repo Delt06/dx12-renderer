@@ -17,7 +17,7 @@ namespace
 	}
 }
 
-Reflections::Reflections(Shader::Format renderTargetFormat)
+Reflections::Reflections(CompositeEffect::Format renderTargetFormat)
 	: m_RenderTargetFormat(renderTargetFormat)
 	, m_RootParameters(RootParameters::NumRootParameters)
 	, m_BlitMesh(nullptr)
@@ -26,8 +26,8 @@ Reflections::Reflections(Shader::Format renderTargetFormat)
 	, m_PixelShader(LoadShaderFromFile(L"DeferredLightingDemo_LightBuffer_Reflections_PS.cso"))
 {
 	const UINT gBufferTexturesCount = 4;
-	m_GBufferDescriptorRange = Shader::DescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, gBufferTexturesCount, 0);
-	m_ReflectionsDescriptorRange = Shader::DescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, gBufferTexturesCount);
+	m_GBufferDescriptorRange = CompositeEffect::DescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, gBufferTexturesCount, 0);
+	m_ReflectionsDescriptorRange = CompositeEffect::DescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, gBufferTexturesCount);
 
 	m_RootParameters[RootParameters::MatricesCB].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
 	m_RootParameters[RootParameters::GBuffer].InitAsDescriptorTable(1, &m_GBufferDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
@@ -60,28 +60,28 @@ void Reflections::Draw(CommandList& commandList, const RenderTarget& gBufferRend
 	m_BlitMesh->Draw(commandList);
 }
 
-std::vector<Shader::RootParameter> Reflections::GetRootParameters() const
+std::vector<CompositeEffect::RootParameter> Reflections::GetRootParameters() const
 {
 	return m_RootParameters;
 }
 
-std::vector<Shader::StaticSampler> Reflections::GetStaticSamplers() const
+std::vector<CompositeEffect::StaticSampler> Reflections::GetStaticSamplers() const
 {
-	auto gBufferSampler = Shader::StaticSampler(0, D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
+	auto gBufferSampler = CompositeEffect::StaticSampler(0, D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
 	gBufferSampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
-	auto skyboxSampler = Shader::StaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
+	auto skyboxSampler = CompositeEffect::StaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
 	skyboxSampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
 	return { skyboxSampler, gBufferSampler };
 }
 
-Shader::Format Reflections::GetRenderTargetFormat() const
+CompositeEffect::Format Reflections::GetRenderTargetFormat() const
 {
 	return m_RenderTargetFormat;
 }
 
-Shader::BlendMode Reflections::GetBlendMode() const
+CompositeEffect::BlendMode Reflections::GetBlendMode() const
 {
 	return AdditiveBlend();
 }
@@ -91,12 +91,12 @@ void Reflections::OnPostInit(Microsoft::WRL::ComPtr<IDevice> device, CommandList
 	m_BlitMesh = Mesh::CreateBlitTriangle(commandList);
 }
 
-Shader::ShaderBytecode Reflections::GetVertexShaderBytecode() const
+CompositeEffect::ShaderBytecode Reflections::GetVertexShaderBytecode() const
 {
 	return ShaderBytecode(ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS);
 }
 
-Shader::ShaderBytecode Reflections::GetPixelShaderBytecode() const
+CompositeEffect::ShaderBytecode Reflections::GetPixelShaderBytecode() const
 {
 	return ShaderBytecode(m_PixelShader.Get());
 }

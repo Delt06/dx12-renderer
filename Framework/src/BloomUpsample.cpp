@@ -58,27 +58,27 @@ void BloomUpsample::Execute(CommandList& commandList, const BloomParameters& par
 	m_BlitMesh->Draw(commandList);
 }
 
-Shader::ShaderBytecode BloomUpsample::GetVertexShaderBytecode() const
+CompositeEffect::ShaderBytecode BloomUpsample::GetVertexShaderBytecode() const
 {
 	return { ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS };
 }
 
-Shader::ShaderBytecode BloomUpsample::GetPixelShaderBytecode() const
+CompositeEffect::ShaderBytecode BloomUpsample::GetPixelShaderBytecode() const
 {
 	return { ShaderBytecode_Bloom_Downsample_PS, sizeof ShaderBytecode_Bloom_Downsample_PS };
 }
 
-std::vector<Shader::RootParameter> BloomUpsample::GetRootParameters() const
+std::vector<CompositeEffect::RootParameter> BloomUpsample::GetRootParameters() const
 {
 	return m_RootParameters;
 }
 
-std::vector<Shader::StaticSampler> BloomUpsample::GetStaticSamplers() const
+std::vector<CompositeEffect::StaticSampler> BloomUpsample::GetStaticSamplers() const
 {
 	return m_StaticSamplers;
 }
 
-Shader::Format BloomUpsample::GetRenderTargetFormat() const
+CompositeEffect::Format BloomUpsample::GetRenderTargetFormat() const
 {
 	return m_BackBufferFormat;
 }
@@ -92,7 +92,7 @@ void BloomUpsample::Begin(CommandList& commandList)
 {
 	SetContext(commandList);
 }
-Shader::BlendMode BloomUpsample::GetBlendMode() const
+CompositeEffect::BlendMode BloomUpsample::GetBlendMode() const
 {
 	return AdditiveBlend();
 }

@@ -1,5 +1,5 @@
 #pragma once
-#include "Shader.h"
+#include "CompositeEffect.h"
 #include "BloomPrefilter.h"
 #include "BloomParameters.h"
 #include "BloomDownsample.h"
@@ -8,9 +8,9 @@
 class Bloom
 {
 public:
-	explicit Bloom(uint32_t width, uint32_t height, Shader::Format backBufferFormat, size_t pyramidSize = 8);
+	explicit Bloom(uint32_t width, uint32_t height, CompositeEffect::Format backBufferFormat, size_t pyramidSize = 8);
 
-	void Init(Microsoft::WRL::ComPtr<Shader::IDevice> device, CommandList& commandList);
+	void Init(Microsoft::WRL::ComPtr<CompositeEffect::IDevice> device, CommandList& commandList);
 
 	void Resize(uint32_t width, uint32_t height);
 

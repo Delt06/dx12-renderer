@@ -3,7 +3,7 @@
 
 namespace
 {
-	CD3DX12_RESOURCE_DESC CreateRenderTargetDesc(Shader::Format backBufferFormat, uint32_t width, uint32_t height)
+	CD3DX12_RESOURCE_DESC CreateRenderTargetDesc(CompositeEffect::Format backBufferFormat, uint32_t width, uint32_t height)
 	{
 		return CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat,
 			width, height,
@@ -13,7 +13,7 @@ namespace
 	}
 }
 
-Bloom::Bloom(uint32_t width, uint32_t height, Shader::Format backBufferFormat, size_t pyramidSize)
+Bloom::Bloom(uint32_t width, uint32_t height, CompositeEffect::Format backBufferFormat, size_t pyramidSize)
 	: m_Width(width),
 	m_Height(height),
 	m_Prefilter(backBufferFormat),
@@ -111,7 +111,7 @@ void Bloom::CreateIntermediateTexture(uint32_t width,
 	destinationList.push_back(renderTarget);
 }
 
-void Bloom::Init(Microsoft::WRL::ComPtr<Shader::IDevice> device, CommandList& commandList)
+void Bloom::Init(Microsoft::WRL::ComPtr<CompositeEffect::IDevice> device, CommandList& commandList)
 {
 	m_Prefilter.Init(device, commandList);
 	m_Downsample.Init(device, commandList);

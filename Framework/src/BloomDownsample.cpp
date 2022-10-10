@@ -58,27 +58,27 @@ void BloomDownsample::Execute(CommandList& commandList, const BloomParameters& p
 	m_BlitMesh->Draw(commandList);
 }
 
-Shader::ShaderBytecode BloomDownsample::GetVertexShaderBytecode() const
+CompositeEffect::ShaderBytecode BloomDownsample::GetVertexShaderBytecode() const
 {
 	return { ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS };
 }
 
-Shader::ShaderBytecode BloomDownsample::GetPixelShaderBytecode() const
+CompositeEffect::ShaderBytecode BloomDownsample::GetPixelShaderBytecode() const
 {
 	return { ShaderBytecode_Bloom_Downsample_PS, sizeof ShaderBytecode_Bloom_Downsample_PS };
 }
 
-std::vector<Shader::RootParameter> BloomDownsample::GetRootParameters() const
+std::vector<CompositeEffect::RootParameter> BloomDownsample::GetRootParameters() const
 {
 	return m_RootParameters;
 }
 
-std::vector<Shader::StaticSampler> BloomDownsample::GetStaticSamplers() const
+std::vector<CompositeEffect::StaticSampler> BloomDownsample::GetStaticSamplers() const
 {
 	return m_StaticSamplers;
 }
 
-Shader::Format BloomDownsample::GetRenderTargetFormat() const
+CompositeEffect::Format BloomDownsample::GetRenderTargetFormat() const
 {
 	return m_BackBufferFormat;
 }

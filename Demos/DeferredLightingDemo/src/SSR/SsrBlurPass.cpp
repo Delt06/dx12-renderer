@@ -53,12 +53,12 @@ void SsrBlurPass::Execute(CommandList& commandList, const Texture& traceResult, 
 	m_BlitMesh->Draw(commandList);
 }
 
-std::vector<Shader::RootParameter> SsrBlurPass::GetRootParameters() const
+std::vector<CompositeEffect::RootParameter> SsrBlurPass::GetRootParameters() const
 {
 	return m_RootParameters;
 }
 
-std::vector<Shader::StaticSampler> SsrBlurPass::GetStaticSamplers() const
+std::vector<CompositeEffect::StaticSampler> SsrBlurPass::GetStaticSamplers() const
 {
 	return
 	{
@@ -66,7 +66,7 @@ std::vector<Shader::StaticSampler> SsrBlurPass::GetStaticSamplers() const
 	};
 }
 
-Shader::Format SsrBlurPass::GetRenderTargetFormat() const
+CompositeEffect::Format SsrBlurPass::GetRenderTargetFormat() const
 {
 	return m_RenderTargetFormat;
 }
@@ -76,12 +76,12 @@ void SsrBlurPass::OnPostInit(Microsoft::WRL::ComPtr<IDevice> device, CommandList
 	m_BlitMesh = Mesh::CreateBlitTriangle(commandList);
 }
 
-Shader::ShaderBytecode SsrBlurPass::GetVertexShaderBytecode() const
+CompositeEffect::ShaderBytecode SsrBlurPass::GetVertexShaderBytecode() const
 {
 	return ShaderBytecode(ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS);
 }
 
-Shader::ShaderBytecode SsrBlurPass::GetPixelShaderBytecode() const
+CompositeEffect::ShaderBytecode SsrBlurPass::GetPixelShaderBytecode() const
 {
 	return ShaderBytecode(m_PixelShader.Get());
 }

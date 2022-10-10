@@ -1,187 +1,124 @@
-#include <Framework/Shader.h>
-#include <DX12Library/Helpers.h>
-#include <Framework/Mesh.h>
+#include "Shader.h"
 #include <DX12Library/ShaderUtils.h>
+#include <DX12Library/Application.h>
 
-using namespace Microsoft::WRL;
-
-Shader::~Shader() = default;
-
-void Shader::Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList)
+Shader::Shader(const std::shared_ptr<CommonRootSignature>& rootSignature, const std::wstring& vertexShaderPath, const std::wstring& pixelShaderPath, const std::function<void(PipelineStateBuilder&)> buildPipelineState)
+	: m_RootSignature(rootSignature)
+	, m_PipelineStateBuilder(rootSignature)
 {
+	const auto vertexShader = ShaderUtils::LoadShaderFromFile(vertexShaderPath);
+	const auto pixelShader = ShaderUtils::LoadShaderFromFile(pixelShaderPath);
+
+	m_PipelineStateBuilder.WithShaders(vertexShader, pixelShader);
+	buildPipelineState(m_PipelineStateBuilder);
+
+	CollectShaderMetadata(vertexShader, &m_VertexShaderMetadata);
+	CollectShaderMetadata(pixelShader, &m_PixelShaderMetadata);
+}
+
+void Shader::Bind(CommandList& commandList)
+{
+	const auto device = Application::Get().GetDevice();
+	const auto& renderTargetFormats = commandList.GetLastRenderTargetFormats();
+	const auto pipelineState = GetPipelineState(device, renderTargetFormats);
+
+	commandList.SetPipelineState(pipelineState);
+}
+
+void Shader::SetMaterialConstantBuffer(CommandList& commandList, size_t size, const void* data)
+{
+	m_RootSignature->SetMaterialConstantBuffer(commandList, size, data);
+}
+
+void Shader::SetShaderResourceView(CommandList& commandList, const std::string& variableName, const ShaderResourceView& shaderResourceView)
+{
+	const auto vsFindResult = m_VertexShaderMetadata.m_ShaderResourceViewsNameCache.find(variableName);
+	const auto vsFound = vsFindResult != m_VertexShaderMetadata.m_ShaderResourceViewsNameCache.end();
+	if (vsFound)
 	{
-		// Create a root signature.
-		D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData;
-		featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
-		if (FAILED(device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData))))
+		auto index = vsFindResult->second;
+		const auto& srvMetadata = m_VertexShaderMetadata.m_ShaderResourceViews[index];
+		switch (srvMetadata.Space)
 		{
-			featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
-		}
-
-		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-		const auto rootParameters = GetRootParameters();
-		CombineRootSignatureFlags(rootSignatureFlags, rootParameters);
-
-		const auto staticSamples = GetStaticSamplers();
-
-		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
-		rootSignatureDescription.Init_1_1(
-			static_cast<UINT>(rootParameters.size()), rootParameters.data(),
-			static_cast<UINT>(staticSamples.size()), staticSamples.data(),
-			rootSignatureFlags);
-
-		m_RootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
-
-		// Setup the pipeline state.
-		struct PipelineStateStream
-		{
-			CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE RootSignature;
-			CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
-			CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
-			CD3DX12_PIPELINE_STATE_STREAM_VS Vs;
-			CD3DX12_PIPELINE_STATE_STREAM_PS Ps;
-			CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RtvFormats;
-			CD3DX12_PIPELINE_STATE_STREAM_BLEND_DESC Blend;
-		} pipelineStateStream;
-
-		D3D12_RT_FORMAT_ARRAY rtvFormats = {};
-		rtvFormats.NumRenderTargets = 1;
-		rtvFormats.RTFormats[0] = GetRenderTargetFormat();
-
-		pipelineStateStream.RootSignature = m_RootSignature.GetRootSignature().Get();
-
-		pipelineStateStream.InputLayout = { VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT };
-		pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		pipelineStateStream.Vs = GetVertexShaderBytecode();
-		pipelineStateStream.Ps = GetPixelShaderBytecode();
-		pipelineStateStream.RtvFormats = rtvFormats;
-		pipelineStateStream.Blend = GetBlendMode();
-
-		const D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = {
-			sizeof(PipelineStateStream), &pipelineStateStream
-		};
-
-		ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_PipelineState)));
-	}
-
-	OnPostInit(device, commandList);
-}
-
-Shader::BlendMode Shader::GetBlendMode() const
-{
-	return BlendMode(CD3DX12_DEFAULT());
-}
-
-void Shader::SetContext(CommandList& commandList) const
-{
-	commandList.SetGraphicsRootSignature(m_RootSignature);
-	commandList.SetPipelineState(m_PipelineState);
-}
-
-void Shader::SetRenderTarget(CommandList& commandList, const RenderTarget& renderTarget, bool autoViewport /*= true*/, bool autoScissorRect /*= true*/)
-{
-	SetRenderTarget(commandList, renderTarget, -1, autoViewport, autoScissorRect);
-}
-
-void Shader::SetRenderTarget(CommandList& commandList, const RenderTarget& renderTarget, UINT arrayIndex, bool autoViewport /*= true*/, bool autoScissorRect /*= true*/)
-{
-	commandList.SetRenderTarget(renderTarget, arrayIndex);
-
-	if (autoViewport)
-	{
-		commandList.SetViewport(GetAutoViewport(renderTarget));
-	}
-
-	if (autoScissorRect)
-	{
-		commandList.SetScissorRect(GetAutoScissorRect());
-	}
-}
-
-Shader::ShaderBlob Shader::LoadShaderFromFile(const std::wstring& fileName)
-{
-	return ShaderUtils::LoadShaderFromFile(fileName);
-}
-
-Shader::ScissorRect Shader::GetAutoScissorRect()
-{
-	return CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX);
-}
-
-Shader::Viewport Shader::GetAutoViewport(const RenderTarget& renderTarget)
-{
-	const auto& color0Texture = renderTarget.GetTexture(Color0);
-	const auto& depthTexture = renderTarget.GetTexture(DepthStencil);
-	if (!color0Texture.IsValid() && !depthTexture.IsValid())
-	{
-		throw std::exception("Both Color0 and DepthStencil attachment are invalid. Cannot compute viewport.");
-	}
-
-	auto destinationDesc = color0Texture.IsValid() ? color0Texture.GetD3D12ResourceDesc() : depthTexture.GetD3D12ResourceDesc();
-	return Viewport(0.0f, 0.0f, static_cast<float>(destinationDesc.Width), static_cast<float>(destinationDesc.Height));
-}
-
-Shader::BlendMode Shader::AdditiveBlend()
-{
-	BlendMode desc = BlendMode(CD3DX12_DEFAULT());
-	auto& rtBlendDesc = desc.RenderTarget[0];
-	rtBlendDesc.BlendEnable = true;
-	rtBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
-	rtBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
-	rtBlendDesc.SrcBlend = D3D12_BLEND_ONE;
-	rtBlendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
-	rtBlendDesc.DestBlend = D3D12_BLEND_ONE;
-	rtBlendDesc.DestBlendAlpha = D3D12_BLEND_ONE;
-	return desc;
-}
-
-void Shader::CombineRootSignatureFlags(D3D12_ROOT_SIGNATURE_FLAGS& flags, const std::vector<RootParameter>& rootParameters)
-{
-	if (!CheckRootParametersVisiblity(rootParameters, D3D12_SHADER_VISIBILITY_VERTEX))
-	{
-		flags |= D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS;
-	}
-
-	if (!CheckRootParametersVisiblity(rootParameters, D3D12_SHADER_VISIBILITY_GEOMETRY))
-	{
-		flags |= D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
-	}
-
-	if (!CheckRootParametersVisiblity(rootParameters, D3D12_SHADER_VISIBILITY_MESH))
-	{
-		flags |= D3D12_ROOT_SIGNATURE_FLAG_DENY_MESH_SHADER_ROOT_ACCESS;
-	}
-
-	if (!CheckRootParametersVisiblity(rootParameters, D3D12_SHADER_VISIBILITY_DOMAIN))
-	{
-		flags |= D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS;
-	}
-
-	if (!CheckRootParametersVisiblity(rootParameters, D3D12_SHADER_VISIBILITY_HULL))
-	{
-		flags |= D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS;
-	}
-
-	if (!CheckRootParametersVisiblity(rootParameters, D3D12_SHADER_VISIBILITY_PIXEL))
-	{
-		flags |= D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
-	}
-}
-
-bool Shader::CheckRootParametersVisiblity(const std::vector<RootParameter>& rootParameters, D3D12_SHADER_VISIBILITY shaderVisibility)
-{
-	for (const auto& rootParameter : rootParameters)
-	{
-		if (rootParameter.ShaderVisibility == D3D12_SHADER_VISIBILITY_ALL)
-		{
-			return true;
-		}
-
-		if (rootParameter.ShaderVisibility == shaderVisibility)
-		{
-			return true;
+		case CommonRootSignature::MATERIAL_REGISTER_SPACE:
+			m_RootSignature->SetMaterialShaderResourceView(commandList, srvMetadata.RegisterIndex, shaderResourceView);
+			break;
+		case CommonRootSignature::PIPELINE_REGISTER_SPACE:
+			m_RootSignature->SetPipelineShaderResourceView(commandList, srvMetadata.RegisterIndex, shaderResourceView);
+			break;
+		default:
+			throw std::exception("Invalid space index for an SRV.");
 		}
 	}
 
-	return false;
+	const auto psFindResult = m_PixelShaderMetadata.m_ShaderResourceViewsNameCache.find(variableName);
+	const auto psFound = psFindResult != m_PixelShaderMetadata.m_ShaderResourceViewsNameCache.end();
+	if (psFound)
+	{
+		auto index = psFindResult->second;
+		const auto& srvMetadata = m_PixelShaderMetadata.m_ShaderResourceViews[index];
+		switch (srvMetadata.Space)
+		{
+		case CommonRootSignature::MATERIAL_REGISTER_SPACE:
+			m_RootSignature->SetMaterialShaderResourceView(commandList, srvMetadata.RegisterIndex, shaderResourceView);
+			break;
+		case CommonRootSignature::PIPELINE_REGISTER_SPACE:
+			m_RootSignature->SetPipelineShaderResourceView(commandList, srvMetadata.RegisterIndex, shaderResourceView);
+			break;
+		default:
+			throw std::exception("Invalid space index for an SRV.");
+		}
+	}
+
+	if (!vsFound && !psFound)
+	{
+		throw std::exception("Shader variable not found.");
+	}
+}
+
+Microsoft::WRL::ComPtr<ID3D12PipelineState> Shader::GetPipelineState(const Microsoft::WRL::ComPtr<ID3D12Device2>& device, const RenderTargetFormats& formats)
+{
+	auto findResult = m_PipelineStateObjects.find(formats);
+	if (findResult == m_PipelineStateObjects.end())
+	{
+		std::vector<DXGI_FORMAT> renderTargetFormats(formats.GetCount());
+		memcpy(renderTargetFormats.data(), formats.GetFormats(), sizeof(DXGI_FORMAT) * renderTargetFormats.size());
+		m_PipelineStateBuilder.WithRenderTargetFormats(renderTargetFormats);
+		const auto pipelineStateObject = m_PipelineStateBuilder.Build(device);
+
+		m_PipelineStateObjects.insert(std::make_pair(formats, pipelineStateObject));
+
+		return pipelineStateObject;
+	}
+	else
+	{
+		return findResult->second;
+	}
+}
+
+void Shader::CollectShaderMetadata(const Microsoft::WRL::ComPtr<ID3DBlob>& shader, ShaderMetadata* outMetadata)
+{
+	const auto reflection = ShaderUtils::Reflect(shader);
+
+	// constant buffers
+	{
+		outMetadata->m_ConstantBuffers = std::move(ShaderUtils::GetConstantBuffers(reflection));
+
+		for (size_t i = 0; i < outMetadata->m_ConstantBuffers.size(); ++i)
+		{
+			const auto& cbufferMetadata = outMetadata->m_ConstantBuffers[i];
+			outMetadata->m_ConstantBuffersNameCache.emplace(cbufferMetadata.Name, i);
+		}
+	}
+
+	// shader resource views
+	{
+		outMetadata->m_ShaderResourceViews = std::move(ShaderUtils::GetShaderResourceViews(reflection));
+
+		for (size_t i = 0; i < outMetadata->m_ShaderResourceViews.size(); ++i)
+		{
+			const auto& srvMetadata = outMetadata->m_ShaderResourceViews[i];
+			outMetadata->m_ShaderResourceViewsNameCache.emplace(srvMetadata.Name, i);
+		}
+	}
 }

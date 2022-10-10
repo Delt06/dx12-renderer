@@ -1,13 +1,13 @@
 #pragma once
-#include <Framework/Shader.h>
+#include <Framework/CompositeEffect.h>
 #include <Framework/Mesh.h>
 #include <memory>
 #include <Framework/MatricesCb.h>
 
-class Reflections final : public Shader
+class Reflections final : public CompositeEffect
 {
 public:
-	explicit Reflections(Shader::Format renderTargetFormat);
+	explicit Reflections(CompositeEffect::Format renderTargetFormat);
 
 	void SetSrvDescriptors(const D3D12_SHADER_RESOURCE_VIEW_DESC& preFilterSrvDesc, const D3D12_SHADER_RESOURCE_VIEW_DESC& depthSrvDesc);
 	void Draw(CommandList& commandList, const RenderTarget& gBufferRenderTarget, const Texture& depthTexture, const Texture& preFilterMap, const Texture& brdfLut, const Texture& ssrTexture, const MatricesCb& matrices);
@@ -30,12 +30,12 @@ protected:
 
 
 private:
-	Shader::Format m_RenderTargetFormat;
+	CompositeEffect::Format m_RenderTargetFormat;
 	std::shared_ptr<Mesh> m_BlitMesh;
 
-	std::vector<Shader::RootParameter> m_RootParameters;
-	Shader::DescriptorRange m_GBufferDescriptorRange;
-	Shader::DescriptorRange m_ReflectionsDescriptorRange;
+	std::vector<CompositeEffect::RootParameter> m_RootParameters;
+	CompositeEffect::DescriptorRange m_GBufferDescriptorRange;
+	CompositeEffect::DescriptorRange m_ReflectionsDescriptorRange;
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC m_PreFilterSrvDesc;
 	D3D12_SHADER_RESOURCE_VIEW_DESC m_DepthSrvDesc;

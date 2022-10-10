@@ -4,7 +4,7 @@
 class Ssr final : public EffectBase
 {
 public:
-	explicit Ssr(Shader::Format renderTargetFormat, const D3D12_SHADER_RESOURCE_VIEW_DESC& depthSrv, uint32_t width, uint32_t height, bool downsample);
+	explicit Ssr(CompositeEffect::Format renderTargetFormat, const D3D12_SHADER_RESOURCE_VIEW_DESC& depthSrv, uint32_t width, uint32_t height, bool downsample);
 
 	void Resize(uint32_t width, uint32_t height);
 
