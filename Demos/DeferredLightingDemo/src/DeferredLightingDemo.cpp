@@ -79,6 +79,9 @@ namespace Demo::Pipeline
 		DirectX::XMMATRIX m_InverseView;
 		DirectX::XMMATRIX m_InverseProjection;
 
+		DirectX::XMFLOAT2 m_ScreenResolution;
+		DirectX::XMFLOAT2 m_ScreenTexelSize;
+
 		DirectX::XMFLOAT2 m_Taa_JitterOffset;
 		float m_Padding[2];
 	};
@@ -1446,6 +1449,11 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 
 			pipelineCBuffer.m_InverseView = XMMatrixInverse(nullptr, viewMatrix);
 			pipelineCBuffer.m_InverseProjection = XMMatrixInverse(nullptr, projectionMatrix);
+
+			pipelineCBuffer.m_ScreenResolution.x = static_cast<float>(m_Width);
+			pipelineCBuffer.m_ScreenResolution.y = static_cast<float>(m_Height);
+			pipelineCBuffer.m_ScreenTexelSize.x = 1.0f / static_cast<float>(m_Width);
+			pipelineCBuffer.m_ScreenTexelSize.y = 1.0f / static_cast<float>(m_Height);
 
 			pipelineCBuffer.m_Taa_JitterOffset = m_TaaEnabled ? m_Taa->ComputeJitterOffset(m_Width, m_Height) : XMFLOAT2(0.0f, 0.0f);
 			m_CommonRootSignature->SetPipelineConstantBuffer(*commandList, pipelineCBuffer);
