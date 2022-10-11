@@ -1,8 +1,5 @@
-#include <ShaderLibrary/MatricesCB.hlsli>
-#include <ShaderLibrary/TAABuffer.hlsli>
-
-ConstantBuffer<Matrices> matricesCB : register(b0);
-ConstantBuffer<TAABuffer> taaCB : register(b1, space1);
+#include "ShaderLibrary/Pipeline.hlsli"
+#include "ShaderLibrary/Model.hlsli"
 
 struct VertexAttributes
 {
@@ -28,17 +25,18 @@ VertexShaderOutput main(VertexAttributes IN)
 {
     VertexShaderOutput OUT;
 
-    float4 positionCS = mul(matricesCB.ModelViewProjection, float4(IN.PositionOs, 1.0f));
-    positionCS.xy += taaCB.JitterOffset * positionCS.w;
+    float4 originalPositionCS = mul(g_Model_ModelViewProjection, float4(IN.PositionOs, 1.0f));
+    float4 positionCS = originalPositionCS;
+    positionCS.xy += g_Pipeline_Taa_JitterOffset * positionCS.w;
     OUT.PositionCs = positionCS;
     
-    OUT.NormalWs = mul((float3x3) matricesCB.InverseTransposeModel, IN.Normal);
-    OUT.TangentWs = mul((float3x3) matricesCB.InverseTransposeModel, IN.TangentOs);
-    OUT.BitangentWs = mul((float3x3) matricesCB.InverseTransposeModel, IN.BitangentOs);
+    OUT.NormalWs = mul((float3x3) g_Model_InverseTransposeModel, IN.Normal);
+    OUT.TangentWs = mul((float3x3) g_Model_InverseTransposeModel, IN.TangentOs);
+    OUT.BitangentWs = mul((float3x3) g_Model_InverseTransposeModel, IN.BitangentOs);
     OUT.Uv = IN.Uv;
     
-    OUT.CurrentPositionCs = mul(matricesCB.ModelViewProjection, float4(IN.PositionOs, 1.0f));
-    OUT.PrevPositionCs = mul(taaCB.PreviousModelViewProjection, float4(IN.PositionOs, 1.0f));
+    OUT.CurrentPositionCs = originalPositionCS;
+    OUT.PrevPositionCs = mul(g_Model_Taa_PreviousModelViewProjectionMatrix, float4(IN.PositionOs, 1.0f));
 
     return OUT;
 }

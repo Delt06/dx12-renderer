@@ -17,6 +17,8 @@ public:
 		{
 			format = DXGI_FORMAT_UNKNOWN;
 		}
+
+		m_DepthStencilFormat = DXGI_FORMAT_UNKNOWN;
 	}
 
 	explicit RenderTargetFormats(const RenderTarget& renderTarget)
@@ -36,10 +38,15 @@ public:
 				m_Formats[i] = DXGI_FORMAT_UNKNOWN;
 			}
 		}
+
+		const auto& depthStencil = renderTarget.GetTexture(DepthStencil);
+		m_DepthStencilFormat = depthStencil.IsValid() ? depthStencil.GetD3D12ResourceDesc().Format : DXGI_FORMAT_UNKNOWN;
 	}
 
 	inline UINT GetCount() const { return m_Count; }
 	inline const ConstFormatsArray& GetFormats() const { return m_Formats; }
+
+	inline DXGI_FORMAT GetDepthStencilFormat() const { return m_DepthStencilFormat; }
 
 	bool operator==(const RenderTargetFormats& other) const
 	{
@@ -63,6 +70,7 @@ private:
 
 	UINT m_Count;
 	FormatsArray m_Formats;
+	DXGI_FORMAT m_DepthStencilFormat;
 };
 
 namespace std
@@ -85,8 +93,9 @@ namespace std
 			using std::hash;
 			using std::string;
 
-			return (hash<UINT>()(formats.GetCount())
-				^ (hasharray(formats.GetFormats()) << 1));
+			return hash<UINT>()(formats.GetCount())
+				^ hash<DXGI_FORMAT>()(formats.GetDepthStencilFormat())
+				^ hasharray(formats.GetFormats());
 		}
 	};
 }

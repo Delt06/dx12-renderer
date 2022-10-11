@@ -16,13 +16,14 @@
 class Material
 {
 public:
-	template<typename T>
-	void SetVariable(const std::string& name, const T& data)
+	explicit Material(const std::shared_ptr<Shader>& shader);
+
+	template<typename T> void SetVariable(const std::string& name, const T& data, bool throwOnNotFound = true)
 	{
-		SetVariable(name, sizeof(data), &data);
+		SetVariable(name, sizeof(data), &data, throwOnNotFound);
 	}
 
-	void SetVariable(const std::string& name, size_t size, const void* data);
+	void SetVariable(const std::string& name, size_t size, const void* data, bool throwOnNotFound = true);
 	void SetShaderResourceView(const std::string& name, const ShaderResourceView& shaderResourceView);
 
 	void Bind(CommandList& commandList);
@@ -30,8 +31,6 @@ public:
 	static std::shared_ptr<Material> Create(const std::shared_ptr<Shader>& shader);
 
 private:
-
-	explicit Material(const std::shared_ptr<Shader>& shader);
 
 	void UploadConstantBuffer(CommandList& commandList);
 	void UploadShaderResourceViews(CommandList& commandList);

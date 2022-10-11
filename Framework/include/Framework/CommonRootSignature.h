@@ -5,6 +5,7 @@
 #include <DX12Library/RootSignature.h>
 #include <DX12Library/CommandList.h>
 #include <DX12Library/Resource.h>
+#include <DX12Library/DescriptorAllocation.h>
 
 #include <vector>
 
@@ -13,9 +14,11 @@
 class CommonRootSignature final : public RootSignature
 {
 public:
-	explicit CommonRootSignature(Microsoft::WRL::ComPtr<ID3D12Device2> device);
+	explicit CommonRootSignature(const std::shared_ptr<Resource>& emptyResource);
 
-	inline void SetPipelineConstantBuffer(CommandList& commandList, size_t size, const void* data) const;
+	void Bind(CommandList& commandList) const;
+
+	void SetPipelineConstantBuffer(CommandList& commandList, size_t size, const void* data) const;
 
 	template<typename T>
 	inline void SetPipelineConstantBuffer(CommandList& commandList, const T& data) const
@@ -24,9 +27,10 @@ public:
 	}
 
 
-	inline void SetMaterialConstantBuffer(CommandList& commandList, size_t size, const void* data) const;
+	void SetMaterialConstantBuffer(CommandList& commandList, size_t size, const void* data) const;
 
-	inline void SetModelConstantBuffer(CommandList& commandList, size_t size, const void* data) const;
+	void SetModelConstantBuffer(CommandList& commandList, size_t size, const void* data) const;
+
 	template<typename T>
 	inline void SetModelConstantBuffer(CommandList& commandList, const T& data) const
 	{
@@ -50,5 +54,5 @@ private:
 	void CombineRootSignatureFlags(D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags, const std::vector<RootParameter>& rootParameters);
 	bool CheckRootParametersVisiblity(const std::vector<RootParameter>& rootParameters, D3D12_SHADER_VISIBILITY param2);
 
-	RootSignature m_RootSignature;
+	ShaderResourceView m_EmptyShaderResourceView;
 };

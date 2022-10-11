@@ -5,6 +5,8 @@
 #include <wrl.h>
 #include <d3d12shader.h>
 #include <vector>
+#include <memory>
+#include <cstdint>
 
 namespace ShaderUtils
 {
@@ -19,6 +21,7 @@ namespace ShaderUtils
 			std::string Name;
 			UINT Size;
 			UINT Offset;
+			std::shared_ptr<uint8_t[]> DefaultValue;
 		};
 
 		UINT RegisterIndex;
@@ -28,7 +31,7 @@ namespace ShaderUtils
 		std::vector<Variable> Variables;
 	};
 
-	
+
 	std::vector<ConstantBufferMetadata> GetConstantBuffers(const Microsoft::WRL::ComPtr<ID3D12ShaderReflection>& shaderReflection);
 
 	struct ShaderResourceViewMetadata

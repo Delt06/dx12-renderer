@@ -20,6 +20,7 @@
 #include <SSR/Ssr.h>
 #include <Reflections.h>
 #include "Framework/Bloom.h"
+#include "Framework/CommonRootSignature.h"
 
 struct MatricesCb;
 class AutoExposure;
@@ -106,8 +107,7 @@ private:
 	bool m_TaaEnabled = true;
 	std::unique_ptr<Taa> m_Taa;
 
-	RootSignature m_GBufferPassRootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_GBufferPassPipelineState;
+	std::shared_ptr<CommonRootSignature> m_CommonRootSignature = nullptr;
 
 	DirectionalLight m_DirectionalLight;
 	std::vector<PointLight> m_PointLights;
@@ -135,7 +135,7 @@ private:
 
 	RootSignature m_SkyboxPassRootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_SkyboxPassPipelineState;
-	Texture m_Skybox;
+	std::shared_ptr<Texture> m_Skybox;
 	std::shared_ptr<Mesh> m_SkyboxMesh;
 
 	RenderTarget m_DiffuseIrradianceMapRt;

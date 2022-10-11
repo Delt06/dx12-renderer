@@ -19,7 +19,10 @@ struct ShaderResourceView
 
 	}
 
-	const std::shared_ptr<Resource> m_Resource = nullptr;
+	ShaderResourceView(const ShaderResourceView& other) = default;
+	ShaderResourceView& operator=(const ShaderResourceView& other) = default;
+
+	std::shared_ptr<Resource> m_Resource = nullptr;
 	UINT m_FirstSubresource;
 	UINT m_NumSubresources;
 	D3D12_SHADER_RESOURCE_VIEW_DESC* m_Desc;

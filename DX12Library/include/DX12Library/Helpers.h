@@ -26,7 +26,7 @@ inline void ThrowIfNegative(const int value)
 
 inline void Assert(const bool condition, const char* message)
 {
-	if (condition)
+	if (!condition)
 	{
 		throw std::exception(message);
 	}

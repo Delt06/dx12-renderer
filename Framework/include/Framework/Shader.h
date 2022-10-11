@@ -23,7 +23,7 @@ public:
 	explicit Shader(
 		const std::shared_ptr<CommonRootSignature>& rootSignature,
 		const std::wstring& vertexShaderPath, const std::wstring& pixelShaderPath,
-		const std::function<void(PipelineStateBuilder&)> buildPipelineState
+		const std::function<void(PipelineStateBuilder&)> buildPipelineState = [](PipelineStateBuilder&) {}
 	);
 
 	Shader(const Shader& other) = delete;

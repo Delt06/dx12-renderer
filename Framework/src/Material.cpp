@@ -51,9 +51,20 @@ Material::Material(const std::shared_ptr<Shader>& shader)
 
 	m_ConstantBuffer.reset(new uint8_t[cbufferSize]);
 	m_ConstantBufferSize = cbufferSize;
+	memset(m_ConstantBuffer.get(), 0, m_ConstantBufferSize);
+
+	for (const auto& variable : m_Metadata->Variables)
+	{
+		if (variable.DefaultValue == nullptr)
+		{
+			continue;
+		}
+
+		memcpy(m_ConstantBuffer.get() + variable.Offset, variable.DefaultValue.get(), variable.Size);
+	}
 }
 
-void Material::SetVariable(const std::string& name, size_t size, const void* data)
+void Material::SetVariable(const std::string& name, size_t size, const void* data, bool throwOnNotFound)
 {
 	if (m_ConstantBuffer == nullptr)
 	{
@@ -70,14 +81,19 @@ void Material::SetVariable(const std::string& name, size_t size, const void* dat
 		}
 
 		memcpy(m_ConstantBuffer.get() + variable.Offset, data, size);
+		return;
 	}
 
-	throw std::exception("Variable not found.");
+	if (throwOnNotFound)
+	{
+		throw std::exception("Variable not found.");
+	}
 }
 
 void Material::SetShaderResourceView(const std::string& name, const ShaderResourceView& shaderResourceView)
 {
 	m_ShaderResourceViews.insert_or_assign(name, shaderResourceView);
+	SetVariable<uint32_t>("has_" + name, 1u, false);
 }
 
 void Material::Bind(CommandList& commandList)

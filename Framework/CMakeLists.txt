@@ -15,7 +15,6 @@ set(HEADER_FILES
         "include/Framework/Light.h"
         "include/Framework/MatricesCb.h"
         "include/Framework/ModelLoader.h"
-        "include/Framework/MaterialBase.h"
         "include/Framework/Animation.h"
         "include/Framework/GraphicsSettings.h"
         "include/Framework/DemoMain.h"

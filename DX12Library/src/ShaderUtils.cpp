@@ -53,6 +53,17 @@ std::vector<ShaderUtils::ConstantBufferMetadata> ShaderUtils::GetConstantBuffers
 			variableMetadata.Offset = variableDesc.StartOffset;
 			variableMetadata.Size = variableDesc.Size;
 
+			if (variableDesc.DefaultValue != nullptr)
+			{
+				variableMetadata.DefaultValue = std::shared_ptr<uint8_t[]>(new uint8_t[variableDesc.Size]);
+				memcpy(variableMetadata.DefaultValue.get(), variableDesc.DefaultValue, variableDesc.Size);
+			}
+			else
+			{
+				variableDesc.DefaultValue = nullptr;
+			}
+
+
 			constantBufferMetadata.Size = max(constantBufferMetadata.Size, variableMetadata.Offset + variableMetadata.Size);
 			constantBufferMetadata.Variables.push_back(variableMetadata);
 		}

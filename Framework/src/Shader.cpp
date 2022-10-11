@@ -83,7 +83,7 @@ Microsoft::WRL::ComPtr<ID3D12PipelineState> Shader::GetPipelineState(const Micro
 	{
 		std::vector<DXGI_FORMAT> renderTargetFormats(formats.GetCount());
 		memcpy(renderTargetFormats.data(), formats.GetFormats(), sizeof(DXGI_FORMAT) * renderTargetFormats.size());
-		m_PipelineStateBuilder.WithRenderTargetFormats(renderTargetFormats);
+		m_PipelineStateBuilder.WithRenderTargetFormats(renderTargetFormats, formats.GetDepthStencilFormat());
 		const auto pipelineStateObject = m_PipelineStateBuilder.Build(device);
 
 		m_PipelineStateObjects.insert(std::make_pair(formats, pipelineStateObject));

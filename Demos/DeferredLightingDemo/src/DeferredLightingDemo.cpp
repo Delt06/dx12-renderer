@@ -23,6 +23,8 @@ using namespace Microsoft::WRL;
 #include <d3dx12.h>
 #include <DirectXColors.h>
 #include <Framework/MatricesCb.h>
+#include <Framework/Shader.h>
+#include <Framework/Material.h>
 
 using namespace DirectX;
 
@@ -64,6 +66,31 @@ namespace
 	static ClearValue gBufferColorClearValue = ClearValue(gBufferFormat, ClearColors::CLEAR_COLOR);
 	static ClearValue velocityColorClearValue = ClearValue(gBufferFormat, ClearColors::VELOCITY_CLEAR_COLOR);
 	static ClearValue lightBufferColorClearValue = ClearValue(lightBufferFormat, ClearColors::LIGHT_BUFFER_CLEAR_COLOR);
+}
+
+namespace Demo::Pipeline
+{
+	struct CBuffer
+	{
+		DirectX::XMMATRIX m_View;
+		DirectX::XMMATRIX m_Projection;
+		DirectX::XMMATRIX m_ViewProjection;
+
+		DirectX::XMFLOAT2 m_Taa_JitterOffset;
+		float m_Padding[2];
+	};
+}
+
+namespace Demo::Model
+{
+	struct CBuffer
+	{
+		DirectX::XMMATRIX m_Model;
+		DirectX::XMMATRIX m_ModelViewProjection;
+		DirectX::XMMATRIX m_InverseTransposeModel;
+
+		DirectX::XMMATRIX m_Taa_PreviousModelViewProjectionMatrix;
+	};
 }
 
 namespace
@@ -341,99 +368,7 @@ bool DeferredLightingDemo::LoadContent()
 		commandList->LoadTextureFromFile(*m_WhiteTexture2d, L"Assets/Textures/white.png");
 	}
 
-	// create GBuffer root signature and pipeline state
-	{
-		ComPtr<ID3DBlob> vertexShaderBlob = ShaderUtils::LoadShaderFromFile(L"DeferredLightingDemo_GBuffer_VS.cso");
-		ComPtr<ID3DBlob> pixelShaderBlob = ShaderUtils::LoadShaderFromFile(L"DeferredLightingDemo_GBuffer_PS.cso");
-
-		// Create a root signature.
-		D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData;
-		featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
-		if (FAILED(device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData))))
-		{
-			featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
-		}
-
-		constexpr D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
-			D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
-			D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
-			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-			D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
-
-		CD3DX12_DESCRIPTOR_RANGE1
-			texturesDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, PbrMaterial::TotalNumMaps, 0);
-
-		CD3DX12_ROOT_PARAMETER1 rootParameters[GBufferRootParameters::NumRootParameters];
-		rootParameters[GBufferRootParameters::MatricesCb].InitAsConstantBufferView(0,
-			0,
-			D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
-			D3D12_SHADER_VISIBILITY_VERTEX);
-		rootParameters[GBufferRootParameters::MaterialCb].InitAsConstantBufferView(1,
-			0,
-			D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
-			D3D12_SHADER_VISIBILITY_PIXEL);
-		rootParameters[GBufferRootParameters::TaaBufferCb].InitAsConstantBufferView(1,
-			1,
-			D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
-			D3D12_SHADER_VISIBILITY_VERTEX);
-		rootParameters[GBufferRootParameters::Textures].InitAsDescriptorTable(1,
-			&texturesDescriptorRange,
-			D3D12_SHADER_VISIBILITY_PIXEL);
-
-		CD3DX12_STATIC_SAMPLER_DESC samplers[] = {
-			// linear repeat
-			CD3DX12_STATIC_SAMPLER_DESC(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR),
-		};
-
-		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
-		rootSignatureDescription.Init_1_1(GBufferRootParameters::NumRootParameters,
-			rootParameters,
-			_countof(samplers),
-			samplers,
-			rootSignatureFlags);
-
-		m_GBufferPassRootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
-
-		// Setup the pipeline state.
-		struct PipelineStateStream
-		{
-			CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE RootSignature;
-			CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
-			CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
-			CD3DX12_PIPELINE_STATE_STREAM_VS Vs;
-			CD3DX12_PIPELINE_STATE_STREAM_PS Ps;
-			CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DsvFormat;
-			CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RtvFormats;
-			CD3DX12_PIPELINE_STATE_STREAM_RASTERIZER Rasterizer;
-		} pipelineStateStream;
-
-		D3D12_RT_FORMAT_ARRAY rtvFormats = {};
-		rtvFormats.NumRenderTargets = gBufferTexturesCount - 1;
-
-		for (UINT i = 0; i < rtvFormats.NumRenderTargets; ++i)
-		{
-			rtvFormats.RTFormats[i] = gBufferFormat;
-		}
-
-		pipelineStateStream.RootSignature = m_GBufferPassRootSignature.GetRootSignature().Get();
-
-		pipelineStateStream.InputLayout = { VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT };
-		pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
-		pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
-		pipelineStateStream.DsvFormat = depthBufferFormat;
-		pipelineStateStream.RtvFormats = rtvFormats;
-		pipelineStateStream.Rasterizer =
-			CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_BACK, FALSE, 0, 0,
-				0, TRUE, FALSE, FALSE, 0,
-				D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
-
-		const D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = {
-			sizeof(PipelineStateStream), &pipelineStateStream
-		};
-
-		ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_GBufferPassPipelineState)));
-	}
+	m_CommonRootSignature = std::make_shared<CommonRootSignature>(m_WhiteTexture2d);
 
 	// root signature and pipeline states for light passes
 	{
@@ -987,24 +922,38 @@ bool DeferredLightingDemo::LoadContent()
 	// Load models
 	{
 		ModelLoader modelLoader;
-		PbrTextureLoader textureLoader(m_WhiteTexture2d);
+
+		const auto gBufferShader = std::make_shared<Shader>(m_CommonRootSignature, L"DeferredLightingDemo_GBuffer_VS.cso", L"DeferredLightingDemo_GBuffer_PS.cso");
+
+		const std::string property_Metallic = "Metallic";
+		const std::string property_Roughness = "Roughness";
+		const std::string property_Diffuse = "Diffuse";
+		const std::string property_Emission = "Emission";
+		const std::string property_TilingOffset = "TilingOffset";
+
+		const std::string property_diffuseMap = "diffuseMap";
+		const std::string property_normalMap = "normalMap";
+		const std::string property_metallicMap = "metallicMap";
+		const std::string property_roughnessMap = "roughnessMap";
+		const std::string property_ambientOcclusionMap = "ambientOcclusionMap";
+
+		const auto MaterialSetTexture = [&modelLoader, &commandList](Material& material, const std::string& propertyName, const std::wstring& texturePath, TextureUsageType usage = TextureUsageType::Albedo)
+		{
+			material.SetShaderResourceView(propertyName, ShaderResourceView(modelLoader.LoadTexture(*commandList, texturePath, usage)));
+		};
 
 		{
 			auto model = modelLoader.LoadExisting(Mesh::CreatePlane(*commandList));
-			auto material = std::make_shared<PbrMaterial>();
-			textureLoader.Init(*material);
-			material->GetConstants().Metallic = 1.0f;
-			material->GetConstants().Roughness = 0.5f;
-			material->GetConstants().TilingOffset = { 6, 6, 0, 0 };
+			auto material = Material::Create(gBufferShader);
 
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse,
-				L"Assets/Textures/Ground047/Ground047_1K_Color.jpg");
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Normal,
-				L"Assets/Textures/Ground047/Ground047_1K_NormalDX.jpg");
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Roughness,
-				L"Assets/Textures/Ground047/Ground047_1K_Roughness.jpg");
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::AmbientOcclusion,
-				L"Assets/Textures/Ground047/Ground047_1K_AmbientOcclusion.jpg");
+			material->SetVariable(property_Metallic, 1.0f);
+			material->SetVariable(property_Roughness, 0.5f);
+			material->SetVariable(property_TilingOffset, XMFLOAT4(6, 6, 0, 0));
+
+			MaterialSetTexture(*material, property_diffuseMap, L"Assets/Textures/Ground047/Ground047_1K_Color.jpg");
+			MaterialSetTexture(*material, property_normalMap, L"Assets/Textures/Ground047/Ground047_1K_NormalDX.jpg", TextureUsageType::Normalmap);
+			MaterialSetTexture(*material, property_roughnessMap, L"Assets/Textures/Ground047/Ground047_1K_Roughness.jpg", TextureUsageType::Other);
+			MaterialSetTexture(*material, property_ambientOcclusionMap, L"Assets/Textures/Ground047/Ground047_1K_AmbientOcclusion.jpg", TextureUsageType::Other);
 
 			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
@@ -1015,21 +964,16 @@ bool DeferredLightingDemo::LoadContent()
 
 		{
 			auto model = modelLoader.Load(*commandList, "Assets/Models/old-wooden-chest/chest_01.fbx");
-			auto material = std::make_shared<PbrMaterial>();
-			textureLoader.Init(*material);
+			auto material = Material::Create(gBufferShader);
 
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse,
-				L"Assets/Models/old-wooden-chest/chest_01_BaseColor.png");
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Normal,
-				L"Assets/Models/old-wooden-chest/chest_01_Normal.png");
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Roughness,
-				L"Assets/Models/old-wooden-chest/chest_01_Roughness.png");
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Metallic,
-				L"Assets/Models/old-wooden-chest/chest_01_Metallic.png");
+			MaterialSetTexture(*material, property_diffuseMap, L"Assets/Models/old-wooden-chest/chest_01_BaseColor.png");
+			MaterialSetTexture(*material, property_normalMap, L"Assets/Models/old-wooden-chest/chest_01_Normal.png", TextureUsageType::Normalmap);
+			MaterialSetTexture(*material, property_roughnessMap, L"Assets/Models/old-wooden-chest/chest_01_Roughness.png", TextureUsageType::Other);
+			MaterialSetTexture(*material, property_metallicMap, L"Assets/Models/old-wooden-chest/chest_01_Metallic.png", TextureUsageType::Other);
 
 			{
 				XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.25f, 15.0f);
-				XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(90), 0, 0);
+				XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(90.0f), 0.0f, 0.0f);
 				XMMATRIX scaleMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
 				XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
 				m_GameObjects.push_back(GameObject(worldMatrix, model, material));
@@ -1047,10 +991,9 @@ bool DeferredLightingDemo::LoadContent()
 
 		{
 			auto model = modelLoader.LoadExisting(Mesh::CreatePlane(*commandList));
-			auto material = std::make_shared<PbrMaterial>();
-			textureLoader.Init(*material);
-			material->GetConstants().Metallic = 1.0f;
-			material->GetConstants().Roughness = 0.0f;
+			auto material = Material::Create(gBufferShader);
+			material->SetVariable(property_Metallic, 1.0f);
+			material->SetVariable(property_Roughness, 0.0f);
 
 			XMMATRIX translationMatrix = XMMatrixTranslation(-50.0f, 0.1f, 15.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
@@ -1061,10 +1004,9 @@ bool DeferredLightingDemo::LoadContent()
 
 		{
 			auto model = modelLoader.LoadExisting(Mesh::CreateCube(*commandList));
-			auto material = std::make_shared<PbrMaterial>();
-			textureLoader.Init(*material);
-			material->GetConstants().Metallic = 0.01f;
-			material->GetConstants().Roughness = 0.25f;
+			auto material = Material::Create(gBufferShader);
+			material->SetVariable(property_Metallic, 0.01f);
+			material->SetVariable(property_Roughness, 0.25f);
 
 			XMMATRIX translationMatrix = XMMatrixTranslation(-54.0f, 2.5f, 7.0f);
 			XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(0, 0, 0);
@@ -1075,17 +1017,12 @@ bool DeferredLightingDemo::LoadContent()
 
 		{
 			auto model = modelLoader.Load(*commandList, "Assets/Models/cerberus/Cerberus_LP.FBX");
-			auto material = std::make_shared<PbrMaterial>();
-			textureLoader.Init(*material);
+			auto material = Material::Create(gBufferShader);
 
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse,
-				L"Assets/Models/cerberus/Cerberus_A.jpg");
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Normal,
-				L"Assets/Models/cerberus/Cerberus_N.jpg");
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Roughness,
-				L"Assets/Models/cerberus/Cerberus_R.jpg");
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Metallic,
-				L"Assets/Models/cerberus/Cerberus_M.jpg");
+			MaterialSetTexture(*material, property_diffuseMap, L"Assets/Models/cerberus/Cerberus_A.jpg");
+			MaterialSetTexture(*material, property_normalMap, L"Assets/Models/cerberus/Cerberus_N.jpg", TextureUsageType::Normalmap);
+			MaterialSetTexture(*material, property_roughnessMap, L"Assets/Models/cerberus/Cerberus_R.jpg", TextureUsageType::Other);
+			MaterialSetTexture(*material, property_metallicMap, L"Assets/Models/cerberus/Cerberus_M.jpg", TextureUsageType::Other);
 
 			XMMATRIX translationMatrix = XMMatrixTranslation(15.0f, 5.0f, 10.0f);
 			XMMATRIX rotationMatrix =
@@ -1097,22 +1034,15 @@ bool DeferredLightingDemo::LoadContent()
 
 		{
 			auto model = modelLoader.Load(*commandList, "Assets/Models/tv/TV.FBX");
-			auto material = std::make_shared<PbrMaterial>();
-			textureLoader.Init(*material);
+			auto material = Material::Create(gBufferShader);
+			material->SetVariable(property_Metallic, 1.0f);
+			material->SetVariable(property_Roughness, 1.0f);
 
-			material->GetConstants().Metallic = 1.0;
-			material->GetConstants().Roughness = 1.0;
-
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Diffuse,
-				L"Assets/Models/tv/TV_Color.jpg");
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Normal,
-				L"Assets/Models/tv/TV_Normal.jpg");
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Roughness,
-				L"Assets/Models/tv/TV_Roughness.jpg");
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::Metallic,
-				L"Assets/Models/tv/TV_Metallic.jpg");
-			textureLoader.LoadMap(*material, *commandList, PbrMaterial::AmbientOcclusion,
-				L"Assets/Models/tv/TV_Occlusion.jpg");
+			MaterialSetTexture(*material, property_diffuseMap, L"Assets/Models/tv/TV_Color.jpg");
+			MaterialSetTexture(*material, property_normalMap, L"Assets/Models/tv/TV_Normal.jpg", TextureUsageType::Normalmap);
+			MaterialSetTexture(*material, property_roughnessMap, L"Assets/Models/tv/TV_Roughness.jpg", TextureUsageType::Other);
+			MaterialSetTexture(*material, property_metallicMap, L"Assets/Models/tv/TV_Metallic.jpg", TextureUsageType::Other);
+			MaterialSetTexture(*material, property_ambientOcclusionMap, L"Assets/Models/tv/TV_Occlusion.jpg", TextureUsageType::Other);
 
 			XMMATRIX translationMatrix = XMMatrixTranslation(-14.0f, 0.0f, 18.0f);
 			XMMATRIX rotationMatrix =
@@ -1129,10 +1059,9 @@ bool DeferredLightingDemo::LoadContent()
 				for (auto y = 0; y < steps; ++y)
 				{
 					auto model = modelLoader.LoadExisting(Mesh::CreateSphere(*commandList));
-					auto material = std::make_shared<PbrMaterial>();
-					textureLoader.Init(*material);
-					material->GetConstants().Metallic = static_cast<float>(x) / (steps - 1);
-					material->GetConstants().Roughness = static_cast<float>(y) / (steps - 1);
+					auto material = Material::Create(gBufferShader);
+					material->SetVariable(property_Metallic, static_cast<float>(x) / (steps - 1));
+					material->SetVariable(property_Roughness, static_cast<float>(y) / (steps - 1));
 
 					XMMATRIX translationMatrix = XMMatrixTranslation(x * 1.5f, 5.0f + y * 2.0f, 25.0f);
 					XMMATRIX worldMatrix = translationMatrix;
@@ -1145,13 +1074,12 @@ bool DeferredLightingDemo::LoadContent()
 			for (const auto& pointLight : m_PointLights)
 			{
 				auto mesh = modelLoader.LoadExisting(Mesh::CreateSphere(*commandList, 0.5f));
-				auto material = std::make_shared<PbrMaterial>();
-				textureLoader.Init(*material);
+				auto material = Material::Create(gBufferShader);
 
-				material->GetConstants().Metallic = 0.2f;
-				material->GetConstants().Roughness = 0.25f;
-				material->GetConstants().Diffuse = NormalizeColor(pointLight.Color);
-				material->GetConstants().Emission = GetColorMagnitude(pointLight.Color);
+				material->SetVariable(property_Metallic, 0.2f);
+				material->SetVariable(property_Roughness, 0.25f);
+				material->SetVariable(property_Diffuse, NormalizeColor(pointLight.Color));
+				material->SetVariable(property_Emission, GetColorMagnitude(pointLight.Color));
 
 				auto positionWS = XMLoadFloat4(&pointLight.PositionWs);
 				auto modelMatrix = XMMatrixTranslationFromVector(positionWS);
@@ -1159,14 +1087,15 @@ bool DeferredLightingDemo::LoadContent()
 			}
 		}
 
-		commandList->LoadTextureFromFile(m_Skybox, L"Assets/Textures/skybox/skybox.dds", TextureUsageType::Albedo);
+		m_Skybox = std::make_shared<Texture>();
+		commandList->LoadTextureFromFile(*m_Skybox, L"Assets/Textures/skybox/skybox.dds", TextureUsageType::Albedo);
 	}
 
 	{
 		PIXScope(*commandList, "Diffuse Irradiance Convolution");
 
 		const uint32_t arraySize = Cubemap::SIDES_COUNT;
-		D3D12_RESOURCE_DESC skyboxDesc = m_Skybox.GetD3D12ResourceDesc();
+		D3D12_RESOURCE_DESC skyboxDesc = m_Skybox->GetD3D12ResourceDesc();
 
 		const UINT diffuseIrradianceMapSize = 128;
 		const auto diffuseIrradianceMapDesc = CD3DX12_RESOURCE_DESC::Tex2D(
@@ -1182,7 +1111,7 @@ bool DeferredLightingDemo::LoadContent()
 
 		DiffuseIrradiance diffuseIrradiancePso(device, *commandList, diffuseIrradianceMapDesc.Format);
 		diffuseIrradiancePso.SetContext(*commandList);
-		diffuseIrradiancePso.SetSourceCubemap(*commandList, m_Skybox);
+		diffuseIrradiancePso.SetSourceCubemap(*commandList, *m_Skybox);
 
 		for (UINT32 sideIndex = 0; sideIndex < Cubemap::SIDES_COUNT; ++sideIndex)
 		{
@@ -1195,7 +1124,7 @@ bool DeferredLightingDemo::LoadContent()
 		PIXScope(*commandList, "BRDF Integration");
 
 		const uint32_t arraySize = Cubemap::SIDES_COUNT;
-		D3D12_RESOURCE_DESC skyboxDesc = m_Skybox.GetD3D12ResourceDesc();
+		D3D12_RESOURCE_DESC skyboxDesc = m_Skybox->GetD3D12ResourceDesc();
 
 		const UINT brdfIntegrationMapSize = 512;
 		const auto diffuseIrradianceMapDesc = CD3DX12_RESOURCE_DESC::Tex2D(
@@ -1219,7 +1148,7 @@ bool DeferredLightingDemo::LoadContent()
 		PIXScope(*commandList, "Pre-Filter Environment");
 
 		const uint32_t arraySize = Cubemap::SIDES_COUNT;
-		D3D12_RESOURCE_DESC skyboxDesc = m_Skybox.GetD3D12ResourceDesc();
+		D3D12_RESOURCE_DESC skyboxDesc = m_Skybox->GetD3D12ResourceDesc();
 
 		const UINT mipLevels = 5;
 
@@ -1236,7 +1165,7 @@ bool DeferredLightingDemo::LoadContent()
 
 		PreFilterEnvironment preFilterEnvironmentPso(device, *commandList, preFilterEnvironmentMapDesc.Format);
 		preFilterEnvironmentPso.SetContext(*commandList);
-		preFilterEnvironmentPso.SetSourceCubemap(*commandList, m_Skybox);
+		preFilterEnvironmentPso.SetSourceCubemap(*commandList, *m_Skybox);
 
 		for (UINT mipLevel = 0; mipLevel < mipLevels; ++mipLevel)
 		{
@@ -1504,35 +1433,34 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		const XMMATRIX projectionMatrix = m_Camera.GetProjectionMatrix();
 		const XMMATRIX viewProjectionMatrix = viewMatrix * projectionMatrix;
 
+		m_CommonRootSignature->Bind(*commandList);
+
+		{
+			Demo::Pipeline::CBuffer pipelineCBuffer{};
+			pipelineCBuffer.m_View = viewMatrix;
+			pipelineCBuffer.m_Projection = projectionMatrix;
+			pipelineCBuffer.m_ViewProjection = viewProjectionMatrix;
+
+			pipelineCBuffer.m_Taa_JitterOffset = m_TaaEnabled ? m_Taa->ComputeJitterOffset(m_Width, m_Height) : XMFLOAT2(0.0f, 0.0f);
+			m_CommonRootSignature->SetPipelineConstantBuffer(*commandList, pipelineCBuffer);
+		}
+
+
 		{
 			PIXScope(*commandList, "GBuffer Pass");
 
 			commandList->SetRenderTarget(m_GBufferRenderTarget);
-			commandList->SetGraphicsRootSignature(m_GBufferPassRootSignature);
-			commandList->SetPipelineState(m_GBufferPassPipelineState);
-
-			TaaCBuffer taaBuffer{};
-			taaBuffer.JitterOffset = m_TaaEnabled ? m_Taa->ComputeJitterOffset(m_Width, m_Height) : XMFLOAT2(0.0f, 0.0f);
 
 			for (const auto& go : m_GameObjects)
 			{
-				MatricesCb matricesCb{};
-				matricesCb.Compute(go.GetWorldMatrix(), viewMatrix, viewProjectionMatrix, projectionMatrix);
-				commandList->SetGraphicsDynamicConstantBuffer(GBufferRootParameters::MatricesCb, matricesCb);
+				Demo::Model::CBuffer modelCBuffer{};
+				modelCBuffer.m_Model = go.GetWorldMatrix();
+				modelCBuffer.m_ModelViewProjection = go.GetWorldMatrix() * viewProjectionMatrix;
+				modelCBuffer.m_InverseTransposeModel = XMMatrixTranspose(XMMatrixInverse(nullptr, go.GetWorldMatrix()));
+				modelCBuffer.m_Taa_PreviousModelViewProjectionMatrix = go.GetPreviousWorldMatrix() * m_Taa->GetPreviousViewProjectionMatrix();
 
-				auto material = go.GetMaterial<PbrMaterial>();
-				material->SetDynamicConstantBuffer(*commandList, GBufferRootParameters::MaterialCb);
-				material->SetShaderResourceViews(*commandList, GBufferRootParameters::Textures);
-
-				taaBuffer.PreviousModelViewProjectionMatrix =
-					go.GetPreviousWorldMatrix() * m_Taa->GetPreviousViewProjectionMatrix();
-				commandList->SetGraphicsDynamicConstantBuffer(GBufferRootParameters::TaaBufferCb, taaBuffer);
-
-				const auto& model = go.GetModel();
-				for (const auto& mesh : model->GetMeshes())
-				{
-					mesh->Draw(*commandList);
-				}
+				m_CommonRootSignature->SetModelConstantBuffer(*commandList, modelCBuffer);
+				go.Draw(*commandList);
 			}
 		}
 
@@ -1700,14 +1628,14 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			const auto& skybox = m_Skybox;
 
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
-			srvDesc.Format = skybox.GetD3D12ResourceDesc().Format;
+			srvDesc.Format = skybox->GetD3D12ResourceDesc().Format;
 			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 			srvDesc.TextureCube.MipLevels = 1;
 			srvDesc.TextureCube.MostDetailedMip = 0;
 			srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
 
-			commandList->SetShaderResourceView(SkyboxPassRootParameters::SkyboxCubemap, 0, skybox,
+			commandList->SetShaderResourceView(SkyboxPassRootParameters::SkyboxCubemap, 0, *skybox,
 				D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 				0, UINT_MAX, &srvDesc
 			);

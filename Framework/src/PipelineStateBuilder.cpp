@@ -25,7 +25,9 @@ Microsoft::WRL::ComPtr<ID3D12PipelineState> PipelineStateBuilder::Build(Microsof
 		CD3DX12_PIPELINE_STATE_STREAM_VS Vs;
 		CD3DX12_PIPELINE_STATE_STREAM_PS Ps;
 		CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RtvFormats;
+		CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DsvFormat;
 		CD3DX12_PIPELINE_STATE_STREAM_BLEND_DESC Blend;
+		CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL1 DepthStencil;
 	} pipelineStateStream;
 
 	D3D12_RT_FORMAT_ARRAY rtvFormats = {};
@@ -38,8 +40,10 @@ Microsoft::WRL::ComPtr<ID3D12PipelineState> PipelineStateBuilder::Build(Microsof
 	pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	pipelineStateStream.Vs = { m_VertexShader->GetBufferPointer(), m_VertexShader->GetBufferSize() };
 	pipelineStateStream.Ps = { m_PixelShader->GetBufferPointer(), m_PixelShader->GetBufferSize() };
+	pipelineStateStream.DsvFormat = m_DepthStencilFormat;
 	pipelineStateStream.RtvFormats = rtvFormats;
 	pipelineStateStream.Blend = m_BlendDesc;
+	pipelineStateStream.DepthStencil = m_DepthStencilDesc;
 
 	const D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = {
 		sizeof(PipelineStateStream), &pipelineStateStream
@@ -50,11 +54,12 @@ Microsoft::WRL::ComPtr<ID3D12PipelineState> PipelineStateBuilder::Build(Microsof
 	return pipelineState;
 }
 
-PipelineStateBuilder& PipelineStateBuilder::WithRenderTargetFormats(const std::vector<DXGI_FORMAT>& renderTargetFormats)
+PipelineStateBuilder& PipelineStateBuilder::WithRenderTargetFormats(const std::vector<DXGI_FORMAT>& renderTargetFormats, DXGI_FORMAT depthStencilFormat)
 {
 	Assert(renderTargetFormats.size() < MAX_RENDER_TARGETS, "Too many render target formats.");
 
 	m_RenderTargetFormats = renderTargetFormats;
+	m_DepthStencilFormat = depthStencilFormat;
 	return *this;
 }
 
@@ -71,6 +76,12 @@ PipelineStateBuilder& PipelineStateBuilder::WithShaders(const Microsoft::WRL::Co
 PipelineStateBuilder& PipelineStateBuilder::WithBlend(const CD3DX12_BLEND_DESC& blendDesc)
 {
 	m_BlendDesc = blendDesc;
+	return *this;
+}
+
+PipelineStateBuilder& PipelineStateBuilder::WithDepthStencil(const CD3DX12_DEPTH_STENCIL_DESC1& depthStencil)
+{
+	m_DepthStencilDesc = depthStencil;
 	return *this;
 }
 

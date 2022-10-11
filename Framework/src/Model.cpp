@@ -23,11 +23,6 @@ Model::~Model() = default;
 
 void Model::Draw(CommandList& commandList) const
 {
-	if (m_Material != nullptr)
-	{
-		m_Material->Bind(commandList);
-	}
-
 	for (const auto& mesh : m_Meshes)
 	{
 		mesh->Draw(commandList);
