@@ -76,6 +76,9 @@ namespace Demo::Pipeline
 		DirectX::XMMATRIX m_Projection;
 		DirectX::XMMATRIX m_ViewProjection;
 
+		DirectX::XMMATRIX m_InverseView;
+		DirectX::XMMATRIX m_InverseProjection;
+
 		DirectX::XMFLOAT2 m_Taa_JitterOffset;
 		float m_Padding[2];
 	};
@@ -1440,6 +1443,9 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			pipelineCBuffer.m_View = viewMatrix;
 			pipelineCBuffer.m_Projection = projectionMatrix;
 			pipelineCBuffer.m_ViewProjection = viewProjectionMatrix;
+
+			pipelineCBuffer.m_InverseView = XMMatrixInverse(nullptr, viewMatrix);
+			pipelineCBuffer.m_InverseProjection = XMMatrixInverse(nullptr, projectionMatrix);
 
 			pipelineCBuffer.m_Taa_JitterOffset = m_TaaEnabled ? m_Taa->ComputeJitterOffset(m_Width, m_Height) : XMFLOAT2(0.0f, 0.0f);
 			m_CommonRootSignature->SetPipelineConstantBuffer(*commandList, pipelineCBuffer);
