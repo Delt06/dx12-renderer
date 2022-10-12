@@ -28,9 +28,9 @@ public:
 		for (UINT i = 0; i < MAX_RENDER_TARGETS; ++i)
 		{
 			const auto& texture = renderTarget.GetTexture((AttachmentPoint)i);
-			if (texture.IsValid())
+			if (texture->IsValid())
 			{
-				m_Formats[i] = texture.GetD3D12ResourceDesc().Format;
+				m_Formats[i] = texture->GetD3D12ResourceDesc().Format;
 				++m_Count;
 			}
 			else
@@ -40,7 +40,7 @@ public:
 		}
 
 		const auto& depthStencil = renderTarget.GetTexture(DepthStencil);
-		m_DepthStencilFormat = depthStencil.IsValid() ? depthStencil.GetD3D12ResourceDesc().Format : DXGI_FORMAT_UNKNOWN;
+		m_DepthStencilFormat = depthStencil->IsValid() ? depthStencil->GetD3D12ResourceDesc().Format : DXGI_FORMAT_UNKNOWN;
 	}
 
 	inline UINT GetCount() const { return m_Count; }

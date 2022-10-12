@@ -66,7 +66,7 @@ private:
 	};
 
 	static AttachmentPoint GetGBufferTextureAttachmentPoint(GBufferTextureType type);
-	const Texture& GetGBufferTexture(GBufferTextureType type);
+	const std::shared_ptr<Texture>& GetGBufferTexture(GBufferTextureType type);
 
 	void LightStencilPass(CommandList& commandList, const MatricesCb& matricesCb, std::shared_ptr<Mesh> mesh);
 
@@ -83,7 +83,7 @@ private:
 	RenderTarget m_LightBufferRenderTarget;
 	RenderTarget m_LightStencilRenderTarget;
 	RenderTarget m_ResultRenderTarget;
-	Texture m_DepthTexture;
+	std::shared_ptr<Texture> m_DepthTexture;
 
 	bool m_SsaoEnabled = true;
 	std::unique_ptr<Ssao> m_Ssao;
@@ -114,8 +114,7 @@ private:
 	std::vector<SpotLight> m_SpotLights;
 	std::vector<CapsuleLight> m_CapsuleLights;
 
-	RootSignature m_DirectionalLightPassRootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_DirectionalLightPassPipelineState;
+	std::shared_ptr<Material> m_DirectionalLightPassMaterial;
 	std::shared_ptr<Mesh> m_FullScreenMesh;
 
 	RootSignature m_LightStencilPassRootSignature;

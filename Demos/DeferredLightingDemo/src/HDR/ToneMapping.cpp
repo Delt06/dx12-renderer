@@ -103,7 +103,7 @@ void ToneMapping::Blit(CommandList& commandList, const Texture& source, const Te
 	commandList.SetRenderTarget(destination);
 	commandList.SetScissorRect(m_ScissorRect);
 
-	auto destinationDesc = destination.GetTexture(Color0).GetD3D12ResourceDesc();
+	auto destinationDesc = destination.GetTexture(Color0)->GetD3D12ResourceDesc();
 	CD3DX12_VIEWPORT viewport(0.0f, 0.0f, static_cast<float>(destinationDesc.Width), static_cast<float>(destinationDesc.Height));
 	commandList.SetViewport(viewport);
 

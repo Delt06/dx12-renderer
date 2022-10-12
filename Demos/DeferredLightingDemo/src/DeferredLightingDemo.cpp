@@ -25,6 +25,7 @@ using namespace Microsoft::WRL;
 #include <Framework/MatricesCb.h>
 #include <Framework/Shader.h>
 #include <Framework/Material.h>
+#include <Framework/PipelineStateBuilder.h>
 
 using namespace DirectX;
 
@@ -75,6 +76,8 @@ namespace Demo::Pipeline
 		DirectX::XMMATRIX m_View;
 		DirectX::XMMATRIX m_Projection;
 		DirectX::XMMATRIX m_ViewProjection;
+
+		DirectX::XMFLOAT4 m_CameraPosition;
 
 		DirectX::XMMATRIX m_InverseView;
 		DirectX::XMMATRIX m_InverseProjection;
@@ -386,107 +389,26 @@ bool DeferredLightingDemo::LoadContent()
 				D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
 		};
 
+		m_FullScreenMesh = Mesh::CreateBlitTriangle(*commandList);
+
 		// directional light pass
 		{
-			m_FullScreenMesh = Mesh::CreateBlitTriangle(*commandList);
+			auto shader = std::make_shared<Shader>(m_CommonRootSignature,
+				L"DeferredLightingDemo_LightBuffer_Directional_VS.cso",
+				L"DeferredLightingDemo_LightBuffer_Directional_PS.cso",
+				[](PipelineStateBuilder& builder)
+				{
+					auto depthStencil = CD3DX12_DEPTH_STENCIL_DESC1(CD3DX12_DEFAULT());
+					depthStencil.DepthEnable = false;
+					depthStencil.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
 
-			ComPtr<ID3DBlob> vertexShaderBlob =
-				ShaderUtils::LoadShaderFromFile(L"DeferredLightingDemo_LightBuffer_Directional_VS.cso");
-			ComPtr<ID3DBlob> pixelShaderBlob =
-				ShaderUtils::LoadShaderFromFile(L"DeferredLightingDemo_LightBuffer_Directional_PS.cso");
-
-			// Create a root signature.
-			D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData;
-			featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
-			if (FAILED(device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData))))
-			{
-				featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
-			}
-
-			constexpr D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
-				D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
-				D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
-				D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-				D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
-
-			CD3DX12_DESCRIPTOR_RANGE1 gBufferDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, gBufferTexturesCount, 0);
-			CD3DX12_DESCRIPTOR_RANGE1 ambientDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, gBufferTexturesCount);
-
-			CD3DX12_ROOT_PARAMETER1 rootParameters[DirectionalLightBufferRootParameters::NumRootParameters];
-			rootParameters[DirectionalLightBufferRootParameters::MatricesCb].InitAsConstantBufferView(0,
-				0,
-				D3D12_ROOT_DESCRIPTOR_FLAG_NONE);
-			rootParameters[DirectionalLightBufferRootParameters::DirectionalLightCb].InitAsConstants(
-				sizeof(DirectionalLight) / sizeof(float), 1, 0, D3D12_SHADER_VISIBILITY_PIXEL);
-			rootParameters[DirectionalLightBufferRootParameters::ScreenParametersCb].InitAsConstants(
-				sizeof(ScreenParameters) / sizeof(float), 2, 0, D3D12_SHADER_VISIBILITY_PIXEL);
-			rootParameters[DirectionalLightBufferRootParameters::GBuffer].InitAsDescriptorTable(1,
-				&gBufferDescriptorRange,
-				D3D12_SHADER_VISIBILITY_PIXEL);
-			rootParameters[DirectionalLightBufferRootParameters::Ambient].InitAsDescriptorTable(1,
-				&ambientDescriptorRange,
-				D3D12_SHADER_VISIBILITY_PIXEL);
-
-			CD3DX12_STATIC_SAMPLER_DESC samplers[] = {
-				lightPassSamplers[0],
-				GetSkyboxSampler(1)
-			};
-
-			CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
-			rootSignatureDescription.Init_1_1(DirectionalLightBufferRootParameters::NumRootParameters,
-				rootParameters,
-				_countof(samplers),
-				samplers,
-				rootSignatureFlags);
-
-			m_DirectionalLightPassRootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1,
-				featureData.HighestVersion);
-
-			// Setup the pipeline state.
-			struct PipelineStateStream
-			{
-				CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE RootSignature;
-				CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
-				CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
-				CD3DX12_PIPELINE_STATE_STREAM_VS Vs;
-				CD3DX12_PIPELINE_STATE_STREAM_PS Ps;
-				CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DsvFormat;
-				CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RtvFormats;
-				CD3DX12_PIPELINE_STATE_STREAM_RASTERIZER Rasterizer;
-				CD3DX12_PIPELINE_STATE_STREAM_BLEND_DESC Blend;
-				CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL DepthStencil;
-			} pipelineStateStream;
-
-			D3D12_RT_FORMAT_ARRAY rtvFormats = {};
-			rtvFormats.NumRenderTargets = 1;
-			rtvFormats.RTFormats[0] = lightBufferFormat;
-
-			pipelineStateStream.RootSignature = m_DirectionalLightPassRootSignature.GetRootSignature().Get();
-
-			pipelineStateStream.InputLayout =
-			{ VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT };
-			pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-			pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
-			pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
-			pipelineStateStream.DsvFormat = depthBufferFormat;
-			pipelineStateStream.RtvFormats = rtvFormats;
-			pipelineStateStream.Rasterizer =
-				CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_BACK, FALSE, 0, 0,
-					0, TRUE, FALSE, FALSE, 0,
-					D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
-			pipelineStateStream.Blend = AdditiveBlending();
-
-			auto depthStencil = CD3DX12_DEPTH_STENCIL_DESC(CD3DX12_DEFAULT());
-			depthStencil.DepthEnable = false;
-			depthStencil.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
-			pipelineStateStream.DepthStencil = depthStencil;
-
-			const D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = {
-				sizeof(PipelineStateStream), &pipelineStateStream
-			};
-
-			ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc,
-				IID_PPV_ARGS(&m_DirectionalLightPassPipelineState)));
+					builder
+						.WithBlend(AdditiveBlending())
+						.WithDepthStencil(depthStencil)
+						;
+				}
+			);
+			m_DirectionalLightPassMaterial = Material::Create(shader);
 		}
 
 		// light stencil pass
@@ -616,7 +538,7 @@ bool DeferredLightingDemo::LoadContent()
 				D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 				D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
-			CD3DX12_DESCRIPTOR_RANGE1 texturesDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, gBufferTexturesCount, 0);
+			CD3DX12_DESCRIPTOR_RANGE1 texturesDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, gBufferTexturesCount, 0, CommonRootSignature::PIPELINE_REGISTER_SPACE);
 
 			CD3DX12_ROOT_PARAMETER1 rootParameters[LightPassRootParameters::NumRootParameters];
 			rootParameters[LightPassRootParameters::MatricesCb].InitAsConstantBufferView(0,
@@ -1110,7 +1032,7 @@ bool DeferredLightingDemo::LoadContent()
 			arraySize, 1,
 			1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 
-		auto diffuseIrradianceMap = Texture(diffuseIrradianceMapDesc, nullptr,
+		auto diffuseIrradianceMap = std::make_shared<Texture>(diffuseIrradianceMapDesc, nullptr,
 			TextureUsageType::Albedo,
 			L"Skybox IBL (Diffuse Irradiance)");
 		m_DiffuseIrradianceMapRt.AttachTexture(Color0, diffuseIrradianceMap);
@@ -1139,7 +1061,7 @@ bool DeferredLightingDemo::LoadContent()
 			arraySize, 1,
 			1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 
-		auto brdfIntegrationMap = Texture(diffuseIrradianceMapDesc, nullptr,
+		auto brdfIntegrationMap = std::make_shared<Texture>(diffuseIrradianceMapDesc, nullptr,
 			TextureUsageType::Other,
 			L"BRDF Integration Map");
 		m_BrdfIntegrationMapRt.AttachTexture(Color0, brdfIntegrationMap);
@@ -1164,7 +1086,7 @@ bool DeferredLightingDemo::LoadContent()
 			arraySize, mipLevels,
 			1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 
-		auto preFilterEnvironmentMap = Texture(preFilterEnvironmentMapDesc, nullptr,
+		auto preFilterEnvironmentMap = std::make_shared<Texture>(preFilterEnvironmentMapDesc, nullptr,
 			TextureUsageType::Albedo,
 			L"Skybox IBL (Pre-Filtered Environment Map)");
 		m_PreFilterEnvironmentMapRt.AttachTexture(Color0, preFilterEnvironmentMap);
@@ -1191,7 +1113,7 @@ bool DeferredLightingDemo::LoadContent()
 		m_ReflectionsPass = std::make_unique<Reflections>(lightBufferFormat);
 		D3D12_SHADER_RESOURCE_VIEW_DESC preFilterEnvironmentSrvDesc;
 		preFilterEnvironmentSrvDesc.Format =
-			m_PreFilterEnvironmentMapRt.GetTexture(Color0).GetD3D12ResourceDesc().Format;
+			m_PreFilterEnvironmentMapRt.GetTexture(Color0)->GetD3D12ResourceDesc().Format;
 		preFilterEnvironmentSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		preFilterEnvironmentSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 		preFilterEnvironmentSrvDesc.TextureCube.MipLevels = -1;
@@ -1201,7 +1123,7 @@ bool DeferredLightingDemo::LoadContent()
 		m_ReflectionsPass->Init(device, *commandList);
 	}
 
-	Texture depthBuffer;
+	std::shared_ptr<Texture> depthBuffer;
 
 	// Depth Stencil
 	{
@@ -1214,10 +1136,10 @@ bool DeferredLightingDemo::LoadContent()
 		depthClearValue.Format = depthDesc.Format;
 		depthClearValue.DepthStencil = { 1.0f, 0 };
 
-		depthBuffer = Texture(depthDesc, &depthClearValue,
+		depthBuffer = std::make_shared<Texture>(depthDesc, &depthClearValue,
 			TextureUsageType::Depth,
 			L"Depth-Stencil");
-		m_DepthTexture = Texture(depthDesc, &depthClearValue,
+		m_DepthTexture = std::make_shared<Texture>(depthDesc, &depthClearValue,
 			TextureUsageType::Depth,
 			L"GBuffer-Depth");
 	}
@@ -1230,19 +1152,19 @@ bool DeferredLightingDemo::LoadContent()
 			1, 0,
 			D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 
-		auto diffuseTexture = Texture(colorDesc, gBufferColorClearValue,
+		auto diffuseTexture = std::make_shared<Texture>(colorDesc, gBufferColorClearValue,
 			TextureUsageType::RenderTarget,
 			L"GBuffer-Diffuse");
 
-		auto normalTexture = Texture(colorDesc, gBufferColorClearValue,
+		auto normalTexture = std::make_shared<Texture>(colorDesc, gBufferColorClearValue,
 			TextureUsageType::RenderTarget,
 			L"GBuffer-Normal");
 
-		auto surfaceTexture = Texture(colorDesc, gBufferColorClearValue,
+		auto surfaceTexture = std::make_shared<Texture>(colorDesc, gBufferColorClearValue,
 			TextureUsageType::RenderTarget,
 			L"GBuffer-Surface");
 
-		auto velocityTexture = Texture(colorDesc, velocityColorClearValue,
+		auto velocityTexture = std::make_shared<Texture>(colorDesc, velocityColorClearValue,
 			TextureUsageType::RenderTarget,
 			L"GBuffer-Velocity");
 
@@ -1268,7 +1190,7 @@ bool DeferredLightingDemo::LoadContent()
 			1, 0,
 			D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 
-		auto lightBuffer = Texture(colorDesc, lightBufferColorClearValue,
+		auto lightBuffer = std::make_shared<Texture>(colorDesc, lightBufferColorClearValue,
 			TextureUsageType::RenderTarget,
 			L"Light Buffer");
 
@@ -1286,7 +1208,7 @@ bool DeferredLightingDemo::LoadContent()
 			1, 0,
 			D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 
-		auto resultRT = Texture(colorDesc, nullptr,
+		auto resultRT = std::make_shared<Texture>(colorDesc, nullptr,
 			TextureUsageType::RenderTarget,
 			L"Result RT");
 
@@ -1318,7 +1240,12 @@ void DeferredLightingDemo::OnResize(ResizeEventArgs& e)
 		m_LightBufferRenderTarget.Resize(m_Width, m_Height);
 		m_LightBufferRenderTarget.AttachTexture(DepthStencil, m_GBufferRenderTarget.GetTexture(DepthStencil));
 		m_LightStencilRenderTarget.AttachTexture(DepthStencil, m_GBufferRenderTarget.GetTexture(DepthStencil));
-		m_DepthTexture.Resize(m_Width, m_Height);
+
+		if (m_DepthTexture != nullptr)
+		{
+			m_DepthTexture->Resize(m_Width, m_Height);
+		}
+
 		m_ResultRenderTarget.Resize(m_Width, m_Height);
 
 		if (m_Ssao != nullptr)
@@ -1423,12 +1350,12 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 				commandList->ClearRenderTarget(m_GBufferRenderTarget,
 					gBufferColorClearValue,
 					D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL);
-				commandList->ClearTexture(GetGBufferTexture(GBufferTextureType::Velocity), velocityColorClearValue);
+				commandList->ClearTexture(*GetGBufferTexture(GBufferTextureType::Velocity), velocityColorClearValue);
 			}
 
 			{
 				PIXScope(*commandList, "Clear Light Buffer");
-				commandList->ClearTexture(m_LightBufferRenderTarget.GetTexture(Color0), lightBufferColorClearValue);
+				commandList->ClearTexture(*m_LightBufferRenderTarget.GetTexture(Color0), lightBufferColorClearValue);
 			}
 		}
 
@@ -1440,12 +1367,15 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		const XMMATRIX viewProjectionMatrix = viewMatrix * projectionMatrix;
 
 		m_CommonRootSignature->Bind(*commandList);
+		Demo::Pipeline::CBuffer pipelineCBuffer{};
 
 		{
-			Demo::Pipeline::CBuffer pipelineCBuffer{};
+			
 			pipelineCBuffer.m_View = viewMatrix;
 			pipelineCBuffer.m_Projection = projectionMatrix;
 			pipelineCBuffer.m_ViewProjection = viewProjectionMatrix;
+
+			XMStoreFloat4(&pipelineCBuffer.m_CameraPosition, m_Camera.GetTranslation());
 
 			pipelineCBuffer.m_InverseView = XMMatrixInverse(nullptr, viewMatrix);
 			pipelineCBuffer.m_InverseProjection = XMMatrixInverse(nullptr, projectionMatrix);
@@ -1481,7 +1411,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		{
 			PIXScope(*commandList, "Copy Depth Buffer to Depth Texture");
 
-			commandList->CopyResource(m_DepthTexture, m_GBufferRenderTarget.GetTexture(DepthStencil));
+			commandList->CopyResource(*m_DepthTexture, *m_GBufferRenderTarget.GetTexture(DepthStencil));
 		}
 
 		if (m_SsaoEnabled)
@@ -1492,8 +1422,8 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			constexpr float radius = 0.5f;
 			constexpr float power = 4.0f;
 			m_Ssao->SsaoPass(*commandList,
-				GetGBufferTexture(GBufferTextureType::Normals),
-				m_DepthTexture,
+				*GetGBufferTexture(GBufferTextureType::Normals),
+				*m_DepthTexture,
 				viewMatrix,
 				projectionMatrix,
 				&depthTextureSrv,
@@ -1508,11 +1438,11 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			const auto jitterOffset = m_Taa->GetCurrentJitterOffset();
 			m_Ssr->SetJitterOffset(jitterOffset);
 
-			const Texture& normals = GetGBufferTexture(GBufferTextureType::Normals);
-			const Texture& surface = GetGBufferTexture(GBufferTextureType::Surface);
-			const Texture& depth = m_DepthTexture;
+			const auto& normals = GetGBufferTexture(GBufferTextureType::Normals);
+			const auto& surface = GetGBufferTexture(GBufferTextureType::Surface);
+			const auto& depth = m_DepthTexture;
 			const RenderTarget& resultRenderTarget = m_LightBufferRenderTarget;
-			m_Ssr->Execute(*commandList, normals, surface, depth);
+			m_Ssr->Execute(*commandList, *normals, *surface, *depth);
 		}
 
 		commandList->SetViewport(m_Viewport);
@@ -1528,54 +1458,63 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			screenParameters.OneOverWidth = 1.0f / static_cast<float>(m_Width);
 			screenParameters.OneOverHeight = 1.0f / static_cast<float>(m_Height);
 
+			m_CommonRootSignature->Bind(*commandList);
+			m_CommonRootSignature->SetPipelineConstantBuffer(*commandList, pipelineCBuffer);
+
+			// bind GBuffer
+			{
+				m_CommonRootSignature->SetPipelineShaderResourceView(*commandList,
+					0, ShaderResourceView(GetGBufferTexture(GBufferTextureType::Diffuse))
+				);
+
+				m_CommonRootSignature->SetPipelineShaderResourceView(*commandList,
+					1, ShaderResourceView(GetGBufferTexture(GBufferTextureType::Normals))
+				);
+
+				m_CommonRootSignature->SetPipelineShaderResourceView(*commandList,
+					2, ShaderResourceView(GetGBufferTexture(GBufferTextureType::Surface))
+				);
+
+				auto depthStencilSrvDesc = GetDepthTextureSrv();
+				m_CommonRootSignature->SetPipelineShaderResourceView(*commandList,
+					3, ShaderResourceView(m_DepthTexture, 0, 1, &depthStencilSrvDesc)
+				);
+			}
+
 			{
 				PIXScope(*commandList, "Directional Light Pass");
 
-				commandList->SetGraphicsRootSignature(m_DirectionalLightPassRootSignature);
-				commandList->SetPipelineState(m_DirectionalLightPassPipelineState);
-
-				MatricesCb matricesCb;
-				matricesCb.Compute(XMMatrixIdentity(), viewMatrix, viewProjectionMatrix, projectionMatrix);
-
-				commandList->SetGraphicsDynamicConstantBuffer(DirectionalLightBufferRootParameters::MatricesCb, matricesCb);
-				commandList->SetGraphics32BitConstants(DirectionalLightBufferRootParameters::DirectionalLightCb,
-					m_DirectionalLight);
-				commandList->SetGraphics32BitConstants(DirectionalLightBufferRootParameters::ScreenParametersCb,
-					screenParameters);
-				BindGBufferAsSRV(*commandList, DirectionalLightBufferRootParameters::GBuffer);
-
 				const auto& diffuseIrradianceMap = m_DiffuseIrradianceMapRt.GetTexture(Color0);
 				D3D12_SHADER_RESOURCE_VIEW_DESC irradianceSrvDesc;
-				irradianceSrvDesc.Format = diffuseIrradianceMap.GetD3D12ResourceDesc().Format;
+				irradianceSrvDesc.Format = diffuseIrradianceMap->GetD3D12ResourceDesc().Format;
 				irradianceSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 				irradianceSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 				irradianceSrvDesc.TextureCube.MipLevels = 1;
 				irradianceSrvDesc.TextureCube.MostDetailedMip = 0;
 				irradianceSrvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
-				commandList->SetShaderResourceView(DirectionalLightBufferRootParameters::Ambient,
-					0,
-					diffuseIrradianceMap,
-					D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-					0,
-					UINT_MAX,
-					&irradianceSrvDesc);
+				ShaderResourceView irradianceMapSrv(diffuseIrradianceMap);
+				irradianceMapSrv.m_Desc = &irradianceSrvDesc;
 
+				m_DirectionalLightPassMaterial->SetShaderResourceView("irradianceMap", irradianceMapSrv);
+				m_DirectionalLightPassMaterial->SetVariable<XMFLOAT4>("DirectionWS", m_DirectionalLight.m_DirectionWs);
+				m_DirectionalLightPassMaterial->SetVariable<XMFLOAT4>("Color", m_DirectionalLight.m_Color);
+
+				m_DirectionalLightPassMaterial->Bind(*commandList);
 				m_FullScreenMesh->Draw(*commandList);
 			}
 
 			{
-				const Texture& preFilterMap = m_PreFilterEnvironmentMapRt.GetTexture(Color0);
-				const Texture& brdfLut = m_BrdfIntegrationMapRt.GetTexture(Color0);
-				const Texture
-					& reflections = m_SsrEnabled ? m_Ssr->GetReflectionsTexture() : m_Ssr->GetEmptyReflectionsTexture();
+				const auto& preFilterMap = m_PreFilterEnvironmentMapRt.GetTexture(Color0);
+				const auto& brdfLut = m_BrdfIntegrationMapRt.GetTexture(Color0);
+				const auto& reflections = m_SsrEnabled ? m_Ssr->GetReflectionsTexture() : m_Ssr->GetEmptyReflectionsTexture();
 				MatricesCb matrices;
 				matrices.Compute(XMMatrixIdentity(), viewMatrix, viewProjectionMatrix, projectionMatrix);
 				m_ReflectionsPass->Draw(*commandList,
 					m_GBufferRenderTarget,
-					m_DepthTexture,
-					preFilterMap,
-					brdfLut,
-					reflections,
+					*m_DepthTexture,
+					*preFilterMap,
+					*brdfLut,
+					*reflections,
 					matrices);
 			}
 
@@ -1659,7 +1598,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 
 		if (m_SsrEnabled)
 		{
-			m_Ssr->CaptureSceneColor(*commandList, m_LightBufferRenderTarget.GetTexture(Color0));
+			m_Ssr->CaptureSceneColor(*commandList, *m_LightBufferRenderTarget.GetTexture(Color0));
 		}
 
 		if (m_BloomEnabled)
@@ -1668,22 +1607,22 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			parameters.Threshold = 1.0f;
 			parameters.SoftThreshold = 0.1f;
 			parameters.Intensity = 0.35f;
-			m_Bloom->Draw(*commandList, m_LightBufferRenderTarget.GetTexture(Color0), m_LightBufferRenderTarget, parameters);
+			m_Bloom->Draw(*commandList, *m_LightBufferRenderTarget.GetTexture(Color0), m_LightBufferRenderTarget, parameters);
 		}
 
 		{
-			m_AutoExposurePso->Dispatch(*commandList, m_LightBufferRenderTarget.GetTexture(Color0), m_DeltaTime);
+			m_AutoExposurePso->Dispatch(*commandList, *m_LightBufferRenderTarget.GetTexture(Color0), m_DeltaTime);
 		}
 
 		{
 			auto& source = m_LightBufferRenderTarget.GetTexture(Color0);
-			m_ToneMappingPso->Blit(*commandList, source, m_AutoExposurePso->GetLuminanceOutput(), m_ResultRenderTarget);
+			m_ToneMappingPso->Blit(*commandList, *source, m_AutoExposurePso->GetLuminanceOutput(), m_ResultRenderTarget);
 		}
 
 		if (m_TaaEnabled)
 		{
-			const Texture& currentBuffer = m_ResultRenderTarget.GetTexture(Color0);
-			m_Taa->Resolve(*commandList, currentBuffer, GetGBufferTexture(GBufferTextureType::Velocity));
+			const Texture& currentBuffer = *m_ResultRenderTarget.GetTexture(Color0);
+			m_Taa->Resolve(*commandList, currentBuffer, *GetGBufferTexture(GBufferTextureType::Velocity));
 		}
 
 		// Maintain TAA data
@@ -1700,28 +1639,28 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 
 	commandQueue->ExecuteCommandList(commandList);
 	const auto& presentedTexture = m_TaaEnabled ? m_Taa->GetResolvedTexture() : m_ResultRenderTarget.GetTexture(Color0);
-	PWindow->Present(presentedTexture);
+	PWindow->Present(*presentedTexture);
 }
 
 void DeferredLightingDemo::BindGBufferAsSRV(CommandList& commandList, uint32_t rootParameterIndex)
 {
 	commandList.SetShaderResourceView(rootParameterIndex,
 		0,
-		GetGBufferTexture(GBufferTextureType::Diffuse),
+		*GetGBufferTexture(GBufferTextureType::Diffuse),
 		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	commandList.SetShaderResourceView(rootParameterIndex,
 		1,
-		GetGBufferTexture(GBufferTextureType::Normals),
+		*GetGBufferTexture(GBufferTextureType::Normals),
 		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	commandList.SetShaderResourceView(rootParameterIndex,
 		2,
-		GetGBufferTexture(GBufferTextureType::Surface),
+		*GetGBufferTexture(GBufferTextureType::Surface),
 		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 	auto depthStencilSrvDesc = GetDepthTextureSrv();
 	commandList.SetShaderResourceView(rootParameterIndex,
 		3,
-		m_DepthTexture,
+		*m_DepthTexture,
 		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 		0,
 		1,
@@ -1747,7 +1686,7 @@ AttachmentPoint DeferredLightingDemo::GetGBufferTextureAttachmentPoint(GBufferTe
 	}
 }
 
-const Texture& DeferredLightingDemo::GetGBufferTexture(GBufferTextureType type)
+const std::shared_ptr<Texture>& DeferredLightingDemo::GetGBufferTexture(GBufferTextureType type)
 {
 	return m_GBufferRenderTarget.GetTexture(GetGBufferTextureAttachmentPoint(type));
 }
@@ -1759,7 +1698,7 @@ void DeferredLightingDemo::LightStencilPass(CommandList& commandList,
 	PIXScope(commandList, "Light Stencil Pass");
 
 	commandList.SetRenderTarget(m_LightStencilRenderTarget);
-	commandList.ClearDepthStencilTexture(m_LightStencilRenderTarget.GetTexture(DepthStencil), D3D12_CLEAR_FLAG_STENCIL);
+	commandList.ClearDepthStencilTexture(*m_LightStencilRenderTarget.GetTexture(DepthStencil), D3D12_CLEAR_FLAG_STENCIL);
 
 	commandList.SetGraphicsRootSignature(m_LightStencilPassRootSignature);
 	commandList.SetPipelineState(m_LightStencilPassPipelineState);

@@ -21,7 +21,7 @@ public:
 
 	void Resolve(CommandList& commandList, const Texture& currentBuffer, const Texture& velocityBuffer);
 	void Resize(uint32_t width, uint32_t height);
-	[[nodiscard]] const Texture& GetResolvedTexture() const;
+	[[nodiscard]] const std::shared_ptr<Texture>& GetResolvedTexture() const;
 
 	[[nodiscard]] DirectX::XMFLOAT2 GetCurrentJitterOffset() const;
 	void OnRenderedFrame(const DirectX::XMMATRIX& viewProjectionMatrix);

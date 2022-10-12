@@ -24,7 +24,7 @@ public:
 	explicit UploadBuffer(size_t pageSize = _2MB);
 
 
-	size_t GetPageSize() const { return PageSize; }
+	size_t GetPageSize() const { return m_PageSize; }
 
 	/**
 	 * Allocate memory in an Upload heap.
@@ -58,13 +58,13 @@ private:
 		void Reset();
 
 	private:
-		Microsoft::WRL::ComPtr<ID3D12Resource> Resource;
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_Resource;
 
-		void* CpuPtr;
-		D3D12_GPU_VIRTUAL_ADDRESS GpuPtr;
+		void* m_CpuPtr;
+		D3D12_GPU_VIRTUAL_ADDRESS m_GpuPtr;
 
-		size_t SizeInBytes;
-		size_t OffsetInBytes;
+		size_t m_SizeInBytes;
+		size_t m_OffsetInBytes;
 	};
 
 	using PagePoolType = std::deque<std::shared_ptr<Page>>;
@@ -74,9 +74,9 @@ private:
 	 */
 	std::shared_ptr<Page> RequestPage();
 
-	PagePoolType PagePool;
-	PagePoolType AvailablePages;
+	PagePoolType m_PagePool;
+	PagePoolType m_AvailablePages;
 
-	std::shared_ptr<Page> CurrentPage;
-	size_t PageSize;
+	std::shared_ptr<Page> m_CurrentPage;
+	size_t m_PageSize;
 };

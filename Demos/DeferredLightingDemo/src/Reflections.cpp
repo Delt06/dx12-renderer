@@ -26,7 +26,7 @@ Reflections::Reflections(CompositeEffect::Format renderTargetFormat)
 	, m_PixelShader(LoadShaderFromFile(L"DeferredLightingDemo_LightBuffer_Reflections_PS.cso"))
 {
 	const UINT gBufferTexturesCount = 4;
-	m_GBufferDescriptorRange = CompositeEffect::DescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, gBufferTexturesCount, 0);
+	m_GBufferDescriptorRange = CompositeEffect::DescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, gBufferTexturesCount, 0, 2);
 	m_ReflectionsDescriptorRange = CompositeEffect::DescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, gBufferTexturesCount);
 
 	m_RootParameters[RootParameters::MatricesCB].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
@@ -48,9 +48,9 @@ void Reflections::Draw(CommandList& commandList, const RenderTarget& gBufferRend
 
 	commandList.SetGraphicsDynamicConstantBuffer(RootParameters::MatricesCB, matrices);
 
-	commandList.SetShaderResourceView(RootParameters::GBuffer, 0, gBufferRenderTarget.GetTexture(Color0), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	commandList.SetShaderResourceView(RootParameters::GBuffer, 1, gBufferRenderTarget.GetTexture(Color1), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	commandList.SetShaderResourceView(RootParameters::GBuffer, 2, gBufferRenderTarget.GetTexture(Color2), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	commandList.SetShaderResourceView(RootParameters::GBuffer, 0, *gBufferRenderTarget.GetTexture(Color0), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	commandList.SetShaderResourceView(RootParameters::GBuffer, 1, *gBufferRenderTarget.GetTexture(Color1), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	commandList.SetShaderResourceView(RootParameters::GBuffer, 2, *gBufferRenderTarget.GetTexture(Color2), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	commandList.SetShaderResourceView(RootParameters::GBuffer, 3, depthTexture, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, &m_DepthSrvDesc);
 
 	commandList.SetShaderResourceView(RootParameters::Reflections, 0, preFilterMap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, UINT_MAX, &m_PreFilterSrvDesc);

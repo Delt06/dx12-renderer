@@ -26,17 +26,17 @@ Ssr::Ssr(CompositeEffect::Format renderTargetFormat, const D3D12_SHADER_RESOURCE
 		1, 1, 1, 0,
 		D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET
 	);
-	auto traceTexture = Texture(traceRtDesc, nullptr, TextureUsageType::RenderTarget, L"SSR Trace Result");
+	auto traceTexture = std::make_shared<Texture>(traceRtDesc, nullptr, TextureUsageType::RenderTarget, L"SSR Trace Result");
 	m_TraceRenderTarget.AttachTexture(Color0, traceTexture);
 
-	auto finalTexture = Texture(traceRtDesc, nullptr, TextureUsageType::RenderTarget, L"SSR Reflections");
+	auto finalTexture = std::make_shared<Texture>(traceRtDesc, nullptr, TextureUsageType::RenderTarget, L"SSR Reflections");
 	m_FinalReflectionsTexture.AttachTexture(Color0, finalTexture);
 
 	const auto emptyDesc = CD3DX12_RESOURCE_DESC::Tex2D(
 		renderTargetFormat, 1, 1,
 		1, 1
 	);
-	m_EmptyReflections = Texture(emptyDesc, nullptr, TextureUsageType::Other, L"SSR Empty Reflections");
+	m_EmptyReflections = std::make_shared<Texture>(emptyDesc, nullptr, TextureUsageType::Other, L"SSR Empty Reflections");
 }
 
 void Ssr::Resize(uint32_t width, uint32_t height)
@@ -82,8 +82,8 @@ void Ssr::Execute(CommandList& commandList, const Texture& normals, const Textur
 
 	{
 		PIXScope(commandList, "SSR Blur Pass");
-		const Texture& traceResult = m_TraceRenderTarget.GetTexture(Color0);
-		m_BlurPass.Execute(commandList, traceResult, m_FinalReflectionsTexture);
+		const auto& traceResult = m_TraceRenderTarget.GetTexture(Color0);
+		m_BlurPass.Execute(commandList, *traceResult, m_FinalReflectionsTexture);
 	}
 
 }
@@ -94,12 +94,12 @@ void Ssr::Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList)
 	m_BlurPass.Init(device, commandList);
 }
 
-const Texture& Ssr::GetReflectionsTexture() const
+const std::shared_ptr<Texture>& Ssr::GetReflectionsTexture() const
 {
 	return m_FinalReflectionsTexture.GetTexture(Color0);
 }
 
-const Texture& Ssr::GetEmptyReflectionsTexture() const
+const std::shared_ptr<Texture>& Ssr::GetEmptyReflectionsTexture() const
 {
 	return m_EmptyReflections;
 }

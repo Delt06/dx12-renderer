@@ -1,3 +1,5 @@
+#pragma once
+
 #include <DX12Library/RootSignature.h>
 
 #include <wrl.h>

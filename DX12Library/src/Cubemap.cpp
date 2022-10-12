@@ -21,7 +21,7 @@ Cubemap::Cubemap(uint32_t size, DirectX::XMVECTOR position, CommandList& command
 
 	// Create a render target
 	{
-		auto colorTexture = Texture(colorDesc, &m_ClearColor,
+		auto colorTexture = std::make_shared<Texture>(colorDesc, &m_ClearColor,
 			TextureUsageType::RenderTarget,
 			L"Cubemap Color Render Target");
 
@@ -34,7 +34,7 @@ Cubemap::Cubemap(uint32_t size, DirectX::XMVECTOR position, CommandList& command
 		depthClearValue.Format = depthDesc.Format;
 		depthClearValue.DepthStencil = { 1.0f, 0 };
 
-		auto depthTexture = Texture(depthDesc, &depthClearValue,
+		auto depthTexture = std::make_shared<Texture>(depthDesc, &depthClearValue,
 			TextureUsageType::Depth,
 			L"Cubemap Depth Render Target");
 
@@ -64,8 +64,8 @@ Cubemap::Cubemap(uint32_t size, DirectX::XMVECTOR position, CommandList& command
 
 void Cubemap::Clear(CommandList& commandList)
 {
-	commandList.ClearTexture(m_RenderedCubemap.GetTexture(Color0), m_ClearColor.Color);
-	commandList.ClearDepthStencilTexture(m_RenderedCubemap.GetTexture(DepthStencil), D3D12_CLEAR_FLAG_DEPTH);
+	commandList.ClearTexture(*m_RenderedCubemap.GetTexture(Color0), m_ClearColor.Color);
+	commandList.ClearDepthStencilTexture(*m_RenderedCubemap.GetTexture(DepthStencil), D3D12_CLEAR_FLAG_DEPTH);
 	commandList.ClearTexture(m_FallbackCubemap, m_ClearColor.Color);
 }
 
@@ -73,7 +73,7 @@ void Cubemap::SetShaderResourceView(CommandList& commandList, uint32_t rootParam
 {
 	constexpr auto stateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 	auto resource = m_RenderedCubemap.GetTexture(Color0);
-	commandList.SetShaderResourceView(rootParameterIndex, descriptorOffset, resource, stateAfter, 0, SIDES_COUNT, &m_SrvDesc);
+	commandList.SetShaderResourceView(rootParameterIndex, descriptorOffset, *resource, stateAfter, 0, SIDES_COUNT, &m_SrvDesc);
 }
 
 void Cubemap::SetEmptyShaderResourceView(CommandList& commandList, uint32_t rootParameterIndex, uint32_t descriptorOffset) const

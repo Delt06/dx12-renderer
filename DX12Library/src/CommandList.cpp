@@ -778,30 +778,30 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, UINT texArra
 	{
 		auto& texture = textures[i];
 
-		if (texture.IsValid())
+		if (texture->IsValid())
 		{
-			const UINT subresource = isArrayItem ? texture.GetRenderTargetSubresourceIndex(texArrayIndex, mipLevel) : D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-			TransitionBarrier(texture, D3D12_RESOURCE_STATE_RENDER_TARGET, subresource);
+			const UINT subresource = isArrayItem ? texture->GetRenderTargetSubresourceIndex(texArrayIndex, mipLevel) : D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+			TransitionBarrier(*texture, D3D12_RESOURCE_STATE_RENDER_TARGET, subresource);
 			renderTargetDescriptors.push_back(isArrayItem
-				? texture.GetRenderTargetViewArray(texArrayIndex, mipLevel)
-				: texture.GetRenderTargetView());
+				? texture->GetRenderTargetViewArray(texArrayIndex, mipLevel)
+				: texture->GetRenderTargetView());
 
-			TrackResource(texture);
+			TrackResource(*texture);
 		}
 	}
 
 	const auto& depthTexture = renderTarget.GetTexture(DepthStencil);
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE depthStencilDescriptor(D3D12_DEFAULT);
-	if (useDepth && depthTexture.GetD3D12Resource())
+	if (useDepth && depthTexture->GetD3D12Resource())
 	{
-		const UINT subresource = isArrayItem ? depthTexture.GetDepthStencilSubresourceIndex(texArrayIndex) : D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-		TransitionBarrier(depthTexture, D3D12_RESOURCE_STATE_DEPTH_WRITE, subresource);
+		const UINT subresource = isArrayItem ? depthTexture->GetDepthStencilSubresourceIndex(texArrayIndex) : D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		TransitionBarrier(*depthTexture, D3D12_RESOURCE_STATE_DEPTH_WRITE, subresource);
 		depthStencilDescriptor = isArrayItem
-			? depthTexture.GetDepthStencilViewArray(texArrayIndex)
-			: depthTexture.GetDepthStencilView();
+			? depthTexture->GetDepthStencilViewArray(texArrayIndex)
+			: depthTexture->GetDepthStencilView();
 
-		TrackResource(depthTexture);
+		TrackResource(*depthTexture);
 	}
 
 	const D3D12_CPU_DESCRIPTOR_HANDLE* pDsv = depthStencilDescriptor.ptr != 0 ? &depthStencilDescriptor : nullptr;
@@ -820,16 +820,16 @@ void CommandList::ClearRenderTarget(const RenderTarget& renderTarget, const floa
 	{
 		auto& texture = textures[i];
 
-		if (texture.IsValid())
+		if (texture->IsValid())
 		{
-			ClearTexture(texture, clearColor);
+			ClearTexture(*texture, clearColor);
 		}
 	}
 
 	const auto& depthTexture = renderTarget.GetTexture(DepthStencil);
-	if (depthTexture.IsValid())
+	if (depthTexture->IsValid())
 	{
-		ClearDepthStencilTexture(depthTexture, clearFlags);
+		ClearDepthStencilTexture(*depthTexture, clearFlags);
 	}
 }
 

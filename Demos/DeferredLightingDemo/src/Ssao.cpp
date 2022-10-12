@@ -80,7 +80,7 @@ Ssao::Ssao(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandLis
 	// Create SSAO RT
 	{
 		auto ssaoTextureDesc = CD3DX12_RESOURCE_DESC::Tex2D(ssaoFormat, width, height, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
-		auto ssaoTexture = Texture(ssaoTextureDesc, nullptr, TextureUsageType::RenderTarget, L"SSAO");
+		auto ssaoTexture = std::make_shared<Texture>(ssaoTextureDesc, nullptr, TextureUsageType::RenderTarget, L"SSAO");
 		m_RenderTarget.AttachTexture(Color0, ssaoTexture);
 	}
 
@@ -310,7 +310,7 @@ void Ssao::SsaoPass(CommandList& commandList, const Texture& gBufferNormals, con
 
 
 	const auto& ssaoTexture = m_RenderTarget.GetTexture(Color0);
-	const auto ssaoTextureDesc = ssaoTexture.GetD3D12ResourceDesc();
+	const auto ssaoTextureDesc = ssaoTexture->GetD3D12ResourceDesc();
 	D3D12_VIEWPORT viewport(0.0f, 0.0f, static_cast<float>(ssaoTextureDesc.Width), static_cast<float>(ssaoTextureDesc.Height));
 	commandList.SetViewport(viewport);
 	commandList.SetRenderTarget(m_RenderTarget);
@@ -347,13 +347,13 @@ void Ssao::BlurPass(CommandList& commandList, const RenderTarget& surfaceRenderT
 	commandList.SetPipelineState(m_BlurPassPipelineState);
 	commandList.SetScissorRect(m_ScissorRect);
 
-	;	const auto rtDesc = surfaceRenderTarget.GetTexture(Color0).GetD3D12ResourceDesc();
+	;	const auto rtDesc = surfaceRenderTarget.GetTexture(Color0)->GetD3D12ResourceDesc();
 	D3D12_VIEWPORT viewport(0.0f, 0.0f, static_cast<float>(rtDesc.Width), static_cast<float>(rtDesc.Height));
 	commandList.SetViewport(viewport);
 	commandList.SetRenderTarget(surfaceRenderTarget);
 
 	const auto& ssaoTexture = m_RenderTarget.GetTexture(Color0);
-	const auto ssaoTextureDesc = ssaoTexture.GetD3D12ResourceDesc();
+	const auto ssaoTextureDesc = ssaoTexture->GetD3D12ResourceDesc();
 	BlurPassRootParameters::BlurCBuffer cbuffer{};
 	cbuffer.TexelSize = {
 		1.0f / static_cast<float>(ssaoTextureDesc.Width),
@@ -361,7 +361,7 @@ void Ssao::BlurPass(CommandList& commandList, const RenderTarget& surfaceRenderT
 	};
 	commandList.SetGraphicsDynamicConstantBuffer(BlurPassRootParameters::CBuffer, cbuffer);
 
-	commandList.SetShaderResourceView(BlurPassRootParameters::SSAO, 0, ssaoTexture, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	commandList.SetShaderResourceView(BlurPassRootParameters::SSAO, 0, *ssaoTexture, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 	m_BlitMesh->Draw(commandList);
 }

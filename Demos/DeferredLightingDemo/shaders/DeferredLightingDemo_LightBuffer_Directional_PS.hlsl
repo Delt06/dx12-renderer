@@ -1,18 +1,12 @@
-#include "ShaderLibrary/MatricesCB.hlsli"
-#include "ShaderLibrary/PointLight.hlsli"
 #include "ShaderLibrary/GBufferUtils.hlsli"
-#include "ShaderLibrary/ScreenParameters.hlsli"
 #include "ShaderLibrary/BRDF.hlsli"
+#include <ShaderLibrary/Pipeline.hlsli>
 
-struct DirectionalLight
+cbuffer CBuffer : register(b0)
 {
     float4 DirectionWS;
     float4 Color;
 };
-
-ConstantBuffer<Matrices> matricesCB : register(b0);
-ConstantBuffer<DirectionalLight> directionalLightCB : register(b1);
-ConstantBuffer<ScreenParameters> screenParametersCB : register(b2);
 
 #include "ShaderLibrary/GBuffer.hlsli"
 
@@ -41,7 +35,8 @@ struct PixelShaderInput
 
 float4 main(PixelShaderInput IN) : SV_TARGET
 {
-    float2 uv = ToScreenSpaceUV(IN.PositionCS, screenParametersCB);
+    ScreenParameters screenParameters = GetScreenParameters();
+    float2 uv = ToScreenSpaceUV(IN.PositionCS, screenParameters);
     float4 gBufferDiffuseSample = gBufferDiffuse.Sample(gBufferSampler, uv);
     float3 diffuseColor = gBufferDiffuseSample.rgb;
     float emission = gBufferDiffuseSample.a;
@@ -49,12 +44,12 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     
     float zNDC = gBufferDepth.Sample(gBufferSampler, uv).x;
     float3 positionNDC = ScreenSpaceUVToNDC(uv, zNDC);
-    float3 positionWS = RestorePositionWS(positionNDC, matricesCB.InverseProjection, matricesCB.InverseView);
+    float3 positionWS = RestorePositionWS(positionNDC, g_Pipeline_InverseProjection, g_Pipeline_InverseView);
     
     BRDFInput brdfInput;
-    brdfInput.CameraPositionWS = matricesCB.CameraPosition.xyz;
-    brdfInput.LightColor = directionalLightCB.Color.rgb;
-    brdfInput.LightDirectionWS = directionalLightCB.DirectionWS.xyz;
+    brdfInput.CameraPositionWS = g_Pipeline_CameraPosition.xyz;
+    brdfInput.LightColor = Color.rgb;
+    brdfInput.LightDirectionWS = DirectionWS.xyz;
     brdfInput.NormalWS = normalWS;
     brdfInput.PositionWS = positionWS;
     brdfInput.DiffuseColor = diffuseColor;

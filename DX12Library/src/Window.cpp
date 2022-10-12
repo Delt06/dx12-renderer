@@ -27,7 +27,8 @@ Window::Window(HWND hWnd, const std::wstring& windowName, int clientWidth, int c
 
 	for (int i = 0; i < BUFFER_COUNT; ++i)
 	{
-		BackBufferTextures[i].SetName(L"Backbuffer[" + std::to_wstring(i) + L"]");
+		BackBufferTextures[i] = std::make_shared<Texture>();
+		BackBufferTextures[i]->SetName(L"Backbuffer[" + std::to_wstring(i) + L"]");
 	}
 
 	DxgiSwapChain = CreateSwapChain();
@@ -275,11 +276,11 @@ void Window::OnResize(ResizeEventArgs& e)
 		Application::Get().Flush();
 
 		// Release all references to back buffer textures.
-		MRenderTarget.AttachTexture(Color0, Texture());
+		MRenderTarget.AttachTexture(Color0, std::make_shared<Texture>());
 		for (int i = 0; i < BUFFER_COUNT; ++i)
 		{
-			ResourceStateTracker::RemoveGlobalResourceState(BackBufferTextures[i].GetD3D12Resource().Get());
-			BackBufferTextures[i].Reset();
+			ResourceStateTracker::RemoveGlobalResourceState(BackBufferTextures[i]->GetD3D12Resource().Get());
+			BackBufferTextures[i]->Reset();
 		}
 
 		DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
@@ -356,8 +357,8 @@ void Window::UpdateRenderTargetViews()
 
 		ResourceStateTracker::AddGlobalResourceState(backBuffer.Get(), D3D12_RESOURCE_STATE_COMMON);
 
-		BackBufferTextures[i].SetD3D12Resource(backBuffer);
-		BackBufferTextures[i].CreateViews();
+		BackBufferTextures[i]->SetD3D12Resource(backBuffer);
+		BackBufferTextures[i]->CreateViews();
 	}
 }
 
@@ -382,18 +383,18 @@ UINT Window::Present(const Texture& texture)
 		{
 			if (texture.GetD3D12ResourceDesc().SampleDesc.Count > 1)
 			{
-				commandList->ResolveSubresource(backBuffer, texture);
+				commandList->ResolveSubresource(*backBuffer, texture);
 			}
 			else
 			{
-				commandList->CopyResource(backBuffer, texture);
+				commandList->CopyResource(*backBuffer, texture);
 			}
 		}
 
 		RenderTarget renderTarget;
 		renderTarget.AttachTexture(Color0, backBuffer);
 
-		commandList->TransitionBarrier(backBuffer, D3D12_RESOURCE_STATE_PRESENT);
+		commandList->TransitionBarrier(*backBuffer, D3D12_RESOURCE_STATE_PRESENT);
 	}
 
 	commandQueue->ExecuteCommandList(commandList);

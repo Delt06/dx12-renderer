@@ -60,9 +60,9 @@ void Bloom::Draw(CommandList& commandList,
 
 	for (size_t i = 1; i < m_IntermediateTextures.size(); ++i)
 	{
-		const Texture& previousTexture = m_IntermediateTextures[i - 1].GetTexture(Color0);
+		const auto& previousTexture = m_IntermediateTextures[i - 1].GetTexture(Color0);
 		auto& currentTexture = m_IntermediateTextures[i];
-		m_Downsample.Execute(commandList, parameters, previousTexture, currentTexture);
+		m_Downsample.Execute(commandList, parameters, *previousTexture, currentTexture);
 	}
 
 	m_Upsample.Begin(commandList);
@@ -70,11 +70,11 @@ void Bloom::Draw(CommandList& commandList,
 	for (size_t i = m_IntermediateTextures.size() - 1; i >= 1; --i)
 	{
 		auto& currentTexture = m_IntermediateTextures[i - 1];
-		const Texture& nextTexture = m_IntermediateTextures[i].GetTexture(Color0);
-		m_Upsample.Execute(commandList, parameters, nextTexture, currentTexture);
+		const auto& nextTexture = m_IntermediateTextures[i].GetTexture(Color0);
+		m_Upsample.Execute(commandList, parameters, *nextTexture, currentTexture);
 	}
 
-	m_Upsample.Execute(commandList, parameters, m_IntermediateTextures[0].GetTexture(Color0), destination);
+	m_Upsample.Execute(commandList, parameters, *m_IntermediateTextures[0].GetTexture(Color0), destination);
 }
 
 void Bloom::GetIntermediateTextureSize(uint32_t width,
@@ -104,7 +104,7 @@ void Bloom::CreateIntermediateTexture(uint32_t width,
 	GetIntermediateTextureSize(width, height, index, textureWidth, textureHeight);
 
 	auto desc = CreateRenderTargetDesc(format, textureWidth, textureHeight);
-	auto intermediateTexture = Texture(desc, nullptr, TextureUsageType::RenderTarget, name);
+	auto intermediateTexture = std::make_shared<Texture>(desc, nullptr, TextureUsageType::RenderTarget, name);
 
 	auto renderTarget = RenderTarget();
 	renderTarget.AttachTexture(Color0, intermediateTexture);

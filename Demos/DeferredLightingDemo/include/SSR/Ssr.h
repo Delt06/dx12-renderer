@@ -16,8 +16,8 @@ public:
 
 	void Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList) override;
 
-	[[nodiscard]] const Texture& GetReflectionsTexture() const;
-	[[nodiscard]] const Texture& GetEmptyReflectionsTexture() const;
+	[[nodiscard]] const std::shared_ptr<Texture>& GetReflectionsTexture() const;
+	[[nodiscard]] const std::shared_ptr<Texture>& GetEmptyReflectionsTexture() const;
 
 private:
 	bool m_Downsample;
@@ -27,7 +27,7 @@ private:
 	SsrTrace m_Trace;
 	RenderTarget m_TraceRenderTarget{};
 	RenderTarget m_FinalReflectionsTexture{};
-	Texture m_EmptyReflections{};
+	std::shared_ptr<Texture> m_EmptyReflections{};
 	D3D12_SHADER_RESOURCE_VIEW_DESC m_DepthSrv;
 
 	SsrBlurPass m_BlurPass;

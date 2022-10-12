@@ -87,7 +87,7 @@ void BrdfIntegration::SetContext(CommandList& commandList)
 
 void BrdfIntegration::SetRenderTarget(CommandList& commandList, RenderTarget& renderTarget)
 {
-	const auto rtColorDesc = renderTarget.GetTexture(Color0).GetD3D12ResourceDesc();
+	const auto rtColorDesc = renderTarget.GetTexture(Color0)->GetD3D12ResourceDesc();
 	const auto width = static_cast<float>(rtColorDesc.Width);
 	const auto height = static_cast<float>(rtColorDesc.Height);
 

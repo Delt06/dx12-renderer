@@ -132,7 +132,7 @@ void PreFilterEnvironment::SetSourceCubemap(CommandList& commandList, Texture& t
 
 void PreFilterEnvironment::SetRenderTarget(CommandList& commandList, RenderTarget& renderTarget, UINT texArrayIndex, UINT mipLevel)
 {
-	const auto rtColorDesc = renderTarget.GetTexture(Color0).GetD3D12ResourceDesc();
+	const auto rtColorDesc = renderTarget.GetTexture(Color0)->GetD3D12ResourceDesc();
 	const float sizeScale = pow(2, mipLevel);
 	const auto width = static_cast<float>(rtColorDesc.Width) / sizeScale;
 	const auto height = static_cast<float>(rtColorDesc.Height) / sizeScale;

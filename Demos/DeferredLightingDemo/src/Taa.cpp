@@ -98,7 +98,7 @@ Taa::Taa(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList,
 	}
 
 	auto rtColorDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat, width, height, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);;
-	auto taaTempTexture = Texture(rtColorDesc, nullptr, TextureUsageType::RenderTarget, L"TAA Resolve RT");
+	auto taaTempTexture = std::make_shared<Texture>(rtColorDesc, nullptr, TextureUsageType::RenderTarget, L"TAA Resolve RT");
 	m_ResolveRenderTarget.AttachTexture(Color0, taaTempTexture);
 
 	auto historyBufferDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat, width, height, 1, 1);
@@ -146,7 +146,7 @@ void Taa::Resolve(CommandList& commandList, const Texture& currentBuffer, const 
 	{
 		PIXScope(commandList, "Capture TAA History");
 
-		commandList.CopyResource(m_HistoryBuffer, m_ResolveRenderTarget.GetTexture(Color0));
+		commandList.CopyResource(m_HistoryBuffer, *m_ResolveRenderTarget.GetTexture(Color0));
 	}
 }
 
@@ -156,7 +156,7 @@ void Taa::Resize(uint32_t width, uint32_t height)
 	m_ResolveRenderTarget.Resize(width, height);
 }
 
-const Texture& Taa::GetResolvedTexture() const
+const std::shared_ptr<Texture>& Taa::GetResolvedTexture() const
 {
 	return m_ResolveRenderTarget.GetTexture(Color0);
 }

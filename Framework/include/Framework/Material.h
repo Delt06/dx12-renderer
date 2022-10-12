@@ -37,7 +37,7 @@ private:
 
 	std::shared_ptr<Shader> m_Shader;
 	const ShaderUtils::ConstantBufferMetadata* m_Metadata;
-	std::unique_ptr<uint8_t[]> m_ConstantBuffer;
+	std::unique_ptr<uint8_t[]> m_ConstantBuffer = nullptr;
 	size_t m_ConstantBufferSize;
 
 	std::unordered_map <std::string, ShaderResourceView> m_ShaderResourceViews;

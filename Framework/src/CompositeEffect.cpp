@@ -112,12 +112,12 @@ CompositeEffect::Viewport CompositeEffect::GetAutoViewport(const RenderTarget& r
 {
 	const auto& color0Texture = renderTarget.GetTexture(Color0);
 	const auto& depthTexture = renderTarget.GetTexture(DepthStencil);
-	if (!color0Texture.IsValid() && !depthTexture.IsValid())
+	if (!color0Texture->IsValid() && !depthTexture->IsValid())
 	{
 		throw std::exception("Both Color0 and DepthStencil attachment are invalid. Cannot compute viewport.");
 	}
 
-	auto destinationDesc = color0Texture.IsValid() ? color0Texture.GetD3D12ResourceDesc() : depthTexture.GetD3D12ResourceDesc();
+	auto destinationDesc = color0Texture->IsValid() ? color0Texture->GetD3D12ResourceDesc() : depthTexture->GetD3D12ResourceDesc();
 	return Viewport(0.0f, 0.0f, static_cast<float>(destinationDesc.Width), static_cast<float>(destinationDesc.Height));
 }
 
