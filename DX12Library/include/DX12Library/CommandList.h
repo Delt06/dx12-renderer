@@ -435,6 +435,8 @@ public:
 
 	void SetComputeRootUnorderedAccessView(UINT rootParameterIndex, const Resource& resource);
 
+	void SetAutomaticViewportAndScissorRect(const RenderTarget& renderTarget);
+
 	const RenderTargetFormats& GetLastRenderTargetFormats() const { return m_LastRenderTargetFormats; }
 
 protected:

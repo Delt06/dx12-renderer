@@ -1452,12 +1452,15 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			PIXScope(*commandList, "Light Passes");
 
 			commandList->SetRenderTarget(m_LightBufferRenderTarget);
+			commandList->SetAutomaticViewportAndScissorRect(m_LightBufferRenderTarget);
+
 			ScreenParameters screenParameters{};
 			screenParameters.Width = static_cast<float>(m_Width);
 			screenParameters.Height = static_cast<float>(m_Height);
 			screenParameters.OneOverWidth = 1.0f / static_cast<float>(m_Width);
 			screenParameters.OneOverHeight = 1.0f / static_cast<float>(m_Height);
 
+			// TODO: remove after migrating all of the above passes to the common root signature
 			m_CommonRootSignature->Bind(*commandList);
 			m_CommonRootSignature->SetPipelineConstantBuffer(*commandList, pipelineCBuffer);
 

@@ -1044,6 +1044,24 @@ void CommandList::SetComputeRootUnorderedAccessView(UINT rootParameterIndex, con
 	TrackObject(d3d12Resource);
 }
 
+void CommandList::SetAutomaticViewportAndScissorRect(const RenderTarget& renderTarget)
+{
+	const auto& color0Texture = renderTarget.GetTexture(Color0);
+	const auto& depthTexture = renderTarget.GetTexture(DepthStencil);
+	if (!color0Texture->IsValid() && !depthTexture->IsValid())
+	{
+		throw std::exception("Both Color0 and DepthStencil attachment are invalid. Cannot compute viewport.");
+	}
+
+	auto destinationDesc = color0Texture->IsValid() ? color0Texture->GetD3D12ResourceDesc() : depthTexture->GetD3D12ResourceDesc();
+	auto viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(destinationDesc.Width), static_cast<float>(destinationDesc.Height));
+
+	auto scissorRect = CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX);
+
+	SetViewport(viewport);
+	SetScissorRect(scissorRect);
+}
+
 void CommandList::BindDescriptorHeaps()
 {
 	UINT numDescriptorHeaps = 0;
