@@ -1,6 +1,8 @@
 #include "ShaderLibrary/GBufferUtils.hlsli"
 #include "ShaderLibrary/ScreenParameters.hlsli"
 #include "ShaderLibrary/Math.hlsli"
+#include "ShaderLibrary/GBuffer.hlsli"
+#include "ShaderLibrary/Pipeline.hlsli"
 
 struct PixelShaderInput
 {
@@ -9,31 +11,19 @@ struct PixelShaderInput
 
 cbuffer ParametersCBuffer : register(b0)
 {
-    matrix InverseProjection;
-    matrix InverseView;
-    matrix View;
-    matrix Projection;
-    
     uint Steps;
     float Thickness;
-    float2 JitterOffset;
     
     float2 TexelSize;
-    float2 _Padding;
 };
 
 Texture2D sceneColor : register(t0);
-Texture2D normals : register(t1);
-Texture2D surface : register(t2);
-Texture2D depth : register(t3);
-
-SamplerState defaultSampler : register(s0);
 
 float3 SamplePositionVS(float2 uv, out float out_zNDC)
 {
-    out_zNDC = depth.SampleLevel(defaultSampler, uv, 0).x;
+    out_zNDC = gBufferDepth.SampleLevel(gBufferSampler, uv, 0).x;
     float3 positionNDC = ScreenSpaceUVToNDC(uv, out_zNDC);
-    float3 positionVS = RestorePositionVS(positionNDC, InverseProjection).xyz;
+    float3 positionVS = RestorePositionVS(positionNDC, g_Pipeline_InverseProjection).xyz;
     return positionVS;
 }
 
@@ -45,13 +35,13 @@ float3 SamplePositionVS(float2 uv)
 
 float3 SampleNormalVS(float2 uv)
 {
-    float3 normalWS = UnpackNormal(normals.Sample(defaultSampler, uv).xyz);
-    return normalize(mul((float3x3) View, normalWS));
+    float3 normalWS = UnpackNormal(gBufferNormalsWS.Sample(gBufferSampler, uv).xyz);
+    return normalize(mul((float3x3) g_Pipeline_View, normalWS));
 }
 
 float4 ToScreenSpaceUV(float3 positionVS)
 {
-    float4 positionCS = mul(Projection, float4(positionVS, 1.0));
+    float4 positionCS = mul(g_Pipeline_Projection, float4(positionVS, 1.0));
     positionCS.xyz /= positionCS.w;
     
     positionCS.xy = positionCS.xy * 0.5 + 0.5;
@@ -62,7 +52,7 @@ float4 ToScreenSpaceUV(float3 positionVS)
 
 float3 SampleSceneColor(float2 uv)
 {
-    return sceneColor.Sample(defaultSampler, uv).rgb;
+    return sceneColor.Sample(gBufferSampler, uv).rgb;
 }
 
 struct TraceOutput
@@ -92,7 +82,7 @@ TraceOutput Trace(float2 uv, float roughness)
     float3 normalVS = SampleNormalVS(uv);
     
     float3 viewDir = normalize(originVS);
-    float3 originWS = mul(InverseView, float4(originVS, 1.0)).xyz;
+    float3 originWS = mul(g_Pipeline_InverseView, float4(originVS, 1.0)).xyz;
     float3 reflectDir = normalize(reflect(viewDir, normalVS) + hash33(originWS * 50) * 0.3 * roughness);
     
     const uint loops = 50;
@@ -165,7 +155,7 @@ TraceOutput Trace(float2 uv, float roughness)
 float4 main(PixelShaderInput IN) : SV_TARGET
 {
     float2 uv = IN.UV;
-    float4 surfaceSample = surface.Sample(defaultSampler, uv);
+    float4 surfaceSample = gBufferSurface.Sample(gBufferSampler, uv);
     float metallic, roughness, ao;
     UnpackSurface(surfaceSample, metallic, roughness, ao);
     

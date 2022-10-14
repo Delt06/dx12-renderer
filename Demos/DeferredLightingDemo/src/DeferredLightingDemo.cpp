@@ -684,9 +684,7 @@ bool DeferredLightingDemo::LoadContent()
 		}
 
 		{
-			D3D12_SHADER_RESOURCE_VIEW_DESC depthTextureSrv = GetDepthTextureSrv();
-			m_Ssr = std::make_unique<Ssr>(lightBufferFormat, depthTextureSrv, m_Width, m_Height, true);
-			m_Ssr->Init(device, *commandList);
+			m_Ssr = std::make_unique<Ssr>(m_CommonRootSignature, *commandList, lightBufferFormat, m_Width, m_Height, true);
 		}
 
 		{
@@ -1372,17 +1370,11 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			m_Ssao->BlurPass(*commandList, m_SurfaceRenderTarget);
 		}
 
+		BindGBuffer();
+
 		if (m_SsrEnabled)
 		{
-			m_Ssr->SetMatrices(viewMatrix, projectionMatrix);
-			const auto jitterOffset = m_Taa->GetCurrentJitterOffset();
-			m_Ssr->SetJitterOffset(jitterOffset);
-
-			const auto& normals = GetGBufferTexture(GBufferTextureType::Normals);
-			const auto& surface = GetGBufferTexture(GBufferTextureType::Surface);
-			const auto& depth = m_DepthTexture;
-			const RenderTarget& resultRenderTarget = m_LightBufferRenderTarget;
-			m_Ssr->Execute(*commandList, *normals, *surface, *depth);
+			m_Ssr->Execute(*commandList);
 		}
 
 		{
@@ -1396,13 +1388,6 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			screenParameters.Height = static_cast<float>(m_Height);
 			screenParameters.OneOverWidth = 1.0f / static_cast<float>(m_Width);
 			screenParameters.OneOverHeight = 1.0f / static_cast<float>(m_Height);
-
-			// TODO: remove after migrating all of the above passes to the common root signature
-			m_CommonRootSignature->Bind(*commandList);
-			m_CommonRootSignature->SetPipelineConstantBuffer(*commandList, pipelineCBuffer);
-
-			// TODO: remove after migrating all of the above passes to the common root signature
-			BindGBuffer();
 
 			{
 				PIXScope(*commandList, "Directional Light Pass");
