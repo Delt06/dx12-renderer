@@ -16,13 +16,14 @@
 
 #include "ShaderResourceView.h"
 #include "PipelineStateBuilder.h"
+#include "ShaderBlob.h"
 
 class Shader
 {
 public:
 	explicit Shader(
 		const std::shared_ptr<CommonRootSignature>& rootSignature,
-		const std::wstring& vertexShaderPath, const std::wstring& pixelShaderPath,
+		const ShaderBlob& vertexShaderPath, const ShaderBlob& pixelShaderPath,
 		const std::function<void(PipelineStateBuilder&)> buildPipelineState = [](PipelineStateBuilder&) {}
 	);
 
@@ -32,6 +33,7 @@ public:
 	Shader& operator=(Shader&& other) = delete;
 
 	void Bind(CommandList& commandList);
+	void Unbind(CommandList& commandList);
 
 	template<typename T>
 	void SetPipelineConstantBuffer(CommandList& commandList, const T& data)

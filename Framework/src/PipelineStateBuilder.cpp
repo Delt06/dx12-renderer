@@ -27,7 +27,8 @@ Microsoft::WRL::ComPtr<ID3D12PipelineState> PipelineStateBuilder::Build(Microsof
 		CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RtvFormats;
 		CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DsvFormat;
 		CD3DX12_PIPELINE_STATE_STREAM_BLEND_DESC Blend;
-		CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL1 DepthStencil;
+		CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL DepthStencil;
+		CD3DX12_PIPELINE_STATE_STREAM_RASTERIZER Rasterizer;
 	} pipelineStateStream;
 
 	D3D12_RT_FORMAT_ARRAY rtvFormats = {};
@@ -43,7 +44,13 @@ Microsoft::WRL::ComPtr<ID3D12PipelineState> PipelineStateBuilder::Build(Microsof
 	pipelineStateStream.DsvFormat = m_DepthStencilFormat;
 	pipelineStateStream.RtvFormats = rtvFormats;
 	pipelineStateStream.Blend = m_BlendDesc;
-	pipelineStateStream.DepthStencil = m_DepthStencilDesc;
+	pipelineStateStream.Rasterizer = m_RasterizerDesc;
+
+	// if depth-stencil format is unknown, disable the depth-stencil unit
+	pipelineStateStream.DepthStencil = m_DepthStencilFormat != DXGI_FORMAT_UNKNOWN ?
+		m_DepthStencilDesc :
+		CD3DX12_DEPTH_STENCIL_DESC()
+		;
 
 	const D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = {
 		sizeof(PipelineStateStream), &pipelineStateStream
@@ -79,14 +86,39 @@ PipelineStateBuilder& PipelineStateBuilder::WithBlend(const CD3DX12_BLEND_DESC& 
 	return *this;
 }
 
-PipelineStateBuilder& PipelineStateBuilder::WithDepthStencil(const CD3DX12_DEPTH_STENCIL_DESC1& depthStencil)
+PipelineStateBuilder& PipelineStateBuilder::WithAdditiveBlend()
+{
+	CD3DX12_BLEND_DESC blendDesc = CD3DX12_BLEND_DESC(CD3DX12_DEFAULT());
+	auto& rtBlendDesc = blendDesc.RenderTarget[0];
+	rtBlendDesc.BlendEnable = true;
+	rtBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
+	rtBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	rtBlendDesc.SrcBlend = D3D12_BLEND_ONE;
+	rtBlendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
+	rtBlendDesc.DestBlend = D3D12_BLEND_ONE;
+	rtBlendDesc.DestBlendAlpha = D3D12_BLEND_ONE;
+	return WithBlend(blendDesc);
+}
+
+PipelineStateBuilder& PipelineStateBuilder::WithDepthStencil(const CD3DX12_DEPTH_STENCIL_DESC& depthStencil)
 {
 	m_DepthStencilDesc = depthStencil;
 	return *this;
 }
 
+PipelineStateBuilder& PipelineStateBuilder::WithDisabledDepthStencil()
+{
+	return WithDepthStencil({});
+}
+
 PipelineStateBuilder& PipelineStateBuilder::WithInputLayout(const std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout)
 {
 	m_InputLayout = inputLayout;
+	return *this;
+}
+
+PipelineStateBuilder& PipelineStateBuilder::WithRasterizer(const CD3DX12_RASTERIZER_DESC& rasterizer)
+{
+	m_RasterizerDesc = rasterizer;
 	return *this;
 }

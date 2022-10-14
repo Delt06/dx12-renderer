@@ -99,6 +99,13 @@ namespace Demo::Model
 		DirectX::XMMATRIX m_InverseTransposeModel;
 
 		DirectX::XMMATRIX m_Taa_PreviousModelViewProjectionMatrix;
+
+		void Compute(const DirectX::XMMATRIX& model, const DirectX::XMMATRIX& viewProjection)
+		{
+			m_Model = model;
+			m_ModelViewProjection = model * viewProjection;
+			m_InverseTransposeModel = XMMatrixTranspose(XMMatrixInverse(nullptr, model));
+		}
 	};
 }
 
@@ -234,18 +241,6 @@ namespace
 		};
 	}
 
-	namespace SkyboxPassRootParameters
-	{
-		enum RootParameters
-		{
-			// ConstantBuffer: register(b0);
-			MatricesCb,
-			// TextureCube : register(t0
-			SkyboxCubemap,
-			NumRootParameters
-		};
-	}
-
 	CD3DX12_BLEND_DESC AdditiveBlending()
 	{
 		auto desc = CD3DX12_BLEND_DESC(CD3DX12_DEFAULT());
@@ -341,8 +336,6 @@ DeferredLightingDemo::DeferredLightingDemo(const std::wstring& name,
 	int height,
 	GraphicsSettings graphicsSettings)
 	: Base(name, width, height, graphicsSettings.VSync),
-	m_Viewport(CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height))),
-	m_ScissorRect(CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX)),
 	m_GraphicsSettings(graphicsSettings),
 	m_CameraController{},
 	m_Width(0),
@@ -387,6 +380,14 @@ bool DeferredLightingDemo::LoadContent()
 				D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT,
 				D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
 				D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
+				CD3DX12_STATIC_SAMPLER_DESC(1, // for compatibility. TODO: remove
+				D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT,
+				D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+				D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
+				CD3DX12_STATIC_SAMPLER_DESC(2, // for compatibility. TODO: remove
+				D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT,
+				D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+				D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
 		};
 
 		m_FullScreenMesh = Mesh::CreateBlitTriangle(*commandList);
@@ -394,17 +395,13 @@ bool DeferredLightingDemo::LoadContent()
 		// directional light pass
 		{
 			auto shader = std::make_shared<Shader>(m_CommonRootSignature,
-				L"DeferredLightingDemo_LightBuffer_Directional_VS.cso",
-				L"DeferredLightingDemo_LightBuffer_Directional_PS.cso",
+				ShaderBlob(L"DeferredLightingDemo_LightBuffer_Directional_VS.cso"),
+				ShaderBlob(L"DeferredLightingDemo_LightBuffer_Directional_PS.cso"),
 				[](PipelineStateBuilder& builder)
 				{
-					auto depthStencil = CD3DX12_DEPTH_STENCIL_DESC1(CD3DX12_DEFAULT());
-					depthStencil.DepthEnable = false;
-					depthStencil.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
-
 					builder
-						.WithBlend(AdditiveBlending())
-						.WithDepthStencil(depthStencil)
+						.WithAdditiveBlend()
+						.WithDisabledDepthStencil()
 						;
 				}
 			);
@@ -660,97 +657,30 @@ bool DeferredLightingDemo::LoadContent()
 
 		// skybox pass
 		{
+			auto shader = std::make_shared<Shader>(m_CommonRootSignature,
+				ShaderBlob(L"DeferredLightingDemo_Skybox_VS.cso"),
+				ShaderBlob(L"DeferredLightingDemo_Skybox_PS.cso"),
+				[](PipelineStateBuilder& builder)
+				{
+					auto rasterizer = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_FRONT, FALSE, 0, 0,
+						0, TRUE, FALSE, FALSE, 0,
+						D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+					auto depthStencil = CD3DX12_DEPTH_STENCIL_DESC(CD3DX12_DEFAULT());
+					depthStencil.DepthEnable = true; // read
+					depthStencil.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; // but not write
+
+					builder.WithRasterizer(rasterizer)
+						.WithDepthStencil(depthStencil)
+						;
+
+				}
+			);
+			m_SkyboxPassMaterial = Material::Create(shader);
 			m_SkyboxMesh = Mesh::CreateCube(*commandList);
-
-			ComPtr<ID3DBlob> vertexShaderBlob = ShaderUtils::LoadShaderFromFile(L"DeferredLightingDemo_Skybox_VS.cso");
-			ComPtr<ID3DBlob> pixelShaderBlob = ShaderUtils::LoadShaderFromFile(L"DeferredLightingDemo_Skybox_PS.cso");
-
-			// Create a root signature.
-			D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData;
-			featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
-			if (FAILED(device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData))))
-			{
-				featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
-			}
-
-			constexpr D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
-				D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
-				D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
-				D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-				D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
-
-			CD3DX12_DESCRIPTOR_RANGE1 texturesDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-
-			CD3DX12_ROOT_PARAMETER1 rootParameters[SkyboxPassRootParameters::NumRootParameters];
-			rootParameters[SkyboxPassRootParameters::MatricesCb].InitAsConstantBufferView(0,
-				0,
-				D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
-				D3D12_SHADER_VISIBILITY_VERTEX);
-			rootParameters[SkyboxPassRootParameters::SkyboxCubemap].InitAsDescriptorTable(1,
-				&texturesDescriptorRange,
-				D3D12_SHADER_VISIBILITY_PIXEL);
-
-			D3D12_STATIC_SAMPLER_DESC samplers[] = {
-				GetSkyboxSampler(0)
-			};
-
-			CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
-			rootSignatureDescription.Init_1_1(SkyboxPassRootParameters::NumRootParameters,
-				rootParameters,
-				_countof(samplers),
-				samplers,
-				rootSignatureFlags);
-
-			m_SkyboxPassRootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1,
-				featureData.HighestVersion);
-
-			// Setup the pipeline state.
-			struct PipelineStateStream
-			{
-				CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE RootSignature;
-				CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
-				CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
-				CD3DX12_PIPELINE_STATE_STREAM_VS Vs;
-				CD3DX12_PIPELINE_STATE_STREAM_PS Ps;
-				CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DsvFormat;
-				CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RtvFormats;
-				CD3DX12_PIPELINE_STATE_STREAM_RASTERIZER Rasterizer;
-				CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL DepthStencil;
-			} pipelineStateStream;
-
-			D3D12_RT_FORMAT_ARRAY rtvFormats = {};
-			rtvFormats.NumRenderTargets = 1;
-			rtvFormats.RTFormats[0] = lightBufferFormat;
-
-			pipelineStateStream.RootSignature = m_SkyboxPassRootSignature.GetRootSignature().Get();
-
-			pipelineStateStream.InputLayout =
-			{ VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT };
-			pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-			pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
-			pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
-			pipelineStateStream.DsvFormat = depthBufferFormat;
-			pipelineStateStream.RtvFormats = rtvFormats;
-			pipelineStateStream.Rasterizer =
-				CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_FRONT, FALSE, 0, 0,
-					0, TRUE, FALSE, FALSE, 0,
-					D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
-
-			auto depthStencil = CD3DX12_DEPTH_STENCIL_DESC(CD3DX12_DEFAULT());
-			depthStencil.DepthEnable = true; // read
-			depthStencil.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; // but not write
-			pipelineStateStream.DepthStencil = depthStencil;
-
-			const D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = {
-				sizeof(PipelineStateStream), &pipelineStateStream
-			};
-
-			ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc,
-				IID_PPV_ARGS(&m_SkyboxPassPipelineState)));
 		}
 
 		{
-			m_Ssao = std::make_unique<Ssao>(device, *commandList, gBufferFormat, m_Width, m_Height, true);
+			m_Ssao = std::make_unique<Ssao>(m_CommonRootSignature, *commandList, m_Width, m_Height, true);
 		}
 
 		{
@@ -851,7 +781,10 @@ bool DeferredLightingDemo::LoadContent()
 	{
 		ModelLoader modelLoader;
 
-		const auto gBufferShader = std::make_shared<Shader>(m_CommonRootSignature, L"DeferredLightingDemo_GBuffer_VS.cso", L"DeferredLightingDemo_GBuffer_PS.cso");
+		const auto gBufferShader = std::make_shared<Shader>(m_CommonRootSignature,
+			ShaderBlob(L"DeferredLightingDemo_GBuffer_VS.cso"),
+			ShaderBlob(L"DeferredLightingDemo_GBuffer_PS.cso")
+			);
 
 		const std::string property_Metallic = "Metallic";
 		const std::string property_Roughness = "Roughness";
@@ -1110,17 +1043,7 @@ bool DeferredLightingDemo::LoadContent()
 	}
 
 	{
-		m_ReflectionsPass = std::make_unique<Reflections>(lightBufferFormat);
-		D3D12_SHADER_RESOURCE_VIEW_DESC preFilterEnvironmentSrvDesc;
-		preFilterEnvironmentSrvDesc.Format =
-			m_PreFilterEnvironmentMapRt.GetTexture(Color0)->GetD3D12ResourceDesc().Format;
-		preFilterEnvironmentSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		preFilterEnvironmentSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
-		preFilterEnvironmentSrvDesc.TextureCube.MipLevels = -1;
-		preFilterEnvironmentSrvDesc.TextureCube.MostDetailedMip = 0;
-		preFilterEnvironmentSrvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
-		m_ReflectionsPass->SetSrvDescriptors(preFilterEnvironmentSrvDesc, GetDepthTextureSrv());
-		m_ReflectionsPass->Init(device, *commandList);
+		m_ReflectionsPass = std::make_unique<Reflections>(m_CommonRootSignature, *commandList);
 	}
 
 	std::shared_ptr<Texture> depthBuffer;
@@ -1232,9 +1155,6 @@ void DeferredLightingDemo::OnResize(ResizeEventArgs& e)
 
 		const float aspectRatio = static_cast<float>(m_Width) / static_cast<float>(m_Height);
 		m_Camera.SetProjection(45.0f, aspectRatio, 0.1f, 1000.0f);
-
-		m_Viewport = CD3DX12_VIEWPORT(0.0f, 0.0f,
-			static_cast<float>(m_Width), static_cast<float>(m_Height));
 
 		m_GBufferRenderTarget.Resize(m_Width, m_Height);
 		m_LightBufferRenderTarget.Resize(m_Width, m_Height);
@@ -1359,9 +1279,6 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			}
 		}
 
-		commandList->SetViewport(m_Viewport);
-		commandList->SetScissorRect(m_ScissorRect);
-
 		const XMMATRIX viewMatrix = m_Camera.GetViewMatrix();
 		const XMMATRIX projectionMatrix = m_Camera.GetProjectionMatrix();
 		const XMMATRIX viewProjectionMatrix = viewMatrix * projectionMatrix;
@@ -1370,7 +1287,6 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		Demo::Pipeline::CBuffer pipelineCBuffer{};
 
 		{
-			
 			pipelineCBuffer.m_View = viewMatrix;
 			pipelineCBuffer.m_Projection = projectionMatrix;
 			pipelineCBuffer.m_ViewProjection = viewProjectionMatrix;
@@ -1394,13 +1310,12 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			PIXScope(*commandList, "GBuffer Pass");
 
 			commandList->SetRenderTarget(m_GBufferRenderTarget);
+			commandList->SetAutomaticViewportAndScissorRect(m_GBufferRenderTarget);
 
 			for (const auto& go : m_GameObjects)
 			{
 				Demo::Model::CBuffer modelCBuffer{};
-				modelCBuffer.m_Model = go.GetWorldMatrix();
-				modelCBuffer.m_ModelViewProjection = go.GetWorldMatrix() * viewProjectionMatrix;
-				modelCBuffer.m_InverseTransposeModel = XMMatrixTranspose(XMMatrixInverse(nullptr, go.GetWorldMatrix()));
+				modelCBuffer.Compute(go.GetWorldMatrix(), viewProjectionMatrix);
 				modelCBuffer.m_Taa_PreviousModelViewProjectionMatrix = go.GetPreviousWorldMatrix() * m_Taa->GetPreviousViewProjectionMatrix();
 
 				m_CommonRootSignature->SetModelConstantBuffer(*commandList, modelCBuffer);
@@ -1414,6 +1329,28 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			commandList->CopyResource(*m_DepthTexture, *m_GBufferRenderTarget.GetTexture(DepthStencil));
 		}
 
+		auto BindGBuffer = [this, &commandList]()
+		{
+			m_CommonRootSignature->SetPipelineShaderResourceView(*commandList,
+				0, ShaderResourceView(GetGBufferTexture(GBufferTextureType::Diffuse))
+			);
+
+			m_CommonRootSignature->SetPipelineShaderResourceView(*commandList,
+				1, ShaderResourceView(GetGBufferTexture(GBufferTextureType::Normals))
+			);
+
+			m_CommonRootSignature->SetPipelineShaderResourceView(*commandList,
+				2, ShaderResourceView(GetGBufferTexture(GBufferTextureType::Surface))
+			);
+
+			auto depthStencilSrvDesc = GetDepthTextureSrv();
+			m_CommonRootSignature->SetPipelineShaderResourceView(*commandList,
+				3, ShaderResourceView(m_DepthTexture, 0, 1, &depthStencilSrvDesc)
+			);
+		};
+
+		BindGBuffer();
+
 		if (m_SsaoEnabled)
 		{
 			PIXScope(*commandList, "SSAO");
@@ -1424,11 +1361,14 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			m_Ssao->SsaoPass(*commandList,
 				*GetGBufferTexture(GBufferTextureType::Normals),
 				*m_DepthTexture,
-				viewMatrix,
-				projectionMatrix,
 				&depthTextureSrv,
 				radius,
 				power);
+
+			// make sure surface is not bound as an SRV
+			m_CommonRootSignature->SetPipelineShaderResourceView(*commandList,
+				2, ShaderResourceView(m_WhiteTexture2d)
+			);
 			m_Ssao->BlurPass(*commandList, m_SurfaceRenderTarget);
 		}
 
@@ -1444,9 +1384,6 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			const RenderTarget& resultRenderTarget = m_LightBufferRenderTarget;
 			m_Ssr->Execute(*commandList, *normals, *surface, *depth);
 		}
-
-		commandList->SetViewport(m_Viewport);
-		commandList->SetScissorRect(m_ScissorRect);
 
 		{
 			PIXScope(*commandList, "Light Passes");
@@ -1464,25 +1401,8 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			m_CommonRootSignature->Bind(*commandList);
 			m_CommonRootSignature->SetPipelineConstantBuffer(*commandList, pipelineCBuffer);
 
-			// bind GBuffer
-			{
-				m_CommonRootSignature->SetPipelineShaderResourceView(*commandList,
-					0, ShaderResourceView(GetGBufferTexture(GBufferTextureType::Diffuse))
-				);
-
-				m_CommonRootSignature->SetPipelineShaderResourceView(*commandList,
-					1, ShaderResourceView(GetGBufferTexture(GBufferTextureType::Normals))
-				);
-
-				m_CommonRootSignature->SetPipelineShaderResourceView(*commandList,
-					2, ShaderResourceView(GetGBufferTexture(GBufferTextureType::Surface))
-				);
-
-				auto depthStencilSrvDesc = GetDepthTextureSrv();
-				m_CommonRootSignature->SetPipelineShaderResourceView(*commandList,
-					3, ShaderResourceView(m_DepthTexture, 0, 1, &depthStencilSrvDesc)
-				);
-			}
+			// TODO: remove after migrating all of the above passes to the common root signature
+			BindGBuffer();
 
 			{
 				PIXScope(*commandList, "Directional Light Pass");
@@ -1507,18 +1427,26 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			}
 
 			{
+				D3D12_SHADER_RESOURCE_VIEW_DESC preFilterEnvironmentSrvDesc;
+				preFilterEnvironmentSrvDesc.Format =
+					m_PreFilterEnvironmentMapRt.GetTexture(Color0)->GetD3D12ResourceDesc().Format;
+				preFilterEnvironmentSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+				preFilterEnvironmentSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+				preFilterEnvironmentSrvDesc.TextureCube.MipLevels = -1;
+				preFilterEnvironmentSrvDesc.TextureCube.MostDetailedMip = 0;
+				preFilterEnvironmentSrvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+
+				m_ReflectionsPass->SetPreFilterEnvironmentSrvDesc(preFilterEnvironmentSrvDesc);
+
 				const auto& preFilterMap = m_PreFilterEnvironmentMapRt.GetTexture(Color0);
 				const auto& brdfLut = m_BrdfIntegrationMapRt.GetTexture(Color0);
-				const auto& reflections = m_SsrEnabled ? m_Ssr->GetReflectionsTexture() : m_Ssr->GetEmptyReflectionsTexture();
-				MatricesCb matrices;
-				matrices.Compute(XMMatrixIdentity(), viewMatrix, viewProjectionMatrix, projectionMatrix);
+				const auto& ssrTexture = m_SsrEnabled ? m_Ssr->GetReflectionsTexture() : m_Ssr->GetEmptyReflectionsTexture();
+
 				m_ReflectionsPass->Draw(*commandList,
-					m_GBufferRenderTarget,
-					*m_DepthTexture,
-					*preFilterMap,
-					*brdfLut,
-					*reflections,
-					matrices);
+					preFilterMap,
+					brdfLut,
+					ssrTexture
+				);
 			}
 
 			commandList->SetStencilRef(0);
@@ -1572,14 +1500,15 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		{
 			PIXScope(*commandList, "Skybox Pass");
 
-			commandList->SetGraphicsRootSignature(m_SkyboxPassRootSignature);
-			commandList->SetPipelineState(m_SkyboxPassPipelineState);
+			m_CommonRootSignature->Bind(*commandList); // TODO: remove after migrating the above passes
+			commandList->SetRenderTarget(m_LightBufferRenderTarget);
+			commandList->SetAutomaticViewportAndScissorRect(m_LightBufferRenderTarget);
 
-			MatricesCb matricesCb{};
 			const XMMATRIX
 				modelMatrix = XMMatrixScaling(2, 2, 2) * XMMatrixTranslationFromVector(m_Camera.GetTranslation());
-			matricesCb.Compute(modelMatrix, viewMatrix, viewProjectionMatrix, projectionMatrix);
-			commandList->SetGraphicsDynamicConstantBuffer(SkyboxPassRootParameters::MatricesCb, matricesCb);
+			Demo::Model::CBuffer modelCBuffer{};
+			modelCBuffer.Compute(modelMatrix, viewProjectionMatrix);
+			m_CommonRootSignature->SetModelConstantBuffer(*commandList, modelCBuffer);
 
 			const auto& skybox = m_Skybox;
 
@@ -1591,12 +1520,13 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			srvDesc.TextureCube.MostDetailedMip = 0;
 			srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
 
-			commandList->SetShaderResourceView(SkyboxPassRootParameters::SkyboxCubemap, 0, *skybox,
-				D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-				0, UINT_MAX, &srvDesc
-			);
+			auto skyboxSrv = ShaderResourceView(skybox);
+			skyboxSrv.m_Desc = &srvDesc;
+			m_SkyboxPassMaterial->SetShaderResourceView("skybox", skyboxSrv);
 
+			m_SkyboxPassMaterial->Bind(*commandList);
 			m_SkyboxMesh->Draw(*commandList);
+			m_SkyboxPassMaterial->Unbind(*commandList);
 		}
 
 		if (m_SsrEnabled)

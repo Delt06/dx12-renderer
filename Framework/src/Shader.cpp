@@ -2,18 +2,15 @@
 #include <DX12Library/ShaderUtils.h>
 #include <DX12Library/Application.h>
 
-Shader::Shader(const std::shared_ptr<CommonRootSignature>& rootSignature, const std::wstring& vertexShaderPath, const std::wstring& pixelShaderPath, const std::function<void(PipelineStateBuilder&)> buildPipelineState)
+Shader::Shader(const std::shared_ptr<CommonRootSignature>& rootSignature, const ShaderBlob& vertexShader, const ShaderBlob& pixelShader, const std::function<void(PipelineStateBuilder&)> buildPipelineState)
 	: m_RootSignature(rootSignature)
 	, m_PipelineStateBuilder(rootSignature)
 {
-	const auto vertexShader = ShaderUtils::LoadShaderFromFile(vertexShaderPath);
-	const auto pixelShader = ShaderUtils::LoadShaderFromFile(pixelShaderPath);
-
-	m_PipelineStateBuilder.WithShaders(vertexShader, pixelShader);
+	m_PipelineStateBuilder.WithShaders(vertexShader.GetBlob(), pixelShader.GetBlob());
 	buildPipelineState(m_PipelineStateBuilder);
 
-	CollectShaderMetadata(vertexShader, &m_VertexShaderMetadata);
-	CollectShaderMetadata(pixelShader, &m_PixelShaderMetadata);
+	CollectShaderMetadata(vertexShader.GetBlob(), &m_VertexShaderMetadata);
+	CollectShaderMetadata(pixelShader.GetBlob(), &m_PixelShaderMetadata);
 }
 
 void Shader::Bind(CommandList& commandList)
@@ -23,6 +20,11 @@ void Shader::Bind(CommandList& commandList)
 	const auto pipelineState = GetPipelineState(device, renderTargetFormats);
 
 	commandList.SetPipelineState(pipelineState);
+}
+
+void Shader::Unbind(CommandList& commandList)
+{
+	m_RootSignature->UnbindMaterialShaderResourceViews(commandList);
 }
 
 void Shader::SetMaterialConstantBuffer(CommandList& commandList, size_t size, const void* data)

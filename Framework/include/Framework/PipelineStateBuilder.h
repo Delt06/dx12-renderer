@@ -18,9 +18,15 @@ public:
 
 	PipelineStateBuilder& WithRenderTargetFormats(const std::vector<DXGI_FORMAT>& renderTargetFormats, DXGI_FORMAT depthStencilFormat);
 	PipelineStateBuilder& WithShaders(const Microsoft::WRL::ComPtr<ID3DBlob>& vertexShader, const Microsoft::WRL::ComPtr<ID3DBlob>& pixelShader);
+
 	PipelineStateBuilder& WithBlend(const CD3DX12_BLEND_DESC& blendDesc);
-	PipelineStateBuilder& WithDepthStencil(const CD3DX12_DEPTH_STENCIL_DESC1& depthStencil);
+	PipelineStateBuilder& WithAdditiveBlend();
+
+	PipelineStateBuilder& WithDepthStencil(const CD3DX12_DEPTH_STENCIL_DESC& depthStencil);
+	PipelineStateBuilder& WithDisabledDepthStencil();
+
 	PipelineStateBuilder& WithInputLayout(const std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout);
+	PipelineStateBuilder& WithRasterizer(const CD3DX12_RASTERIZER_DESC& rasterizer);
 
 private:
 	const std::shared_ptr<RootSignature> m_RootSignature;
@@ -31,6 +37,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3DBlob> m_VertexShader;
 	Microsoft::WRL::ComPtr<ID3DBlob> m_PixelShader;
 	CD3DX12_BLEND_DESC m_BlendDesc = CD3DX12_BLEND_DESC(CD3DX12_DEFAULT());
-	CD3DX12_DEPTH_STENCIL_DESC1 m_DepthStencilDesc = CD3DX12_DEPTH_STENCIL_DESC1(CD3DX12_DEFAULT());
+	CD3DX12_DEPTH_STENCIL_DESC m_DepthStencilDesc = CD3DX12_DEPTH_STENCIL_DESC(CD3DX12_DEFAULT());
+	CD3DX12_RASTERIZER_DESC m_RasterizerDesc = CD3DX12_RASTERIZER_DESC(CD3DX12_DEFAULT());
 	std::vector<D3D12_INPUT_ELEMENT_DESC> m_InputLayout;
 };

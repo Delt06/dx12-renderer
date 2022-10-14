@@ -47,7 +47,7 @@ Texture2D ambientOcclusionMap : register(t4);
 
 float3 ApplyNormalMap(const float3x3 tbn, Texture2D map, const float2 uv)
 {
-    const float3 normalTs = UnpackNormal(map.Sample(g_Common_LinearSampler, uv).xyz);
+    const float3 normalTs = UnpackNormal(map.Sample(g_Common_LinearWrapSampler, uv).xyz);
     return normalize(mul(normalTs, tbn));
 }
 
@@ -74,7 +74,7 @@ PixelShaderOutput main(PixelShaderInput IN)
     
     if (has_diffuseMap)
     {
-        diffuseColor = diffuseMap.Sample(g_Common_LinearSampler, uv).rgb;
+        diffuseColor = diffuseMap.Sample(g_Common_LinearWrapSampler, uv).rgb;
     }
     else
     {
@@ -102,19 +102,19 @@ PixelShaderOutput main(PixelShaderInput IN)
     float metallic = Metallic;
     if (has_metallicMap)
     {
-        metallic *= metallicMap.Sample(g_Common_LinearSampler, uv).r;
+        metallic *= metallicMap.Sample(g_Common_LinearWrapSampler, uv).r;
     }
     
     float roughness = Roughness;
     if (has_roughnessMap)
     {
-        roughness *= roughnessMap.Sample(g_Common_LinearSampler, uv).r;
+        roughness *= roughnessMap.Sample(g_Common_LinearWrapSampler, uv).r;
     }
     
     float ambientOcclusion = 1.0f;
     if (has_ambientOcclusionMap)
     {
-        ambientOcclusion *= ambientOcclusionMap.Sample(g_Common_LinearSampler, uv).r;
+        ambientOcclusion *= ambientOcclusionMap.Sample(g_Common_LinearWrapSampler, uv).r;
     }
     
     OUT.Surface = PackSurface(metallic, roughness, ambientOcclusion);

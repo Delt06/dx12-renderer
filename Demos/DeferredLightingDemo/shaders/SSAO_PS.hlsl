@@ -1,5 +1,8 @@
 #include "ShaderLibrary/GBufferUtils.hlsli"
 #include "ShaderLibrary/ScreenParameters.hlsli"
+#include "ShaderLibrary/GBuffer.hlsli"
+#include "ShaderLibrary/Pipeline.hlsli"
+#include "ShaderLibrary/Common/RootSignature.hlsli"
 
 struct PixelShaderInput
 {
@@ -19,20 +22,10 @@ cbuffer SSAOCBuffer : register(b0)
     float Power;
     float3 _Padding;
     
-    matrix InverseProjection;
-    matrix InverseView;
-    matrix View;
-    matrix ViewProjection;
-    
-    float3 Samples[SAMPLES_COUNT];
+    float4 Samples[SAMPLES_COUNT];
 };
 
-Texture2D gBufferNormalsWS : register(t0);
-Texture2D gBufferDepth : register(t1);
-Texture2D noiseTexture : register(t2);
-
-SamplerState gBufferSampler : register(s0);
-SamplerState noiseTextureSampler : register(s1);
+Texture2D noiseTexture : register(t0);
 
 float4 main(PixelShaderInput IN) : SV_TARGET
 {
@@ -48,10 +41,10 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     }
     
     float3 positionNDC = ScreenSpaceUVToNDC(uv, zNDC);
-    float4 positionVS = RestorePositionVS(positionNDC, InverseProjection);
-    float3 positionWS = mul(InverseView, positionVS).xyz;
+    float4 positionVS = RestorePositionVS(positionNDC, g_Pipeline_InverseProjection);
+    float3 positionWS = mul(g_Pipeline_InverseView, positionVS).xyz;
     
-    float3 randomVector = float3(noiseTexture.Sample(noiseTextureSampler, uv * NoiseScale).xy, 0);
+    float3 randomVector = float3(noiseTexture.Sample(g_Common_PointWrapSampler, uv * NoiseScale).xy, 0);
     
     const float3 tangent = normalize(randomVector - normal * dot(randomVector, normal));
     const float3 bitangent = cross(normal, tangent);
@@ -61,9 +54,9 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     
     for (uint i = 0; i < KernelSize; ++i)
     {
-        float3 samplePositionWS = positionWS + normal * Radius * 0.5 + mul(tbn, Samples[i]) * Radius;
+        float3 samplePositionWS = positionWS + normal * Radius * 0.5 + mul(tbn, Samples[i].xyz) * Radius;
         
-        float4 samplePositionCS = mul(ViewProjection, float4(samplePositionWS, 1.0));
+        float4 samplePositionCS = mul(g_Pipeline_ViewProjection, float4(samplePositionWS, 1.0));
         samplePositionCS /= samplePositionCS.w;
         
         float2 sampleScreenSpaceUV = samplePositionCS.xy;
@@ -72,9 +65,9 @@ float4 main(PixelShaderInput IN) : SV_TARGET
         
         float sampleDepthZNDC = gBufferDepth.SampleLevel(gBufferSampler, sampleScreenSpaceUV, 0).x;
         float3 sampleDepthPositionNDC = ScreenSpaceUVToNDC(sampleScreenSpaceUV, sampleDepthZNDC);
-        float3 sampleDepthPositionVS = RestorePositionVS(sampleDepthPositionNDC, InverseProjection).xyz;
+        float3 sampleDepthPositionVS = RestorePositionVS(sampleDepthPositionNDC, g_Pipeline_InverseProjection).xyz;
         
-        float3 samplePositionVS = mul(View, float4(samplePositionWS, 1.0)).xyz;
+        float3 samplePositionVS = mul(g_Pipeline_View, float4(samplePositionWS, 1.0)).xyz;
         
         float rangeCheck = smoothstep(0.0, 1.0, Radius / abs(positionVS.z - sampleDepthPositionVS.z));
         occlusion += (samplePositionVS.z >= sampleDepthPositionVS.z + DEPTH_BIAS ? 1.0 : 0.0) * rangeCheck;

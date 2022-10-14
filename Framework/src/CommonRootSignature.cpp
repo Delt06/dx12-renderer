@@ -57,8 +57,10 @@ CommonRootSignature::CommonRootSignature(const std::shared_ptr<Resource>& emptyR
 
 	const StaticSampler staticSamples[] =
 	{
-		StaticSampler(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT),
-		StaticSampler(1, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR),
+		StaticSampler(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_TEXTURE_ADDRESS_MODE_WRAP),
+		StaticSampler(1, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_TEXTURE_ADDRESS_MODE_WRAP),
+		StaticSampler(2, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
+		StaticSampler(3, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
 	};
 
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
@@ -136,6 +138,30 @@ void CommonRootSignature::SetMaterialShaderResourceView(CommandList& commandList
 		shaderResourceView.m_FirstSubresource, shaderResourceView.m_NumSubresources,
 		shaderResourceView.m_Desc
 	);
+}
+
+void CommonRootSignature::UnbindMaterialShaderResourceViews(CommandList& commandList)
+{
+	Texture nullTexture;
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Texture2D.MipLevels = 1;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.Texture2D.PlaneSlice = 0;
+	srvDesc.Texture2D.ResourceMinLODClamp = 0;
+
+	for (UINT i = 0; i < MATERIAL_SRVS_COUNT; ++i)
+	{
+		commandList.SetShaderResourceView(RootParameters::MaterialSRVs,
+			i,
+			nullTexture,
+			D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE,
+			0, 1,
+			&srvDesc
+		);
+	}
 }
 
 void CommonRootSignature::CombineRootSignatureFlags(D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags, const std::vector<RootParameter>& rootParameters)

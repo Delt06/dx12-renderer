@@ -27,6 +27,7 @@ public:
 	void SetShaderResourceView(const std::string& name, const ShaderResourceView& shaderResourceView);
 
 	void Bind(CommandList& commandList);
+	void Unbind(CommandList& commandList);
 
 	static std::shared_ptr<Material> Create(const std::shared_ptr<Shader>& shader);
 

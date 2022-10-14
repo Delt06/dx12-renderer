@@ -1,5 +1,6 @@
+#include <ShaderLibrary/Common/RootSignature.hlsli>
+
 TextureCube skybox : register(t0);
-SamplerState skyboxSampler : register(s0);
 
 struct PixelShaderInput
 {
@@ -8,5 +9,5 @@ struct PixelShaderInput
 
 float4 main(PixelShaderInput IN) : SV_TARGET
 {
-    return skybox.Sample(skyboxSampler, IN.CubemapUV);
+    return skybox.Sample(g_Common_LinearClampSampler, IN.CubemapUV);
 }

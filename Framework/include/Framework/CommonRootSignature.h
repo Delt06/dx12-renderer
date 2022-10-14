@@ -41,6 +41,8 @@ public:
 
 	void SetMaterialShaderResourceView(CommandList& commandList, UINT index, const ShaderResourceView& shaderResourceView) const;
 
+	void UnbindMaterialShaderResourceViews(CommandList& commandList);
+
 	static constexpr UINT MATERIAL_REGISTER_SPACE = 0u;
 	static constexpr UINT MODEL_REGISTER_SPACE = 1u;
 	static constexpr UINT PIPELINE_REGISTER_SPACE = 2u;

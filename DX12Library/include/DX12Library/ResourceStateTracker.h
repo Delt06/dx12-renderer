@@ -112,15 +112,15 @@ private:
 	// Pending resource transitions are committed before a command list
 	// is executed on the command queue. This guarantees that resources will
 	// be in the expected state at the beginning of a command list.
-	ResourceBarriersType PendingResourceBarriers;
+	ResourceBarriersType m_PendingResourceBarriers;
 
 	// Resource barriers that need to be committed to the command list
-	ResourceBarriersType ResourceBarriers;
+	ResourceBarriersType m_ResourceBarriers;
 
 	struct ResourceState
 	{
 		explicit ResourceState(const D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COMMON) :
-			State(state)
+			m_State(state)
 		{
 		}
 
@@ -128,12 +128,12 @@ private:
 		{
 			if (subresource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
 			{
-				State = state;
-				SubresourceStates.clear();
+				m_State = state;
+				m_SubresourceStates.clear();
 			}
 			else
 			{
-				SubresourceStates[subresource] = state;
+				m_SubresourceStates[subresource] = state;
 			}
 		}
 
@@ -143,17 +143,17 @@ private:
 		// returned.
 		D3D12_RESOURCE_STATES GetSubResourceState(const UINT subresource) const
 		{
-			D3D12_RESOURCE_STATES state = State;
-			const auto iter = SubresourceStates.find(subresource);
-			if (iter != SubresourceStates.end())
+			D3D12_RESOURCE_STATES state = m_State;
+			const auto iter = m_SubresourceStates.find(subresource);
+			if (iter != m_SubresourceStates.end())
 			{
 				state = iter->second;
 			}
 			return state;
 		}
 
-		D3D12_RESOURCE_STATES State;
-		std::map<UINT, D3D12_RESOURCE_STATES> SubresourceStates;
+		D3D12_RESOURCE_STATES m_State;
+		std::map<UINT, D3D12_RESOURCE_STATES> m_SubresourceStates;
 	};
 
 	using ResourceStateMapType = std::unordered_map<ID3D12Resource*, ResourceState>;
@@ -161,12 +161,12 @@ private:
 	// The final (last known state) of the resources within a command list.
 	// The final resource state is committed to the global resource state when the 
 	// command list is closed but before it is executed on the command queue.
-	ResourceStateMapType FinalResourceStates;
+	ResourceStateMapType m_FinalResourceStates;
 
 	// The global resource state array (map) stores the state of a resource
 	// between command list execution.
-	static ResourceStateMapType GlobalResourceStates;
+	static ResourceStateMapType s_GlobalResourceStates;
 
-	static std::mutex GlobalMutex;
-	static bool IsLocked;
+	static std::mutex s_GlobalMutex;
+	static bool s_IsLocked;
 };

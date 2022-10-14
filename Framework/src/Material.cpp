@@ -104,6 +104,11 @@ void Material::Bind(CommandList& commandList)
 	UploadShaderResourceViews(commandList);
 }
 
+void Material::Unbind(CommandList& commandList)
+{
+	m_Shader->Unbind(commandList);
+}
+
 std::shared_ptr<Material> Material::Create(const std::shared_ptr<Shader>& shader)
 {
 	return std::make_shared<Material>(shader);

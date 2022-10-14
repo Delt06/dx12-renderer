@@ -17,6 +17,7 @@ void GameObject::Draw(CommandList& commandList) const
 {
 	m_Material->Bind(commandList);
 	m_Model->Draw(commandList);
+	m_Material->Unbind(commandList);
 }
 
 const DirectX::XMMATRIX& GameObject::GetWorldMatrix() const
