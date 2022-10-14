@@ -71,13 +71,13 @@ private:
 	void LightStencilPass(CommandList& commandList,
 		const DirectX::XMMATRIX& lightWorldMatrix,
 		const DirectX::XMMATRIX& viewProjectionMatrix,
-		std::shared_ptr<Mesh> mesh);
+		const std::shared_ptr<Mesh>& mesh);
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC GetDepthTextureSrv() const;
 
-	void PointLightPass(CommandList& commandList, const PointLight& pointLight, std::shared_ptr<Mesh> mesh);
-	void SpotLightPass(CommandList& commandList, const SpotLight& spotLight, const std::shared_ptr<Mesh> mesh);
-	void CapsuleLightPass(CommandList& commandList, const CapsuleLight& capsuleLight, const std::shared_ptr<Mesh> mesh);
+	void PointLightPass(CommandList& commandList, const PointLight& pointLight, const std::shared_ptr<Mesh>& mesh);
+	void SpotLightPass(CommandList& commandList, const SpotLight& spotLight, const std::shared_ptr<Mesh>& mesh);
+	void CapsuleLightPass(CommandList& commandList, const CapsuleLight& capsuleLight, const std::shared_ptr<Mesh>& mesh);
 
 	std::shared_ptr<Texture> m_WhiteTexture2d;
 

@@ -1302,7 +1302,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 				for (const auto& pointLight : m_PointLights)
 				{
 					XMMATRIX modelMatrix = GetModelMatrix(pointLight);
-					const auto mesh = m_PointLightMesh;
+					const auto& mesh = m_PointLightMesh;
 					LightStencilPass(*commandList, modelMatrix, viewProjectionMatrix, mesh);
 					PointLightPass(*commandList, pointLight, mesh);
 				}
@@ -1314,7 +1314,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 				for (const auto& spotLight : m_SpotLights)
 				{
 					XMMATRIX modelMatrix = GetModelMatrix(spotLight);
-					const auto mesh = m_SpotLightMesh;
+					const auto& mesh = m_SpotLightMesh;
 					LightStencilPass(*commandList, modelMatrix, viewProjectionMatrix, mesh);
 					SpotLightPass(*commandList, spotLight, mesh);
 				}
@@ -1326,7 +1326,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 				for (const auto& capsuleLight : m_CapsuleLights)
 				{
 					XMMATRIX modelMatrix = GetModelMatrix(capsuleLight);
-					const auto mesh = m_CapsuleLightMesh;
+					const auto& mesh = m_CapsuleLightMesh;
 					LightStencilPass(*commandList, modelMatrix, viewProjectionMatrix, mesh);
 					CapsuleLightPass(*commandList, capsuleLight, mesh);
 				}
@@ -1436,9 +1436,9 @@ const std::shared_ptr<Texture>& DeferredLightingDemo::GetGBufferTexture(GBufferT
 }
 
 void DeferredLightingDemo::LightStencilPass(CommandList& commandList,
-	const DirectX::XMMATRIX& modelMatrix,
+	const DirectX::XMMATRIX& lightWorldMatrix,
 	const DirectX::XMMATRIX& viewProjectionMatrix,
-	std::shared_ptr<Mesh> mesh)
+	const std::shared_ptr<Mesh>& mesh)
 {
 	PIXScope(commandList, "Light Stencil Pass");
 
@@ -1446,7 +1446,7 @@ void DeferredLightingDemo::LightStencilPass(CommandList& commandList,
 	commandList.ClearDepthStencilTexture(*m_LightStencilRenderTarget.GetTexture(DepthStencil), D3D12_CLEAR_FLAG_STENCIL);
 
 	Demo::Model::CBuffer modelCBuffer{};
-	modelCBuffer.Compute(modelMatrix, viewProjectionMatrix);
+	modelCBuffer.Compute(lightWorldMatrix, viewProjectionMatrix);
 	m_CommonRootSignature->SetModelConstantBuffer(commandList, modelCBuffer);
 
 	m_LightStencilPasssMaterial->Bind(commandList);
@@ -1469,7 +1469,7 @@ D3D12_SHADER_RESOURCE_VIEW_DESC DeferredLightingDemo::GetDepthTextureSrv() const
 
 void DeferredLightingDemo::PointLightPass(CommandList& commandList,
 	const PointLight& pointLight,
-	std::shared_ptr<Mesh> mesh)
+	const std::shared_ptr<Mesh>& mesh)
 {
 	m_PointLightPassMaterial->SetAllVariables(pointLight);
 
@@ -1482,7 +1482,7 @@ void DeferredLightingDemo::PointLightPass(CommandList& commandList,
 
 void DeferredLightingDemo::SpotLightPass(CommandList& commandList,
 	const SpotLight& spotLight,
-	const std::shared_ptr<Mesh> mesh)
+	const std::shared_ptr<Mesh>& mesh)
 {
 	m_SpotLightPassMaterial->SetAllVariables(spotLight);
 
@@ -1495,7 +1495,7 @@ void DeferredLightingDemo::SpotLightPass(CommandList& commandList,
 
 void DeferredLightingDemo::CapsuleLightPass(CommandList& commandList,
 	const CapsuleLight& capsuleLight,
-	const std::shared_ptr<Mesh> mesh)
+	const std::shared_ptr<Mesh>& mesh)
 {
 	m_CapsuleLightPassMaterial->SetAllVariables(capsuleLight);
 
