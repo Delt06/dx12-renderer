@@ -18,6 +18,14 @@ class Material
 public:
 	explicit Material(const std::shared_ptr<Shader>& shader);
 
+	template<typename T>
+	void SetAllVariables(const T& data)
+	{
+		SetAllVariables(sizeof(data), &data);
+	}
+
+	void SetAllVariables(size_t size, const void* data);
+
 	template<typename T> void SetVariable(const std::string& name, const T& data, bool throwOnNotFound = true)
 	{
 		SetVariable(name, sizeof(data), &data, throwOnNotFound);

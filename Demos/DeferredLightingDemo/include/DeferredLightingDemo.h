@@ -68,14 +68,16 @@ private:
 	static AttachmentPoint GetGBufferTextureAttachmentPoint(GBufferTextureType type);
 	const std::shared_ptr<Texture>& GetGBufferTexture(GBufferTextureType type);
 
-	void LightStencilPass(CommandList& commandList, const MatricesCb& matricesCb, std::shared_ptr<Mesh> mesh);
+	void LightStencilPass(CommandList& commandList,
+		const DirectX::XMMATRIX& lightWorldMatrix,
+		const DirectX::XMMATRIX& viewProjectionMatrix,
+		std::shared_ptr<Mesh> mesh);
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC GetDepthTextureSrv() const;
 
-	void BindGBufferAsSRV(CommandList& commandList, uint32_t rootParameterIndex);
-	void PointLightPass(CommandList& commandList, const MatricesCb& matricesCb, const PointLight& pointLight, const ScreenParameters& screenParameters, std::shared_ptr<Mesh> mesh);
-	void SpotLightPass(CommandList& commandList, const MatricesCb& matricesCb, const SpotLight& spotLight, const ScreenParameters& screenParameters, const std::shared_ptr<Mesh> mesh);
-	void CapsuleLightPass(CommandList& commandList, const MatricesCb& matricesCb, const CapsuleLight& capsuleLight, const ScreenParameters& screenParameters, const std::shared_ptr<Mesh> mesh);
+	void PointLightPass(CommandList& commandList, const PointLight& pointLight, std::shared_ptr<Mesh> mesh);
+	void SpotLightPass(CommandList& commandList, const SpotLight& spotLight, const std::shared_ptr<Mesh> mesh);
+	void CapsuleLightPass(CommandList& commandList, const CapsuleLight& capsuleLight, const std::shared_ptr<Mesh> mesh);
 
 	std::shared_ptr<Texture> m_WhiteTexture2d;
 
@@ -117,19 +119,15 @@ private:
 	std::shared_ptr<Material> m_DirectionalLightPassMaterial;
 	std::shared_ptr<Mesh> m_FullScreenMesh;
 
-	RootSignature m_LightStencilPassRootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_LightStencilPassPipelineState;
+	std::shared_ptr<Material> m_LightStencilPasssMaterial;
 
-	RootSignature m_PointLightPassRootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PointLightPassPipelineState;
+	std::shared_ptr<Material> m_PointLightPassMaterial;
 	std::shared_ptr<Mesh> m_PointLightMesh;
 
-	RootSignature m_SpotLightPassRootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_SpotLightPassPipelineState;
+	std::shared_ptr<Material> m_SpotLightPassMaterial;
 	std::shared_ptr<Mesh> m_SpotLightMesh;
 
-	RootSignature m_CapsuleLightPassRootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_CapsuleLightPassPipelineState;
+	std::shared_ptr<Material> m_CapsuleLightPassMaterial;
 	std::shared_ptr<Mesh> m_CapsuleLightMesh;
 
 	std::shared_ptr<Material> m_SkyboxPassMaterial;

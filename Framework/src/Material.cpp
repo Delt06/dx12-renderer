@@ -64,6 +64,16 @@ Material::Material(const std::shared_ptr<Shader>& shader)
 	}
 }
 
+void Material::SetAllVariables(size_t size, const void* data)
+{
+	if (size != m_ConstantBufferSize)
+	{
+		throw std::exception("Constant buffer size mismatch.");
+	}
+
+	memcpy(m_ConstantBuffer.get(), data, size);
+}
+
 void Material::SetVariable(const std::string& name, size_t size, const void* data, bool throwOnNotFound)
 {
 	if (m_ConstantBuffer == nullptr)
