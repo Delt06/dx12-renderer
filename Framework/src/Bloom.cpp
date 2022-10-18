@@ -56,21 +56,29 @@ void Bloom::Draw(CommandList& commandList,
 
 	m_Prefilter.Execute(commandList, parameters, source, m_IntermediateTextures[0]);
 
-	for (size_t i = 1; i < m_IntermediateTextures.size(); ++i)
+	m_Downsample.Begin(commandList);
 	{
-		const auto& previousTexture = m_IntermediateTextures[i - 1].GetTexture(Color0);
-		auto& currentTexture = m_IntermediateTextures[i];
-		m_Downsample.Execute(commandList, parameters, previousTexture, currentTexture);
+		for (size_t i = 1; i < m_IntermediateTextures.size(); ++i)
+		{
+			const auto& previousTexture = m_IntermediateTextures[i - 1].GetTexture(Color0);
+			auto& currentTexture = m_IntermediateTextures[i];
+			m_Downsample.Execute(commandList, parameters, previousTexture, currentTexture);
+		}
 	}
+	m_Downsample.End(commandList);
 
-	for (size_t i = m_IntermediateTextures.size() - 1; i >= 1; --i)
+	m_Upsample.Begin(commandList);
 	{
-		auto& currentTexture = m_IntermediateTextures[i - 1];
-		const auto& nextTexture = m_IntermediateTextures[i].GetTexture(Color0);
-		m_Upsample.Execute(commandList, parameters, nextTexture, currentTexture);
-	}
+		for (size_t i = m_IntermediateTextures.size() - 1; i >= 1; --i)
+		{
+			auto& currentTexture = m_IntermediateTextures[i - 1];
+			const auto& nextTexture = m_IntermediateTextures[i].GetTexture(Color0);
+			m_Upsample.Execute(commandList, parameters, nextTexture, currentTexture);
+		}
 
-	m_Upsample.Execute(commandList, parameters, m_IntermediateTextures[0].GetTexture(Color0), destination);
+		m_Upsample.Execute(commandList, parameters, m_IntermediateTextures[0].GetTexture(Color0), destination);
+	}
+	m_Upsample.End(commandList);
 }
 
 void Bloom::GetIntermediateTextureSize(uint32_t width,

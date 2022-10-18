@@ -109,12 +109,26 @@ void Material::SetShaderResourceView(const std::string& name, const ShaderResour
 void Material::Bind(CommandList& commandList)
 {
 	m_Shader->Bind(commandList);
+	UploadUniforms(commandList);
+}
 
+void Material::UploadUniforms(CommandList& commandList)
+{
 	UploadConstantBuffer(commandList);
 	UploadShaderResourceViews(commandList);
 }
 
 void Material::Unbind(CommandList& commandList)
+{
+	m_Shader->Unbind(commandList);
+}
+
+void Material::BeginBatch(CommandList& commandList)
+{
+	m_Shader->Bind(commandList);
+}
+
+void Material::EndBatch(CommandList& commandList)
 {
 	m_Shader->Unbind(commandList);
 }

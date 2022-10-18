@@ -58,7 +58,16 @@ void BloomUpsample::Execute(CommandList& commandList, const BloomParameters& par
 	parametersCb.TexelSize = { 0.5f / fSourceWidth , 0.5f / fSourceHeight }; // 0.5 is for more focused blur
 	m_Material->SetAllVariables(parametersCb);
 
-	m_Material->Bind(commandList);
+	m_Material->UploadUniforms(commandList);
 	m_BlitMesh->Draw(commandList);
-	m_Material->Unbind(commandList);
+}
+
+void BloomUpsample::Begin(CommandList& commandList)
+{
+	m_Material->BeginBatch(commandList);
+}
+
+void BloomUpsample::End(CommandList& commandList)
+{
+	m_Material->EndBatch(commandList);
 }

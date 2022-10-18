@@ -35,7 +35,11 @@ public:
 	void SetShaderResourceView(const std::string& name, const ShaderResourceView& shaderResourceView);
 
 	void Bind(CommandList& commandList);
+	void UploadUniforms(CommandList& commandList);
 	void Unbind(CommandList& commandList);
+
+	void BeginBatch(CommandList& commandList);
+	void EndBatch(CommandList& commandList);
 
 	static std::shared_ptr<Material> Create(const std::shared_ptr<Shader>& shader);
 

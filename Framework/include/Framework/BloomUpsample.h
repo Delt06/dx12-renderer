@@ -16,6 +16,9 @@ public:
 		const std::shared_ptr<Texture>& source,
 		const RenderTarget& destination);
 
+	void Begin(CommandList& commandList);
+	void End(CommandList& commandList);
+
 private:
 	std::shared_ptr<Material> m_Material;
 	std::shared_ptr<Mesh> m_BlitMesh;

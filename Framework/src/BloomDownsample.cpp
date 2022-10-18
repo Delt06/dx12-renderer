@@ -47,7 +47,16 @@ void BloomDownsample::Execute(CommandList& commandList, const BloomParameters& p
 	parametersCb.TexelSize = { 1 / fSourceWidth , 1 / fSourceHeight };
 	m_Material->SetAllVariables(parametersCb);
 
-	m_Material->Bind(commandList);
+	m_Material->UploadUniforms(commandList);
 	m_BlitMesh->Draw(commandList);
-	m_Material->Unbind(commandList);
+}
+
+void BloomDownsample::Begin(CommandList& commandList)
+{
+	m_Material->BeginBatch(commandList);
+}
+
+void BloomDownsample::End(CommandList& commandList)
+{
+	m_Material->EndBatch(commandList);
 }
