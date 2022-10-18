@@ -554,8 +554,7 @@ bool DeferredLightingDemo::LoadContent()
 		}
 
 		{
-			m_Bloom = std::make_unique<Bloom>(m_Width, m_Height, lightBufferFormat, 4);
-			m_Bloom->Init(device, *commandList);
+			m_Bloom = std::make_unique<Bloom>(m_CommonRootSignature, *commandList, m_Width, m_Height, lightBufferFormat, 4);
 		}
 
 		{
@@ -1376,7 +1375,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 			parameters.Threshold = 1.0f;
 			parameters.SoftThreshold = 0.1f;
 			parameters.Intensity = 0.35f;
-			m_Bloom->Draw(*commandList, *m_LightBufferRenderTarget.GetTexture(Color0), m_LightBufferRenderTarget, parameters);
+			m_Bloom->Draw(*commandList, m_LightBufferRenderTarget.GetTexture(Color0), m_LightBufferRenderTarget, parameters);
 		}
 
 		{

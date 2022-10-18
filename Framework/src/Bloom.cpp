@@ -3,7 +3,7 @@
 
 namespace
 {
-	CD3DX12_RESOURCE_DESC CreateRenderTargetDesc(CompositeEffect::Format backBufferFormat, uint32_t width, uint32_t height)
+	CD3DX12_RESOURCE_DESC CreateRenderTargetDesc(DXGI_FORMAT backBufferFormat, uint32_t width, uint32_t height)
 	{
 		return CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat,
 			width, height,
@@ -13,12 +13,12 @@ namespace
 	}
 }
 
-Bloom::Bloom(uint32_t width, uint32_t height, CompositeEffect::Format backBufferFormat, size_t pyramidSize)
-	: m_Width(width),
-	m_Height(height),
-	m_Prefilter(backBufferFormat),
-	m_Downsample(backBufferFormat),
-	m_Upsample(backBufferFormat)
+Bloom::Bloom(const std::shared_ptr<CommonRootSignature>& rootSignature, CommandList& commandList, uint32_t width, uint32_t height, DXGI_FORMAT backBufferFormat, size_t pyramidSize)
+	: m_Width(width)
+	, m_Height(height)
+	, m_Prefilter(rootSignature, commandList)
+	, m_Downsample(rootSignature, commandList)
+	, m_Upsample(rootSignature, commandList)
 {
 	// create intermediate textures
 	{
@@ -48,7 +48,7 @@ void Bloom::Resize(uint32_t width, uint32_t height)
 }
 
 void Bloom::Draw(CommandList& commandList,
-	const Texture& source,
+	const std::shared_ptr<Texture>& source,
 	const RenderTarget& destination,
 	const BloomParameters& parameters)
 {
@@ -56,25 +56,21 @@ void Bloom::Draw(CommandList& commandList,
 
 	m_Prefilter.Execute(commandList, parameters, source, m_IntermediateTextures[0]);
 
-	m_Downsample.Begin(commandList);
-
 	for (size_t i = 1; i < m_IntermediateTextures.size(); ++i)
 	{
 		const auto& previousTexture = m_IntermediateTextures[i - 1].GetTexture(Color0);
 		auto& currentTexture = m_IntermediateTextures[i];
-		m_Downsample.Execute(commandList, parameters, *previousTexture, currentTexture);
+		m_Downsample.Execute(commandList, parameters, previousTexture, currentTexture);
 	}
-
-	m_Upsample.Begin(commandList);
 
 	for (size_t i = m_IntermediateTextures.size() - 1; i >= 1; --i)
 	{
 		auto& currentTexture = m_IntermediateTextures[i - 1];
 		const auto& nextTexture = m_IntermediateTextures[i].GetTexture(Color0);
-		m_Upsample.Execute(commandList, parameters, *nextTexture, currentTexture);
+		m_Upsample.Execute(commandList, parameters, nextTexture, currentTexture);
 	}
 
-	m_Upsample.Execute(commandList, parameters, *m_IntermediateTextures[0].GetTexture(Color0), destination);
+	m_Upsample.Execute(commandList, parameters, m_IntermediateTextures[0].GetTexture(Color0), destination);
 }
 
 void Bloom::GetIntermediateTextureSize(uint32_t width,
@@ -109,11 +105,4 @@ void Bloom::CreateIntermediateTexture(uint32_t width,
 	auto renderTarget = RenderTarget();
 	renderTarget.AttachTexture(Color0, intermediateTexture);
 	destinationList.push_back(renderTarget);
-}
-
-void Bloom::Init(Microsoft::WRL::ComPtr<CompositeEffect::IDevice> device, CommandList& commandList)
-{
-	m_Prefilter.Init(device, commandList);
-	m_Downsample.Init(device, commandList);
-	m_Upsample.Init(device, commandList);
 }

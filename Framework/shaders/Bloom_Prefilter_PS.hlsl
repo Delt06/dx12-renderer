@@ -1,5 +1,6 @@
 #include <ShaderLibrary/Math.hlsli>
 #include <ShaderLibrary/HDR.hlsli>
+#include <ShaderLibrary/Common/RootSignature.hlsli>
 
 struct PixelShaderInput
 {
@@ -7,7 +8,6 @@ struct PixelShaderInput
 };
 
 Texture2D sourceColorTexture : register(t0);
-SamplerState sourceSampler : register(s0);
 
 cbuffer PrefilterParameters : register(b0)
 {
@@ -42,7 +42,7 @@ float3 CrossFilter(float2 uv)
     
     for (uint i = 0; i < 5; ++i)
     {
-        float3 color = sourceColorTexture.Sample(sourceSampler, uv + offsets[i] * TexelSize * 2.0).rgb;
+        float3 color = sourceColorTexture.Sample(g_Common_LinearClampSampler, uv + offsets[i] * TexelSize * 2.0).rgb;
         color = Prefilter(color);
         float weight = 1.0 / (GetLuminance(color) + 1.0);
         totalColor += color * weight;
