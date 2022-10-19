@@ -1,5 +1,6 @@
 #include "CommonRootSignature.h"
 #include <DX12Library/Helpers.h>
+#include <DX12Library/StructuredBuffer.h>
 
 namespace
 {
@@ -16,16 +17,23 @@ namespace
 			PipelineCBuffer,
 			PipelineSRVs,
 
+			UAVs,
+
 			NumRootParameters,
 		};
 	}
 
 	static constexpr UINT PIPELINE_SRVS_COUNT = 32;
 	static constexpr UINT MATERIAL_SRVS_COUNT = 6;
+	static constexpr UINT UAVS_COUNT = 6;
 }
 
 CommonRootSignature::CommonRootSignature(const std::shared_ptr<Resource>& emptyResource)
-	: m_EmptyShaderResourceView(emptyResource)
+	: m_EmptySRV(emptyResource)
+	, m_EmptyUAV(std::make_shared<StructuredBuffer>(
+		CD3DX12_RESOURCE_DESC::Buffer(sizeof(uint32_t), D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS),
+		1, 1, L"Empty Buffer"
+		))
 {
 	auto& app = Application::Get();
 	const auto device = app.GetDevice();
@@ -41,9 +49,9 @@ CommonRootSignature::CommonRootSignature(const std::shared_ptr<Resource>& emptyR
 	std::vector<CommonRootSignature::RootParameter> rootParameters(RootParameters::NumRootParameters);
 
 	// constant buffers
-	rootParameters[RootParameters::PipelineCBuffer].InitAsConstantBufferView(0u, 2u);
-	rootParameters[RootParameters::MaterialCBuffer].InitAsConstantBufferView(0u, 0u);
-	rootParameters[RootParameters::ModelCBuffer].InitAsConstantBufferView(0u, 1u);
+	rootParameters[RootParameters::PipelineCBuffer].InitAsConstantBufferView(0u, PIPELINE_REGISTER_SPACE);
+	rootParameters[RootParameters::MaterialCBuffer].InitAsConstantBufferView(0u, MATERIAL_REGISTER_SPACE);
+	rootParameters[RootParameters::ModelCBuffer].InitAsConstantBufferView(0u, MODEL_REGISTER_SPACE);
 
 	// descriptor tables
 	DescriptorRange materialSrvRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, MATERIAL_SRVS_COUNT, 0u, MATERIAL_REGISTER_SPACE);
@@ -52,6 +60,8 @@ CommonRootSignature::CommonRootSignature(const std::shared_ptr<Resource>& emptyR
 	DescriptorRange pipelineSrvRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, PIPELINE_SRVS_COUNT, 0u, PIPELINE_REGISTER_SPACE);
 	rootParameters[RootParameters::PipelineSRVs].InitAsDescriptorTable(1, &pipelineSrvRange, D3D12_SHADER_VISIBILITY_PIXEL);
 
+	DescriptorRange uavsRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, UAVS_COUNT, 0u, 0u, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE);
+	rootParameters[RootParameters::UAVs].InitAsDescriptorTable(1, &uavsRange, D3D12_SHADER_VISIBILITY_ALL);
 
 	CombineRootSignatureFlags(rootSignatureFlags, rootParameters);
 
@@ -76,25 +86,35 @@ CommonRootSignature::CommonRootSignature(const std::shared_ptr<Resource>& emptyR
 
 void CommonRootSignature::Bind(CommandList& commandList) const
 {
-	commandList.SetGraphicsRootSignature(*this);
+	commandList.SetGraphicsAndComputeRootSignature(*this);
 
 	for (UINT i = 0; i < MATERIAL_SRVS_COUNT; ++i)
 	{
 		commandList.SetShaderResourceView(RootParameters::MaterialSRVs, i,
-			*m_EmptyShaderResourceView.m_Resource,
+			*m_EmptySRV.m_Resource,
 			D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE,
-			m_EmptyShaderResourceView.m_FirstSubresource, m_EmptyShaderResourceView.m_NumSubresources,
-			m_EmptyShaderResourceView.m_Desc
+			m_EmptySRV.m_FirstSubresource, m_EmptySRV.m_NumSubresources,
+			m_EmptySRV.m_Desc
 		);
 	}
 
 	for (UINT i = 0; i < PIPELINE_SRVS_COUNT; ++i)
 	{
 		commandList.SetShaderResourceView(RootParameters::PipelineSRVs, i,
-			*m_EmptyShaderResourceView.m_Resource,
+			*m_EmptySRV.m_Resource,
 			D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE,
-			m_EmptyShaderResourceView.m_FirstSubresource, m_EmptyShaderResourceView.m_NumSubresources,
-			m_EmptyShaderResourceView.m_Desc
+			m_EmptySRV.m_FirstSubresource, m_EmptySRV.m_NumSubresources,
+			m_EmptySRV.m_Desc
+		);
+	}
+
+	for (UINT i = 0; i < UAVS_COUNT; ++i)
+	{
+		commandList.SetUnorderedAccessView(RootParameters::UAVs, i,
+			*m_EmptyUAV.m_Resource,
+			D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+			m_EmptyUAV.m_FirstSubresource, m_EmptySRV.m_NumSubresources,
+			m_EmptyUAV.m_Desc
 		);
 	}
 }
@@ -114,29 +134,60 @@ void CommonRootSignature::SetModelConstantBuffer(CommandList& commandList, size_
 	commandList.SetGraphicsDynamicConstantBuffer(RootParameters::ModelCBuffer, size, data);
 }
 
-void CommonRootSignature::SetPipelineShaderResourceView(CommandList& commandList, UINT index, const ShaderResourceView& shaderResourceView) const
+void CommonRootSignature::SetComputeConstantBuffer(CommandList& commandList, size_t size, const void* data) const
+{
+	commandList.SetComputeDynamicConstantBuffer(RootParameters::MaterialCBuffer, size, data);
+}
+
+void CommonRootSignature::SetPipelineShaderResourceView(CommandList& commandList, UINT index, const ShaderResourceView& srv) const
 {
 	Assert(index < PIPELINE_SRVS_COUNT, "Pipeline SRV index is out of bounds.");
 
 	commandList.SetShaderResourceView(RootParameters::PipelineSRVs,
 		index,
-		*shaderResourceView.m_Resource,
+		*srv.m_Resource,
 		D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE,
-		shaderResourceView.m_FirstSubresource, shaderResourceView.m_NumSubresources,
-		shaderResourceView.m_Desc
+		srv.m_FirstSubresource, srv.m_NumSubresources,
+		srv.m_Desc
 	);
 }
 
-void CommonRootSignature::SetMaterialShaderResourceView(CommandList& commandList, UINT index, const ShaderResourceView& shaderResourceView) const
+void CommonRootSignature::SetMaterialShaderResourceView(CommandList& commandList, UINT index, const ShaderResourceView& srv) const
 {
 	Assert(index < MATERIAL_SRVS_COUNT, "Material SRV index is out of bounds.");
 
 	commandList.SetShaderResourceView(RootParameters::MaterialSRVs,
 		index,
-		*shaderResourceView.m_Resource,
+		*srv.m_Resource,
 		D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE,
-		shaderResourceView.m_FirstSubresource, shaderResourceView.m_NumSubresources,
-		shaderResourceView.m_Desc
+		srv.m_FirstSubresource, srv.m_NumSubresources,
+		srv.m_Desc
+	);
+}
+
+void CommonRootSignature::SetComputeShaderResourceView(CommandList& commandList, UINT index, const ShaderResourceView& srv) const
+{
+	Assert(index < MATERIAL_SRVS_COUNT, "Compute SRV index is out of bounds.");
+
+	commandList.SetShaderResourceView(RootParameters::MaterialSRVs,
+		index,
+		*srv.m_Resource,
+		D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE,
+		srv.m_FirstSubresource, srv.m_NumSubresources,
+		srv.m_Desc
+	);
+}
+
+void CommonRootSignature::SetUnorderedAccessView(CommandList& commandList, UINT index, const UnorderedAccessView& uav) const
+{
+	Assert(index < UAVS_COUNT, "UAV index is out of bounds.");
+
+	commandList.SetUnorderedAccessView(RootParameters::UAVs,
+		index,
+		*uav.m_Resource,
+		D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+		uav.m_FirstSubresource, uav.m_NumSubresources,
+		uav.m_Desc
 	);
 }
 

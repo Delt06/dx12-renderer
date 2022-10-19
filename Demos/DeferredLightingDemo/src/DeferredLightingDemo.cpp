@@ -558,7 +558,7 @@ bool DeferredLightingDemo::LoadContent()
 		}
 
 		{
-			m_AutoExposurePso = std::make_unique<AutoExposure>(device, *commandList);
+			m_AutoExposurePso = std::make_unique<AutoExposure>(m_CommonRootSignature, *commandList);
 			m_ToneMappingPso = std::make_unique<ToneMapping>(device, *commandList, resultFormat);
 		}
 
@@ -1379,12 +1379,12 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		}
 
 		{
-			m_AutoExposurePso->Dispatch(*commandList, *m_LightBufferRenderTarget.GetTexture(Color0), m_DeltaTime);
+			m_AutoExposurePso->Dispatch(*commandList, m_LightBufferRenderTarget.GetTexture(Color0), m_DeltaTime);
 		}
 
 		{
 			auto& source = m_LightBufferRenderTarget.GetTexture(Color0);
-			m_ToneMappingPso->Blit(*commandList, *source, m_AutoExposurePso->GetLuminanceOutput(), m_ResultRenderTarget);
+			m_ToneMappingPso->Blit(*commandList, *source, *m_AutoExposurePso->GetLuminanceOutput(), m_ResultRenderTarget);
 		}
 
 		if (m_TaaEnabled)

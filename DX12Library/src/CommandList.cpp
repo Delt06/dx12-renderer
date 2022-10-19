@@ -682,36 +682,55 @@ void CommandList::SetPipelineState(const Microsoft::WRL::ComPtr<ID3D12PipelineSt
 void CommandList::SetGraphicsRootSignature(const RootSignature& rootSignature)
 {
 	const auto d3d12RootSignature = rootSignature.GetRootSignature().Get();
-	if (m_PRootSignature != d3d12RootSignature)
+	if (m_RootSignature != d3d12RootSignature)
 	{
-		m_PRootSignature = d3d12RootSignature;
+		m_RootSignature = d3d12RootSignature;
 
 		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
 		{
 			m_DynamicDescriptorHeaps[i]->ParseRootSignature(rootSignature);
 		}
 
-		m_D3d12CommandList->SetGraphicsRootSignature(m_PRootSignature);
+		m_D3d12CommandList->SetGraphicsRootSignature(m_RootSignature);
 
-		TrackObject(m_PRootSignature);
+		TrackObject(m_RootSignature);
 	}
 }
 
 void CommandList::SetComputeRootSignature(const RootSignature& rootSignature)
 {
 	const auto d3d12RootSignature = rootSignature.GetRootSignature().Get();
-	if (m_PRootSignature != d3d12RootSignature)
+	if (m_RootSignature != d3d12RootSignature)
 	{
-		m_PRootSignature = d3d12RootSignature;
+		m_RootSignature = d3d12RootSignature;
 
 		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
 		{
 			m_DynamicDescriptorHeaps[i]->ParseRootSignature(rootSignature);
 		}
 
-		m_D3d12CommandList->SetComputeRootSignature(m_PRootSignature);
+		m_D3d12CommandList->SetComputeRootSignature(m_RootSignature);
 
-		TrackObject(m_PRootSignature);
+		TrackObject(m_RootSignature);
+	}
+}
+
+void CommandList::SetGraphicsAndComputeRootSignature(const RootSignature& rootSignature)
+{
+	const auto d3d12RootSignature = rootSignature.GetRootSignature().Get();
+	if (m_RootSignature != d3d12RootSignature)
+	{
+		m_RootSignature = d3d12RootSignature;
+
+		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
+		{
+			m_DynamicDescriptorHeaps[i]->ParseRootSignature(rootSignature);
+		}
+
+		m_D3d12CommandList->SetGraphicsRootSignature(m_RootSignature);
+		m_D3d12CommandList->SetComputeRootSignature(m_RootSignature);
+
+		TrackObject(m_RootSignature);
 	}
 }
 
@@ -914,7 +933,7 @@ void CommandList::Reset()
 		m_DescriptorHeaps[i] = nullptr;
 	}
 
-	m_PRootSignature = nullptr;
+	m_RootSignature = nullptr;
 	m_ComputeCommandList = nullptr;
 }
 

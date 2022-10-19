@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "ShaderResourceView.h"
+#include "UnorderedAccessView.h"
 
 class CommonRootSignature final : public RootSignature
 {
@@ -26,7 +27,6 @@ public:
 		SetPipelineConstantBuffer(commandList, sizeof(T), &data);
 	}
 
-
 	void SetMaterialConstantBuffer(CommandList& commandList, size_t size, const void* data) const;
 
 	void SetModelConstantBuffer(CommandList& commandList, size_t size, const void* data) const;
@@ -37,9 +37,21 @@ public:
 		SetModelConstantBuffer(commandList, sizeof(T), &data);
 	}
 
-	void SetPipelineShaderResourceView(CommandList& commandList, UINT index, const ShaderResourceView& shaderResourceView) const;
+	void SetComputeConstantBuffer(CommandList& commandList, size_t size, const void* data) const;
 
-	void SetMaterialShaderResourceView(CommandList& commandList, UINT index, const ShaderResourceView& shaderResourceView) const;
+	template<typename T>
+	inline void SetComputeConstantBuffer(CommandList& commandList, const T& data) const
+	{
+		SetComputeConstantBuffer(commandList, sizeof(T), &data);
+	}
+
+	void SetPipelineShaderResourceView(CommandList& commandList, UINT index, const ShaderResourceView& srv) const;
+
+	void SetMaterialShaderResourceView(CommandList& commandList, UINT index, const ShaderResourceView& srv) const;
+
+	void SetComputeShaderResourceView(CommandList& commandList, UINT index, const ShaderResourceView& srv) const;
+
+	void SetUnorderedAccessView(CommandList& commandList, UINT index, const UnorderedAccessView& uav) const;
 
 	void UnbindMaterialShaderResourceViews(CommandList& commandList);
 
@@ -56,5 +68,6 @@ private:
 	void CombineRootSignatureFlags(D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags, const std::vector<RootParameter>& rootParameters);
 	bool CheckRootParametersVisiblity(const std::vector<RootParameter>& rootParameters, D3D12_SHADER_VISIBILITY param2);
 
-	ShaderResourceView m_EmptyShaderResourceView;
+	ShaderResourceView m_EmptySRV;
+	UnorderedAccessView m_EmptyUAV;
 };

@@ -22,7 +22,14 @@ set(HEADER_FILES
         "include/Framework/BloomPrefilter.h"
         "include/Framework/BloomDownsample.h"
         "include/Framework/BloomUpsample.h" 
-        "include/Framework/CommonRootSignature.h" "include/Framework/PipelineStateBuilder.h" "include/Framework/Shader.h" "include/Framework/Material.h" "include/Framework/ShaderResourceView.h" "include/Framework/ShaderBlob.h")
+        "include/Framework/CommonRootSignature.h" 
+        "include/Framework/PipelineStateBuilder.h" 
+        "include/Framework/Shader.h" 
+        "include/Framework/Material.h" 
+        "include/Framework/ShaderResourceView.h" 
+        "include/Framework/ShaderBlob.h"
+        "include/Framework/UnorderedAccessView.h"
+)
 
 set(SOURCE_FILES
         "src/Aabb.cpp"
@@ -42,7 +49,11 @@ set(SOURCE_FILES
         "src/BloomPrefilter.cpp"
         "src/BloomDownsample.cpp"
         "src/BloomUpsample.cpp" 
-        "src/CommonRootSignature.cpp" "src/PipelineStateBuilder.cpp" "src/Shader.cpp" "src/Material.cpp" "src/ShaderBlob.cpp")
+        "src/CommonRootSignature.cpp" 
+        "src/PipelineStateBuilder.cpp" 
+        "src/Shader.cpp" 
+        "src/Material.cpp" 
+        "src/ShaderBlob.cpp")
 
 set(SHADER_FILES_VERTEX
         "shaders/Blit_VS.hlsl"
