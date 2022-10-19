@@ -846,13 +846,10 @@ bool DeferredLightingDemo::LoadContent()
 			L"BRDF Integration Map");
 		m_BrdfIntegrationMapRt.AttachTexture(Color0, brdfIntegrationMap);
 
-		BrdfIntegration brdfIntegrationPso(device, *commandList, diffuseIrradianceMapDesc.Format);
-		brdfIntegrationPso.SetContext(*commandList);
+		BrdfIntegration brdfIntegrationPso(m_CommonRootSignature, *commandList);
 		brdfIntegrationPso.SetRenderTarget(*commandList, m_BrdfIntegrationMapRt);
 		brdfIntegrationPso.Draw(*commandList);
 	}
-
-	m_CommonRootSignature->Bind(*commandList); // TODO: remove after BRDF integration is migrated
 
 	{
 		PIXScope(*commandList, "Pre-Filter Environment");
