@@ -798,6 +798,8 @@ bool DeferredLightingDemo::LoadContent()
 		commandList->LoadTextureFromFile(*m_Skybox, L"Assets/Textures/skybox/skybox.dds", TextureUsageType::Albedo);
 	}
 
+	m_CommonRootSignature->Bind(*commandList);
+
 	{
 		PIXScope(*commandList, "Diffuse Irradiance Convolution");
 
@@ -816,9 +818,8 @@ bool DeferredLightingDemo::LoadContent()
 			L"Skybox IBL (Diffuse Irradiance)");
 		m_DiffuseIrradianceMapRt.AttachTexture(Color0, diffuseIrradianceMap);
 
-		DiffuseIrradiance diffuseIrradiancePso(device, *commandList, diffuseIrradianceMapDesc.Format);
-		diffuseIrradiancePso.SetContext(*commandList);
-		diffuseIrradiancePso.SetSourceCubemap(*commandList, *m_Skybox);
+		DiffuseIrradiance diffuseIrradiancePso(m_CommonRootSignature, *commandList);
+		diffuseIrradiancePso.SetSourceCubemap(*commandList, m_Skybox);
 
 		for (UINT32 sideIndex = 0; sideIndex < Cubemap::SIDES_COUNT; ++sideIndex)
 		{
