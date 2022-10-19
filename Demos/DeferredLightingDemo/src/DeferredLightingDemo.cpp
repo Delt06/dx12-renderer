@@ -852,6 +852,8 @@ bool DeferredLightingDemo::LoadContent()
 		brdfIntegrationPso.Draw(*commandList);
 	}
 
+	m_CommonRootSignature->Bind(*commandList); // TODO: remove after BRDF integration is migrated
+
 	{
 		PIXScope(*commandList, "Pre-Filter Environment");
 
@@ -871,9 +873,8 @@ bool DeferredLightingDemo::LoadContent()
 			L"Skybox IBL (Pre-Filtered Environment Map)");
 		m_PreFilterEnvironmentMapRt.AttachTexture(Color0, preFilterEnvironmentMap);
 
-		PreFilterEnvironment preFilterEnvironmentPso(device, *commandList, preFilterEnvironmentMapDesc.Format);
-		preFilterEnvironmentPso.SetContext(*commandList);
-		preFilterEnvironmentPso.SetSourceCubemap(*commandList, *m_Skybox);
+		PreFilterEnvironment preFilterEnvironmentPso(m_CommonRootSignature, *commandList);
+		preFilterEnvironmentPso.SetSourceCubemap(*commandList, m_Skybox);
 
 		for (UINT mipLevel = 0; mipLevel < mipLevels; ++mipLevel)
 		{

@@ -1075,9 +1075,13 @@ void CommandList::SetAutomaticViewportAndScissorRect(const RenderTarget& renderT
 	auto destinationDesc = color0Texture->IsValid() ? color0Texture->GetD3D12ResourceDesc() : depthTexture->GetD3D12ResourceDesc();
 	auto viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(destinationDesc.Width), static_cast<float>(destinationDesc.Height));
 
-	auto scissorRect = CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX);
-
 	SetViewport(viewport);
+	SetInfiniteScrissorRect();
+}
+
+void CommandList::SetInfiniteScrissorRect()
+{
+	auto scissorRect = CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX);
 	SetScissorRect(scissorRect);
 }
 

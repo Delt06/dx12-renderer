@@ -49,6 +49,7 @@ set(SHADER_FILES_VERTEX
         shaders/DeferredLightingDemo_LightBuffer_LightStencil_VS.hlsl
         shaders/DeferredLightingDemo_Skybox_VS.hlsl
         shaders/IBL_CubeMapSideBlit_VS.hlsl
+        shaders/IBL_PreFilterEnvironment_VS.hlsl
         )
 
 set(SHADER_FILES_PIXEL
