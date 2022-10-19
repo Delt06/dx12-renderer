@@ -1,3 +1,5 @@
+#include <ShaderLibrary/Common/RootSignature.hlsli>
+
 struct VertexShaderInput
 {
     float2 UV : TEXCOORD;
@@ -6,11 +8,11 @@ struct VertexShaderInput
 struct Parameters
 {
     float WhitePoint;
+    float3 _Padding;
 };
 
 Texture2D source : register(t0);
 Texture2D averageLuminanceMap : register(t1);
-SamplerState sourceSampler : register(s0);
 ConstantBuffer<Parameters> parametersCB : register(b0);
 
 float3 ConvertRGB2XYZ(float3 _rgb)
@@ -70,8 +72,8 @@ float Reinhard2(float _x, float _whiteSqr)
 
 float4 main(VertexShaderInput IN) : SV_TARGET
 {
-    float3 hdrColor = source.Sample(sourceSampler, IN.UV).rgb;
-    float averageLuminance = averageLuminanceMap.Sample(sourceSampler, 0).r;
+    float3 hdrColor = source.Sample(g_Common_PointClampSampler, IN.UV).rgb;
+    float averageLuminance = averageLuminanceMap.Sample(g_Common_PointClampSampler, 0).r;
     
     // https://bruop.github.io/tonemapping/
     float3 Yxy = ConvertRGB2Yxy(hdrColor);
