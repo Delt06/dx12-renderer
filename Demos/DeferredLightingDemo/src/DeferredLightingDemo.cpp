@@ -374,22 +374,6 @@ bool DeferredLightingDemo::LoadContent()
 
 	// root signature and pipeline states for light passes
 	{
-		CD3DX12_STATIC_SAMPLER_DESC lightPassSamplers[] = {
-			// GBuffer sampler : point clamp
-			CD3DX12_STATIC_SAMPLER_DESC(0,
-				D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT,
-				D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-				D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
-				CD3DX12_STATIC_SAMPLER_DESC(1, // for compatibility. TODO: remove
-				D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT,
-				D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-				D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
-				CD3DX12_STATIC_SAMPLER_DESC(2, // for compatibility. TODO: remove
-				D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT,
-				D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-				D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
-		};
-
 		m_FullScreenMesh = Mesh::CreateBlitTriangle(*commandList);
 
 		// directional light pass
@@ -1335,7 +1319,6 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 		{
 			PIXScope(*commandList, "Skybox Pass");
 
-			m_CommonRootSignature->Bind(*commandList); // TODO: remove after migrating the above passes
 			commandList->SetRenderTarget(m_LightBufferRenderTarget);
 			commandList->SetAutomaticViewportAndScissorRect(m_LightBufferRenderTarget);
 
