@@ -35,7 +35,6 @@ using namespace DirectX;
 #endif
 
 #include <PBR/DiffuseIrradiance.h>
-#include <PBR/PbrTextureLoader.h>
 #include <PBR/BrdfIntegration.h>
 #include <PBR/PreFilterEnvironment.h>
 #include <Framework/Blit.h>

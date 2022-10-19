@@ -14,8 +14,6 @@ set(HEADER_FILES
 
         include/PBR/BrdfIntegration.h
         include/PBR/DiffuseIrradiance.h
-        include/PBR/PbrMaterial.h
-        include/PBR/PbrTextureLoader.h
         include/PBR/PreFilterEnvironment.h
 
         include/SSR/Ssr.h
@@ -37,8 +35,6 @@ set(SOURCE_FILES
 
         src/PBR/BrdfIntegration.cpp
         src/PBR/DiffuseIrradiance.cpp
-        src/PBR/PbrMaterial.cpp
-        src/PBR/PbrTextureLoader.cpp
         src/PBR/PreFilterEnvironment.cpp
 
         src/SSR/Ssr.cpp
