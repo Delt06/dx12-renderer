@@ -547,7 +547,7 @@ bool DeferredLightingDemo::LoadContent()
 		}
 
 		{
-			m_Taa = std::make_unique<Taa>(device, *commandList, resultFormat, m_Width, m_Height);
+			m_Taa = std::make_unique<Taa>(m_CommonRootSignature, *commandList, resultFormat, m_Width, m_Height);
 		}
 	}
 
@@ -1372,8 +1372,8 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
 
 		if (m_TaaEnabled)
 		{
-			const Texture& currentBuffer = *m_ResultRenderTarget.GetTexture(Color0);
-			m_Taa->Resolve(*commandList, currentBuffer, *GetGBufferTexture(GBufferTextureType::Velocity));
+			const auto& currentBuffer = m_ResultRenderTarget.GetTexture(Color0);
+			m_Taa->Resolve(*commandList, currentBuffer, GetGBufferTexture(GBufferTextureType::Velocity));
 		}
 
 		// Maintain TAA data
