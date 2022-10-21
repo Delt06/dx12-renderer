@@ -170,73 +170,7 @@ namespace
 
 		XMMATRIX M(R0, R1, R2, position);
 
-		return
-			M;
-	}
-
-	struct BoneSbItem
-	{
-		XMMATRIX Transform;
-	};
-
-	namespace GBufferRootParameters
-	{
-		enum RootParameters
-		{
-			// ConstantBuffer : register(b0);
-			MatricesCb,
-			// ConstantBuffer : register(b1);
-			MaterialCb,
-			// ConstantBuffer : register(b1, space1);
-			TaaBufferCb,
-			// Texture2D register(t0-t1);
-			Textures,
-			NumRootParameters
-		};
-	}
-
-	namespace DirectionalLightBufferRootParameters
-	{
-		enum RootParameters
-		{
-			// ConstantBuffer: register(b0);
-			MatricesCb,
-			// ConstantBuffer : register(b1);
-			DirectionalLightCb,
-			// ConstantBuffer : register(b2);
-			ScreenParametersCb,
-			// Texture2D : register(t0-t2);
-			GBuffer,
-			// TextureCube : register(t3)
-			Ambient,
-			NumRootParameters
-		};
-	}
-
-	namespace LightStencilRootParameters
-	{
-		enum RootParameters
-		{
-			// ConstantBuffer: register(b0);
-			MatricesCb,
-			NumRootParameters
-		};
-	}
-
-	namespace LightPassRootParameters
-	{
-		enum RootParameters
-		{
-			// ConstantBuffer: register(b0);
-			MatricesCb,
-			// ConstantBuffer : register(b1);
-			LightCb,
-			// ConstantBuffer : register(b2);
-			ScreenParametersCb,
-			// Texture2D register(t0-t1);
-			GBuffer,
-			NumRootParameters
-		};
+		return M;
 	}
 
 	CD3DX12_BLEND_DESC AdditiveBlending()
