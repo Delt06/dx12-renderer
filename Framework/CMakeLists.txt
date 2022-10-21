@@ -4,13 +4,13 @@ project("Framework")
 
 set(HEADER_FILES
         "include/Framework/Aabb.h"
-        "include/Framework/Blit.h"
+        
         "include/Framework/Bone.h"
         "include/Framework/BoundingSphere.h"
-        "include/Framework/EffectBase.h"
+        
         "include/Framework/Mesh.h"
         "include/Framework/Model.h"
-        "include/Framework/CompositeEffect.h"
+        
         "include/Framework/GameObject.h"
         "include/Framework/Light.h"
         "include/Framework/MatricesCb.h"
@@ -33,13 +33,13 @@ set(HEADER_FILES
 
 set(SOURCE_FILES
         "src/Aabb.cpp"
-        "src/Blit.cpp"
+        
         "src/Bone.cpp"
         "src/BoundingSphere.cpp"
         "src/Framework.cpp"
         "src/Mesh.cpp"
         "src/Model.cpp"
-        "src/CompositeEffect.cpp"
+        
         "src/GameObject.cpp"
         "src/Light.cpp"
         "src/MatricesCb.cpp"

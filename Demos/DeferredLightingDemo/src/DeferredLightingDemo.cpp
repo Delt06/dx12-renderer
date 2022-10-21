@@ -37,7 +37,6 @@ using namespace DirectX;
 #include <PBR/DiffuseIrradiance.h>
 #include <PBR/BrdfIntegration.h>
 #include <PBR/PreFilterEnvironment.h>
-#include <Framework/Blit.h>
 #include <HDR/AutoExposure.h>
 #include <TaaCBuffer.h>
 #include <Taa.h>
