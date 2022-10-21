@@ -1,16 +1,4 @@
-struct Matrices
-{
-    matrix Model;
-    matrix ModelView;
-    matrix InverseTransposeModelView;
-    matrix ModelViewProjection;
-    matrix View;
-    matrix Projection;
-    matrix InverseTransposeModel;
-    float4 CameraPosition;
-};
-
-ConstantBuffer<Matrices> matricesCb : register(b0);
+#include <ShaderLibrary/Model.hlsli>
 
 struct VertexAttributes
 {
@@ -26,7 +14,7 @@ VertexShaderOutput main(VertexAttributes IN)
 {
     VertexShaderOutput OUT;
     
-    OUT.PositionCs = mul(matricesCb.ModelViewProjection, float4(IN.PositionOs, 1.0));
+    OUT.PositionCs = mul(g_Model_ModelViewProjection, float4(IN.PositionOs, 1.0));
 
     return OUT;
 }

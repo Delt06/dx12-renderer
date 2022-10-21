@@ -21,7 +21,6 @@ public:
 	[[nodiscard]] std::shared_ptr<const Model> GetModel() const;
 	[[nodiscard]] const Aabb& GetAabb() const;
 
-	template<class TMaterial>
 	const std::shared_ptr<Material>& GetMaterial() const
 	{
 		return m_Material;

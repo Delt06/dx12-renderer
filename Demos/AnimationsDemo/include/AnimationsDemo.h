@@ -8,11 +8,14 @@
 #include <DX12Library/RootSignature.h>
 #include <DX12Library/Texture.h>
 #include <DX12Library/VertexBuffer.h>
+#include <DX12Library/StructuredBuffer.h>
 
 #include <Framework/Light.h>
 #include <Framework/GameObject.h>
 #include <Framework/GraphicsSettings.h>
 #include <Framework/Mesh.h>
+#include <Framework/Material.h>
+#include <Framework/CommonRootSignature.h>
 
 class Animation;
 
@@ -47,12 +50,11 @@ private:
 	std::shared_ptr<Animation> m_IdleAnimation;
 	std::shared_ptr<Animation> m_TopAnimation;
 
-	RootSignature m_RootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineState;
-
-	RootSignature m_BonesRootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_BonesPipelineState;
+	std::shared_ptr<CommonRootSignature> m_RootSignature;
 	std::shared_ptr<Mesh> m_BoneMesh;
+	std::shared_ptr<Material> m_BoneMaterial;
+
+	std::shared_ptr<StructuredBuffer> m_BonesStructuredBuffer;
 
 	D3D12_VIEWPORT m_Viewport;
 	D3D12_RECT m_ScissorRect;
