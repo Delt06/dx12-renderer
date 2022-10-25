@@ -5,10 +5,11 @@ project("LightingDemo")
 set(HEADER_FILES
         include/LightingDemo.h
 
+        include/CBuffers.h
         include/DirectionalLightShadowPassPso.h
         include/ParticleSystem.h
         include/ParticleSystemPso.h
-        include/PointLightPso.h
+        include/PointLightPass.h
         include/PointLightShadowPassPso.h
         include/PostFxPso.h
         include/Scene.h
@@ -24,7 +25,7 @@ set(SOURCE_FILES
         src/DirectionalLightShadowPassPso.cpp
         src/ParticleSystem.cpp
         src/ParticleSystemPso.cpp
-        src/PointLightPso.cpp
+        src/PointLightPass.cpp
         src/PointLightShadowPassPso.cpp
         src/PostFxPso.cpp
         src/Scene.cpp
@@ -58,5 +59,4 @@ include(${CMAKE_SOURCE_DIR}/CMakeIncludes/DemoBase.cmake)
 
 target_link_libraries(${TARGET_NAME}
         PUBLIC Framework
-        PUBLIC PhongLighting
         )

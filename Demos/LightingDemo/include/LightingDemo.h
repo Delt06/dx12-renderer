@@ -17,13 +17,15 @@
 #include <Framework/GameObject.h>
 #include <Framework/GraphicsSettings.h>
 #include "ParticleSystemPso.h"
-#include "PointLightPso.h"
+#include "PointLightPass.h"
 #include "Scene.h"
 #include "SpotLightShadowPassPso.h"
 #include <DX12Library/Cubemap.h>
 
 #include "PostFxPso.h"
 #include <Framework/Bloom.h>
+#include <Framework/CommonRootSignature.h>
+#include <Framework/Material.h>
 
 class PointLightShadowPassPso;
 class ParticleSystem;
@@ -54,6 +56,8 @@ private:
 
 	RenderTarget m_RenderTarget;
 	RenderTarget m_PostFxRenderTarget;
+
+	std::shared_ptr<CommonRootSignature> m_RootSignature;
 
 	std::shared_ptr<Scene> m_Scene;
 	std::shared_ptr<SceneRenderer> m_SceneRenderer;

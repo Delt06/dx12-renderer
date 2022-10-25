@@ -8,5 +8,6 @@ SamplerState g_Common_PointWrapSampler : register(s0);
 SamplerState g_Common_LinearWrapSampler : register(s1);
 SamplerState g_Common_PointClampSampler : register(s2);
 SamplerState g_Common_LinearClampSampler : register(s3);
+SamplerComparisonState g_Common_ShadowMapSampler : register(s4);
 
 #endif

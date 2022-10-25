@@ -1,14 +1,4 @@
-struct Matrices
-{
-	matrix Model;
-	matrix ModelView;
-	matrix InverseTransposeModelView;
-	matrix ModelViewProjection;
-	matrix View;
-	matrix Projection;
-};
-
-ConstantBuffer<Matrices> matricesCb : register(b0);
+#include <ShaderLibrary/Pipeline.hlsli>
 
 struct VertexAttributes
 {
@@ -37,8 +27,8 @@ VertexOutput main(const VertexAttributes IN)
 	// Billboard effect
 	float3 vertexOffset = IN.PositionOs * IN.InstanceScale;
 	const float4 pivotWs = float4(IN.InstancePivot, 1);
-	const float4 positionVs = mul(matricesCb.View, pivotWs) + float4(vertexOffset, 0);
-	OUT.PositionCs = mul(matricesCb.Projection, positionVs);
+	const float4 positionVs = mul(g_Pipeline_View, pivotWs) + float4(vertexOffset, 0);
+	OUT.PositionCs = mul(g_Pipeline_Projection, positionVs);
 
 	return OUT;
 }

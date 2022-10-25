@@ -29,8 +29,7 @@ void Reflections::Draw(CommandList& commandList, const std::shared_ptr<Texture>&
 {
 	PIXScope(commandList, "Reflections Light Pass");
 
-	auto preFilterMapSrv = ShaderResourceView(preFilterMap);
-	preFilterMapSrv.m_Desc = &m_PreFilterEnvironmentSrvDesc;
+	auto preFilterMapSrv = ShaderResourceView(preFilterMap, m_PreFilterEnvironmentSrvDesc);
 	m_Material->SetShaderResourceView("preFilterMap", preFilterMapSrv);
 	m_Material->SetShaderResourceView("brdfLut", ShaderResourceView(brdfLut));
 	m_Material->SetShaderResourceView("ssrTexture", ShaderResourceView(ssrTexture));

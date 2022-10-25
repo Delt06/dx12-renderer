@@ -1,3 +1,5 @@
+#include <ShaderLibrary/Common/RootSignature.hlsli>
+
 struct PixelShaderInput
 {
     float2 Uv : TEXCOORD;
@@ -14,7 +16,6 @@ ConstantBuffer<PostFxParameters> postFxParametersCb : register(b0);
 
 Texture2D sourceColorTexture : register(t0);
 Texture2D sourceDepthTexture : register(t1);
-SamplerState sourceSampler : register(s0);
 
 // https://www.prkz.de/blog/1-linearizing-depth-buffer-samples-in-hlsl
 float GetDepthLinear(float nonLinearDepth)
@@ -30,8 +31,8 @@ float GetDepthLinear(float nonLinearDepth)
 
 float4 main(PixelShaderInput IN) : SV_TARGET
 {
-    const float nonLinearDepth = sourceDepthTexture.Sample(sourceSampler, IN.Uv).x;
-    
+    const float nonLinearDepth = sourceDepthTexture.Sample(g_Common_PointClampSampler, IN.Uv).x;
+
     float fogFactor;
     if (nonLinearDepth == 1.0)
     {
@@ -44,8 +45,8 @@ float4 main(PixelShaderInput IN) : SV_TARGET
         exponentArg = exponentArg * exponentArg;
         fogFactor = 1 / exp(exponentArg);
     }
-    
-    const float4 srcColor = sourceColorTexture.Sample(sourceSampler, IN.Uv);
+
+    const float4 srcColor = sourceColorTexture.Sample(g_Common_PointClampSampler, IN.Uv);
     const float3 resultColor = lerp(postFxParametersCb.FogColor, srcColor.rgb, fogFactor);
     return float4(resultColor, srcColor.a);
 }

@@ -3,7 +3,7 @@
 
 using namespace DirectX;
 
-void Aabb::Encapsulate(const XMVECTOR point)
+void Aabb::Encapsulate(DirectX::XMVECTOR point)
 {
 	Min = XMVectorMin(Min, point);
 	XMVectorSetW(Min, 1.0f);

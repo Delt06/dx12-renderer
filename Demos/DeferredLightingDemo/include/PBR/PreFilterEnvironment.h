@@ -21,7 +21,6 @@ public:
 private:
 	std::shared_ptr<Mesh> m_BlitMesh;
 	std::shared_ptr<Material> m_Material;
-	D3D12_SHADER_RESOURCE_VIEW_DESC m_SourceSrvDesc{};
 
 	float m_SourceWidth;
 	float m_SourceHeight;

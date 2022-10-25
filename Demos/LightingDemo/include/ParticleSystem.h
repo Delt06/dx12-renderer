@@ -9,12 +9,10 @@
 class ParticleSystem
 {
 public:
-	ParticleSystem(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DirectX::XMVECTOR origin);
+	ParticleSystem(const std::shared_ptr<CommonRootSignature>& rootSignature, CommandList& commandList, DirectX::XMVECTOR origin);
 
 	void Update(double deltaTime);
-	void Draw(CommandList& commandList, DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX viewProjectionMatrix,
-		DirectX::XMMATRIX
-		projectionMatrix) const;
+	void Draw(CommandList& commandList) const;
 
 private:
 	void Emit(double deltaTime);

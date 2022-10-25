@@ -1,4 +1,7 @@
+#include <ShaderLibrary/Common/RootSignature.hlsli>
+
 #include <ShaderLibrary/Shadows.hlsli>
+#include <ShaderLibrary/Pipeline.hlsli>
 
 struct PixelShaderInput
 {
@@ -11,12 +14,6 @@ struct PixelShaderInput
     float3 EyeWs : EYE_WS;
 };
 
-struct DirectionalLight
-{
-    float4 DirectionWs; // update on CPU
-    float4 Color;
-};
-
 #include <ShaderLibrary/PointLight.hlsli>
 #include <ShaderLibrary/SpotLight.hlsli>
 
@@ -26,36 +23,41 @@ struct LightingResult
     float3 Specular;
 };
 
-struct LightPropertiesCb
+cbuffer MaterialCBuffer : register(b0)
 {
-    uint NumPointLights;
-    uint NumSpotLights;
+    float4 Emissive = float4(0.0f, 0.0f, 0.0f, 1.0f);
+    float4 Ambient = float4(0.1f, 0.1f, 0.1f, 1.0f);
+    float4 Diffuse = float4(1.0f, 1.0f, 1.0f, 1.0f);
+    float4 Specular = float4(1.0f, 1.0f, 1.0f, 1.0f);
+
+    float SpecularPower = 128.0f;
+    float Reflectivity = 0.0f;
+    float2 Padding;
+
+    bool has_diffuseMap = false;
+    bool has_normalMap = false;
+    bool has_specularMap = false;
+    bool has_glossMap = false;
+    
+    float4 TilingOffset = float4(1, 1, 0, 0);
 };
 
-#include <ShaderLibrary/Material.hlsli>
+Texture2D directionalLightShadowMap : register(t0, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE);
 
-ConstantBuffer<Material> materialCb : register(b0, space1);
-ConstantBuffer<DirectionalLight> dirLightCb : register(b1, space1);
-ConstantBuffer<LightPropertiesCb> lightPropertiesCb : register(b2);
-StructuredBuffer<PointLight> pointLights : register(t4);
-StructuredBuffer<SpotLight> spotLights : register(t8);
+StructuredBuffer<PointLight> pointLights : register(t1, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE);
+Texture2DArray pointLightShadowMaps : register(t2, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE);
+StructuredBuffer<matrix> pointLightViewProjectionMatrices : register(t3, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE);
 
-ConstantBuffer<ShadowReceiverParameters> shadowReceiverParameters : register(b3);
+StructuredBuffer<SpotLight> spotLights : register(t4, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE);
+Texture2DArray spotLightShadowMaps : register(t5, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE);
+StructuredBuffer<matrix> spotLightLightViewProjectionMatrices : register(t6, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE);
 
-Texture2D directionalLightShadowMap : register(t5);
-SamplerComparisonState shadowMapSampler : register(s1);
-Texture2DArray pointLightShadowMaps : register(t6);
-StructuredBuffer<matrix> pointLightViewProjectionMatrices : register(t7);
-Texture2DArray spotLightShadowMaps : register(t9);
-StructuredBuffer<matrix> spotLightLightViewProjectionMatrices : register(t10);
-
-TextureCube envrironmentReflectionsCubemap : register(t11);
+TextureCube envrironmentReflectionsCubemap : register(t7, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE);
 
 Texture2D diffuseMap : register(t0);
 Texture2D normalMap : register(t1);
 Texture2D specularMap : register(t2);
 Texture2D glossMap : register(t3);
-SamplerState defaultSampler : register(s0);
 
 struct Light
 {
@@ -78,8 +80,8 @@ struct Light
 Light GetMainLight(const float4 shadowCoords)
 {
     Light light;
-    light.Color = dirLightCb.Color.rgb;
-    light.DirectionWs = dirLightCb.DirectionWs.xyz;
+    light.Color = g_Pipeline_DirectionalLight.Color.rgb;
+    light.DirectionWs = g_Pipeline_DirectionalLight.DirectionWs.xyz;
     light.DistanceAttenuation = 1.0f;
     light.ShadowAttenuation = PoissonSampling_MainLight(shadowCoords);
     return light;
@@ -174,16 +176,16 @@ float3 UnpackNormal(const float3 n)
 
 float3 ApplyNormalMap(const float3x3 tbn, Texture2D map, const float2 uv)
 {
-    const float3 normalTs = UnpackNormal(map.Sample(defaultSampler, uv).xyz);
+    const float3 normalTs = UnpackNormal(map.Sample(g_Common_LinearWrapSampler, uv).xyz);
     return normalize(mul(normalTs, tbn));
 }
 
-float Diffuse(const float3 n, const float3 l)
+float ComputeDiffuse(const float3 n, const float3 l)
 {
     return max(0, dot(n, l));
 }
 
-float Specular(const float3 v, const float3 n, const float3 l, const float specularPower)
+float ComputeSpecular(const float3 v, const float3 n, const float3 l, const float specularPower)
 {
     const float3 r = normalize(reflect(-l, n));
     const float rDotV = max(0, dot(r, v));
@@ -198,8 +200,8 @@ LightingResult Phong(const in Light light, const float3 normalWs, const float3 e
     const float3 lightDir = light.DirectionWs.xyz;
     const float3 attenuatedColor = light.Color * light.DistanceAttenuation * light.ShadowAttenuation;
 
-    lightResult.Diffuse = Diffuse(normalWs, lightDir) * attenuatedColor;
-    lightResult.Specular = Specular(-eyeWs, normalWs, lightDir, specularPower) * attenuatedColor;
+    lightResult.Diffuse = ComputeDiffuse(normalWs, lightDir) * attenuatedColor;
+    lightResult.Specular = ComputeSpecular(-eyeWs, normalWs, lightDir, specularPower) * attenuatedColor;
 
     return lightResult;
 }
@@ -226,7 +228,7 @@ LightingResult ComputeLighting(const float3 positionWs, const float3 normalWs, c
 
 	// point lights
 	{
-        for (uint i = 0; i < lightPropertiesCb.NumPointLights; ++i)
+        for (uint i = 0; i < g_Pipeline_NumPointLights; ++i)
         {
             const Light light = GetPointLight(i, positionWs);
             const LightingResult lightingResult = Phong(light, normalWs, eyeWs, specularPower);
@@ -236,7 +238,7 @@ LightingResult ComputeLighting(const float3 positionWs, const float3 normalWs, c
 
 	// spot lights
 	{
-        for (uint i = 0; i < lightPropertiesCb.NumSpotLights; ++i)
+        for (uint i = 0; i < g_Pipeline_NumSpotLights; ++i)
         {
             const Light light = GetSpotLight(i, positionWs);
             const LightingResult lightingResult = Phong(light, normalWs, eyeWs, specularPower);
@@ -250,10 +252,10 @@ LightingResult ComputeLighting(const float3 positionWs, const float3 normalWs, c
 
 float4 main(PixelShaderInput IN) : SV_Target
 {
-    float2 uv = IN.Uv * materialCb.TilingOffset.xy + materialCb.TilingOffset.zw;
+    float2 uv = IN.Uv * TilingOffset.xy + TilingOffset.zw;
     
     float3 normalWs;
-    if (materialCb.HasNormalMap)
+    if (has_normalMap)
     {
         // move to WS
         const float3 tangent = normalize(IN.TangentWs);
@@ -271,28 +273,28 @@ float4 main(PixelShaderInput IN) : SV_Target
     }
 
 
-    float specularPower = materialCb.SpecularPower;
-    if (materialCb.HasGlossMap)
+    float specularPower = SpecularPower;
+    if (has_glossMap)
     {
-        specularPower *= saturate(1 - glossMap.Sample(defaultSampler, uv).x);
+        specularPower *= saturate(1 - glossMap.Sample(g_Common_LinearWrapSampler, uv).x);
     }
 
     const float3 eyeWs = normalize(IN.EyeWs);
     const LightingResult lightingResult = ComputeLighting(IN.PositionWs, normalWs, specularPower, IN.ShadowCoords, eyeWs);
 
-    const float4 emissive = materialCb.Emissive;
-    const float4 ambient = materialCb.Ambient;
-    const float4 diffuse = materialCb.Diffuse * float4(lightingResult.Diffuse, 1);
-    float4 specular = materialCb.Specular * float4(lightingResult.Specular, 1);
-    if (materialCb.HasSpecularMap)
+    const float4 emissive = Emissive;
+    const float4 ambient = Ambient;
+    const float4 diffuse = Diffuse * float4(lightingResult.Diffuse, 1);
+    float4 specular = Specular * float4(lightingResult.Specular, 1);
+    if (has_specularMap)
     {
-        specular *= specularMap.Sample(defaultSampler, uv).x;
+        specular *= specularMap.Sample(g_Common_LinearWrapSampler, uv).x;
     }
-    const float4 texColor = materialCb.HasDiffuseMap
-		                        ? diffuseMap.Sample(defaultSampler, uv)
+    const float4 texColor = has_diffuseMap
+		                        ? diffuseMap.Sample(g_Common_LinearWrapSampler, uv)
 		                        : float4(1.0f, 1.0f, 1.0f, 1.0f);
 
     float3 reflectWs = reflect(eyeWs, normalWs);
-    float4 reflection = float4(envrironmentReflectionsCubemap.Sample(defaultSampler, reflectWs).rgb * materialCb.Reflectivity, 1);
+    float4 reflection = float4(envrironmentReflectionsCubemap.Sample(g_Common_LinearWrapSampler, reflectWs).rgb * Reflectivity, 1);
     return emissive + (ambient + diffuse + specular + reflection) * texColor;
 }
