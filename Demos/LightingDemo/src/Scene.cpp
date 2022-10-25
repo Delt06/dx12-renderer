@@ -6,7 +6,7 @@ using namespace DirectX;
 
 BoundingSphere Scene::ComputeBoundingSphere() const
 {
-	// a very native approach to find a bounding sphere (not ideal)
+	// a very naive approach to find a bounding sphere (not ideal)
 	Aabb sceneAabb{};
 
 	for (auto& gameObject : GameObjects)
