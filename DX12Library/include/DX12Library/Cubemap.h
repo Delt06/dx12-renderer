@@ -5,6 +5,7 @@
 
 #include "RenderTarget.h"
 #include <cstdint>
+#include <memory>
 
 class CommandList;
 
@@ -14,8 +15,10 @@ public:
 	Cubemap(uint32_t size, DirectX::XMVECTOR position, CommandList& commandList, DXGI_FORMAT backBufferFormat, DXGI_FORMAT depthBufferFormat, D3D12_CLEAR_VALUE clearColor);
 
 	void Clear(CommandList& commandList);
-	void SetShaderResourceView(CommandList& commandList, uint32_t rootParameterIndex, uint32_t descriptorOffset = 0) const;
-	void SetEmptyShaderResourceView(CommandList& commandList, uint32_t rootParameterIndex, uint32_t descriptorOffset = 0) const;
+
+	const std::shared_ptr<Texture>& GetTexture() const;
+	const std::shared_ptr<Texture>& GetFallbackTexture() const;
+	D3D12_SHADER_RESOURCE_VIEW_DESC GetSrvDesc() const;
 
 	void SetRenderTarget(CommandList& commandList, uint32_t sideIndex) const;
 	void SetViewportScissorRect(CommandList& commandList) const;
@@ -54,7 +57,7 @@ private:
 	D3D12_RECT m_ScissorRect;
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC m_SrvDesc;
-	Texture m_FallbackCubemap;
+	std::shared_ptr<Texture> m_FallbackCubemap;
 	RenderTarget m_RenderedCubemap;
 };
 

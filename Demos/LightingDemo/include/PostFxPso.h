@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include <DX12Library/RootSignature.h>
+#include <Framework/Material.h>
 
 class Mesh;
 class CommandList;
@@ -18,10 +18,10 @@ using namespace DirectX;
 class PostFxPso
 {
 public:
-	explicit PostFxPso(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT backBufferFormat);
+	explicit PostFxPso(const std::shared_ptr<CommonRootSignature>& rootSignature, CommandList& commandList);
 
-	void SetSourceColorTexture(CommandList& commandList, Texture texture);
-	void SetSourceDepthTexture(CommandList& commandList, Texture texture);
+	void SetSourceColorTexture(CommandList& commandList, const std::shared_ptr<Texture>& texture);
+	void SetSourceDepthTexture(CommandList& commandList, const std::shared_ptr<Texture>& texture);
 
 	struct PostFxParameters
 	{
@@ -32,13 +32,9 @@ public:
 
 	void SetParameters(CommandList& commandList, const PostFxParameters& parameters);
 
-	void SetContext(CommandList& commandList);
 	void Blit(CommandList& commandList);
 private:
 	std::shared_ptr<const Mesh> m_BlitTriangle;
-
-	RootSignature m_RootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineState;
-	DXGI_FORMAT m_BackBufferFormat;
+    std::shared_ptr<Material> m_Material;
 };
 

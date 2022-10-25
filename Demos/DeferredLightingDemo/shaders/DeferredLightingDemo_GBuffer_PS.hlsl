@@ -1,3 +1,4 @@
+#include <ShaderLibrary/Common/RootSignature.hlsli>
 
 struct PixelShaderInput
 {
@@ -17,9 +18,24 @@ struct PixelShaderOutput
     float4 Velocity : SV_TARGET3;
 };
 
-#include "ShaderLibrary/PbrMaterial.hlsli"
 
-ConstantBuffer<PbrMaterial> materialCB : register(b1);
+cbuffer Material : register(b0)
+{
+    float4 Diffuse = { 1, 1, 1, 1 };
+
+    float Metallic = 1;
+    float Roughness = 1;
+
+    bool has_diffuseMap;
+    bool has_normalMap;
+
+    bool has_metallicMap;
+    bool has_roughnessMap;
+    bool has_ambientOcclusionMap;
+    float Emission;
+
+    float4 TilingOffset = { 1, 1, 0, 0 };
+};
 
 Texture2D diffuseMap : register(t0);
 Texture2D normalMap : register(t1);
@@ -27,13 +43,11 @@ Texture2D metallicMap : register(t2);
 Texture2D roughnessMap : register(t3);
 Texture2D ambientOcclusionMap : register(t4);
 
-SamplerState defaultSampler : register(s0);
-
 #include "ShaderLibrary/GBufferUtils.hlsli"
 
 float3 ApplyNormalMap(const float3x3 tbn, Texture2D map, const float2 uv)
 {
-    const float3 normalTs = UnpackNormal(map.Sample(defaultSampler, uv).xyz);
+    const float3 normalTs = UnpackNormal(map.Sample(g_Common_LinearWrapSampler, uv).xyz);
     return normalize(mul(normalTs, tbn));
 }
 
@@ -54,25 +68,25 @@ PixelShaderOutput main(PixelShaderInput IN)
 {
     PixelShaderOutput OUT;
     
-    float2 uv = ApplyTilingOffset(materialCB, IN.Uv);
+    float2 uv = TilingOffset.xy * IN.Uv + TilingOffset.zw;
     
     float3 diffuseColor;
     
-    if (materialCB.HasDiffuseMap)
+    if (has_diffuseMap)
     {
-        diffuseColor = diffuseMap.Sample(defaultSampler, uv).rgb;
+        diffuseColor = diffuseMap.Sample(g_Common_LinearWrapSampler, uv).rgb;
     }
     else
     {
         diffuseColor = 1;
     }
     
-    diffuseColor *= materialCB.Diffuse.rgb;    
-    OUT.DiffuseColor = float4(diffuseColor, materialCB.Emission);
+    diffuseColor *= Diffuse.rgb;
+    OUT.DiffuseColor = float4(diffuseColor, Emission);
     
     float3 normal = normalize(IN.NormalWs);
     
-    if (materialCB.HasNormalMap)
+    if (has_normalMap)
     {
         const float3 tangent = normalize(IN.TangentWs);
         const float3 bitangent = normalize(IN.BitangentWs);
@@ -85,22 +99,22 @@ PixelShaderOutput main(PixelShaderInput IN)
     
     OUT.Normal = float4(PackNormal(normal), 0);
     
-    float metallic = materialCB.Metallic;
-    if (materialCB.HasMetallicMap)
+    float metallic = Metallic;
+    if (has_metallicMap)
     {
-        metallic *= metallicMap.Sample(defaultSampler, uv).r;
+        metallic *= metallicMap.Sample(g_Common_LinearWrapSampler, uv).r;
     }
     
-    float roughness = materialCB.Roughness;
-    if (materialCB.HasRoughnessMap)
+    float roughness = Roughness;
+    if (has_roughnessMap)
     {
-        roughness *= roughnessMap.Sample(defaultSampler, uv).r;
+        roughness *= roughnessMap.Sample(g_Common_LinearWrapSampler, uv).r;
     }
     
     float ambientOcclusion = 1.0f;
-    if (materialCB.HasAmbientOcclusionMap)
+    if (has_ambientOcclusionMap)
     {
-        ambientOcclusion *= ambientOcclusionMap.Sample(defaultSampler, uv).r;
+        ambientOcclusion *= ambientOcclusionMap.Sample(g_Common_LinearWrapSampler, uv).r;
     }
     
     OUT.Surface = PackSurface(metallic, roughness, ambientOcclusion);

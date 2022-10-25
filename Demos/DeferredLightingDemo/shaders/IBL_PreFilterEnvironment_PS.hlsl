@@ -1,25 +1,15 @@
 #include "ShaderLibrary/Math.hlsli"
 #include "ShaderLibrary/IBLUtils.hlsli"
 #include "ShaderLibrary/BRDF.hlsli"
+#include "ShaderLibrary/Common/RootSignature.hlsli"
+#include "IBL_PreFilterEnvironment_CBuffer.hlsli"
 
 struct PixelShaderInput
 {
     float3 Normal : TEXCOORD;
 };
 
-struct Parameters
-{
-    float4 Forward;
-    float4 Up;
-    
-    float Roughness;
-    float2 SourceResolution;
-    float _Padding;
-};
-
-ConstantBuffer<Parameters> parametersCB : register(b0);
 TextureCube source : register(t0);
-SamplerState sourceSampler : register(s0);
 
 float4 main(PixelShaderInput IN) : SV_TARGET
 {    
@@ -52,7 +42,7 @@ float4 main(PixelShaderInput IN) : SV_TARGET
 
             float mipLevel = parametersCB.Roughness == 0.0 ? 0.0 : 0.5 * log2(saSample / saTexel);
             
-            prefilteredColor += source.SampleLevel(sourceSampler, L, mipLevel).rgb * NdotL;
+            prefilteredColor += source.SampleLevel(g_Common_LinearClampSampler, L, mipLevel).rgb * NdotL;
             totalWeight += NdotL;
         }
     }

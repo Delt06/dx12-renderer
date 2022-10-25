@@ -1,4 +1,5 @@
-#include "ShaderLibrary/Math.hlsli"
+#include <ShaderLibrary/Math.hlsli>
+#include <ShaderLibrary/Common/RootSignature.hlsli>
 
 struct PixelShaderInput
 {
@@ -6,7 +7,6 @@ struct PixelShaderInput
 };
 
 TextureCube source : register(t0);
-SamplerState sourceSampler : register(s0);
 
 float4 main(PixelShaderInput IN) : SV_TARGET
 {
@@ -30,7 +30,7 @@ float4 main(PixelShaderInput IN) : SV_TARGET
             // tangent space to world
             float3 sampleVec = tangentSample.x * right + tangentSample.y * up + tangentSample.z * normal;
 
-            irradiance += source.Sample(sourceSampler, sampleVec).rgb * cos(theta) * sin(theta);
+            irradiance += source.Sample(g_Common_LinearClampSampler, sampleVec).rgb * cos(theta) * sin(theta);
             nrSamples++;
         }
     }

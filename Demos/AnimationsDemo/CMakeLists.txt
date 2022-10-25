@@ -30,5 +30,4 @@ include(${CMAKE_SOURCE_DIR}/CMakeIncludes/DemoBase.cmake)
 
 target_link_libraries(${TARGET_NAME}
         PUBLIC Framework
-        PUBLIC PhongLighting
         )

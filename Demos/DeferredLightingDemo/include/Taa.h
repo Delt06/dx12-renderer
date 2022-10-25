@@ -7,6 +7,7 @@
 #include <DX12Library/Texture.h>
 #include <DX12Library/RenderTarget.h>
 #include <DirectXMath.h>
+#include <Framework/Material.h>
 
 class CommandList;
 class Mesh;
@@ -14,14 +15,14 @@ class Mesh;
 class Taa
 {
 public:
-	explicit Taa(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList, DXGI_FORMAT backBufferFormat, uint32_t width, uint32_t height);
+	explicit Taa(const std::shared_ptr<CommonRootSignature>& rootSignature, CommandList& commandList, DXGI_FORMAT backBufferFormat, uint32_t width, uint32_t height);
 
 	[[nodiscard]] DirectX::XMFLOAT2 ComputeJitterOffset(uint32_t width, uint32_t height) const;
 	[[nodiscard]] const DirectX::XMMATRIX& GetPreviousViewProjectionMatrix() const;
 
-	void Resolve(CommandList& commandList, const Texture& currentBuffer, const Texture& velocityBuffer);
+	void Resolve(CommandList& commandList, const std::shared_ptr<Texture>& currentBuffer, const std::shared_ptr<Texture>& velocityBuffer);
 	void Resize(uint32_t width, uint32_t height);
-	[[nodiscard]] const Texture& GetResolvedTexture() const;
+	[[nodiscard]] const std::shared_ptr<Texture>& GetResolvedTexture() const;
 
 	[[nodiscard]] DirectX::XMFLOAT2 GetCurrentJitterOffset() const;
 	void OnRenderedFrame(const DirectX::XMMATRIX& viewProjectionMatrix);
@@ -29,10 +30,10 @@ public:
 private:
 	RenderTarget m_ResolveRenderTarget;
 	RootSignature m_ResolveRootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_ResolvePipelineState;
 
 	std::shared_ptr<Mesh> m_BlitMesh;
-	Texture m_HistoryBuffer;
+	std::shared_ptr<Material> m_Material;
+	std::shared_ptr<Texture> m_HistoryBuffer;
 
 	constexpr static DirectX::XMFLOAT2 JITTER_OFFSETS[]{
 		// Quincunx

@@ -1,35 +1,18 @@
 #pragma once
 
-#include <Framework/Shader.h>
+#include <Framework/CommonRootSignature.h>
 #include <Framework/Mesh.h>
+#include <Framework/Material.h>
+#include <memory>
 
-class SsrBlurPass final : public Shader
+class SsrBlurPass
 {
 public:
-	explicit SsrBlurPass(Shader::Format renderTargetFormat);
+	explicit SsrBlurPass(const std::shared_ptr<CommonRootSignature>& rootSignature, CommandList& commandList);
 
-	void Execute(CommandList& commandList, const Texture& traceResult, const RenderTarget& renderTarget) const;
-
-protected:
-
-	std::vector<RootParameter> GetRootParameters() const override;
-
-	std::vector<StaticSampler> GetStaticSamplers() const override;
-
-	Format GetRenderTargetFormat() const override;
-
-	void OnPostInit(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList) override;
-
-	ShaderBytecode GetVertexShaderBytecode() const override;
-
-	ShaderBytecode GetPixelShaderBytecode() const override;
+	void Execute(CommandList& commandList, const std::shared_ptr<Texture>& traceResult, const RenderTarget& renderTarget) const;
 
 private:
-	Shader::Format m_RenderTargetFormat;
-	std::shared_ptr<Mesh> m_BlitMesh = nullptr;
-
-	std::vector<RootParameter> m_RootParameters;
-	DescriptorRange m_SourceDescriptorRange;
-
-	ShaderBlob m_PixelShader;
+	std::shared_ptr<Mesh> m_BlitMesh;
+	std::shared_ptr<Material> m_Material;
 };

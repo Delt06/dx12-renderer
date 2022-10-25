@@ -109,6 +109,8 @@ public:
 	 */
 	void SetName(const std::wstring& name);
 
+    const std::wstring& GetName() const;
+
 	/**
 	 * Release the underlying resource.
 	 * This is useful for swap chain resizing.
@@ -120,9 +122,6 @@ public:
 	 */
 	bool CheckFormatSupport(D3D12_FORMAT_SUPPORT1 formatSupport) const;
 	bool CheckFormatSupport(D3D12_FORMAT_SUPPORT2 formatSupport) const;
-
-	int m_Abc;
-
 
 protected:
 	// The underlying D3D12 resource.

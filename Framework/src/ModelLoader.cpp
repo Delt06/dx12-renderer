@@ -323,3 +323,10 @@ std::shared_ptr<Animation> ModelLoader::LoadAnimation(const std::string& path, c
 
 	throw std::exception("The requested animation was not found.");
 }
+
+std::shared_ptr<Texture> ModelLoader::LoadTexture(CommandList& commandList, const std::wstring& path, TextureUsageType usage /*= TextureUsageType::Albedo*/) const
+{
+	auto texture = std::make_shared<Texture>();
+	commandList.LoadTextureFromFile(*texture, path, usage);
+	return texture;
+}

@@ -8,26 +8,22 @@
 
 class Model;
 class CommandList;
-class MaterialBase;
+class Material;
 
 class GameObject
 {
 public:
-	GameObject(DirectX::XMMATRIX worldMatrix, std::shared_ptr<Model> model, std::shared_ptr<MaterialBase> material);
+	GameObject(DirectX::XMMATRIX worldMatrix, std::shared_ptr<Model> model, std::shared_ptr<Material> material);
 
-	void Draw(const std::function<void(CommandList& commandList, DirectX::XMMATRIX worldMatrix)>& setMatricesFunc,
-		CommandList& commandList,
-		uint32_t materialRootParameterIndex, uint32_t mapsRootParameterIndex) const;
+	void Draw(CommandList& commandList) const;
 
 	[[nodiscard]] const DirectX::XMMATRIX& GetWorldMatrix() const;
 	[[nodiscard]] std::shared_ptr<const Model> GetModel() const;
 	[[nodiscard]] const Aabb& GetAabb() const;
 
-	template<class TMaterial>
-	std::shared_ptr<TMaterial> GetMaterial() const
+	const std::shared_ptr<Material>& GetMaterial() const
 	{
-		static_assert(std::is_base_of<MaterialBase, TMaterial>::value, "type parameter of this class must derive from MaterialBase");
-		return std::static_pointer_cast<TMaterial>(m_Material);
+		return m_Material;
 	}
 
 	void OnRenderedFrame();
@@ -40,5 +36,5 @@ private:
 	DirectX::XMMATRIX m_PreviousWorldMatrix;
 	Aabb m_Aabb;
 	std::shared_ptr<Model> m_Model{};
-	std::shared_ptr<MaterialBase> m_Material;
+	std::shared_ptr<Material> m_Material;
 };

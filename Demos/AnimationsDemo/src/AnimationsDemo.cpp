@@ -9,7 +9,6 @@
 #include <Framework/Animation.h>
 #include <Framework/GameObject.h>
 #include <Framework/Light.h>
-#include <PhongLighting/Material.h>
 
 #include <wrl.h>
 
@@ -22,7 +21,6 @@ using namespace Microsoft::WRL;
 #include <d3d12.h>
 #include <d3dx12.h>
 #include <DirectXColors.h>
-#include <Framework/MatricesCb.h>
 
 using namespace DirectX;
 
@@ -31,7 +29,6 @@ using namespace DirectX;
 #undef min
 #endif
 
-#include <PhongLighting/TextureLoader.h>
 #include <DX12Library/ShaderUtils.h>
 
 #if defined(max)
@@ -89,27 +86,18 @@ namespace
 		XMMATRIX Transform;
 	};
 
-	namespace RootParameters
+	namespace CBuffer
 	{
-		enum RootParameters
+		struct Model
 		{
-			// ConstantBuffer : register(b0);
-			MatricesCb,
-			// StructuredBuffer : register(t0);
-			Bones,
-			// Texture2D register(t0, space1);
-			Diffuse,
-			NumRootParameters
-		};
-	}
+			XMMATRIX m_ModelViewProjection;
+			XMMATRIX m_InverseTransposeModel;
 
-	namespace RootParametersBones
-	{
-		enum RootParametersBones
-		{
-			// ConstantBuffer register(b0);
-			MatricesCb,
-			NumRootParameters
+			void Compute(const XMMATRIX& model, const XMMATRIX& viewProjection)
+			{
+				m_ModelViewProjection = model * viewProjection;
+				m_InverseTransposeModel = XMMatrixTranspose(XMMatrixInverse(nullptr, model));
+			}
 		};
 	}
 }
@@ -154,173 +142,59 @@ bool AnimationsDemo::LoadContent()
 	colorClearValue.Format = backBufferFormat;
 	memcpy(colorClearValue.Color, CLEAR_COLOR, sizeof CLEAR_COLOR);
 
-	// create root signature and pipeline state
-	{
-		{
-			ComPtr<ID3DBlob> vertexShaderBlob = ShaderUtils::LoadShaderFromFile(L"AnimationsDemo_VS.cso");
-			ComPtr<ID3DBlob> pixelShaderBlob = ShaderUtils::LoadShaderFromFile(L"AnimationsDemo_PS.cso");
-
-			// Create a root signature.
-			D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData;
-			featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
-			if (FAILED(device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData))))
-			{
-				featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
-			}
-
-			constexpr D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
-				D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
-				D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
-				D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-				D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
-
-			CD3DX12_DESCRIPTOR_RANGE1 descriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 1);
-
-			CD3DX12_ROOT_PARAMETER1 rootParameters[RootParameters::NumRootParameters];
-			rootParameters[RootParameters::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
-			rootParameters[RootParameters::Bones].InitAsShaderResourceView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
-			rootParameters[RootParameters::Diffuse].InitAsDescriptorTable(1, &descriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
-
-			CD3DX12_STATIC_SAMPLER_DESC samplers[] = {
-				// linear repeat
-				CD3DX12_STATIC_SAMPLER_DESC(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR),
-			};
-
-			CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
-			rootSignatureDescription.Init_1_1(RootParameters::NumRootParameters, rootParameters, _countof(samplers), samplers,
-				rootSignatureFlags);
-
-			m_RootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
-
-			// Setup the pipeline state.
-			struct PipelineStateStream
-			{
-				CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE RootSignature;
-				CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
-				CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
-				CD3DX12_PIPELINE_STATE_STREAM_VS Vs;
-				CD3DX12_PIPELINE_STATE_STREAM_PS Ps;
-				CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DsvFormat;
-				CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RtvFormats;
-				CD3DX12_PIPELINE_STATE_STREAM_RASTERIZER Rasterizer;
-			} pipelineStateStream;
-
-			D3D12_RT_FORMAT_ARRAY rtvFormats = {};
-			rtvFormats.NumRenderTargets = 1;
-			rtvFormats.RTFormats[0] = backBufferFormat;
-
-			pipelineStateStream.RootSignature = m_RootSignature.GetRootSignature().Get();
-
-			std::vector<D3D12_INPUT_ELEMENT_DESC> inputElements;
-			inputElements.insert(inputElements.end(), std::begin(VertexAttributes::INPUT_ELEMENTS), std::end(VertexAttributes::INPUT_ELEMENTS));
-			inputElements.insert(inputElements.end(), std::begin(SkinningVertexAttributes::INPUT_ELEMENTS), std::end(SkinningVertexAttributes::INPUT_ELEMENTS));
-
-			pipelineStateStream.InputLayout = { inputElements.data(), static_cast<uint32_t>(inputElements.size()) };
-			pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-			pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
-			pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
-			pipelineStateStream.DsvFormat = depthBufferFormat;
-			pipelineStateStream.RtvFormats = rtvFormats;
-			pipelineStateStream.Rasterizer = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_BACK, FALSE, 0, 0,
-				0, TRUE, FALSE, FALSE, 0,
-				D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
-
-			const D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = {
-				sizeof(PipelineStateStream), &pipelineStateStream
-			};
-
-			ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_PipelineState)));
-		}
-	}
-
-	// create root signature and pipeline state for bones
-	{
-		{
-			ComPtr<ID3DBlob> vertexShaderBlob = ShaderUtils::LoadShaderFromFile(L"AnimationsDemo_Bone_VS.cso");
-			ComPtr<ID3DBlob> pixelShaderBlob = ShaderUtils::LoadShaderFromFile(L"AnimationsDemo_Bone_PS.cso");
-
-			// Create a root signature.
-			D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData;
-			featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
-			if (FAILED(device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData))))
-			{
-				featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
-			}
-
-			constexpr D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
-				D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
-				D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
-				D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-				D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
-				D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS
-				;
-
-			CD3DX12_DESCRIPTOR_RANGE1 descriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-
-			CD3DX12_ROOT_PARAMETER1 rootParameters[RootParametersBones::NumRootParameters];
-			rootParameters[RootParametersBones::MatricesCb].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
-
-			CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
-			rootSignatureDescription.Init_1_1(RootParametersBones::NumRootParameters, rootParameters, 0, nullptr,
-				rootSignatureFlags);
-
-			m_BonesRootSignature.SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
-
-			// Setup the pipeline state.
-			struct PipelineStateStream
-			{
-				CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE RootSignature;
-				CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
-				CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
-				CD3DX12_PIPELINE_STATE_STREAM_VS Vs;
-				CD3DX12_PIPELINE_STATE_STREAM_PS Ps;
-				CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DsvFormat;
-				CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RtvFormats;
-				CD3DX12_PIPELINE_STATE_STREAM_RASTERIZER Rasterizer;
-				CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL DepthStencil;
-			} pipelineStateStream;
-
-			D3D12_RT_FORMAT_ARRAY rtvFormats = {};
-			rtvFormats.NumRenderTargets = 1;
-			rtvFormats.RTFormats[0] = backBufferFormat;
-
-			pipelineStateStream.RootSignature = m_BonesRootSignature.GetRootSignature().Get();
-			pipelineStateStream.InputLayout = { VertexAttributes::INPUT_ELEMENTS, VertexAttributes::INPUT_ELEMENT_COUNT };
-			pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-			pipelineStateStream.Vs = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
-			pipelineStateStream.Ps = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
-			pipelineStateStream.DsvFormat = depthBufferFormat;
-			pipelineStateStream.RtvFormats = rtvFormats;
-			pipelineStateStream.Rasterizer = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_BACK, FALSE, 0, 0,
-				0, TRUE, FALSE, FALSE, 0,
-				D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
-
-			const D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = {
-				sizeof(PipelineStateStream), &pipelineStateStream
-			};
-
-			pipelineStateStream.DepthStencil = CD3DX12_DEPTH_STENCIL_DESC();
-
-			ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_BonesPipelineState)));
-		}
-	}
-
 	// Generate default texture
 	{
 		m_WhiteTexture2d = std::make_shared<Texture>();
 		commandList->LoadTextureFromFile(*m_WhiteTexture2d, L"Assets/Textures/white.png");
 	}
 
+	m_RootSignature = std::make_shared<CommonRootSignature>(m_WhiteTexture2d);
+
+	m_BonesStructuredBuffer = std::make_shared<StructuredBuffer>(L"Bones Structured Buffer");
+
+	auto modelShader = std::make_shared<Shader>(m_RootSignature,
+		ShaderBlob(L"AnimationsDemo_VS.cso"),
+		ShaderBlob(L"AnimationsDemo_PS.cso"),
+		[](PipelineStateBuilder& builder)
+		{
+			std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout;
+			inputLayout.insert(inputLayout.end(), std::begin(VertexAttributes::INPUT_ELEMENTS), std::end(VertexAttributes::INPUT_ELEMENTS));
+			inputLayout.insert(inputLayout.end(), std::begin(SkinningVertexAttributes::INPUT_ELEMENTS), std::end(SkinningVertexAttributes::INPUT_ELEMENTS));
+			builder.WithInputLayout(inputLayout);
+		}
+	);
+
+	// bones
+	{
+		auto shader = std::make_shared<Shader>(m_RootSignature,
+			ShaderBlob(L"AnimationsDemo_Bone_VS.cso"),
+			ShaderBlob(L"AnimationsDemo_Bone_PS.cso"),
+			[](PipelineStateBuilder& builder)
+			{
+				builder
+					.WithRasterizer(CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_BACK, FALSE, 0, 0,
+						0, TRUE, FALSE, FALSE, 0,
+						D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF))
+					.WithDisabledDepthStencil()
+					;
+			}
+		);
+		m_BoneMaterial = Material::Create(shader);
+	}
+
 	// Load models and animations
 	{
 		ModelLoader modelLoader;
-		TextureLoader textureLoader(m_WhiteTexture2d);
+
+		const auto MaterialSetTexture = [&modelLoader, &commandList](Material& material, const std::string& propertyName, const std::wstring& texturePath, TextureUsageType usage = TextureUsageType::Albedo)
+		{
+			material.SetShaderResourceView(propertyName, ShaderResourceView(modelLoader.LoadTexture(*commandList, texturePath, usage)));
+		};
 
 		{
 			auto model = modelLoader.Load(*commandList, "Assets/Models/archer/archer.fbx");
-			auto material = std::make_shared<Material>();
-			textureLoader.Init(*material);
-			textureLoader.Load(*material, *commandList, Material::Diffuse, L"Assets/Models/archer/textures/akai_diffuse.png");
+			auto material = Material::Create(modelShader);
+			MaterialSetTexture(*material, "diffuseMap", L"Assets/Models/archer/textures/akai_diffuse.png");
 
 			XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
 			XMMATRIX rotationMatrix = XMMatrixIdentity();
@@ -344,7 +218,7 @@ bool AnimationsDemo::LoadContent()
 		1, 0,
 		D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 
-	auto colorTexture = Texture(colorDesc, &colorClearValue,
+	auto colorTexture = std::make_shared<Texture>(colorDesc, &colorClearValue,
 		TextureUsageType::RenderTarget,
 		L"Color Render Target");
 
@@ -357,7 +231,7 @@ bool AnimationsDemo::LoadContent()
 	depthClearValue.Format = depthDesc.Format;
 	depthClearValue.DepthStencil = { 1.0f, 0 };
 
-	auto depthTexture = Texture(depthDesc, &depthClearValue,
+	auto depthTexture = std::make_shared<Texture>(depthDesc, &depthClearValue,
 		TextureUsageType::Depth,
 		L"Depth Render Target");
 
@@ -465,8 +339,8 @@ void AnimationsDemo::OnRender(RenderEventArgs& e)
 
 	// Clear the render targets
 	{
-		commandList->ClearTexture(m_RenderTarget.GetTexture(Color0), CLEAR_COLOR);
-		commandList->ClearDepthStencilTexture(m_RenderTarget.GetTexture(DepthStencil), D3D12_CLEAR_FLAG_DEPTH);
+		commandList->ClearTexture(*m_RenderTarget.GetTexture(Color0), CLEAR_COLOR);
+		commandList->ClearDepthStencilTexture(*m_RenderTarget.GetTexture(DepthStencil), D3D12_CLEAR_FLAG_DEPTH);
 	}
 
 	commandList->SetRenderTarget(m_RenderTarget);
@@ -477,21 +351,21 @@ void AnimationsDemo::OnRender(RenderEventArgs& e)
 	const XMMATRIX projectionMatrix = m_Camera.GetProjectionMatrix();
 	const XMMATRIX viewProjection = viewMatrix * projectionMatrix;
 
+	m_RootSignature->Bind(*commandList);
+
 	{
 		PIXScope(*commandList, "Main Pass");
 
-		commandList->SetGraphicsRootSignature(m_RootSignature);
-		commandList->SetPipelineState(m_PipelineState);
-
 		for (const auto& go : m_GameObjects)
 		{
-			MatricesCb matricesCb;
-			matricesCb.Compute(go.GetWorldMatrix(), viewMatrix, viewProjection, projectionMatrix);
-			commandList->SetGraphicsDynamicConstantBuffer(RootParameters::MatricesCb, matricesCb);
+			CBuffer::Model modelCBuffer{};
+			modelCBuffer.Compute(go.GetWorldMatrix(), viewProjection);
+			m_RootSignature->SetModelConstantBuffer(*commandList, modelCBuffer);
 
 			const auto& model = go.GetModel();
-			auto diffuseMap = go.GetMaterial<Material>()->GetMap(Material::Diffuse);
-			commandList->SetShaderResourceView(RootParameters::Diffuse, 0, *diffuseMap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			const auto& material = go.GetMaterial();
+			material->BeginBatch(*commandList);
+			material->UploadUniforms(*commandList);
 
 			for (const auto& mesh : model->GetMeshes())
 			{
@@ -504,40 +378,45 @@ void AnimationsDemo::OnRender(RenderEventArgs& e)
 					bonesSb.push_back({ bone.Offset * bone.GlobalTransform });
 				}
 
-				commandList->SetGraphicsDynamicStructuredBuffer(RootParameters::Bones, bonesSb);
-
+				commandList->CopyStructuredBuffer(*m_BonesStructuredBuffer, bonesSb);
+				m_RootSignature->SetMaterialShaderResourceView(*commandList, 0, ShaderResourceView(m_BonesStructuredBuffer));
 				mesh->Draw(*commandList);
 			}
+
+			material->EndBatch(*commandList);
 		}
 	}
 
 	{
 		PIXScope(*commandList, "Draw Bones");
 
-		commandList->SetGraphicsRootSignature(m_BonesRootSignature);
-		commandList->SetPipelineState(m_BonesPipelineState);
-
 		for (const auto& go : m_GameObjects)
 		{
 			const auto& model = go.GetModel();
+
+
+			const auto& material = m_BoneMaterial;
+			material->BeginBatch(*commandList);
+			material->UploadUniforms(*commandList);
 
 			for (const auto& mesh : model->GetMeshes())
 			{
 				for (const auto& bone : mesh->GetBones())
 				{
-					MatricesCb matricesCb;
-					XMMATRIX worldMatrix = bone.GlobalTransform * go.GetWorldMatrix();
-					matricesCb.Compute(worldMatrix, viewMatrix, viewProjection, projectionMatrix);
-					commandList->SetGraphicsDynamicConstantBuffer(RootParametersBones::MatricesCb, matricesCb);
-
+					CBuffer::Model modelCBuffer{};
+					XMMATRIX boneModelMatrix = bone.GlobalTransform * go.GetWorldMatrix();
+					modelCBuffer.Compute(boneModelMatrix, viewProjection);
+					m_RootSignature->SetModelConstantBuffer(*commandList, modelCBuffer);
 					m_BoneMesh->Draw(*commandList);
 				}
 			}
+
+			material->EndBatch(*commandList);
 		}
 	}
 
 	commandQueue->ExecuteCommandList(commandList);
-	PWindow->Present(m_RenderTarget.GetTexture(Color0));
+	PWindow->Present(*m_RenderTarget.GetTexture(Color0));
 }
 
 void AnimationsDemo::OnKeyPressed(KeyEventArgs& e)

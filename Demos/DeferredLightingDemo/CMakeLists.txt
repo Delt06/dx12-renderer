@@ -14,8 +14,6 @@ set(HEADER_FILES
 
         include/PBR/BrdfIntegration.h
         include/PBR/DiffuseIrradiance.h
-        include/PBR/PbrMaterial.h
-        include/PBR/PbrTextureLoader.h
         include/PBR/PreFilterEnvironment.h
 
         include/SSR/Ssr.h
@@ -37,8 +35,6 @@ set(SOURCE_FILES
 
         src/PBR/BrdfIntegration.cpp
         src/PBR/DiffuseIrradiance.cpp
-        src/PBR/PbrMaterial.cpp
-        src/PBR/PbrTextureLoader.cpp
         src/PBR/PreFilterEnvironment.cpp
 
         src/SSR/Ssr.cpp
@@ -53,6 +49,7 @@ set(SHADER_FILES_VERTEX
         shaders/DeferredLightingDemo_LightBuffer_LightStencil_VS.hlsl
         shaders/DeferredLightingDemo_Skybox_VS.hlsl
         shaders/IBL_CubeMapSideBlit_VS.hlsl
+        shaders/IBL_PreFilterEnvironment_VS.hlsl
         )
 
 set(SHADER_FILES_PIXEL

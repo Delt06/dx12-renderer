@@ -3,7 +3,6 @@
 
 struct ShadowReceiverParameters
 {
-    matrix ViewProjection;
     float PoissonSpreadInv;
     float PointLightPoissonSpreadInv;
     float SpotLightPoissonSpreadInv;

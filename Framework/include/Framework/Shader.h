@@ -1,62 +1,82 @@
-﻿#pragma once
+#pragma once
 
-#include <wrl.h>
 #include <d3d12.h>
 #include <d3dx12.h>
-#include <DX12Library/CommandList.h>
-#include <string>
-#include <DX12Library/RenderTarget.h>
-#include <vector>
-#include "EffectBase.h"
 
-class Shader : public EffectBase
+#include <wrl.h>
+#include <DX12Library/CommandList.h>
+#include <DX12Library/ShaderUtils.h>
+#include "CommonRootSignature.h"
+
+#include <string>
+#include <functional>
+#include <memory>
+#include <unordered_map>
+#include <vector>
+
+#include "ShaderResourceView.h"
+#include "PipelineStateBuilder.h"
+#include "ShaderBlob.h"
+
+class Shader
 {
 public:
-	using RootParameter = CD3DX12_ROOT_PARAMETER1;
-	using DescriptorRange = CD3DX12_DESCRIPTOR_RANGE1;
-	using StaticSampler = CD3DX12_STATIC_SAMPLER_DESC;
-	using Format = DXGI_FORMAT;
-	using ScissorRect = D3D12_RECT;
-	using Viewport = CD3DX12_VIEWPORT;
-	using BlendMode = CD3DX12_BLEND_DESC;
-	using ShaderBytecode = CD3DX12_SHADER_BYTECODE;
-	using ShaderBlob = Microsoft::WRL::ComPtr<ID3DBlob>;
+	explicit Shader(
+		const std::shared_ptr<CommonRootSignature>& rootSignature,
+		const ShaderBlob& vertexShaderPath, const ShaderBlob& pixelShaderPath,
+		const std::function<void(PipelineStateBuilder&)> buildPipelineState = [](PipelineStateBuilder&) {}
+	);
 
-	Shader() = default;
-	virtual ~Shader();
+	Shader(const Shader& other) = delete;
+	Shader& operator=(const Shader& other) = delete;
+	Shader(Shader&& other) = delete;
+	Shader& operator=(Shader&& other) = delete;
 
-	void Init(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList) final;
+	void Bind(CommandList& commandList);
+	void Unbind(CommandList& commandList);
 
-protected:
-	virtual ShaderBytecode GetVertexShaderBytecode() const = 0;
-	virtual ShaderBytecode GetPixelShaderBytecode() const = 0;
+	template<typename T>
+	void SetPipelineConstantBuffer(CommandList& commandList, const T& data)
+	{
+		m_RootSignature->SetPipelineConstantBuffer(commandList, data);
+	}
 
-	virtual std::vector<RootParameter> GetRootParameters() const = 0;
-	virtual std::vector<StaticSampler> GetStaticSamplers() const = 0;
+	template<typename T>
+	void SetModelConstantBuffer(CommandList& commandList, const T& data)
+	{
+		m_RootSignature->SetMaterialConstantBuffer(commandList, data);
+	}
 
-	virtual Format GetRenderTargetFormat() const = 0;
+	void SetMaterialConstantBuffer(CommandList& commandList, size_t size, const void* data);
 
-	virtual BlendMode GetBlendMode() const;
+	void SetShaderResourceView(CommandList& commandList, const std::string& variableName, const ShaderResourceView& shaderResourceView);
 
-	virtual void OnPostInit(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList) {};
+	struct ShaderMetadata
+	{
+		using NameCacheMap = std::map<std::string, size_t>;
 
-	void SetContext(CommandList& commandList) const;
-	static void SetRenderTarget(CommandList& commandList, const RenderTarget& renderTarget, bool autoViewport = true, bool autoScissorRect = true);
-	static void SetRenderTarget(CommandList& commandList, const RenderTarget& renderTarget, UINT arrayIndex, bool autoViewport = true, bool autoScissorRect = true);
+		std::vector<ShaderUtils::ConstantBufferMetadata> m_ConstantBuffers{};
+		NameCacheMap m_ConstantBuffersNameCache{};
 
-	[[nodiscard]] static ShaderBlob LoadShaderFromFile(const std::wstring& fileName);
+		std::vector<ShaderUtils::ShaderResourceViewMetadata> m_ShaderResourceViews{};
+		NameCacheMap m_ShaderResourceViewsNameCache{};
+	};
 
-	[[nodiscard]] static ScissorRect GetAutoScissorRect();
-	[[nodiscard]] static Viewport GetAutoViewport(const RenderTarget& renderTarget);
-
-	[[nodiscard]] static BlendMode AdditiveBlend();
+	const ShaderMetadata& GetVertexShaderMetadata() const { return m_VertexShaderMetadata; }
+	const ShaderMetadata& GetPixelShaderMetadata() const { return m_PixelShaderMetadata; }
 
 private:
-	static void CombineRootSignatureFlags(D3D12_ROOT_SIGNATURE_FLAGS& flags, const std::vector<RootParameter>& rootParameters);
 
-	static bool CheckRootParametersVisiblity(const std::vector<RootParameter>& rootParameters, D3D12_SHADER_VISIBILITY shaderVisibility);
 
-	RootSignature m_RootSignature{};
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineState = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> GetPipelineState(const Microsoft::WRL::ComPtr<ID3D12Device2>& device, const RenderTargetFormats& formats);
+
+	void CollectShaderMetadata(const Microsoft::WRL::ComPtr<ID3DBlob>& shader, ShaderMetadata* outMetadata);
+
+	std::shared_ptr<CommonRootSignature> m_RootSignature;
+
+	ShaderMetadata m_VertexShaderMetadata;
+	ShaderMetadata m_PixelShaderMetadata;
+
+	PipelineStateBuilder m_PipelineStateBuilder;
+	std::unordered_map<RenderTargetFormats, Microsoft::WRL::ComPtr<ID3D12PipelineState>> m_PipelineStateObjects;
 };
-

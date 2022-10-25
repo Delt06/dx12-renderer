@@ -1,3 +1,5 @@
+#include <ShaderLibrary/Common/RootSignature.hlsli>
+
 #define BLUR_KERNEL_HALF_SIZE 3
 #define BLUR_KERNEL_SIZE (BLUR_KERNEL_HALF_SIZE * 2)
 
@@ -14,8 +16,6 @@ cbuffer BlurCBuffer : register(b0)
 
 Texture2D ssaoTexture : register(t0);
 
-SamplerState ssaoSampler : register(s0);
-
 float4 main(PixelShaderInput IN) : SV_TARGET
 {
     // https://learnopengl.com/Advanced-Lighting/SSAO
@@ -28,7 +28,7 @@ float4 main(PixelShaderInput IN) : SV_TARGET
         for (int y = -BLUR_KERNEL_HALF_SIZE; y < BLUR_KERNEL_HALF_SIZE; ++y)
         {
             float2 offset = float2(x, y) * TexelSize;
-            result += ssaoTexture.Sample(ssaoSampler, uv + offset).r;
+            result += ssaoTexture.Sample(g_Common_PointClampSampler, uv + offset).r;
         }
     }
     

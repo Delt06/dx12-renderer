@@ -2,86 +2,34 @@
 #include <Framework/Mesh.h>
 #include <Framework/Blit_VS.h>
 
-namespace
+SsrBlurPass::SsrBlurPass(const std::shared_ptr<CommonRootSignature>& rootSignature, CommandList& commandList)
+	: m_BlitMesh(Mesh::CreateBlitTriangle(commandList))
 {
-	namespace RootParameters
-	{
-		enum RootParameters
-		{
-			TraceResult, // register(t0)
-			CBuffer, // register(b0)
-			NumRootParameters
-		};
-
-		struct ParametersCBuffer
-		{
-			DirectX::XMFLOAT2 TexelSize;
-			float Separation;
-			int Size;
-		};
-	};
+	auto shader = std::make_shared<Shader>(rootSignature,
+		ShaderBlob(ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS),
+		ShaderBlob(L"SSR_BlurPass_PS.cso")
+		);
+	m_Material = Material::Create(shader);
 }
 
-SsrBlurPass::SsrBlurPass(Format renderTargetFormat)
-	: m_RenderTargetFormat(renderTargetFormat)
-	, m_RootParameters(RootParameters::NumRootParameters)
-	, m_SourceDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0)
-	, m_PixelShader(LoadShaderFromFile(L"SSR_BlurPass_PS.cso"))
+void SsrBlurPass::Execute(CommandList& commandList, const std::shared_ptr<Texture>& traceResult, const RenderTarget& renderTarget) const
 {
-	m_RootParameters[RootParameters::TraceResult].InitAsDescriptorTable(1, &m_SourceDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
-	m_RootParameters[RootParameters::CBuffer].InitAsConstants(sizeof(RootParameters::ParametersCBuffer) / sizeof(float), 0, 0, D3D12_SHADER_VISIBILITY_PIXEL);
-}
+	const auto traceResultDesc = traceResult->GetD3D12ResourceDesc();
 
-void SsrBlurPass::Execute(CommandList& commandList, const Texture& traceResult, const RenderTarget& renderTarget) const
-{
-	SetContext(commandList);
-	SetRenderTarget(commandList, renderTarget);
-
-	commandList.SetShaderResourceView(RootParameters::TraceResult, 0, traceResult, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
-	const auto traceResultDesc = traceResult.GetD3D12ResourceDesc();
-
-	RootParameters::ParametersCBuffer cbuffer{};
-	cbuffer.TexelSize = {
+	m_Material->SetVariable<DirectX::XMFLOAT2>("TexelSize",
+		{
 		1.0f / static_cast<float>(traceResultDesc.Width),
 		1.0f / static_cast<float>(traceResultDesc.Height)
-	};
-	cbuffer.Size = 1;
-	cbuffer.Separation = 0.5f;
-	commandList.SetGraphics32BitConstants(RootParameters::CBuffer, cbuffer);
+		}
+	);
+	m_Material->SetVariable<int32_t>("Size", 1);
+	m_Material->SetVariable<float>("Separation", 0.5f);
+	m_Material->SetShaderResourceView("traceResult", ShaderResourceView(traceResult));
 
+	commandList.SetRenderTarget(renderTarget);
+	commandList.SetAutomaticViewportAndScissorRect(renderTarget);
+
+	m_Material->Bind(commandList);
 	m_BlitMesh->Draw(commandList);
-}
-
-std::vector<Shader::RootParameter> SsrBlurPass::GetRootParameters() const
-{
-	return m_RootParameters;
-}
-
-std::vector<Shader::StaticSampler> SsrBlurPass::GetStaticSamplers() const
-{
-	return
-	{
-		StaticSampler(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP)
-	};
-}
-
-Shader::Format SsrBlurPass::GetRenderTargetFormat() const
-{
-	return m_RenderTargetFormat;
-}
-
-void SsrBlurPass::OnPostInit(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList)
-{
-	m_BlitMesh = Mesh::CreateBlitTriangle(commandList);
-}
-
-Shader::ShaderBytecode SsrBlurPass::GetVertexShaderBytecode() const
-{
-	return ShaderBytecode(ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS);
-}
-
-Shader::ShaderBytecode SsrBlurPass::GetPixelShaderBytecode() const
-{
-	return ShaderBytecode(m_PixelShader.Get());
+	m_Material->Unbind(commandList);
 }

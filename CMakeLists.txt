@@ -13,7 +13,6 @@ project(LearningDirectX12 LANGUAGES CXX)
 # Libraries
 add_subdirectory(DX12Library)
 add_subdirectory(Framework)
-add_subdirectory(PhongLighting)
 
 # Demos
 add_subdirectory(Demos/AnimationsDemo)

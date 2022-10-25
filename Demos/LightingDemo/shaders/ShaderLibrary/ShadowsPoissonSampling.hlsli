@@ -1,3 +1,6 @@
+#include "Pipeline.hlsli"
+#include <ShaderLibrary/Common/RootSignature.hlsli>
+
 #ifndef POISSON_DISK_DEFINED
 
 #define POISSON_DISK_DEFINED
@@ -39,11 +42,11 @@ float PoissonSampling_MainLight(const float4 shadowCoords)
 
 	float attenuation = 0.0f;
 #ifdef POISSON_SAMPLING_POINT_LIGHT
-	const float poissonSpreadInv = shadowReceiverParameters.PointLightPoissonSpreadInv;
+	const float poissonSpreadInv = g_Pipeline_ShadowReceiverParameters.PointLightPoissonSpreadInv;
 #elif defined(POISSON_SAMPLING_SPOT_LIGHT)
-	const float poissonSpreadInv = shadowReceiverParameters.SpotLightPoissonSpreadInv;
+	const float poissonSpreadInv = g_Pipeline_ShadowReceiverParameters.SpotLightPoissonSpreadInv;
 #else
-	const float poissonSpreadInv = shadowReceiverParameters.PoissonSpreadInv;
+    const float poissonSpreadInv = g_Pipeline_ShadowReceiverParameters.PoissonSpreadInv;
 #endif
 
 	for (uint i = 0; i < POISSON_DISK_SIZE; i++)
@@ -54,14 +57,14 @@ float PoissonSampling_MainLight(const float4 shadowCoords)
 			poissonDiskSample * poissonSpreadInv, 0);
 
 #ifdef POISSON_SAMPLING_POINT_LIGHT
-		attenuation += pointLightShadowMaps.SampleCmpLevelZero(shadowMapSampler, float3(sampleShadowCoords.xy, shadowSliceIndex),
+		attenuation += pointLightShadowMaps.SampleCmpLevelZero(g_Common_ShadowMapSampler, float3(sampleShadowCoords.xy, shadowSliceIndex),
 			sampleShadowCoords.z).x;
 #elif defined(POISSON_SAMPLING_SPOT_LIGHT)
-		attenuation += spotLightShadowMaps.SampleCmpLevelZero(shadowMapSampler, float3(sampleShadowCoords.xy, shadowSliceIndex),
+		attenuation += spotLightShadowMaps.SampleCmpLevelZero(g_Common_ShadowMapSampler, float3(sampleShadowCoords.xy, shadowSliceIndex),
 			sampleShadowCoords.z).x;
 #else
 		attenuation += directionalLightShadowMap.SampleCmpLevelZero(
-			shadowMapSampler, sampleShadowCoords.xy, sampleShadowCoords.z).x;
+			g_Common_ShadowMapSampler, sampleShadowCoords.xy, sampleShadowCoords.z).x;
 #endif
 
 

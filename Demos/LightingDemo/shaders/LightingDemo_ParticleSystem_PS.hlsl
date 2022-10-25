@@ -1,3 +1,5 @@
+#include <ShaderLibrary/Common/RootSignature.hlsli>
+
 struct PixelInput
 {
 	float2 Uv : TEXCOORD;
@@ -6,10 +8,8 @@ struct PixelInput
 
 Texture2D albedoTexture : register(t0);
 
-SamplerState textureSampler : register(s0);
-
 float4 main(const PixelInput IN) : SV_TARGET
 {
-	const float4 albedo = albedoTexture.Sample(textureSampler, IN.Uv) * IN.Color;
+	const float4 albedo = albedoTexture.Sample(g_Common_LinearWrapSampler, IN.Uv) * IN.Color;
 	return albedo;
 }

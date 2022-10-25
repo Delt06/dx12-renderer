@@ -3,10 +3,12 @@
 #include "ShaderLibrary/GBufferUtils.hlsli"
 #include "ShaderLibrary/ScreenParameters.hlsli"
 #include "ShaderLibrary/BRDF.hlsli"
+#include "ShaderLibrary/Pipeline.hlsli"
 
-ConstantBuffer<Matrices> matricesCB : register(b0);
-ConstantBuffer<PointLight> pointLightCB : register(b1);
-ConstantBuffer<ScreenParameters> screenParametersCB : register(b2);
+cbuffer CBuffer : register(b0)
+{
+    PointLight pointLightCB;
+}
 
 #include "ShaderLibrary/GBuffer.hlsli"
 
@@ -18,13 +20,14 @@ struct PixelShaderInput
 
 float4 main(PixelShaderInput IN) : SV_TARGET
 {
-    float2 uv = ToScreenSpaceUV(IN.PositionCS, screenParametersCB);
+    ScreenParameters screenParameters = GetScreenParameters();
+    float2 uv = ToScreenSpaceUV(IN.PositionCS, screenParameters);
     float3 diffuseColor = gBufferDiffuse.Sample(gBufferSampler, uv).rgb;
     float3 normalWS = normalize(UnpackNormal(gBufferNormalsWS.Sample(gBufferSampler, uv).xyz));
     
     float zNDC = gBufferDepth.Sample(gBufferSampler, uv).x;
     float3 positionNDC = ScreenSpaceUVToNDC(uv, zNDC);
-    float3 positionWS = RestorePositionWS(positionNDC, matricesCB.InverseProjection, matricesCB.InverseView);
+    float3 positionWS = RestorePositionWS(positionNDC, g_Pipeline_InverseProjection, g_Pipeline_InverseView);
     
     float3 lightOffsetWS = pointLightCB.PositionWS.xyz - positionWS;
     float lightDistance = length(lightOffsetWS);
@@ -33,7 +36,7 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     float distanceAttenuation = ComputeDistanceAttenuation(pointLightCB.ConstantAttenuation, pointLightCB.LinearAttenuation, pointLightCB.QuadraticAttenuation, lightDistance);
     
     BRDFInput brdfInput;
-    brdfInput.CameraPositionWS = matricesCB.CameraPosition.xyz;
+    brdfInput.CameraPositionWS = g_Pipeline_CameraPosition.xyz;
     brdfInput.LightColor = distanceAttenuation * pointLightCB.Color.rgb;
     brdfInput.LightDirectionWS = lightDirectionWS;
     brdfInput.NormalWS = normalWS;

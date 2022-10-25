@@ -1,6 +1,7 @@
 #include <Model.h>
 #include <Framework/Mesh.h>
 #include <DX12Library/CommandList.h>
+#include <Framework/Material.h>
 
 Model::Model(const MeshCollectionType& meshes)
 	: m_Meshes(meshes)

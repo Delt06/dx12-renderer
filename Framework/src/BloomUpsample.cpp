@@ -27,72 +27,47 @@ namespace
 	}
 }
 
-BloomUpsample::BloomUpsample(Format backBufferFormat)
-	: m_BackBufferFormat(backBufferFormat)
-	, m_RootParameters(RootParameters::NumRootParameters)
-	, m_StaticSamplers(1)
-	, m_SourceDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0)
+BloomUpsample::BloomUpsample(const std::shared_ptr<CommonRootSignature>& rootSignature, CommandList& commandList)
+	: m_BlitMesh(Mesh::CreateBlitTriangle(commandList))
 {
-	m_RootParameters[RootParameters::SourceTexture].InitAsDescriptorTable(1, &m_SourceDescriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
-	m_RootParameters[RootParameters::Parameters].InitAsConstants(sizeof(RootParameters::ParametersCb) / sizeof(float), 0, 0, D3D12_SHADER_VISIBILITY_PIXEL);
-
-	m_StaticSamplers[0] = StaticSampler(0, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
+	auto shader = std::make_shared<Shader>(rootSignature,
+		ShaderBlob(ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS),
+		ShaderBlob(ShaderBytecode_Bloom_Downsample_PS, sizeof ShaderBytecode_Bloom_Downsample_PS),
+		[](PipelineStateBuilder& builder)
+		{
+			builder.WithAdditiveBlend();
+		}
+	);
+	m_Material = Material::Create(shader);
 }
 
-void BloomUpsample::Execute(CommandList& commandList, const BloomParameters& parameters, const Texture& source, const RenderTarget& destination)
+void BloomUpsample::Execute(CommandList& commandList, const BloomParameters& parameters, const std::shared_ptr<Texture>& source, const RenderTarget& destination)
 {
 	PIXScope(commandList, "Bloom Upsample");
 
-	SetRenderTarget(commandList, destination);
+	commandList.SetRenderTarget(destination);
+	commandList.SetAutomaticViewportAndScissorRect(destination);
 
-	commandList.SetShaderResourceView(RootParameters::SourceTexture, 0, source, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	m_Material->SetShaderResourceView("sourceColorTexture", ShaderResourceView(source));
 
 	RootParameters::ParametersCb parametersCb{};
 	parametersCb.Intensity = parameters.Intensity;
-	auto sourceDesc = source.GetD3D12ResourceDesc();
+	auto sourceDesc = source->GetD3D12ResourceDesc();
 	auto fSourceWidth = static_cast<float>(sourceDesc.Width);
 	auto fSourceHeight = static_cast<float>(sourceDesc.Height);
 	parametersCb.TexelSize = { 0.5f / fSourceWidth , 0.5f / fSourceHeight }; // 0.5 is for more focused blur
-	commandList.SetGraphics32BitConstants(RootParameters::Parameters, parametersCb);
+	m_Material->SetAllVariables(parametersCb);
 
+	m_Material->UploadUniforms(commandList);
 	m_BlitMesh->Draw(commandList);
-}
-
-Shader::ShaderBytecode BloomUpsample::GetVertexShaderBytecode() const
-{
-	return { ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS };
-}
-
-Shader::ShaderBytecode BloomUpsample::GetPixelShaderBytecode() const
-{
-	return { ShaderBytecode_Bloom_Downsample_PS, sizeof ShaderBytecode_Bloom_Downsample_PS };
-}
-
-std::vector<Shader::RootParameter> BloomUpsample::GetRootParameters() const
-{
-	return m_RootParameters;
-}
-
-std::vector<Shader::StaticSampler> BloomUpsample::GetStaticSamplers() const
-{
-	return m_StaticSamplers;
-}
-
-Shader::Format BloomUpsample::GetRenderTargetFormat() const
-{
-	return m_BackBufferFormat;
-}
-
-void BloomUpsample::OnPostInit(Microsoft::WRL::ComPtr<IDevice> device, CommandList& commandList)
-{
-	m_BlitMesh = Mesh::CreateBlitTriangle(commandList);
 }
 
 void BloomUpsample::Begin(CommandList& commandList)
 {
-	SetContext(commandList);
+	m_Material->BeginBatch(commandList);
 }
-Shader::BlendMode BloomUpsample::GetBlendMode() const
+
+void BloomUpsample::End(CommandList& commandList)
 {
-	return AdditiveBlend();
+	m_Material->EndBatch(commandList);
 }

@@ -20,6 +20,7 @@
 #include <SSR/Ssr.h>
 #include <Reflections.h>
 #include "Framework/Bloom.h"
+#include "Framework/CommonRootSignature.h"
 
 struct MatricesCb;
 class AutoExposure;
@@ -65,16 +66,18 @@ private:
 	};
 
 	static AttachmentPoint GetGBufferTextureAttachmentPoint(GBufferTextureType type);
-	const Texture& GetGBufferTexture(GBufferTextureType type);
+	const std::shared_ptr<Texture>& GetGBufferTexture(GBufferTextureType type);
 
-	void LightStencilPass(CommandList& commandList, const MatricesCb& matricesCb, std::shared_ptr<Mesh> mesh);
+	void LightStencilPass(CommandList& commandList,
+		const DirectX::XMMATRIX& lightWorldMatrix,
+		const DirectX::XMMATRIX& viewProjectionMatrix,
+		const std::shared_ptr<Mesh>& mesh);
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC GetDepthTextureSrv() const;
 
-	void BindGBufferAsSRV(CommandList& commandList, uint32_t rootParameterIndex);
-	void PointLightPass(CommandList& commandList, const MatricesCb& matricesCb, const PointLight& pointLight, const ScreenParameters& screenParameters, std::shared_ptr<Mesh> mesh);
-	void SpotLightPass(CommandList& commandList, const MatricesCb& matricesCb, const SpotLight& spotLight, const ScreenParameters& screenParameters, const std::shared_ptr<Mesh> mesh);
-	void CapsuleLightPass(CommandList& commandList, const MatricesCb& matricesCb, const CapsuleLight& capsuleLight, const ScreenParameters& screenParameters, const std::shared_ptr<Mesh> mesh);
+	void PointLightPass(CommandList& commandList, const PointLight& pointLight, const std::shared_ptr<Mesh>& mesh);
+	void SpotLightPass(CommandList& commandList, const SpotLight& spotLight, const std::shared_ptr<Mesh>& mesh);
+	void CapsuleLightPass(CommandList& commandList, const CapsuleLight& capsuleLight, const std::shared_ptr<Mesh>& mesh);
 
 	std::shared_ptr<Texture> m_WhiteTexture2d;
 
@@ -82,7 +85,7 @@ private:
 	RenderTarget m_LightBufferRenderTarget;
 	RenderTarget m_LightStencilRenderTarget;
 	RenderTarget m_ResultRenderTarget;
-	Texture m_DepthTexture;
+	std::shared_ptr<Texture> m_DepthTexture;
 
 	bool m_SsaoEnabled = true;
 	std::unique_ptr<Ssao> m_Ssao;
@@ -106,44 +109,34 @@ private:
 	bool m_TaaEnabled = true;
 	std::unique_ptr<Taa> m_Taa;
 
-	RootSignature m_GBufferPassRootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_GBufferPassPipelineState;
+	std::shared_ptr<CommonRootSignature> m_CommonRootSignature = nullptr;
 
 	DirectionalLight m_DirectionalLight;
 	std::vector<PointLight> m_PointLights;
 	std::vector<SpotLight> m_SpotLights;
 	std::vector<CapsuleLight> m_CapsuleLights;
 
-	RootSignature m_DirectionalLightPassRootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_DirectionalLightPassPipelineState;
+	std::shared_ptr<Material> m_DirectionalLightPassMaterial;
 	std::shared_ptr<Mesh> m_FullScreenMesh;
 
-	RootSignature m_LightStencilPassRootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_LightStencilPassPipelineState;
+	std::shared_ptr<Material> m_LightStencilPasssMaterial;
 
-	RootSignature m_PointLightPassRootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PointLightPassPipelineState;
+	std::shared_ptr<Material> m_PointLightPassMaterial;
 	std::shared_ptr<Mesh> m_PointLightMesh;
 
-	RootSignature m_SpotLightPassRootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_SpotLightPassPipelineState;
+	std::shared_ptr<Material> m_SpotLightPassMaterial;
 	std::shared_ptr<Mesh> m_SpotLightMesh;
 
-	RootSignature m_CapsuleLightPassRootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_CapsuleLightPassPipelineState;
+	std::shared_ptr<Material> m_CapsuleLightPassMaterial;
 	std::shared_ptr<Mesh> m_CapsuleLightMesh;
 
-	RootSignature m_SkyboxPassRootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_SkyboxPassPipelineState;
-	Texture m_Skybox;
+	std::shared_ptr<Material> m_SkyboxPassMaterial;
+	std::shared_ptr<Texture> m_Skybox;
 	std::shared_ptr<Mesh> m_SkyboxMesh;
 
 	RenderTarget m_DiffuseIrradianceMapRt;
 	RenderTarget m_BrdfIntegrationMapRt;
 	RenderTarget m_PreFilterEnvironmentMapRt;
-
-	D3D12_VIEWPORT m_Viewport;
-	D3D12_RECT m_ScissorRect;
 
 	GraphicsSettings m_GraphicsSettings;
 

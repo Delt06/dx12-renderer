@@ -1,6 +1,4 @@
-#include "ShaderLibrary/MatricesCB.hlsli"
-
-ConstantBuffer<Matrices> matricesCB : register(b0);
+#include "ShaderLibrary/Model.hlsli"
 
 struct VertexShaderInput
 {
@@ -15,6 +13,6 @@ struct VertexShaderOutput
 VertexShaderOutput main(VertexShaderInput IN)
 {
     VertexShaderOutput OUT;
-    OUT.PositionCS = mul(matricesCB.ModelViewProjection, float4(IN.PositionOS, 1.0));    
+    OUT.PositionCS = mul(g_Model_ModelViewProjection, float4(IN.PositionOS, 1.0));
     return OUT;
 }

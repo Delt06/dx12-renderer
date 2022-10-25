@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include <d3d12.h>
-#include "d3dx12.h"
+#include <d3dx12.h>
 
 
 #include <wrl.h>
@@ -86,9 +86,9 @@ public:
 
 private:
 	// Request a descriptor heap if one is available.
-	ComPtr<ID3D12DescriptorHeap> RequestDescriptorHeap();
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> RequestDescriptorHeap();
 	// Create a new descriptor heap of no descriptor heap is available.
-	ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap() const;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap() const;
 
 	// Compute the number of stale descriptors that need to be copied
 	// to GPU visible descriptor heap.
@@ -126,25 +126,25 @@ private:
 	//   * D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
 	//   * D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER
 	// This parameter also determines the type of GPU visible descriptor heap to create.
-	D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeapType;
+	D3D12_DESCRIPTOR_HEAP_TYPE m_DescriptorHeapType;
 
-	uint32_t NumDescriptorsPerHeap;
-	uint32_t DescriptorHandleIncrementSize;
+	uint32_t m_NumDescriptorsPerHeap;
+	uint32_t m_DescriptorHandleIncrementSize;
 
-	std::unique_ptr<D3D12_CPU_DESCRIPTOR_HANDLE[]> DescriptorHandleCache;
-	DescriptorTableCache DescriptorTableCaches[MAX_DESCRIPTOR_TABLES];
+	std::unique_ptr<D3D12_CPU_DESCRIPTOR_HANDLE[]> m_DescriptorHandleCache;
+	DescriptorTableCache m_DescriptorTableCaches[MAX_DESCRIPTOR_TABLES];
 
-	uint32_t DescriptorTableBitMask;
-	uint32_t StaleDescriptorTableBitMask;
+	uint32_t m_DescriptorTableBitMask;
+	uint32_t m_StaleDescriptorTableBitMask;
 
 	using DescriptorHeapPoolType = std::queue<ComPtr<ID3D12DescriptorHeap>>;
 
-	DescriptorHeapPoolType DescriptorHeapPool;
-	DescriptorHeapPoolType AvailableDescriptorHeaps;
+	DescriptorHeapPoolType m_DescriptorHeapPool;
+	DescriptorHeapPoolType m_AvailableDescriptorHeaps;
 
-	ComPtr<ID3D12DescriptorHeap> CurrentDescriptorHeap;
-	CD3DX12_GPU_DESCRIPTOR_HANDLE CurrentGpuDescriptorHandle;
-	CD3DX12_CPU_DESCRIPTOR_HANDLE CurrentCpuDescriptorHandle;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_CurrentDescriptorHeap;
+	CD3DX12_GPU_DESCRIPTOR_HANDLE m_CurrentGpuDescriptorHandle;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE m_CurrentCpuDescriptorHandle;
 
-	uint32_t NumFreeHandles;
+	uint32_t m_NumFreeHandles;
 };

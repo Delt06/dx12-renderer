@@ -32,17 +32,25 @@
 
 #include "Resource.h"
 
+#include <d3dx12.h>
+
 class Buffer : public Resource
 {
 public:
-	Buffer(const std::wstring& name = L"");
-	Buffer(const D3D12_RESOURCE_DESC& resDesc,
-		size_t numElements, size_t elementSize,
-		const std::wstring& name = L"");
+    Buffer(const std::wstring& name = L"");
+    Buffer(const D3D12_RESOURCE_DESC& resDesc,
+        size_t numElements, size_t elementSize,
+        const std::wstring& name = L"");
 
-	/**
-	 * Create the views for the buffer resource.
-	 * Used by the CommandList when setting the buffer contents.
-	 */
-	virtual void CreateViews(size_t numElements, size_t elementSize) = 0;
+    /**
+     * Create the views for the buffer resource.
+     * Used by the CommandList when setting the buffer contents.
+     */
+    virtual void CreateViews(size_t numElements, size_t elementSize) = 0;
+
+    const Microsoft::WRL::ComPtr<ID3D12Resource>& GetUploadResource(size_t size) const;
+
+private:
+    mutable Microsoft::WRL::ComPtr<ID3D12Resource> m_UploadResource;
+    mutable CD3DX12_RESOURCE_DESC m_UploadResourceDesc;
 };

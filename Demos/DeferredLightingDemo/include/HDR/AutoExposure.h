@@ -5,28 +5,29 @@
 #include <DX12Library/RootSignature.h>
 #include <DX12Library/StructuredBuffer.h>
 #include <DX12Library/Texture.h>
+#include <memory>
+#include <Framework/CommonRootSignature.h>
 
 class CommandList;
 
 class AutoExposure
 {
 public:
-	explicit AutoExposure(Microsoft::WRL::ComPtr<ID3D12Device2> device, CommandList& commandList);
+	explicit AutoExposure(const std::shared_ptr<CommonRootSignature>& rootSignature, CommandList& commandList);
 
-	void Dispatch(CommandList& commandList, const Texture& hdrTexture, float deltaTime, float tau = 1.1f);
+	void Dispatch(CommandList& commandList, const std::shared_ptr<Texture>& hdrTexture, float deltaTime, float tau = 1.1f);
 
-	const Texture& GetLuminanceOutput() const;
+	const std::shared_ptr<Texture>& GetLuminanceOutput() const;
 
 private:
 	static constexpr uint32_t NUM_HISTOGRAM_BINS = 256;
 
-	RootSignature m_BuildLuminanceHistogramRootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_BuildLuminanceHistogramPipelineState;
+	std::shared_ptr<CommonRootSignature> m_RootSignature;
 
-	RootSignature m_AverageLuminanceHistogramRootSignature;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_BuildLuminanceHistogramPipelineState;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_AverageLuminanceHistogramPipelineState;
 
-	StructuredBuffer m_LuminanceHistogram;
-	Texture m_LuminanceOutput;
+	std::shared_ptr<StructuredBuffer> m_LuminanceHistogram;
+	std::shared_ptr<Texture> m_LuminanceOutput;
 };
 

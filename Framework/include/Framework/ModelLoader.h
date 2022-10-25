@@ -2,9 +2,10 @@
 #include <string>
 
 #include <DX12Library/CommandList.h>
+#include <DX12Library/Texture.h>
+#include "Model.h"
 #include <memory>
 
-class Model;
 class Mesh;
 class Animation;
 
@@ -15,4 +16,6 @@ public:
 	std::shared_ptr<Model> LoadExisting(std::shared_ptr<Mesh> mesh) const;
 
 	std::shared_ptr<Animation> LoadAnimation(const std::string& path, const std::string& animationName) const;
+
+	std::shared_ptr<Texture> LoadTexture(CommandList& commandList, const std::wstring& path, TextureUsageType usage = TextureUsageType::Albedo) const;
 };

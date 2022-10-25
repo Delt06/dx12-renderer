@@ -185,7 +185,7 @@ private:
 	std::weak_ptr<Game> PGame;
 
 	Microsoft::WRL::ComPtr<IDXGISwapChain4> DxgiSwapChain;
-	Texture BackBufferTextures[BUFFER_COUNT];
+	std::shared_ptr<Texture> BackBufferTextures[BUFFER_COUNT];
 	// Marked mutable to allow modification in a const function.
 	mutable RenderTarget MRenderTarget;
 

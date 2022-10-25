@@ -47,6 +47,7 @@
 
 #include "GenerateMipsPso.h"
 #include "ClearValue.h"
+#include "RenderTargetFormats.h"
 
 class Buffer;
 class ByteAddressBuffer;
@@ -335,13 +336,14 @@ public:
 	/**
 	 * Set the pipeline state object on the command list.
 	 */
-	void SetPipelineState(Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState);
+	void SetPipelineState(const Microsoft::WRL::ComPtr<ID3D12PipelineState>& pipelineState);
 
 	/**
 	 * Set the current root signature on the command list.
 	 */
 	void SetGraphicsRootSignature(const RootSignature& rootSignature);
 	void SetComputeRootSignature(const RootSignature& rootSignature);
+	void SetGraphicsAndComputeRootSignature(const RootSignature& rootSignature);
 
 	/**
 	 * Set the SRV on the graphics pipeline.
@@ -434,9 +436,14 @@ public:
 
 	void SetComputeRootUnorderedAccessView(UINT rootParameterIndex, const Resource& resource);
 
+	void SetAutomaticViewportAndScissorRect(const RenderTarget& renderTarget);
+	void SetInfiniteScrissorRect();
+
+	const RenderTargetFormats& GetLastRenderTargetFormats() const { return m_LastRenderTargetFormats; }
+
 protected:
 private:
-	void TrackObject(Microsoft::WRL::ComPtr<ID3D12Object> object);
+	void TrackObject(const Microsoft::WRL::ComPtr<ID3D12Object>& object);
 	void TrackResource(const Resource& res);
 
 	// Generate mips for UAV compatible textures.
@@ -467,7 +474,7 @@ private:
 
 	// Keep track of the currently bound root signatures to minimize root
 	// signature changes.
-	ID3D12RootSignature* m_PRootSignature;
+	ID3D12RootSignature* m_RootSignature;
 
 	// Resource created in an upload heap. Useful for drawing of dynamic geometry
 	// or for uploading constant buffer data that changes every draw call.
@@ -498,6 +505,8 @@ private:
 	// is stored. The referenced objects are released when the command list is
 	// reset.
 	TrackedObjectsType m_TrackedObjects;
+
+	RenderTargetFormats m_LastRenderTargetFormats;
 
 	// Keep track of loaded textures to avoid loading the same texture multiple times.
 	static std::map<std::wstring, ID3D12Resource*> m_TextureCache;

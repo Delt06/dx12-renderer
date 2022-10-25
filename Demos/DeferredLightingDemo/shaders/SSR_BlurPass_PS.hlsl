@@ -1,10 +1,11 @@
+#include <ShaderLibrary/Common/RootSignature.hlsli>
+
 struct PixelShaderInput
 {
     float2 UV : TEXCOORD;
 };
 
 Texture2D traceResult : register(t0);
-SamplerState traceSampler : register(s0);
 
 cbuffer ParametersCBuffer : register(b0)
 {
@@ -15,8 +16,7 @@ cbuffer ParametersCBuffer : register(b0)
 
 float4 Sample(float2 uv)
 {
-    return traceResult.Sample(traceSampler, uv);
-
+    return traceResult.Sample(g_Common_LinearClampSampler, uv);
 }
 
 float4 main(PixelShaderInput IN) : SV_TARGET

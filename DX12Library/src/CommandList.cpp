@@ -1,4 +1,4 @@
-﻿#include "DX12LibPCH.h"
+#include "DX12LibPCH.h"
 
 #include "CommandList.h"
 
@@ -158,36 +158,37 @@ void CommandList::CopyBuffer(Buffer& buffer, const size_t numElements, const siz
 		// This will result in a NULL resource (which may be desired to define a default null resource).
 		throw std::exception();
 	}
+    else
 	{
-		const auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-		const auto resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize, flags);
-		ThrowIfFailed(device->CreateCommittedResource(
-			&heapProperties,
-			D3D12_HEAP_FLAG_NONE,
-			&resourceDesc,
-			D3D12_RESOURCE_STATE_COMMON,
-			nullptr,
-			IID_PPV_ARGS(&d3d12Resource)));
-	}
+        const auto desc = buffer.GetD3D12ResourceDesc();
 
-	// Add the resource to the global resource state tracker.
-	ResourceStateTracker::AddGlobalResourceState(d3d12Resource.Get(), D3D12_RESOURCE_STATE_COMMON);
+        // see if need to create a new resource
+        if (buffer.GetD3D12Resource() == nullptr || desc.Width < bufferSize || desc.Flags != flags)
+        {
+            const auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+            const auto resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize, flags);
+            ThrowIfFailed(device->CreateCommittedResource(
+                &heapProperties,
+                D3D12_HEAP_FLAG_NONE,
+                &resourceDesc,
+                D3D12_RESOURCE_STATE_COMMON,
+                nullptr,
+                IID_PPV_ARGS(&d3d12Resource)));
+            d3d12Resource->SetName(buffer.GetName().c_str());
+
+            // Add the resource to the global resource state tracker.
+            ResourceStateTracker::AddGlobalResourceState(d3d12Resource.Get(), D3D12_RESOURCE_STATE_COMMON);
+        }
+        else // use existing
+        {
+            d3d12Resource = buffer.GetD3D12Resource();
+        }
+	}
 
 	if (bufferData != nullptr)
 	{
 		// Create an upload resource to use as an intermediate buffer to copy the buffer resource
-		ComPtr<ID3D12Resource> uploadResource;
-		{
-			const auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-			const auto resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
-			ThrowIfFailed(device->CreateCommittedResource(
-				&heapProperties,
-				D3D12_HEAP_FLAG_NONE,
-				&resourceDesc,
-				D3D12_RESOURCE_STATE_GENERIC_READ,
-				nullptr,
-				IID_PPV_ARGS(&uploadResource)));
-		}
+        const auto& uploadResource = buffer.GetUploadResource(bufferSize);
 
 		D3D12_SUBRESOURCE_DATA subresourceData = {};
 		subresourceData.pData = bufferData;
@@ -672,7 +673,7 @@ void CommandList::SetScissorRects(const std::vector<D3D12_RECT>& scissorRects)
 		scissorRects.data());
 }
 
-void CommandList::SetPipelineState(const ComPtr<ID3D12PipelineState> pipelineState)
+void CommandList::SetPipelineState(const Microsoft::WRL::ComPtr<ID3D12PipelineState>& pipelineState)
 {
 	m_D3d12CommandList->SetPipelineState(pipelineState.Get());
 
@@ -682,36 +683,55 @@ void CommandList::SetPipelineState(const ComPtr<ID3D12PipelineState> pipelineSta
 void CommandList::SetGraphicsRootSignature(const RootSignature& rootSignature)
 {
 	const auto d3d12RootSignature = rootSignature.GetRootSignature().Get();
-	if (m_PRootSignature != d3d12RootSignature)
+	if (m_RootSignature != d3d12RootSignature)
 	{
-		m_PRootSignature = d3d12RootSignature;
+		m_RootSignature = d3d12RootSignature;
 
 		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
 		{
 			m_DynamicDescriptorHeaps[i]->ParseRootSignature(rootSignature);
 		}
 
-		m_D3d12CommandList->SetGraphicsRootSignature(m_PRootSignature);
+		m_D3d12CommandList->SetGraphicsRootSignature(m_RootSignature);
 
-		TrackObject(m_PRootSignature);
+		TrackObject(m_RootSignature);
 	}
 }
 
 void CommandList::SetComputeRootSignature(const RootSignature& rootSignature)
 {
 	const auto d3d12RootSignature = rootSignature.GetRootSignature().Get();
-	if (m_PRootSignature != d3d12RootSignature)
+	if (m_RootSignature != d3d12RootSignature)
 	{
-		m_PRootSignature = d3d12RootSignature;
+		m_RootSignature = d3d12RootSignature;
 
 		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
 		{
 			m_DynamicDescriptorHeaps[i]->ParseRootSignature(rootSignature);
 		}
 
-		m_D3d12CommandList->SetComputeRootSignature(m_PRootSignature);
+		m_D3d12CommandList->SetComputeRootSignature(m_RootSignature);
 
-		TrackObject(m_PRootSignature);
+		TrackObject(m_RootSignature);
+	}
+}
+
+void CommandList::SetGraphicsAndComputeRootSignature(const RootSignature& rootSignature)
+{
+	const auto d3d12RootSignature = rootSignature.GetRootSignature().Get();
+	if (m_RootSignature != d3d12RootSignature)
+	{
+		m_RootSignature = d3d12RootSignature;
+
+		for (int i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
+		{
+			m_DynamicDescriptorHeaps[i]->ParseRootSignature(rootSignature);
+		}
+
+		m_D3d12CommandList->SetGraphicsRootSignature(m_RootSignature);
+		m_D3d12CommandList->SetComputeRootSignature(m_RootSignature);
+
+		TrackObject(m_RootSignature);
 	}
 }
 
@@ -778,36 +798,38 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, UINT texArra
 	{
 		auto& texture = textures[i];
 
-		if (texture.IsValid())
+		if (texture->IsValid())
 		{
-			const UINT subresource = isArrayItem ? texture.GetRenderTargetSubresourceIndex(texArrayIndex, mipLevel) : D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-			TransitionBarrier(texture, D3D12_RESOURCE_STATE_RENDER_TARGET, subresource);
+			const UINT subresource = isArrayItem ? texture->GetRenderTargetSubresourceIndex(texArrayIndex, mipLevel) : D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+			TransitionBarrier(*texture, D3D12_RESOURCE_STATE_RENDER_TARGET, subresource);
 			renderTargetDescriptors.push_back(isArrayItem
-				? texture.GetRenderTargetViewArray(texArrayIndex, mipLevel)
-				: texture.GetRenderTargetView());
+				? texture->GetRenderTargetViewArray(texArrayIndex, mipLevel)
+				: texture->GetRenderTargetView());
 
-			TrackResource(texture);
+			TrackResource(*texture);
 		}
 	}
 
 	const auto& depthTexture = renderTarget.GetTexture(DepthStencil);
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE depthStencilDescriptor(D3D12_DEFAULT);
-	if (useDepth && depthTexture.GetD3D12Resource())
+	if (useDepth && depthTexture->GetD3D12Resource())
 	{
-		const UINT subresource = isArrayItem ? depthTexture.GetDepthStencilSubresourceIndex(texArrayIndex) : D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-		TransitionBarrier(depthTexture, D3D12_RESOURCE_STATE_DEPTH_WRITE, subresource);
+		const UINT subresource = isArrayItem ? depthTexture->GetDepthStencilSubresourceIndex(texArrayIndex) : D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		TransitionBarrier(*depthTexture, D3D12_RESOURCE_STATE_DEPTH_WRITE, subresource);
 		depthStencilDescriptor = isArrayItem
-			? depthTexture.GetDepthStencilViewArray(texArrayIndex)
-			: depthTexture.GetDepthStencilView();
+			? depthTexture->GetDepthStencilViewArray(texArrayIndex)
+			: depthTexture->GetDepthStencilView();
 
-		TrackResource(depthTexture);
+		TrackResource(*depthTexture);
 	}
 
 	const D3D12_CPU_DESCRIPTOR_HANDLE* pDsv = depthStencilDescriptor.ptr != 0 ? &depthStencilDescriptor : nullptr;
 
 	m_D3d12CommandList->OMSetRenderTargets(static_cast<UINT>(renderTargetDescriptors.size()),
 		renderTargetDescriptors.data(), FALSE, pDsv);
+
+	m_LastRenderTargetFormats = RenderTargetFormats(renderTarget);
 }
 
 void CommandList::ClearRenderTarget(const RenderTarget& renderTarget, const float* clearColor, D3D12_CLEAR_FLAGS clearFlags)
@@ -818,16 +840,16 @@ void CommandList::ClearRenderTarget(const RenderTarget& renderTarget, const floa
 	{
 		auto& texture = textures[i];
 
-		if (texture.IsValid())
+		if (texture->IsValid())
 		{
-			ClearTexture(texture, clearColor);
+			ClearTexture(*texture, clearColor);
 		}
 	}
 
 	const auto& depthTexture = renderTarget.GetTexture(DepthStencil);
-	if (depthTexture.IsValid())
+	if (depthTexture->IsValid())
 	{
-		ClearDepthStencilTexture(depthTexture, clearFlags);
+		ClearDepthStencilTexture(*depthTexture, clearFlags);
 	}
 }
 
@@ -912,11 +934,11 @@ void CommandList::Reset()
 		m_DescriptorHeaps[i] = nullptr;
 	}
 
-	m_PRootSignature = nullptr;
+	m_RootSignature = nullptr;
 	m_ComputeCommandList = nullptr;
 }
 
-void CommandList::TrackObject(const ComPtr<ID3D12Object> object)
+void CommandList::TrackObject(const Microsoft::WRL::ComPtr<ID3D12Object>& object)
 {
 	m_TrackedObjects.push_back(object);
 }
@@ -1040,6 +1062,28 @@ void CommandList::SetComputeRootUnorderedAccessView(UINT rootParameterIndex, con
 	TransitionBarrier(resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 	m_D3d12CommandList->SetComputeRootUnorderedAccessView(rootParameterIndex, d3d12Resource->GetGPUVirtualAddress());
 	TrackObject(d3d12Resource);
+}
+
+void CommandList::SetAutomaticViewportAndScissorRect(const RenderTarget& renderTarget)
+{
+	const auto& color0Texture = renderTarget.GetTexture(Color0);
+	const auto& depthTexture = renderTarget.GetTexture(DepthStencil);
+	if (!color0Texture->IsValid() && !depthTexture->IsValid())
+	{
+		throw std::exception("Both Color0 and DepthStencil attachment are invalid. Cannot compute viewport.");
+	}
+
+	auto destinationDesc = color0Texture->IsValid() ? color0Texture->GetD3D12ResourceDesc() : depthTexture->GetD3D12ResourceDesc();
+	auto viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(destinationDesc.Width), static_cast<float>(destinationDesc.Height));
+
+	SetViewport(viewport);
+	SetInfiniteScrissorRect();
+}
+
+void CommandList::SetInfiniteScrissorRect()
+{
+	auto scissorRect = CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX);
+	SetScissorRect(scissorRect);
 }
 
 void CommandList::BindDescriptorHeaps()

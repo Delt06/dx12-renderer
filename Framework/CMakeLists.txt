@@ -4,35 +4,42 @@ project("Framework")
 
 set(HEADER_FILES
         "include/Framework/Aabb.h"
-        "include/Framework/Blit.h"
+        
         "include/Framework/Bone.h"
         "include/Framework/BoundingSphere.h"
-        "include/Framework/EffectBase.h"
+        
         "include/Framework/Mesh.h"
         "include/Framework/Model.h"
-        "include/Framework/Shader.h"
+        
         "include/Framework/GameObject.h"
         "include/Framework/Light.h"
         "include/Framework/MatricesCb.h"
         "include/Framework/ModelLoader.h"
-        "include/Framework/MaterialBase.h"
         "include/Framework/Animation.h"
         "include/Framework/GraphicsSettings.h"
         "include/Framework/DemoMain.h"
         "include/Framework/Bloom.h"
         "include/Framework/BloomPrefilter.h"
         "include/Framework/BloomDownsample.h"
-        "include/Framework/BloomUpsample.h")
+        "include/Framework/BloomUpsample.h" 
+        "include/Framework/CommonRootSignature.h" 
+        "include/Framework/PipelineStateBuilder.h" 
+        "include/Framework/Shader.h" 
+        "include/Framework/Material.h" 
+        "include/Framework/ShaderResourceView.h" 
+        "include/Framework/ShaderBlob.h"
+        "include/Framework/UnorderedAccessView.h"
+)
 
 set(SOURCE_FILES
         "src/Aabb.cpp"
-        "src/Blit.cpp"
+        
         "src/Bone.cpp"
         "src/BoundingSphere.cpp"
         "src/Framework.cpp"
         "src/Mesh.cpp"
         "src/Model.cpp"
-        "src/Shader.cpp"
+        
         "src/GameObject.cpp"
         "src/Light.cpp"
         "src/MatricesCb.cpp"
@@ -41,7 +48,12 @@ set(SOURCE_FILES
         "src/Bloom.cpp"
         "src/BloomPrefilter.cpp"
         "src/BloomDownsample.cpp"
-        "src/BloomUpsample.cpp")
+        "src/BloomUpsample.cpp" 
+        "src/CommonRootSignature.cpp" 
+        "src/PipelineStateBuilder.cpp" 
+        "src/Shader.cpp" 
+        "src/Material.cpp" 
+        "src/ShaderBlob.cpp")
 
 set(SHADER_FILES_VERTEX
         "shaders/Blit_VS.hlsl"

@@ -1,21 +1,9 @@
-struct Matrices
-{
-    matrix Model;
-    matrix ModelView;
-    matrix InverseTransposeModelView;
-    matrix ModelViewProjection;
-    matrix View;
-    matrix Projection;
-    matrix InverseTransposeModel;
-    float4 CameraPosition;
-};
+#include <ShaderLibrary/Model.hlsli>
 
 struct Bone
 {
     matrix Transform;
 };
-
-ConstantBuffer<Matrices> matricesCb : register(b0);
 
 StructuredBuffer<Bone> bonesSb : register(t0);
 
@@ -51,9 +39,9 @@ VertexShaderOutput main(VertexAttributes IN)
         positionOs = mul(boneTransform, positionOs);
     }
 
-    OUT.NormalWs = mul((float3x3) matricesCb.InverseTransposeModel, IN.Normal);
+    OUT.NormalWs = mul((float3x3) g_Model_InverseTransposeModel, IN.Normal);
     OUT.Uv = IN.Uv;
-    OUT.PositionCs = mul(matricesCb.ModelViewProjection, positionOs);
+    OUT.PositionCs = mul(g_Model_ModelViewProjection, positionOs);
 
     return OUT;
 }
