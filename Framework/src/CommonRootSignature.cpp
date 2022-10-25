@@ -196,7 +196,6 @@ void CommonRootSignature::SetUnorderedAccessView(CommandList& commandList, UINT 
 
 void CommonRootSignature::UnbindMaterialShaderResourceViews(CommandList& commandList)
 {
-    Texture nullTexture;
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
     srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
     srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -210,7 +209,7 @@ void CommonRootSignature::UnbindMaterialShaderResourceViews(CommandList& command
     {
         commandList.SetShaderResourceView(RootParameters::MaterialSRVs,
             i,
-            nullTexture,
+            m_NullTexture,
             D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE,
             0, 1,
             &srvDesc

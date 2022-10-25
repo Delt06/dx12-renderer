@@ -70,4 +70,5 @@ private:
 
 	ShaderResourceView m_EmptySRV;
 	UnorderedAccessView m_EmptyUAV;
+    Texture m_NullTexture;
 };

@@ -391,9 +391,6 @@ UINT Window::Present(const Texture& texture)
 			}
 		}
 
-		RenderTarget renderTarget;
-		renderTarget.AttachTexture(Color0, backBuffer);
-
 		commandList->TransitionBarrier(*backBuffer, D3D12_RESOURCE_STATE_PRESENT);
 	}
 

@@ -64,7 +64,7 @@ void SpotLightShadowPassPso::SetCurrentShadowMap(const uint32_t lightIndex)
 
 void SpotLightShadowPassPso::SetShadowMapsCount(const uint32_t count)
 {
-    if (count >= m_ShadowMapsCapacity && count > 0)
+    if (count > m_ShadowMapsCapacity && count > 0)
     {
         const auto shadowMapDesc = CD3DX12_RESOURCE_DESC::Tex2D(SHADOW_MAP_FORMAT,
             m_Resolution, m_Resolution,

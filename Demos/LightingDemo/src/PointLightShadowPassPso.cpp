@@ -76,7 +76,7 @@ void PointLightShadowPassPso::SetCurrentShadowMap(const uint32_t lightIndex, con
 
 void PointLightShadowPassPso::SetShadowMapsCount(const uint32_t count)
 {
-    if (count >= m_CubeShadowMapsCapacity && count > 0)
+    if (count > m_CubeShadowMapsCapacity && count > 0)
     {
         const uint32_t arraySize = count * Cubemap::SIDES_COUNT;
         const auto shadowMapDesc = CD3DX12_RESOURCE_DESC::Tex2D(
