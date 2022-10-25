@@ -1,4 +1,4 @@
-﻿#include "DX12LibPCH.h"
+#include "DX12LibPCH.h"
 
 #include "CommandList.h"
 
@@ -158,36 +158,37 @@ void CommandList::CopyBuffer(Buffer& buffer, const size_t numElements, const siz
 		// This will result in a NULL resource (which may be desired to define a default null resource).
 		throw std::exception();
 	}
+    else
 	{
-		const auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-		const auto resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize, flags);
-		ThrowIfFailed(device->CreateCommittedResource(
-			&heapProperties,
-			D3D12_HEAP_FLAG_NONE,
-			&resourceDesc,
-			D3D12_RESOURCE_STATE_COMMON,
-			nullptr,
-			IID_PPV_ARGS(&d3d12Resource)));
-	}
+        const auto desc = buffer.GetD3D12ResourceDesc();
 
-	// Add the resource to the global resource state tracker.
-	ResourceStateTracker::AddGlobalResourceState(d3d12Resource.Get(), D3D12_RESOURCE_STATE_COMMON);
+        // see if need to create a new resource
+        if (buffer.GetD3D12Resource() == nullptr || desc.Width < bufferSize || desc.Flags != flags)
+        {
+            const auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+            const auto resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize, flags);
+            ThrowIfFailed(device->CreateCommittedResource(
+                &heapProperties,
+                D3D12_HEAP_FLAG_NONE,
+                &resourceDesc,
+                D3D12_RESOURCE_STATE_COMMON,
+                nullptr,
+                IID_PPV_ARGS(&d3d12Resource)));
+            d3d12Resource->SetName(buffer.GetName().c_str());
+
+            // Add the resource to the global resource state tracker.
+            ResourceStateTracker::AddGlobalResourceState(d3d12Resource.Get(), D3D12_RESOURCE_STATE_COMMON);
+        }
+        else // use existing
+        {
+            d3d12Resource = buffer.GetD3D12Resource();
+        }
+	}
 
 	if (bufferData != nullptr)
 	{
 		// Create an upload resource to use as an intermediate buffer to copy the buffer resource
-		ComPtr<ID3D12Resource> uploadResource;
-		{
-			const auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-			const auto resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
-			ThrowIfFailed(device->CreateCommittedResource(
-				&heapProperties,
-				D3D12_HEAP_FLAG_NONE,
-				&resourceDesc,
-				D3D12_RESOURCE_STATE_GENERIC_READ,
-				nullptr,
-				IID_PPV_ARGS(&uploadResource)));
-		}
+        const auto& uploadResource = buffer.GetUploadResource(bufferSize);
 
 		D3D12_SUBRESOURCE_DATA subresourceData = {};
 		subresourceData.pData = bufferData;

@@ -37,5 +37,5 @@ private:
     std::shared_ptr<Material> m_Material;
 
 	uint32_t m_InstancesCount{};
-	VertexBuffer m_InstanceDataVertexBuffer;
+	VertexBuffer m_InstanceDataVertexBuffer = VertexBuffer(L"Particle System Instance Data");
 };

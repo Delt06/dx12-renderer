@@ -109,6 +109,8 @@ public:
 	 */
 	void SetName(const std::wstring& name);
 
+    const std::wstring& GetName() const;
+
 	/**
 	 * Release the underlying resource.
 	 * This is useful for swap chain resizing.

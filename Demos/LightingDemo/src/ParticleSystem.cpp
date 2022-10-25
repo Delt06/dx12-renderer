@@ -81,16 +81,14 @@ void ParticleSystem::Draw(CommandList& commandList) const
 {
     if (m_LiveInstancesCount == 0) return;
 
-    m_Pso->Begin(commandList);
-
     if (m_GpuBufferIsDirty)
     {
         m_Pso->UploadInstanceData(commandList, m_InstanceData.get(), m_LiveInstancesCount);
         m_GpuBufferIsDirty = false;
     }
 
+    m_Pso->Begin(commandList);
     m_Pso->Draw(commandList);
-
     m_Pso->End(commandList);
 }
 
