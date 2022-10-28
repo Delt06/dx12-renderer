@@ -5,7 +5,7 @@
 
 bool IsNaN(float x)
 {
-    return isnan(x) || !(x < 0.f || x > 0.f || x == 0.f);
+    return (asuint(x) & 0x7fffffff) > 0x7f800000;
 }
 
 bool IsNaNAny(float3 v)

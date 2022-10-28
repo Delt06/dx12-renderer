@@ -6,7 +6,7 @@ include(${CMAKE_SOURCE_DIR}/CMakeIncludes/ProjectBasePost.cmake)
 # Setup as Windows app
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
 
-include(${CMAKE_SOURCE_DIR}/CMakeIncludes/CopyPixDLL.cmake)
+include(${CMAKE_SOURCE_DIR}/CMakeIncludes/CopyDLLs.cmake)
 include(${CMAKE_SOURCE_DIR}/CMakeIncludes/CopyAssets.cmake)
 
 # Includes and libraries

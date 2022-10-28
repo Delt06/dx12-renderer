@@ -1,4 +1,4 @@
-#include <ShaderLibrary/Model.hlsli>
+#include "ShaderLibrary/Model.hlsli"
 
 struct VertexAttributes
 {

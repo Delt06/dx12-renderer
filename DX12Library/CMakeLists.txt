@@ -69,8 +69,7 @@ set(SOURCE_FILES
         src/UploadBuffer.cpp
         src/VertexBuffer.cpp
         src/Window.cpp
-        src/ClearValue.cpp
-        )
+        src/ClearValue.cpp)
 
 set(SHADER_FILES_VERTEX
 
@@ -94,6 +93,7 @@ set(EXT_HEADER_FILES
         )
 set(EXT_LIBRARIES
         d3d12.lib
+        dxcompiler.lib
         d3dcompiler.lib
         shlwapi.lib
         dxgi.lib

@@ -577,6 +577,12 @@ bool DeferredLightingDemo::LoadContent()
         const std::string property_roughnessMap = "roughnessMap";
         const std::string property_ambientOcclusionMap = "ambientOcclusionMap";
 
+        auto gBufferMaterialPreset = Material(gBufferShader);
+        gBufferMaterialPreset.SetVariable<XMFLOAT4>(property_Diffuse, { 1, 1, 1, 1 });
+        gBufferMaterialPreset.SetVariable<float>(property_Metallic, 1.0f);
+        gBufferMaterialPreset.SetVariable<float>(property_Roughness, 1.0f);
+        gBufferMaterialPreset.SetVariable<XMFLOAT4>(property_TilingOffset, { 1, 1, 0, 0 });
+
         const auto MaterialSetTexture = [&modelLoader, &commandList](Material& material, const std::string& propertyName, const std::wstring& texturePath, TextureUsageType usage = TextureUsageType::Albedo)
         {
             material.SetShaderResourceView(propertyName, ShaderResourceView(modelLoader.LoadTexture(*commandList, texturePath, usage)));
@@ -584,7 +590,7 @@ bool DeferredLightingDemo::LoadContent()
 
         {
             auto model = modelLoader.LoadExisting(Mesh::CreatePlane(*commandList));
-            auto material = Material::Create(gBufferShader);
+            auto material = Material::Create(gBufferMaterialPreset);
 
             material->SetVariable(property_Metallic, 1.0f);
             material->SetVariable(property_Roughness, 0.5f);
@@ -604,7 +610,7 @@ bool DeferredLightingDemo::LoadContent()
 
         {
             auto model = modelLoader.Load(*commandList, "Assets/Models/old-wooden-chest/chest_01.fbx");
-            auto material = Material::Create(gBufferShader);
+            auto material = Material::Create(gBufferMaterialPreset);
 
             MaterialSetTexture(*material, property_diffuseMap, L"Assets/Models/old-wooden-chest/chest_01_BaseColor.png");
             MaterialSetTexture(*material, property_normalMap, L"Assets/Models/old-wooden-chest/chest_01_Normal.png", TextureUsageType::Normalmap);
@@ -631,7 +637,7 @@ bool DeferredLightingDemo::LoadContent()
 
         {
             auto model = modelLoader.LoadExisting(Mesh::CreatePlane(*commandList));
-            auto material = Material::Create(gBufferShader);
+            auto material = Material::Create(gBufferMaterialPreset);
             material->SetVariable(property_Metallic, 1.0f);
             material->SetVariable(property_Roughness, 0.0f);
 
@@ -644,7 +650,7 @@ bool DeferredLightingDemo::LoadContent()
 
         {
             auto model = modelLoader.LoadExisting(Mesh::CreateCube(*commandList));
-            auto material = Material::Create(gBufferShader);
+            auto material = Material::Create(gBufferMaterialPreset);
             material->SetVariable(property_Metallic, 0.01f);
             material->SetVariable(property_Roughness, 0.25f);
 
@@ -657,7 +663,7 @@ bool DeferredLightingDemo::LoadContent()
 
         {
             auto model = modelLoader.Load(*commandList, "Assets/Models/cerberus/Cerberus_LP.FBX");
-            auto material = Material::Create(gBufferShader);
+            auto material = Material::Create(gBufferMaterialPreset);
 
             MaterialSetTexture(*material, property_diffuseMap, L"Assets/Models/cerberus/Cerberus_A.jpg");
             MaterialSetTexture(*material, property_normalMap, L"Assets/Models/cerberus/Cerberus_N.jpg", TextureUsageType::Normalmap);
@@ -674,7 +680,7 @@ bool DeferredLightingDemo::LoadContent()
 
         {
             auto model = modelLoader.Load(*commandList, "Assets/Models/tv/TV.FBX");
-            auto material = Material::Create(gBufferShader);
+            auto material = Material::Create(gBufferMaterialPreset);
             material->SetVariable(property_Metallic, 1.0f);
             material->SetVariable(property_Roughness, 1.0f);
 
@@ -699,7 +705,7 @@ bool DeferredLightingDemo::LoadContent()
                 for (auto y = 0; y < steps; ++y)
                 {
                     auto model = modelLoader.LoadExisting(Mesh::CreateSphere(*commandList));
-                    auto material = Material::Create(gBufferShader);
+                    auto material = Material::Create(gBufferMaterialPreset);
                     material->SetVariable(property_Metallic, static_cast<float>(x) / (steps - 1));
                     material->SetVariable(property_Roughness, static_cast<float>(y) / (steps - 1));
 
@@ -714,7 +720,7 @@ bool DeferredLightingDemo::LoadContent()
             for (const auto& pointLight : m_PointLights)
             {
                 auto mesh = modelLoader.LoadExisting(Mesh::CreateSphere(*commandList, 0.5f));
-                auto material = Material::Create(gBufferShader);
+                auto material = Material::Create(gBufferMaterialPreset);
 
                 material->SetVariable(property_Metallic, 0.2f);
                 material->SetVariable(property_Roughness, 0.25f);
@@ -971,8 +977,7 @@ void DeferredLightingDemo::OnResize(ResizeEventArgs& e)
 }
 
 void DeferredLightingDemo::UnloadContent()
-{
-}
+{}
 
 void DeferredLightingDemo::OnUpdate(UpdateEventArgs& e)
 {

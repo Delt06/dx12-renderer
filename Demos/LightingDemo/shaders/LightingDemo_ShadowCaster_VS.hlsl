@@ -1,4 +1,4 @@
-#include <ShaderLibrary/ShadowPassModel.hlsli>
+#include "ShaderLibrary/ShadowPassModel.hlsli"
 
 struct VertexAttributes
 {

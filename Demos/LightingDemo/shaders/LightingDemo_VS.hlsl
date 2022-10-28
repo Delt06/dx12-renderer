@@ -11,8 +11,8 @@ struct Matrices
 };
 
 #include <ShaderLibrary/Shadows.hlsli>
-#include <ShaderLibrary/Model.hlsli>
-#include <ShaderLibrary/Pipeline.hlsli>
+#include "ShaderLibrary/Model.hlsli"
+#include "ShaderLibrary/Pipeline.hlsli"
 
 struct VertexAttributes
 {

@@ -1,7 +1,7 @@
 #include <ShaderLibrary/Common/RootSignature.hlsli>
 
 #include <ShaderLibrary/Shadows.hlsli>
-#include <ShaderLibrary/Pipeline.hlsli>
+#include "ShaderLibrary/Pipeline.hlsli"
 
 struct PixelShaderInput
 {
@@ -38,7 +38,7 @@ cbuffer MaterialCBuffer : register(b0)
     bool has_normalMap = false;
     bool has_specularMap = false;
     bool has_glossMap = false;
-    
+
     float4 TilingOffset = float4(1, 1, 0, 0);
 };
 
@@ -67,14 +67,14 @@ struct Light
     float ShadowAttenuation;
 };
 
-#include <ShaderLibrary/ShadowsPoissonSampling.hlsli>
+#include "ShaderLibrary/ShadowsPoissonSampling.hlsli"
 
 #define POISSON_SAMPLING_POINT_LIGHT
-#include <ShaderLibrary/ShadowsPoissonSampling.hlsli>
+#include "ShaderLibrary/ShadowsPoissonSampling.hlsli"
 #undef POISSON_SAMPLING_POINT_LIGHT
 
 #define POISSON_SAMPLING_SPOT_LIGHT
-#include <ShaderLibrary/ShadowsPoissonSampling.hlsli>
+#include "ShaderLibrary/ShadowsPoissonSampling.hlsli"
 #undef POISSON_SAMPLING_SPOT_LIGHT
 
 Light GetMainLight(const float4 shadowCoords)
@@ -196,7 +196,7 @@ float ComputeSpecular(const float3 v, const float3 n, const float3 l, const floa
 LightingResult Phong(const in Light light, const float3 normalWs, const float3 eyeWs, const float specularPower)
 {
     LightingResult lightResult;
-    
+
     const float3 lightDir = light.DirectionWs.xyz;
     const float3 attenuatedColor = light.Color * light.DistanceAttenuation * light.ShadowAttenuation;
 
@@ -253,7 +253,7 @@ LightingResult ComputeLighting(const float3 positionWs, const float3 normalWs, c
 float4 main(PixelShaderInput IN) : SV_Target
 {
     float2 uv = IN.Uv * TilingOffset.xy + TilingOffset.zw;
-    
+
     float3 normalWs;
     if (has_normalMap)
     {

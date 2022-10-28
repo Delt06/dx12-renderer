@@ -13,7 +13,7 @@ cbuffer ParametersCBuffer : register(b0)
 {
     uint Steps;
     float Thickness;
-    
+
     float2 TexelSize;
 };
 
@@ -43,10 +43,10 @@ float4 ToScreenSpaceUV(float3 positionVS)
 {
     float4 positionCS = mul(g_Pipeline_Projection, float4(positionVS, 1.0));
     positionCS.xyz /= positionCS.w;
-    
+
     positionCS.xy = positionCS.xy * 0.5 + 0.5;
     positionCS.y = 1 - positionCS.y;
-    
+
     return positionCS;
 }
 
@@ -80,32 +80,32 @@ TraceOutput Trace(float2 uv, float roughness)
         return output;
     }
     float3 normalVS = SampleNormalVS(uv);
-    
+
     float3 viewDir = normalize(originVS);
     float3 originWS = mul(g_Pipeline_InverseView, float4(originVS, 1.0)).xyz;
     float3 reflectDir = normalize(reflect(viewDir, normalVS) + hash33(originWS * 50) * 0.3 * roughness);
-    
+
     const uint loops = 50;
-    
+
     const float VdotR = dot(viewDir, reflectDir);
     const float fromCameraFade = smoothstep(1, 0.7, VdotR);
     const float toCameraFade = smoothstep(-1, -0.7, VdotR);
     output.Fade = fromCameraFade * toCameraFade;
-    
-    
+
+
     float step = 0.2;
     float3 rayOrigin = originVS + reflectDir * step;
     float totalDistance = step;
     float distanceThreshold = 0.05;
     bool hit1 = false;
     uint i;
-    float zDelta;
-    
+    float zDelta = 0;
+
     for (i = 0; i < loops; ++i)
     {
         float4 currentUV = ToScreenSpaceUV(rayOrigin);
         float3 currentGBufferPositionVS = SamplePositionVS(currentUV.xy, gBufferDepth);
-        
+
         zDelta = (rayOrigin.z - currentGBufferPositionVS.z);
         if (abs(zDelta) < distanceThreshold)
         {
@@ -113,18 +113,18 @@ TraceOutput Trace(float2 uv, float roughness)
             output.UV = currentUV.xy;
             return output;
         }
-        
+
         if (zDelta > 0.01)
         {
             hit1 = true;
             break;
         }
-        
+
         rayOrigin += reflectDir * step;
         totalDistance += step;
         step *= 1.01;
     }
-    
+
     // binary search
     if (hit1)
     {
@@ -132,10 +132,10 @@ TraceOutput Trace(float2 uv, float roughness)
         {
             step *= 0.5;
             rayOrigin -= step * reflectDir * sign(zDelta);
-        
+
             float4 currentUV = ToScreenSpaceUV(rayOrigin);
             float3 currentGBufferPositionVS = SamplePositionVS(currentUV.xy, gBufferDepth);
-        
+
             zDelta = (rayOrigin.z - currentGBufferPositionVS.z);
             if (abs(zDelta) < distanceThreshold)
             {
@@ -145,8 +145,8 @@ TraceOutput Trace(float2 uv, float roughness)
             }
         }
     }
-    
-    
+
+
     return output;
 }
 
@@ -158,23 +158,23 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     float4 surfaceSample = gBufferSurface.Sample(gBufferSampler, uv);
     float metallic, roughness, ao;
     UnpackSurface(surfaceSample, metallic, roughness, ao);
-    
-    
+
+
     TraceOutput traceOutput = Trace(uv, roughness);
     if (traceOutput.Hit)
     {
         float3 sceneColor = SampleSceneColor(traceOutput.UV);
+
+        if (IsNaNAny(sceneColor))
+            return 0;
+
         float fade = traceOutput.Fade;
         float2 centeredUV = abs(traceOutput.UV - 0.5);
         float2 uvFade = smoothstep(0.505, 0.5, centeredUV);
         fade *= uvFade.x * uvFade.y;
-        
-        // prevents nans from previous frames affecting this one
-        if (IsNaNAny(sceneColor))
-            return 0;
-        
+
         return float4(sceneColor, fade);
     }
-    
+
     return 0;
 }

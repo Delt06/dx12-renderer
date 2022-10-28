@@ -1,4 +1,5 @@
 #include <ShaderLibrary/Common/RootSignature.hlsli>
+#include <ShaderLibrary/Math.hlsli>
 
 struct VertexShaderInput
 {
@@ -74,13 +75,13 @@ float4 main(VertexShaderInput IN) : SV_TARGET
 {
     float3 hdrColor = source.Sample(g_Common_PointClampSampler, IN.UV).rgb;
     float averageLuminance = averageLuminanceMap.Sample(g_Common_PointClampSampler, 0).r;
-    
+
     // https://bruop.github.io/tonemapping/
     float3 Yxy = ConvertRGB2Yxy(hdrColor);
     float lp = Yxy.x / (9.6 * averageLuminance + 0.0001);
     Yxy.x = Reinhard2(lp, parametersCB.WhitePoint);
     float3 mapped = ConvertYxy2RGB(Yxy);
-    
+
     // no need for gamma correction is using an SRGB render target
     return float4(mapped, 1.0);
 }

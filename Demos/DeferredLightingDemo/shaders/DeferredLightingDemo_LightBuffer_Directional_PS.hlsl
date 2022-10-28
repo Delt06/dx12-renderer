@@ -1,6 +1,6 @@
 #include "ShaderLibrary/GBufferUtils.hlsli"
 #include "ShaderLibrary/BRDF.hlsli"
-#include <ShaderLibrary/Pipeline.hlsli>
+#include "ShaderLibrary/Pipeline.hlsli"
 
 cbuffer CBuffer : register(b0)
 {

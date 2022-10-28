@@ -1,5 +1,5 @@
 #include <ShaderLibrary/Common/RootSignature.hlsli>
-#include <ShaderLibrary/Pipeline.hlsli>
+#include "ShaderLibrary/Pipeline.hlsli"
 
 struct PixelShaderInput
 {

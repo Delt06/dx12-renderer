@@ -1,8 +1,8 @@
 #include <ShaderLibrary/MatricesCB.hlsli>
 #include <ShaderLibrary/CapsuleLight.hlsli>
-#include <ShaderLibrary/GBufferUtils.hlsli>
+#include "ShaderLibrary/GBufferUtils.hlsli"
 #include <ShaderLibrary/ScreenParameters.hlsli>
-#include <ShaderLibrary/BRDF.hlsli>
+#include "ShaderLibrary/BRDF.hlsli"
 #include "ShaderLibrary/Pipeline.hlsli"
 
 cbuffer CBuffer : register(b0)

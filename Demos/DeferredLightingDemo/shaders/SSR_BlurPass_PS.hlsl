@@ -1,4 +1,5 @@
 #include <ShaderLibrary/Common/RootSignature.hlsli>
+#include <ShaderLibrary/Math.hlsli>
 
 struct PixelShaderInput
 {
@@ -26,9 +27,9 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     {
         return Sample(uv);
     }
-    
-    float4 result;
-    
+
+    float4 result = 0;
+
     for (int i = -Size; i <= Size; ++i)
     {
         for (int j = -Size; j <= Size; ++j)
@@ -36,7 +37,7 @@ float4 main(PixelShaderInput IN) : SV_TARGET
             result += Sample(uv + float2(i, j) * Separation * TexelSize);
         }
     }
-    
+
     int kernelSide = Size * 2 + 1;
     result /= kernelSide * kernelSide;
     return result * result.a;

@@ -128,6 +128,8 @@ bool LightingDemo::LoadContent()
         ShaderBlob(L"LightingDemo_PS.cso")
         );
 
+
+
     // Load models
     {
         ModelLoader modelLoader;
@@ -152,9 +154,21 @@ bool LightingDemo::LoadContent()
 
         const std::string property_TilingOffset = "TilingOffset";
 
+        auto phongMaterialPreset = Material(phongShader);
+
+        phongMaterialPreset.SetVariable<XMFLOAT4>(property_Emissive, { 0, 0, 0, 1 });
+        phongMaterialPreset.SetVariable<XMFLOAT4>(property_Emissive, { 0.1f, 0.1f, 0.1f, 1 });
+        phongMaterialPreset.SetVariable<XMFLOAT4>(property_Diffuse, { 1.0f, 1.0f, 1.0f, 1 });
+        phongMaterialPreset.SetVariable<XMFLOAT4>(property_Specular, { 1.0f, 1.0f, 1.0f, 1 });
+
+        phongMaterialPreset.SetVariable<float>(property_SpecularPower, 128.0f);
+        phongMaterialPreset.SetVariable<float>(property_Reflectivity, 0.0f);
+
+        phongMaterialPreset.SetVariable<XMFLOAT4>(property_TilingOffset, { 1, 1, 0, 0 });
+
         {
             auto model = modelLoader.Load(*commandList, "Assets/Models/teapot/teapot.obj", true);
-            auto material = Material::Create(phongShader);
+            auto material = Material::Create(phongMaterialPreset);
 
             MaterialSetTexture(*material, property_diffuseMap, L"Assets/Textures/PavingStones/PavingStones_1K_Color.jpg");
             MaterialSetTexture(*material, property_normalMap, L"Assets/Textures/PavingStones/PavingStones_1K_Normal.jpg", TextureUsageType::Normalmap);
@@ -171,7 +185,7 @@ bool LightingDemo::LoadContent()
 
         {
             auto model = modelLoader.Load(*commandList, "Assets/Models/sphere/sphere-cylcoords-1k.obj");
-            auto material = Material::Create(phongShader);
+            auto material = Material::Create(phongMaterialPreset);
 
             MaterialSetTexture(*material, property_diffuseMap, L"Assets/Textures/Metal/Metal_1K_Color.jpg");
             MaterialSetTexture(*material, property_normalMap, L"Assets/Textures/Metal/Metal_1K_Normal.jpg", TextureUsageType::Normalmap);
@@ -190,7 +204,7 @@ bool LightingDemo::LoadContent()
 
         {
             auto model = modelLoader.LoadExisting(Mesh::CreatePlane(*commandList));
-            auto material = Material::Create(phongShader);
+            auto material = Material::Create(phongMaterialPreset);
 
             MaterialSetTexture(*material, property_diffuseMap, L"Assets/Textures/Moss/Moss_1K_Color.jpg");
             MaterialSetTexture(*material, property_normalMap, L"Assets/Textures/Moss/Moss_1K_Normal.jpg", TextureUsageType::Normalmap);
@@ -208,7 +222,7 @@ bool LightingDemo::LoadContent()
 
         {
             auto model = modelLoader.LoadExisting(Mesh::CreateCube(*commandList, 1.0f));
-            auto material = Material::Create(phongShader);
+            auto material = Material::Create(phongMaterialPreset);
 
             MaterialSetTexture(*material, property_diffuseMap, L"Assets/Textures/PavingStones/PavingStones_1K_Color.jpg");
             MaterialSetTexture(*material, property_normalMap, L"Assets/Textures/PavingStones/PavingStones_1K_Normal.jpg", TextureUsageType::Normalmap);

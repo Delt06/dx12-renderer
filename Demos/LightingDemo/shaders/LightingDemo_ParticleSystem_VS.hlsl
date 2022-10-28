@@ -1,4 +1,4 @@
-#include <ShaderLibrary/Pipeline.hlsli>
+#include "ShaderLibrary/Pipeline.hlsli"
 
 struct VertexAttributes
 {

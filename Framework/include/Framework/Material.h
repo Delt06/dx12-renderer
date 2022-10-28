@@ -17,6 +17,9 @@ class Material
 {
 public:
 	explicit Material(const std::shared_ptr<Shader>& shader);
+    explicit Material(const Material& materialPreset);
+
+    Material& operator=(const Material& other) = delete;
 
 	template<typename T>
 	void SetAllVariables(const T& data)
@@ -42,6 +45,7 @@ public:
 	void EndBatch(CommandList& commandList);
 
 	static std::shared_ptr<Material> Create(const std::shared_ptr<Shader>& shader);
+	static std::shared_ptr<Material> Create(const Material& materialPreset);
 
 private:
 
