@@ -773,7 +773,7 @@ bool DeferredLightingDemo::LoadContent()
         const uint32_t arraySize = Cubemap::SIDES_COUNT;
         D3D12_RESOURCE_DESC skyboxDesc = m_Skybox->GetD3D12ResourceDesc();
 
-        const UINT brdfIntegrationMapSize = 512;
+        const UINT brdfIntegrationMapSize = 128;
         const auto diffuseIrradianceMapDesc = CD3DX12_RESOURCE_DESC::Tex2D(
             DXGI_FORMAT_R16G16_FLOAT,
             brdfIntegrationMapSize, brdfIntegrationMapSize,
