@@ -21,7 +21,7 @@ Texture2D sceneColor : register(t0);
 
 float3 SamplePositionVS(float2 uv, out float out_zNDC)
 {
-    out_zNDC = gBufferDepth.SampleLevel(gBufferSampler, uv, 0).x;
+    out_zNDC = gBufferDepth.SampleLevel(gBufferSampler, uv, 0);
     float3 positionNDC = ScreenSpaceUVToNDC(uv, out_zNDC);
     float3 positionVS = RestorePositionVS(positionNDC, g_Pipeline_InverseProjection).xyz;
     return positionVS;
