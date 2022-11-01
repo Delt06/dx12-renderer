@@ -829,7 +829,7 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, UINT texArra
     m_D3d12CommandList->OMSetRenderTargets(static_cast<UINT>(renderTargetDescriptors.size()),
         renderTargetDescriptors.data(), FALSE, pDsv);
 
-    m_LastRenderTargetFormats = RenderTargetFormats(renderTarget);
+    m_LastRenderTargetState = RenderTargetState(renderTarget);
 }
 
 void CommandList::ClearRenderTarget(const RenderTarget& renderTarget, const float* clearColor, D3D12_CLEAR_FLAGS clearFlags)

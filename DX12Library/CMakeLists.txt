@@ -38,7 +38,11 @@ set(HEADER_FILES
         include/DX12Library/UploadBuffer.h
         include/DX12Library/VertexBuffer.h
         include/DX12Library/Window.h
-        include/DX12Library/ClearValue.h "include/DX12Library/RenderTargetFormats.h")
+        include/DX12Library/ClearValue.h 
+        "include/DX12Library/RenderTargetFormats.h"
+        include/DX12Library/RenderTargetState.h
+        include/DX12Library/DXGIExtensions.h
+        )
 
 set(SOURCE_FILES
         
@@ -69,7 +73,9 @@ set(SOURCE_FILES
         src/UploadBuffer.cpp
         src/VertexBuffer.cpp
         src/Window.cpp
-        src/ClearValue.cpp)
+        src/ClearValue.cpp
+        src/DXGIExtensions.cpp
+        )
 
 set(SHADER_FILES_VERTEX
 

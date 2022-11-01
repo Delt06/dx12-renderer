@@ -188,11 +188,20 @@ void Texture::CreateViews()
 				{
 					D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
 					rtvDesc.Format = desc.Format;
-					rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
-					rtvDesc.Texture2DArray.ArraySize = 1;
-					rtvDesc.Texture2DArray.PlaneSlice = 0;
-					rtvDesc.Texture2DArray.MipSlice = mipLevel;
-					rtvDesc.Texture2DArray.FirstArraySlice = arrayIndex;
+                    if (desc.SampleDesc.Count == 1)
+                    {
+                        rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
+                        rtvDesc.Texture2DArray.ArraySize = 1;
+                        rtvDesc.Texture2DArray.PlaneSlice = 0;
+                        rtvDesc.Texture2DArray.MipSlice = mipLevel;
+                        rtvDesc.Texture2DArray.FirstArraySlice = arrayIndex;
+                    }
+                    else
+                    {
+                        rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY;
+                        rtvDesc.Texture2DMSArray.ArraySize = 1;
+                        rtvDesc.Texture2DMSArray.FirstArraySlice = arrayIndex;
+                    }
 
 					const UINT16 offset = GetRenderTargetSubresourceIndex(arrayIndex, mipLevel) + 1;
 					device->CreateRenderTargetView(m_d3d12Resource.Get(), &rtvDesc,
@@ -212,10 +221,19 @@ void Texture::CreateViews()
 			{
 				D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
 				dsvDesc.Format = desc.Format;
-				dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
-				dsvDesc.Texture2DArray.ArraySize = 1;
-				dsvDesc.Texture2DArray.MipSlice = 0;
-				dsvDesc.Texture2DArray.FirstArraySlice = i;
+                if (desc.SampleDesc.Count == 1)
+                {
+                    dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
+                    dsvDesc.Texture2DArray.ArraySize = 1;
+                    dsvDesc.Texture2DArray.MipSlice = 0;
+                    dsvDesc.Texture2DArray.FirstArraySlice = i;
+                }
+                else
+                {
+                    dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY;
+                    dsvDesc.Texture2DMSArray.ArraySize = 1;
+                    dsvDesc.Texture2DMSArray.FirstArraySlice = i;
+                }
 
 				device->CreateDepthStencilView(m_d3d12Resource.Get(), &dsvDesc,
 					m_DepthStencilView.GetDescriptorHandle(i + 1));

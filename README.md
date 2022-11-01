@@ -5,31 +5,31 @@
 ### Deferred
 
 - [DeferredLightingDemo](./Demos/DeferredLightingDemo)
-    - Deferred rendering pipeline:
-        - Directional, Point, Spot, and Capsule lights;
-        - Light passes are implemented using the stencil buffer;
-    - PBR:
-        - Cook-Torrance BRDF model;
-        - Image-Based Lighting:
-            - Diffuse (Irradiance Map) and Specular (Pre-Filtered Environment Map);
-            - Both maps are computed on application start based on an HDR skybox cubemap;
-    - HDR pipeline:
-        - Render targets supporting HDR (`R16G16B16A16_FLOAT`);
-        - Auto exposure via a Luminance Histogram implemented in Compute shaders;
-        - Tone mapping;
-    - TAA;
-    - SSAO;
-    - SSLR.
+  - Deferred rendering pipeline:
+    - Directional, Point, Spot, and Capsule lights;
+    - Light passes are implemented using the stencil buffer;
+  - PBR:
+    - Cook-Torrance BRDF model;
+    - Image-Based Lighting:
+      - Diffuse (Irradiance Map) and Specular (Pre-Filtered Environment Map);
+      - Both maps are computed on application start based on an HDR skybox cubemap;
+  - HDR pipeline:
+    - Render targets supporting HDR (`R16G16B16A16_FLOAT`);
+    - Auto exposure via a Luminance Histogram implemented in Compute shaders;
+    - Tone mapping;
+  - TAA;
+  - SSAO;
+  - SSLR.
 
 ![Deferred Lighting Demo Screenshot](./Screenshots/DeferredLightingDemo.jpg)
 
-| SSAO Off | SSAO On |
-|----------|---------|
-|![SSAO Off](./Screenshots/DeferredLightingDemo_SSAO_Off.jpg)|![SSAO On](./Screenshots/DeferredLightingDemo_SSAO_On.jpg)|
+| SSAO Off                                                     | SSAO On                                                    |
+| ------------------------------------------------------------ | ---------------------------------------------------------- |
+| ![SSAO Off](./Screenshots/DeferredLightingDemo_SSAO_Off.jpg) | ![SSAO On](./Screenshots/DeferredLightingDemo_SSAO_On.jpg) |
 
-| SSLR Off | SSLR On |
-|----------|---------|
-|![SSLR Off](./Screenshots/DeferredLightingDemo_SSLR_Off.jpg)|![SSLR On](./Screenshots/DeferredLightingDemo_SSLR_On.jpg)|
+| SSLR Off                                                     | SSLR On                                                    |
+| ------------------------------------------------------------ | ---------------------------------------------------------- |
+| ![SSLR Off](./Screenshots/DeferredLightingDemo_SSLR_Off.jpg) | ![SSLR On](./Screenshots/DeferredLightingDemo_SSLR_On.jpg) |
 
 #### Controls
 
@@ -44,19 +44,20 @@
 ### Forward
 
 - [LightingDemo](./Demos/LightingDemo)
-    - Models loaded from OBJ files;
-    - .DDS textures loading:
-        - Textures for this demo are stored in `BC7_UNORM`.
-    - Mipmapping;
-    - Phong lighting with a directional light and several point and spot lights;
-        - Using diffuse, normal, gloss, and specular maps;
-    - Particle system with CPU simulation (10000+ particles on screen) and instanced rendering;
-    - Shadow mapping for the directional, point, and spot lights;
-    - Soft shadows using 16x Poisson Sampling and Early Bail;
-    - Dynamic environment reflections - see the sphere;
-    - Post-processing:
-        - Screen-space fog;
-        - Bloom.
+  - Models loaded from OBJ files;
+  - .DDS textures loading:
+    - Textures for this demo are stored in `BC7_UNORM`.
+  - Mipmapping;
+  - Phong lighting with a directional light and several point and spot lights;
+    - Using diffuse, normal, gloss, and specular maps;
+  - Particle system with CPU simulation (10000+ particles on screen) and instanced rendering;
+  - Shadow mapping for the directional, point, and spot lights;
+  - MSAA;
+  - Soft shadows using 16x Poisson Sampling and Early Bail;
+  - Dynamic environment reflections - see the sphere;
+  - Post-processing:
+    - Screen-space fog;
+    - Bloom.
 
 ![Lighting Demo Screenshot](./Screenshots/LightingDemo.jpg)
 
@@ -71,10 +72,10 @@
 ### Animations
 
 - [AnimationsDemo](./Demos/AnimationsDemo)
-    - Model and animations loaded from FBX files;
-    - Skinning in the vertex shader;
-    - Animation state blending;
-    - Animation state merging (i.e., avatar masks).
+  - Model and animations loaded from FBX files;
+  - Skinning in the vertex shader;
+  - Animation state blending;
+  - Animation state merging (i.e., avatar masks).
 
 ![Animations Demo GIF](./Screenshots/AnimationsDemo.gif)
 
@@ -86,6 +87,7 @@
 ### Requirements
 
 Packages (e.g., installed via `vcpkg`):
+
 - [assimp](https://github.com/assimp/assimp)
 - [DirectXTex](https://github.com/microsoft/DirectXTex)
 - [DirectXMesh](https://github.com/microsoft/DirectXMesh)

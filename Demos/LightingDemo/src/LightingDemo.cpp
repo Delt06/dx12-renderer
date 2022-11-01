@@ -66,6 +66,17 @@ namespace
 
         return M;
     }
+
+    UINT GetMsaaQualityLevels(ComPtr<ID3D12Device2> device, DXGI_FORMAT format, UINT sampleCount)
+    {
+        D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msLevels;
+        msLevels.Format = format;
+        msLevels.SampleCount = sampleCount;
+        msLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
+
+        ThrowIfFailed(device->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msLevels, sizeof(msLevels)));
+        return msLevels.NumQualityLevels;
+    }
 }
 
 LightingDemo::LightingDemo(const std::wstring& name, int width, int height, GraphicsSettings graphicsSettings)
@@ -284,20 +295,29 @@ bool LightingDemo::LoadContent()
     XMVECTOR lightDir = XMLoadFloat4(&m_Scene->MainDirectionalLight.m_DirectionWs);
     DirectX::XMStoreFloat4(&m_Scene->MainDirectionalLight.m_DirectionWs, DirectX::XMVector4Normalize(lightDir));
 
+    const UINT msaaSampleCount = 8;
+    const UINT msaaColorQualityLevel = GetMsaaQualityLevels(device, backBufferFormat, msaaSampleCount) - 1;
+    const UINT msaaDepthQualityLevel = GetMsaaQualityLevels(device, depthBufferFormat, msaaSampleCount) - 1;
+
     auto colorDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat,
         m_Width, m_Height,
         1, 1,
-        1, 0,
+        msaaSampleCount, msaaColorQualityLevel,
         D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 
     auto colorTexture = std::make_shared<Texture>(colorDesc, &colorClearValue,
         TextureUsageType::RenderTarget,
         L"Color Render Target");
 
+    auto resolvedColorDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat,
+        m_Width, m_Height,
+        1, 1);
+    m_ResolvedColor = std::make_shared<Texture>(resolvedColorDesc, nullptr, TextureUsageType::Other, L"Resolved Color");
+
     auto depthDesc = CD3DX12_RESOURCE_DESC::Tex2D(depthBufferFormat,
         m_Width, m_Height,
         1, 1,
-        1, 0,
+        msaaSampleCount, msaaDepthQualityLevel,
         D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
     D3D12_CLEAR_VALUE depthClearValue;
     depthClearValue.Format = depthDesc.Format;
@@ -307,12 +327,23 @@ bool LightingDemo::LoadContent()
         TextureUsageType::Depth,
         L"Depth Render Target");
 
+    auto resolvedDepthDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R32_FLOAT,
+        m_Width, m_Height,
+        1, 1);
+    m_ResolvedDepth = std::make_shared<Texture>(resolvedDepthDesc, nullptr, TextureUsageType::Other, L"Resolved Depth");
+
     m_RenderTarget.AttachTexture(Color0, colorTexture);
     m_RenderTarget.AttachTexture(DepthStencil, depthTexture);
 
     // PostFX
     {
-        auto postFxColorTexture = std::make_shared<Texture>(colorDesc, &colorClearValue, TextureUsageType::RenderTarget, L"PostFX Render Target");
+        auto postFxColorDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat,
+            m_Width, m_Height,
+            1, 1,
+            1, 0,
+            D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+
+        auto postFxColorTexture = std::make_shared<Texture>(postFxColorDesc, &colorClearValue, TextureUsageType::RenderTarget, L"PostFX Render Target");
         m_PostFxRenderTarget.AttachTexture(Color0, postFxColorTexture);
 
         m_PostFxPso = std::make_unique<PostFxPso>(m_RootSignature, *commandList);
@@ -352,6 +383,12 @@ void LightingDemo::OnResize(ResizeEventArgs& e)
 
         if (m_SceneRenderer != nullptr)
             m_SceneRenderer->SetScreenResolution(m_Width, m_Height);
+
+        if (m_ResolvedColor != nullptr)
+            m_ResolvedColor->Resize(m_Width, m_Height);
+
+        if (m_ResolvedDepth != nullptr)
+            m_ResolvedDepth->Resize(m_Width, m_Height);
     }
 }
 
@@ -467,14 +504,21 @@ void LightingDemo::OnRender(RenderEventArgs& e)
     }
 
     {
+        PIXScope(*commandList, "Resolve MSAA");
+
+        commandList->ResolveSubresource(*m_ResolvedColor, *m_RenderTarget.GetTexture(Color0));
+        commandList->ResolveSubresource(*m_ResolvedDepth, *m_RenderTarget.GetTexture(DepthStencil));
+    }
+
+    {
         PIXScope(*commandList, "PostFX");
 
         commandList->SetRenderTarget(m_PostFxRenderTarget);
         commandList->SetViewport(m_Viewport);
         commandList->SetScissorRect(m_ScissorRect);
 
-        m_PostFxPso->SetSourceColorTexture(*commandList, m_RenderTarget.GetTexture(Color0));
-        m_PostFxPso->SetSourceDepthTexture(*commandList, m_RenderTarget.GetTexture(DepthStencil));
+        m_PostFxPso->SetSourceColorTexture(*commandList, m_ResolvedColor);
+        m_PostFxPso->SetSourceDepthTexture(*commandList, m_ResolvedDepth);
 
         PostFxPso::PostFxParameters parameters;
         parameters.ProjectionInverse = m_Scene->MainCamera.GetInverseProjectionMatrix();

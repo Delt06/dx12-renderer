@@ -6,6 +6,7 @@
 #include <wrl.h>
 #include <DX12Library/CommandList.h>
 #include <DX12Library/ShaderUtils.h>
+#include <DX12Library/RenderTargetState.h>
 #include "CommonRootSignature.h"
 
 #include <string>
@@ -68,7 +69,7 @@ public:
 private:
 
 
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> GetPipelineState(const Microsoft::WRL::ComPtr<ID3D12Device2>& device, const RenderTargetFormats& formats);
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> GetPipelineState(const Microsoft::WRL::ComPtr<ID3D12Device2>& device, const RenderTargetState& renderTargetState);
 
 	void CollectShaderMetadata(const Microsoft::WRL::ComPtr<ID3DBlob>& shader, ShaderMetadata* outMetadata);
 
@@ -78,5 +79,5 @@ private:
 	ShaderMetadata m_PixelShaderMetadata;
 
 	PipelineStateBuilder m_PipelineStateBuilder;
-	std::unordered_map<RenderTargetFormats, Microsoft::WRL::ComPtr<ID3D12PipelineState>> m_PipelineStateObjects;
+	std::unordered_map<RenderTargetState, Microsoft::WRL::ComPtr<ID3D12PipelineState>> m_PipelineStateObjects;
 };
