@@ -7,27 +7,27 @@
 #include <DX12Library/Texture.h>
 #include <memory>
 #include <Framework/CommonRootSignature.h>
+#include <Framework/ComputeShader.h>
 
 class CommandList;
 
 class AutoExposure
 {
 public:
-	explicit AutoExposure(const std::shared_ptr<CommonRootSignature>& rootSignature, CommandList& commandList);
+    explicit AutoExposure(const std::shared_ptr<CommonRootSignature>& rootSignature, CommandList& commandList);
 
-	void Dispatch(CommandList& commandList, const std::shared_ptr<Texture>& hdrTexture, float deltaTime, float tau = 1.1f);
+    void Dispatch(CommandList& commandList, const std::shared_ptr<Texture>& hdrTexture, float deltaTime, float tau = 1.1f);
 
-	const std::shared_ptr<Texture>& GetLuminanceOutput() const;
+    const std::shared_ptr<Texture>& GetLuminanceOutput() const;
 
 private:
-	static constexpr uint32_t NUM_HISTOGRAM_BINS = 256;
+    static constexpr uint32_t NUM_HISTOGRAM_BINS = 256;
 
-	std::shared_ptr<CommonRootSignature> m_RootSignature;
+    std::shared_ptr<CommonRootSignature> m_RootSignature;
+    ComputeShader m_BuildLuminanceHistogramShader;
+    ComputeShader m_AverageLuminanceHistogramShader;
 
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_BuildLuminanceHistogramPipelineState;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_AverageLuminanceHistogramPipelineState;
-
-	std::shared_ptr<StructuredBuffer> m_LuminanceHistogram;
-	std::shared_ptr<Texture> m_LuminanceOutput;
+    std::shared_ptr<StructuredBuffer> m_LuminanceHistogram;
+    std::shared_ptr<Texture> m_LuminanceOutput;
 };
 

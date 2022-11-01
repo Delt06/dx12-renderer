@@ -29,6 +29,7 @@ set(HEADER_FILES
         "include/Framework/ShaderResourceView.h" 
         "include/Framework/ShaderBlob.h"
         "include/Framework/UnorderedAccessView.h"
+        "include/Framework/ComputeShader.h"
 )
 
 set(SOURCE_FILES
@@ -53,7 +54,9 @@ set(SOURCE_FILES
         "src/PipelineStateBuilder.cpp" 
         "src/Shader.cpp" 
         "src/Material.cpp" 
-        "src/ShaderBlob.cpp")
+        "src/ShaderBlob.cpp"
+        "src/ComputeShader.cpp"
+        )
 
 set(SHADER_FILES_VERTEX
         "shaders/Blit_VS.hlsl"
