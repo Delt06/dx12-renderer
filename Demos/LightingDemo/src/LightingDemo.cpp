@@ -329,11 +329,16 @@ bool LightingDemo::LoadContent()
 
     auto resolvedDepthDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R32_FLOAT,
         m_Width, m_Height,
-        1, 1);
+        1, 1,
+        1, 0,
+        D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
+    );
     m_ResolvedDepth = std::make_shared<Texture>(resolvedDepthDesc, nullptr, TextureUsageType::Other, L"Resolved Depth");
 
     m_RenderTarget.AttachTexture(Color0, colorTexture);
     m_RenderTarget.AttachTexture(DepthStencil, depthTexture);
+
+    m_MSAADepthResolvePass = std::make_unique<MSAADepthResolvePass>(m_RootSignature);
 
     // PostFX
     {
@@ -507,7 +512,7 @@ void LightingDemo::OnRender(RenderEventArgs& e)
         PIXScope(*commandList, "Resolve MSAA");
 
         commandList->ResolveSubresource(*m_ResolvedColor, *m_RenderTarget.GetTexture(Color0));
-        commandList->ResolveSubresource(*m_ResolvedDepth, *m_RenderTarget.GetTexture(DepthStencil));
+        m_MSAADepthResolvePass->Resolve(*commandList, m_RenderTarget.GetTexture(DepthStencil), m_ResolvedDepth);
     }
 
     {

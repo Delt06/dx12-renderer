@@ -52,7 +52,9 @@
     - Using diffuse, normal, gloss, and specular maps;
   - Particle system with CPU simulation (10000+ particles on screen) and instanced rendering;
   - Shadow mapping for the directional, point, and spot lights;
-  - MSAA;
+  - MSAA:
+    - Built-in resolve for color;
+    - Custom compute pass for the depth attachment (`min` among all samples);
   - Soft shadows using 16x Poisson Sampling and Early Bail;
   - Dynamic environment reflections - see the sphere;
   - Post-processing:

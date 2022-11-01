@@ -26,6 +26,7 @@
 #include <Framework/Bloom.h>
 #include <Framework/CommonRootSignature.h>
 #include <Framework/Material.h>
+#include "MSAADepthResolvePass.h"
 
 class PointLightShadowPassPso;
 class ParticleSystem;
@@ -64,6 +65,7 @@ private:
     std::shared_ptr<Scene> m_Scene;
     std::shared_ptr<SceneRenderer> m_SceneRenderer;
     std::shared_ptr<Cubemap> m_ReflectionCubemap;
+    std::unique_ptr<MSAADepthResolvePass> m_MSAADepthResolvePass;
     std::unique_ptr<PostFxPso> m_PostFxPso;
     std::unique_ptr<Bloom> m_Bloom;
 
