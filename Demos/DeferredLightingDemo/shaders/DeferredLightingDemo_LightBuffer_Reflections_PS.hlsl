@@ -54,6 +54,6 @@ float4 main(PixelShaderInput IN) : SV_TARGET
 
     float4 ssrSample = ssrTexture.Sample(gBufferSampler, uv);
 
-    float3 color = ComputeBRDFReflections(brdfInput, ssrSample);
+    float3 color = g_Pipeline_AmbientIntensity * ComputeBRDFReflections(brdfInput, ssrSample);
     return float4(color, 1.0);
 }

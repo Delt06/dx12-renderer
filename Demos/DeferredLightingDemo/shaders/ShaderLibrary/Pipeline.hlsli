@@ -19,7 +19,9 @@ cbuffer PipelineCBuffer : register(b0, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE)
     float2 g_Pipeline_Screen_TexelSize;
 
     float2 g_Pipeline_Taa_JitterOffset;
-    float _g_Pipeline_Padding[2];
+    float g_Pipeline_AmbientIntensity;
+    
+    float _g_Pipeline_Padding[1];
 };
 
 ScreenParameters GetScreenParameters()

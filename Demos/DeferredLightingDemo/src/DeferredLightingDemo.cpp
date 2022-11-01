@@ -84,7 +84,10 @@ namespace Demo::Pipeline
         DirectX::XMFLOAT2 m_ScreenTexelSize;
 
         DirectX::XMFLOAT2 m_Taa_JitterOffset;
-        float m_Padding[2];
+
+        float m_AmbientIntensity;
+
+        float m_Padding[1];
     };
 }
 
@@ -1085,6 +1088,9 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
             pipelineCBuffer.m_ScreenTexelSize.y = 1.0f / static_cast<float>(m_Height);
 
             pipelineCBuffer.m_Taa_JitterOffset = m_TaaEnabled ? m_Taa->ComputeJitterOffset(m_Width, m_Height) : XMFLOAT2(0.0f, 0.0f);
+
+            pipelineCBuffer.m_AmbientIntensity = 1.0f;
+
             m_CommonRootSignature->SetPipelineConstantBuffer(*commandList, pipelineCBuffer);
         }
 
