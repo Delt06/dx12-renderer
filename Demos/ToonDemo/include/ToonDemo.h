@@ -18,6 +18,8 @@
 #include <Framework/CommonRootSignature.h>
 #include <Framework/MSAADepthResolvePass.h>
 
+#include "OutlinePass.h"
+
 class ToonDemo final : public Game
 {
 public:
@@ -42,8 +44,11 @@ private:
     std::shared_ptr<Texture> m_WhiteTexture2d;
 
     RenderTarget m_RenderTarget;
+    RenderTarget m_DepthNormalsRenderTarget;
     std::shared_ptr<Texture> m_ResolvedColor;
     std::shared_ptr<Texture> m_ResolvedDepth;
+    std::shared_ptr<Texture> m_ResolvedNormals;
+    RenderTarget m_PostFxRenderTarget;
 
     Camera m_Camera;
     std::vector<GameObject> m_GameObjects;
@@ -52,7 +57,8 @@ private:
 
     std::shared_ptr<CommonRootSignature> m_RootSignature;
     std::unique_ptr<MSAADepthResolvePass> m_MSAADepthResolvePass;
-    std::shared_ptr<Material> m_DepthOnlyMaterial;
+    std::shared_ptr<Material> m_DepthNormalsMaterial;
+    std::unique_ptr<OutlinePass> m_OutlinePass;
 
     D3D12_VIEWPORT m_Viewport;
     D3D12_RECT m_ScissorRect;

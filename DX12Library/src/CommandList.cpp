@@ -794,7 +794,7 @@ void CommandList::SetStencilRef(UINT8 stencilRef)
     m_D3d12CommandList->OMSetStencilRef(stencilRef);
 }
 
-void CommandList::SetRenderTarget(const RenderTarget& renderTarget, UINT texArrayIndex /*= -1*/, UINT mipLevel /*= 0*/, bool useDepth /*= true*/)
+void CommandList::SetRenderTarget(const RenderTarget& renderTarget, UINT texArrayIndex /*= -1*/, UINT mipLevel /*= 0*/, bool useDepth /*= true*/, bool readonlyDepth)
 {
     std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> renderTargetDescriptors;
     renderTargetDescriptors.reserve(NumAttachmentPoints);
@@ -825,7 +825,7 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, UINT texArra
     if (useDepth && depthTexture->GetD3D12Resource())
     {
         const UINT subresource = isArrayItem ? depthTexture->GetDepthStencilSubresourceIndex(texArrayIndex) : D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-        TransitionBarrier(*depthTexture, D3D12_RESOURCE_STATE_DEPTH_WRITE, subresource);
+        TransitionBarrier(*depthTexture, readonlyDepth ? D3D12_RESOURCE_STATE_DEPTH_READ : D3D12_RESOURCE_STATE_DEPTH_WRITE, subresource);
         depthStencilDescriptor = isArrayItem
             ? depthTexture->GetDepthStencilViewArray(texArrayIndex)
             : depthTexture->GetDepthStencilView();

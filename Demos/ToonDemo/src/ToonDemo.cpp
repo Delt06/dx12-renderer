@@ -62,6 +62,7 @@ namespace
 
     bool allowFullscreenToggle = true;
     constexpr FLOAT CLEAR_COLOR[] = { 0.4f, 0.6f, 0.9f, 1.0f };
+    constexpr FLOAT NORMALS_CLEAR_COLOR[] = { 0.5f, 0.5f, 0.5f, 1.0f };
 
     // Builds a look-at (world) matrix from a point, up and direction vectors.
     XMMATRIX XM_CALLCONV LookAtMatrix(FXMVECTOR position, FXMVECTOR direction, FXMVECTOR up)
@@ -131,10 +132,15 @@ bool ToonDemo::LoadContent()
     // sRGB formats provide free gamma correction!
     constexpr DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
     constexpr DXGI_FORMAT depthBufferFormat = DXGI_FORMAT_D32_FLOAT;
+    constexpr DXGI_FORMAT normalsBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
     constexpr DXGI_FORMAT resolvedDepthBufferFormat = DXGI_FORMAT_R32_FLOAT;
     D3D12_CLEAR_VALUE colorClearValue;
     colorClearValue.Format = backBufferFormat;
     memcpy(colorClearValue.Color, CLEAR_COLOR, sizeof CLEAR_COLOR);
+
+    D3D12_CLEAR_VALUE normalsClearValue;
+    normalsClearValue.Format = normalsBufferFormat;
+    memcpy(normalsClearValue.Color, NORMALS_CLEAR_COLOR, sizeof NORMALS_CLEAR_COLOR);
 
     // Generate default texture
     {
@@ -149,18 +155,13 @@ bool ToonDemo::LoadContent()
     // depth pre-pass
     {
         auto shader = std::make_shared<Shader>(m_RootSignature,
-            ShaderBlob(L"DepthOnly_VS.cso"),
-            ShaderBlob(L"DepthOnly_PS.cso"),
-            [](PipelineStateBuilder& builder)
-            {
-                auto blendDesc = CD3DX12_BLEND_DESC(CD3DX12_DEFAULT());
-                blendDesc.RenderTarget[0].RenderTargetWriteMask = 0;
-                builder.WithBlend(blendDesc);
-            }
-        );
-        m_DepthOnlyMaterial = Material::Create(shader);
-        // TODO: create depth-only render target
+            ShaderBlob(L"DepthNormals_VS.cso"),
+            ShaderBlob(L"DepthNormals_PS.cso")
+            );
+        m_DepthNormalsMaterial = Material::Create(shader);
     }
+
+    m_OutlinePass = std::make_unique<OutlinePass>(m_RootSignature, *commandList);
 
     m_DirectionalLight.m_Color = XMFLOAT4(1, 1, 1, 1);
     m_DirectionalLight.m_DirectionWs = XMFLOAT4(1, 1, 0, 0);
@@ -242,49 +243,84 @@ bool ToonDemo::LoadContent()
         }
     }
 
-    const UINT msaaSampleCount = 8;
-    const UINT msaaColorQualityLevel = GetMsaaQualityLevels(device, backBufferFormat, msaaSampleCount) - 1;
-    const UINT msaaDepthQualityLevel = GetMsaaQualityLevels(device, depthBufferFormat, msaaSampleCount) - 1;
+    {
+        const UINT msaaSampleCount = 8;
+        const UINT msaaColorQualityLevel = GetMsaaQualityLevels(device, backBufferFormat, msaaSampleCount) - 1;
+        const UINT msaaDepthQualityLevel = GetMsaaQualityLevels(device, depthBufferFormat, msaaSampleCount) - 1;
 
-    auto colorDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat,
-        m_Width, m_Height,
-        1, 1,
-        msaaSampleCount, msaaColorQualityLevel,
-        D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+        auto colorDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat,
+            m_Width, m_Height,
+            1, 1,
+            msaaSampleCount, msaaColorQualityLevel,
+            D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET
+        );
 
-    auto colorTexture = std::make_shared<Texture>(colorDesc, &colorClearValue,
-        TextureUsageType::RenderTarget,
-        L"Color Render Target");
+        auto colorTexture = std::make_shared<Texture>(colorDesc, &colorClearValue,
+            TextureUsageType::RenderTarget,
+            L"Color Render Target");
 
-    auto depthDesc = CD3DX12_RESOURCE_DESC::Tex2D(depthBufferFormat,
-        m_Width, m_Height,
-        1, 1,
-        msaaSampleCount, msaaDepthQualityLevel,
-        D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL
-    );
-    D3D12_CLEAR_VALUE depthClearValue;
-    depthClearValue.Format = depthDesc.Format;
-    depthClearValue.DepthStencil = { 1.0f, 0 };
+        auto depthDesc = CD3DX12_RESOURCE_DESC::Tex2D(depthBufferFormat,
+            m_Width, m_Height,
+            1, 1,
+            msaaSampleCount, msaaDepthQualityLevel,
+            D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL
+        );
+        D3D12_CLEAR_VALUE depthClearValue;
+        depthClearValue.Format = depthDesc.Format;
+        depthClearValue.DepthStencil = { 1.0f, 0 };
 
-    auto depthTexture = std::make_shared<Texture>(depthDesc, &depthClearValue,
-        TextureUsageType::Depth,
-        L"Depth Render Target");
+        auto depthTexture = std::make_shared<Texture>(depthDesc, &depthClearValue,
+            TextureUsageType::Depth,
+            L"Depth Render Target");
 
-    m_RenderTarget.AttachTexture(Color0, colorTexture);
-    m_RenderTarget.AttachTexture(DepthStencil, depthTexture);
+        m_RenderTarget.AttachTexture(Color0, colorTexture);
+        m_RenderTarget.AttachTexture(DepthStencil, depthTexture);
 
-    auto resolvedColorDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat,
-        m_Width, m_Height,
-        1, 1);
-    m_ResolvedColor = std::make_shared<Texture>(resolvedColorDesc, nullptr, TextureUsageType::Other, L"Resolved Color");
+        auto normalsDesc = CD3DX12_RESOURCE_DESC::Tex2D(normalsBufferFormat,
+            m_Width, m_Height,
+            1, 1,
+            msaaSampleCount, msaaColorQualityLevel,
+            D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET
+        );
 
-    auto resolvedDepthDesc = CD3DX12_RESOURCE_DESC::Tex2D(resolvedDepthBufferFormat,
-        m_Width, m_Height,
-        1, 1,
-        1, 0,
-        D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
-    );
-    m_ResolvedDepth = std::make_shared<Texture>(resolvedDepthDesc, nullptr, TextureUsageType::Other, L"Resolved Depth");
+        auto normalsTexture = std::make_shared<Texture>(normalsDesc, &normalsClearValue,
+            TextureUsageType::RenderTarget,
+            L"Normals Render Target"
+            );
+        m_DepthNormalsRenderTarget.AttachTexture(Color0, normalsTexture);
+        m_DepthNormalsRenderTarget.AttachTexture(DepthStencil, depthTexture);
+    }
+
+    {
+        auto resolvedColorDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat,
+            m_Width, m_Height,
+            1, 1);
+        m_ResolvedColor = std::make_shared<Texture>(resolvedColorDesc, nullptr, TextureUsageType::Other, L"Resolved Color");
+
+        auto resolvedDepthDesc = CD3DX12_RESOURCE_DESC::Tex2D(resolvedDepthBufferFormat,
+            m_Width, m_Height,
+            1, 1,
+            1, 0,
+            D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
+        );
+        m_ResolvedDepth = std::make_shared<Texture>(resolvedDepthDesc, nullptr, TextureUsageType::Other, L"Resolved Depth");
+
+        auto resolvedNormalsDesc = CD3DX12_RESOURCE_DESC::Tex2D(normalsBufferFormat,
+            m_Width, m_Height,
+            1, 1);
+        m_ResolvedNormals = std::make_shared<Texture>(resolvedNormalsDesc, nullptr, TextureUsageType::Other, L"Resolved Normals");
+    }
+
+    {
+        auto postFxColorDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat,
+            m_Width, m_Height,
+            1, 1,
+            1, 0,
+            D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET
+        );
+        auto postFxColorTexture = std::make_shared<Texture>(postFxColorDesc, nullptr, TextureUsageType::RenderTarget, L"PostFX Color");
+        m_PostFxRenderTarget.AttachTexture(Color0, postFxColorTexture);
+    }
 
     auto fenceValue = commandQueue->ExecuteCommandList(commandList);
     commandQueue->WaitForFenceValue(fenceValue);
@@ -308,9 +344,16 @@ void ToonDemo::OnResize(ResizeEventArgs& e)
             static_cast<float>(m_Width), static_cast<float>(m_Height));
 
         m_RenderTarget.Resize(m_Width, m_Height);
+        m_DepthNormalsRenderTarget.Resize(m_Width, m_Height);
 
         if (m_ResolvedColor != nullptr)
             m_ResolvedColor->Resize(m_Width, m_Height);
+        if (m_ResolvedDepth != nullptr)
+            m_ResolvedDepth->Resize(m_Width, m_Height);
+        if (m_ResolvedNormals != nullptr)
+            m_ResolvedNormals->Resize(m_Width, m_Height);
+
+        m_PostFxRenderTarget.Resize(m_Width, m_Height);
     }
 }
 
@@ -385,12 +428,12 @@ void ToonDemo::OnRender(RenderEventArgs& e)
     // Clear the render targets
     {
         commandList->ClearTexture(*m_RenderTarget.GetTexture(Color0), CLEAR_COLOR);
+        commandList->ClearTexture(*m_DepthNormalsRenderTarget.GetTexture(Color0), NORMALS_CLEAR_COLOR);
         commandList->ClearDepthStencilTexture(*m_RenderTarget.GetTexture(DepthStencil), D3D12_CLEAR_FLAG_DEPTH);
     }
 
     commandList->SetViewport(m_Viewport);
     commandList->SetScissorRect(m_ScissorRect);
-    commandList->SetRenderTarget(m_RenderTarget);
 
     const XMMATRIX viewMatrix = m_Camera.GetViewMatrix();
     const XMMATRIX projectionMatrix = m_Camera.GetProjectionMatrix();
@@ -420,9 +463,11 @@ void ToonDemo::OnRender(RenderEventArgs& e)
     m_RootSignature->SetPipelineConstantBuffer(*commandList, pipelineCBuffer);
 
     {
-        PIXScope(*commandList, "Depth Pre-Pass");
+        PIXScope(*commandList, "Depth Normals Pass");
 
-        m_DepthOnlyMaterial->BeginBatch(*commandList);
+        commandList->SetRenderTarget(m_DepthNormalsRenderTarget);
+
+        m_DepthNormalsMaterial->BeginBatch(*commandList);
 
         for (const auto& go : m_GameObjects)
         {
@@ -433,19 +478,20 @@ void ToonDemo::OnRender(RenderEventArgs& e)
             go.GetModel()->Draw(*commandList);
         }
 
-        m_DepthOnlyMaterial->EndBatch(*commandList);
+        m_DepthNormalsMaterial->EndBatch(*commandList);
     }
 
     {
-        PIXScope(*commandList, "MSAA - Resolve Depth");
-        m_MSAADepthResolvePass->Resolve(*commandList, m_RenderTarget.GetTexture(DepthStencil), m_ResolvedDepth);
+        PIXScope(*commandList, "MSAA - Resolve Depth and Normals");
+        m_MSAADepthResolvePass->Resolve(*commandList, m_DepthNormalsRenderTarget.GetTexture(DepthStencil), m_ResolvedDepth);
+        commandList->ResolveSubresource(*m_ResolvedNormals, *m_DepthNormalsRenderTarget.GetTexture(Color0));
 
         m_RootSignature->UnbindMaterialShaderResourceViews(*commandList);
         commandList->CommitStagedDescriptors();
-
-        commandList->TransitionBarrier(*m_RenderTarget.GetTexture(DepthStencil), D3D12_RESOURCE_STATE_DEPTH_READ);
-        commandList->FlushResourceBarriers();
     }
+
+    // only read from the depth buffer, disable write
+    commandList->SetRenderTarget(m_RenderTarget, -1, 0, true, true);
 
     {
         PIXScope(*commandList, "Main Pass");
@@ -465,8 +511,15 @@ void ToonDemo::OnRender(RenderEventArgs& e)
         commandList->ResolveSubresource(*m_ResolvedColor, *m_RenderTarget.GetTexture(Color0));
     }
 
+    {
+        commandList->SetRenderTarget(m_PostFxRenderTarget);
+        commandList->SetAutomaticViewportAndScissorRect(m_PostFxRenderTarget);
+
+        m_OutlinePass->Render(*commandList, m_ResolvedColor, m_ResolvedDepth, m_ResolvedNormals);
+    }
+
     commandQueue->ExecuteCommandList(commandList);
-    PWindow->Present(*m_ResolvedColor);
+    PWindow->Present(*m_PostFxRenderTarget.GetTexture(Color0));
 }
 
 void ToonDemo::OnKeyPressed(KeyEventArgs& e)

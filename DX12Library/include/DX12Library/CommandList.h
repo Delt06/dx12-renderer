@@ -379,7 +379,7 @@ public:
     /**
      * Set the render targets for the graphics rendering pipeline.
      */
-    void SetRenderTarget(const RenderTarget& renderTarget, UINT texArrayIndex = -1, UINT mipLevel = 0, bool useDepth = true);
+    void SetRenderTarget(const RenderTarget& renderTarget, UINT texArrayIndex = -1, UINT mipLevel = 0, bool useDepth = true, bool readonlyDepth = false);
 
     void ClearRenderTarget(const RenderTarget& renderTarget, const float* clearColor, const D3D12_CLEAR_FLAGS clearFlags);
     void ClearRenderTarget(const RenderTarget& renderTarget, const ClearValue& clearValue, const D3D12_CLEAR_FLAGS clearFlags);

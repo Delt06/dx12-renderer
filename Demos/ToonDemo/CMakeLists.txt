@@ -5,21 +5,24 @@ project("ToonDemo")
 set(HEADER_FILES
         include/ToonDemo.h
         include/CBuffers.h
+        include/OutlinePass.h
         )
 
 set(SOURCE_FILES
-        src/ToonDemo.cpp
         src/main.cpp
+        src/ToonDemo.cpp
+        src/OutlinePass.cpp
         )
 
 set(SHADER_FILES_VERTEX
         shaders/Toon_VS.hlsl
-        shaders/DepthOnly_VS.hlsl
+        shaders/DepthNormals_VS.hlsl
         )
 
 set(SHADER_FILES_PIXEL
         shaders/Toon_PS.hlsl
-        shaders/DepthOnly_PS.hlsl
+        shaders/DepthNormals_PS.hlsl
+        shaders/Outline_PS.hlsl
         )
 
 set(SHADER_FILES_COMPUTE
