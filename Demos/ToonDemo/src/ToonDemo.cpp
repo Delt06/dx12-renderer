@@ -82,6 +82,17 @@ namespace
 
         return M;
     }
+
+    UINT GetMsaaQualityLevels(ComPtr<ID3D12Device2> device, DXGI_FORMAT format, UINT sampleCount)
+    {
+        D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msLevels;
+        msLevels.Format = format;
+        msLevels.SampleCount = sampleCount;
+        msLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
+
+        ThrowIfFailed(device->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msLevels, sizeof(msLevels)));
+        return msLevels.NumQualityLevels;
+    }
 }
 
 
@@ -205,10 +216,14 @@ bool ToonDemo::LoadContent()
         }
     }
 
+    const UINT msaaSampleCount = 8;
+    const UINT msaaColorQualityLevel = GetMsaaQualityLevels(device, backBufferFormat, msaaSampleCount) - 1;
+    const UINT msaaDepthQualityLevel = GetMsaaQualityLevels(device, depthBufferFormat, msaaSampleCount) - 1;
+
     auto colorDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat,
         m_Width, m_Height,
         1, 1,
-        1, 0,
+        msaaSampleCount, msaaColorQualityLevel,
         D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 
     auto colorTexture = std::make_shared<Texture>(colorDesc, &colorClearValue,
@@ -218,7 +233,7 @@ bool ToonDemo::LoadContent()
     auto depthDesc = CD3DX12_RESOURCE_DESC::Tex2D(depthBufferFormat,
         m_Width, m_Height,
         1, 1,
-        1, 0,
+        msaaSampleCount, msaaDepthQualityLevel,
         D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
     D3D12_CLEAR_VALUE depthClearValue;
     depthClearValue.Format = depthDesc.Format;
@@ -230,6 +245,11 @@ bool ToonDemo::LoadContent()
 
     m_RenderTarget.AttachTexture(Color0, colorTexture);
     m_RenderTarget.AttachTexture(DepthStencil, depthTexture);
+
+    auto resolvedColorDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat,
+        m_Width, m_Height,
+        1, 1);
+    m_ResolvedColor = std::make_shared<Texture>(resolvedColorDesc, nullptr, TextureUsageType::Other, L"Resolved Color");
 
     auto fenceValue = commandQueue->ExecuteCommandList(commandList);
     commandQueue->WaitForFenceValue(fenceValue);
@@ -253,6 +273,9 @@ void ToonDemo::OnResize(ResizeEventArgs& e)
             static_cast<float>(m_Width), static_cast<float>(m_Height));
 
         m_RenderTarget.Resize(m_Width, m_Height);
+
+        if (m_ResolvedColor != nullptr)
+            m_ResolvedColor->Resize(m_Width, m_Height);
     }
 }
 
@@ -374,8 +397,14 @@ void ToonDemo::OnRender(RenderEventArgs& e)
         }
     }
 
+    {
+        PIXScope(*commandList, "Resolve MSAA");
+
+        commandList->ResolveSubresource(*m_ResolvedColor, *m_RenderTarget.GetTexture(Color0));
+    }
+
     commandQueue->ExecuteCommandList(commandList);
-    PWindow->Present(*m_RenderTarget.GetTexture(Color0));
+    PWindow->Present(*m_ResolvedColor);
 }
 
 void ToonDemo::OnKeyPressed(KeyEventArgs& e)

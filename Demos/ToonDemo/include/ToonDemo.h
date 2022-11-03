@@ -41,6 +41,7 @@ private:
     std::shared_ptr<Texture> m_WhiteTexture2d;
 
     RenderTarget m_RenderTarget;
+    std::shared_ptr<Texture> m_ResolvedColor;
 
     Camera m_Camera;
     std::vector<GameObject> m_GameObjects;
