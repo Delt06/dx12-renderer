@@ -135,14 +135,25 @@ bool ToonDemo::LoadContent()
     m_DirectionalLight.m_Color = XMFLOAT4(1, 1, 1, 1);
     m_DirectionalLight.m_DirectionWs = XMFLOAT4(1, 1, 0, 0);
 
-    auto toonShader = std::make_shared<Shader>(m_RootSignature,
-        ShaderBlob(L"Toon_VS.cso"),
-        ShaderBlob(L"Toon_PS.cso")
-        );
-
     // Load models
     {
         ModelLoader modelLoader;
+
+        auto toonShader = std::make_shared<Shader>(m_RootSignature,
+            ShaderBlob(L"Toon_VS.cso"),
+            ShaderBlob(L"Toon_PS.cso")
+            );
+        auto toonMaterialPreset = Material(toonShader);
+        toonMaterialPreset.SetVariable("mainColor", XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+        toonMaterialPreset.SetVariable("shadowColorOpacity", XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f));
+
+        toonMaterialPreset.SetVariable("rampThreshold", -0.2f);
+        toonMaterialPreset.SetVariable("rampSmoothness", 0.05f);
+
+        toonMaterialPreset.SetVariable("specularColor", XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+        toonMaterialPreset.SetVariable("specularRampThreshold", 0.5f);
+        toonMaterialPreset.SetVariable("specularRampSmoothness", 0.05f);
+        toonMaterialPreset.SetVariable("specularExponent", 15.0f);
 
         const auto MaterialSetTexture = [&modelLoader, &commandList](Material& material, const std::string& propertyName, const std::wstring& texturePath, TextureUsageType usage = TextureUsageType::Albedo)
         {
@@ -151,22 +162,27 @@ bool ToonDemo::LoadContent()
 
         {
             auto model = std::make_shared<Model>(Mesh::CreateSphere(*commandList));
-            auto material = Material::Create(toonShader);
+            auto material = Material::Create(toonMaterialPreset);
 
             material->SetVariable("mainColor", XMFLOAT4(0.1f, 0.9f, 0.1f, 1.0f));
             material->SetVariable("shadowColorOpacity", XMFLOAT4(0.1f, 0.1f, 0.1f, 0.5f));
 
-            material->SetVariable("rampThreshold", -0.2f);
-            material->SetVariable("rampSmoothness", 0.05f);
-
             material->SetVariable("specularColor", XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f));
-            material->SetVariable("specularRampThreshold", 0.5f);
-            material->SetVariable("specularRampSmoothness", 0.05f);
-            material->SetVariable("specularExponent", 15.0f);
+
+            XMMATRIX translationMatrix = XMMatrixTranslation(-5.0f, 2.0f, 0.0f);
+            XMMATRIX rotationMatrix = DirectX::XMMatrixIdentity();
+            XMMATRIX scaleMatrix = XMMatrixScaling(2.0f, 2.0f, 2.0f);
+            XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+            m_GameObjects.push_back(GameObject(worldMatrix, model, material));
+        }
+
+        {
+            auto model = std::make_shared<Model>(Mesh::CreatePlane(*commandList));
+            auto material = Material::Create(toonMaterialPreset);
 
             XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
             XMMATRIX rotationMatrix = DirectX::XMMatrixIdentity();
-            XMMATRIX scaleMatrix = XMMatrixScaling(1.0f, 1.0f, 1.0f);
+            XMMATRIX scaleMatrix = XMMatrixScaling(25.0f, 0.0f, 25.0f);
             XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
             m_GameObjects.push_back(GameObject(worldMatrix, model, material));
         }
@@ -271,6 +287,17 @@ void ToonDemo::OnUpdate(UpdateEventArgs& e)
     auto lightDirectionWS = DirectX::XMLoadFloat4(&m_DirectionalLight.m_DirectionWs);
     lightDirectionWS = DirectX::XMVector3Normalize(lightDirectionWS);
     DirectX::XMStoreFloat4(&m_DirectionalLight.m_DirectionWs, lightDirectionWS);
+
+    auto dt = static_cast<float>(e.ElapsedTime);
+
+    if (m_AnimateLights)
+    {
+        XMVECTOR dirLightDirectionWs = XMLoadFloat4(&m_DirectionalLight.m_DirectionWs);
+        dirLightDirectionWs = XMVector4Transform(dirLightDirectionWs,
+            XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
+                XMConvertToRadians(90.0f * dt)));
+        DirectX::XMStoreFloat4(&m_DirectionalLight.m_DirectionWs, dirLightDirectionWs);
+    }
 }
 
 void ToonDemo::OnRender(RenderEventArgs& e)
@@ -388,6 +415,7 @@ void ToonDemo::OnKeyPressed(KeyEventArgs& e)
         m_CameraController.m_Up = 1.0f;
         break;
     case KeyCode::L:
+        m_AnimateLights = !m_AnimateLights;
         break;
     case KeyCode::ShiftKey:
         m_CameraController.m_Shift = true;
