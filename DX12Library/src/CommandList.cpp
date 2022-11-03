@@ -111,6 +111,15 @@ void CommandList::FlushResourceBarriers()
     m_PResourceStateTracker->FlushResourceBarriers(*this);
 }
 
+void CommandList::CommitStagedDescriptors()
+{
+    for (const auto& dynamicDescriptorHeap : m_DynamicDescriptorHeaps)
+    {
+        dynamicDescriptorHeap->CommitStagedDescriptorsForDraw(*this);
+        dynamicDescriptorHeap->CommitStagedDescriptorsForDispatch(*this);
+    }
+}
+
 void CommandList::CopyResource(const Resource& dstRes, const Resource& srcRes)
 {
     CopyResource(dstRes.GetD3D12Resource(), srcRes.GetD3D12Resource());

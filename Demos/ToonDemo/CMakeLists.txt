@@ -14,10 +14,12 @@ set(SOURCE_FILES
 
 set(SHADER_FILES_VERTEX
         shaders/Toon_VS.hlsl
+        shaders/DepthOnly_VS.hlsl
         )
 
 set(SHADER_FILES_PIXEL
         shaders/Toon_PS.hlsl
+        shaders/DepthOnly_PS.hlsl
         )
 
 set(SHADER_FILES_COMPUTE

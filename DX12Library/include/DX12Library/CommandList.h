@@ -125,6 +125,8 @@ public:
      */
     void FlushResourceBarriers();
 
+    void CommitStagedDescriptors();
+
     /**
      * Copy resources.
      */

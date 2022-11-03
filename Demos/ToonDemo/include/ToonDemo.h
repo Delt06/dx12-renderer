@@ -16,6 +16,7 @@
 #include <Framework/Mesh.h>
 #include <Framework/Material.h>
 #include <Framework/CommonRootSignature.h>
+#include <Framework/MSAADepthResolvePass.h>
 
 class ToonDemo final : public Game
 {
@@ -42,6 +43,7 @@ private:
 
     RenderTarget m_RenderTarget;
     std::shared_ptr<Texture> m_ResolvedColor;
+    std::shared_ptr<Texture> m_ResolvedDepth;
 
     Camera m_Camera;
     std::vector<GameObject> m_GameObjects;
@@ -49,6 +51,8 @@ private:
     bool m_AnimateLights = false;
 
     std::shared_ptr<CommonRootSignature> m_RootSignature;
+    std::unique_ptr<MSAADepthResolvePass> m_MSAADepthResolvePass;
+    std::shared_ptr<Material> m_DepthOnlyMaterial;
 
     D3D12_VIEWPORT m_Viewport;
     D3D12_RECT m_ScissorRect;

@@ -30,6 +30,7 @@ set(HEADER_FILES
         "include/Framework/ShaderBlob.h"
         "include/Framework/UnorderedAccessView.h"
         "include/Framework/ComputeShader.h"
+        "include/Framework/MSAADepthResolvePass.h"
 )
 
 set(SOURCE_FILES
@@ -56,6 +57,7 @@ set(SOURCE_FILES
         "src/Material.cpp" 
         "src/ShaderBlob.cpp"
         "src/ComputeShader.cpp"
+        "src/MSAADepthResolvePass.cpp"
         )
 
 set(SHADER_FILES_VERTEX
@@ -69,7 +71,7 @@ set(SHADER_FILES_PIXEL
         )
 
 set(SHADER_FILES_COMPUTE
-
+        "shaders/MSAADepthResolve_CS.hlsl"
         )
 
 set(TARGET_NAME Framework)

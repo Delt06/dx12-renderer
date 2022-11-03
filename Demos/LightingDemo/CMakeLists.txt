@@ -16,7 +16,6 @@ set(HEADER_FILES
         include/SceneRenderer.h
         include/ShadowPassPsoBase.h
         include/SpotLightShadowPassPso.h
-        include/MSAADepthResolvePass.h
         )
 
 set(SOURCE_FILES
@@ -33,7 +32,6 @@ set(SOURCE_FILES
         src/SceneRenderer.cpp
         src/ShadowPassPsoBase.cpp
         src/SpotLightShadowPassPso.cpp
-        src/MSAADepthResolvePass.cpp
         )
 
 set(SHADER_FILES_VERTEX
@@ -53,7 +51,6 @@ set(SHADER_FILES_PIXEL
         )
 
 set(SHADER_FILES_COMPUTE
-        shaders/MSAADepthResolve_CS.hlsl
         )
 
 set(TARGET_NAME LightingDemo)

@@ -1,6 +1,8 @@
 #include "MSAADepthResolvePass.h"
 #include <DX12Library/Helpers.h>
 
+#include <Framework/MSAADepthResolve_CS.h>
+
 namespace
 {
     static constexpr uint32_t THREAD_GROUP_SIZE = 16u;
@@ -8,7 +10,7 @@ namespace
 
 MSAADepthResolvePass::MSAADepthResolvePass(const std::shared_ptr<CommonRootSignature>& rootSignature)
     : m_RootSignature(rootSignature)
-    , m_ComputeShader(rootSignature, ShaderBlob(L"MSAADepthResolve_CS.cso"))
+    , m_ComputeShader(rootSignature, ShaderBlob(ShaderBytecode_MSAADepthResolve_CS, sizeof(ShaderBytecode_MSAADepthResolve_CS)))
 {}
 
 void MSAADepthResolvePass::Resolve(CommandList& commandList, const std::shared_ptr<Texture>& source, const std::shared_ptr<Texture>& destination) const

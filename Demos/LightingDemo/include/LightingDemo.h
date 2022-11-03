@@ -26,7 +26,7 @@
 #include <Framework/Bloom.h>
 #include <Framework/CommonRootSignature.h>
 #include <Framework/Material.h>
-#include "MSAADepthResolvePass.h"
+#include <Framework/MSAADepthResolvePass.h>
 
 class PointLightShadowPassPso;
 class ParticleSystem;
