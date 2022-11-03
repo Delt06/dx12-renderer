@@ -145,7 +145,7 @@ bool ToonDemo::LoadContent()
             );
         auto toonMaterialPreset = Material(toonShader);
         toonMaterialPreset.SetVariable("mainColor", XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
-        toonMaterialPreset.SetVariable("shadowColorOpacity", XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f));
+        toonMaterialPreset.SetVariable("shadowColorOpacity", XMFLOAT4(0.0f, 0.0f, 0.0f, 0.75f));
 
         toonMaterialPreset.SetVariable("rampThreshold", -0.2f);
         toonMaterialPreset.SetVariable("rampSmoothness", 0.05f);
@@ -169,9 +169,9 @@ bool ToonDemo::LoadContent()
 
             material->SetVariable("specularColor", XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f));
 
-            XMMATRIX translationMatrix = XMMatrixTranslation(-5.0f, 2.0f, 0.0f);
+            XMMATRIX translationMatrix = DirectX::XMMatrixTranslation(-5.0f, 2.0f, 0.0f);
             XMMATRIX rotationMatrix = DirectX::XMMatrixIdentity();
-            XMMATRIX scaleMatrix = XMMatrixScaling(2.0f, 2.0f, 2.0f);
+            XMMATRIX scaleMatrix = DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f);
             XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
             m_GameObjects.push_back(GameObject(worldMatrix, model, material));
         }
@@ -180,9 +180,26 @@ bool ToonDemo::LoadContent()
             auto model = std::make_shared<Model>(Mesh::CreatePlane(*commandList));
             auto material = Material::Create(toonMaterialPreset);
 
-            XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+            XMMATRIX translationMatrix = DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f);
             XMMATRIX rotationMatrix = DirectX::XMMatrixIdentity();
-            XMMATRIX scaleMatrix = XMMatrixScaling(25.0f, 0.0f, 25.0f);
+            XMMATRIX scaleMatrix = DirectX::XMMatrixScaling(25.0f, 0.0f, 25.0f);
+            XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+            m_GameObjects.push_back(GameObject(worldMatrix, model, material));
+        }
+
+        {
+            auto model = modelLoader.Load(*commandList, "Assets/Models/Quaternius/George_smooth.fbx");
+            auto material = Material::Create(toonMaterialPreset);
+
+            MaterialSetTexture(*material, "mainTexture", L"Assets/Models/Quaternius/George_Texture.png");
+
+            XMMATRIX translationMatrix = DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+            XMMATRIX rotationMatrix = DirectX::XMMatrixRotationRollPitchYaw(
+                XMConvertToRadians(0.0f),
+                XMConvertToRadians(0.0f),
+                XMConvertToRadians(0.0f)
+            );
+            XMMATRIX scaleMatrix = DirectX::XMMatrixScaling(0.01f, 0.01f, 0.01f);
             XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
             m_GameObjects.push_back(GameObject(worldMatrix, model, material));
         }
@@ -293,9 +310,9 @@ void ToonDemo::OnUpdate(UpdateEventArgs& e)
     if (m_AnimateLights)
     {
         XMVECTOR dirLightDirectionWs = XMLoadFloat4(&m_DirectionalLight.m_DirectionWs);
-        dirLightDirectionWs = XMVector4Transform(dirLightDirectionWs,
-            XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
-                XMConvertToRadians(90.0f * dt)));
+        dirLightDirectionWs = DirectX::XMVector4Transform(dirLightDirectionWs,
+            DirectX::XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
+                DirectX::XMConvertToRadians(90.0f * dt)));
         DirectX::XMStoreFloat4(&m_DirectionalLight.m_DirectionWs, dirLightDirectionWs);
     }
 }

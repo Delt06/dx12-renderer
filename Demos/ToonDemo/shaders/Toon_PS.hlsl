@@ -11,6 +11,7 @@ cbuffer Material : register(b0)
 {
     float4 mainColor;
     float4 shadowColorOpacity;
+    bool has_mainTexture;
 
     float rampThreshold;
     float rampSmoothness;
@@ -20,6 +21,8 @@ cbuffer Material : register(b0)
     float specularRampSmoothness;
     float specularExponent;
 };
+
+Texture2D mainTexture : register(t0);
 
 #define APPLY_RAMP(threshold, smoothness, value) (smoothstep((threshold), (threshold) + (smoothness), (value)))
 
@@ -36,7 +39,10 @@ inline float ApplySpecularRamp(float value)
 float4 main(PixelShaderInput IN) : SV_TARGET
 {
     const float3 normalWS = normalize(IN.NormalWS);
-    const float3 albedo = mainColor.rgb;
+    float3 albedo = mainColor.rgb;
+    if (has_mainTexture)
+        albedo *= mainTexture.Sample(g_Common_LinearWrapSampler, IN.UV).rgb;
+
     const float3 lightDirectionWS = g_Pipeline_DirectionalLight.DirectionWs.xyz;
     const float NdotL = dot(normalWS, lightDirectionWS);
 
