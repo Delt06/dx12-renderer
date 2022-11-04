@@ -188,7 +188,7 @@ bool ToonDemo::LoadContent()
         toonMaterialPreset.SetVariable("rampThreshold", -0.2f);
         toonMaterialPreset.SetVariable("rampSmoothness", 0.05f);
 
-        toonMaterialPreset.SetVariable("specularColor", XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+        toonMaterialPreset.SetVariable("specularColor", XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
         toonMaterialPreset.SetVariable("specularRampThreshold", 0.5f);
         toonMaterialPreset.SetVariable("specularRampSmoothness", 0.05f);
         toonMaterialPreset.SetVariable("specularExponent", 15.0f);
