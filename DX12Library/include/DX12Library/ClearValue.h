@@ -7,10 +7,12 @@ class ClearValue
 {
 public:
 	using COLOR = FLOAT[4];
+    using DEPTH_STENCIL_VALUE = D3D12_DEPTH_STENCIL_VALUE;
 
-	ClearValue();
+    ClearValue();
 	explicit ClearValue(const COLOR color);
 	explicit ClearValue(DXGI_FORMAT format, const COLOR color);
+	explicit ClearValue(DXGI_FORMAT format, const DEPTH_STENCIL_VALUE depthStencilValue);
 
 	ClearValue(const ClearValue&) = delete;
 	ClearValue& operator=(const ClearValue&) = delete;
@@ -25,5 +27,7 @@ public:
 
 private:
 	COLOR m_Color;
+    DEPTH_STENCIL_VALUE m_DepthStencil;
+
 	std::unique_ptr<D3D12_CLEAR_VALUE> m_D3D12ClearValue;
 };

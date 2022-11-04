@@ -94,8 +94,37 @@ namespace
         ThrowIfFailed(device->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msLevels, sizeof(msLevels)));
         return msLevels.NumQualityLevels;
     }
+
+    BoundingSphere ComputeSphereBounds(const std::vector<GameObject> gameObjects)
+    {
+        Aabb sceneAabb{};
+
+        for (auto& gameObject : gameObjects)
+        {
+            sceneAabb.Encapsulate(gameObject.GetAabb());
+        }
+
+        const XMVECTOR center = sceneAabb.GetCenter();
+        float radius = 0.0f;
+
+        XMVECTOR sceneAabbPoints[Aabb::POINTS_COUNT];
+        sceneAabb.GetAllPoints(sceneAabbPoints);
+
+        for (uint32_t i = 0; i < Aabb::POINTS_COUNT; ++i)
+        {
+            const XMVECTOR point = sceneAabbPoints[i];
+            float distance = XMVectorGetX(XMVector3Length(point - center));
+            radius = std::max(distance, radius);
+        }
+
+        return { radius, center };
+    }
 }
 
+namespace Pipeline
+{
+    constexpr UINT SHADOW_MAP_REGISTER_INDEX = 0;
+}
 
 ToonDemo::ToonDemo(const std::wstring& name, int width, int height, GraphicsSettings graphicsSettings)
     : Base(name, width, height, graphicsSettings.VSync)
@@ -159,6 +188,7 @@ bool ToonDemo::LoadContent()
         m_DepthNormalsMaterial = Material::Create(shader);
     }
 
+    m_ShadowsPass = std::make_unique<DirectionalLightShadowsPass>(m_RootSignature);
     m_OutlinePass = std::make_unique<OutlinePass>(m_RootSignature, *commandList);
     m_FXAAPass = std::make_unique<FXAAPass>(m_RootSignature, *commandList);
 
@@ -184,7 +214,7 @@ bool ToonDemo::LoadContent()
         toonMaterialPreset.SetVariable("mainColor", XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
         toonMaterialPreset.SetVariable("shadowColorOpacity", XMFLOAT4(0.0f, 0.0f, 0.0f, 0.75f));
 
-        toonMaterialPreset.SetVariable("rampThreshold", -0.2f);
+        toonMaterialPreset.SetVariable("rampThreshold", 0.01f);
         toonMaterialPreset.SetVariable("rampSmoothness", 0.05f);
 
         toonMaterialPreset.SetVariable("specularColor", XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
@@ -217,9 +247,11 @@ bool ToonDemo::LoadContent()
             auto model = std::make_shared<Model>(Mesh::CreatePlane(*commandList));
             auto material = Material::Create(toonMaterialPreset);
 
+            material->SetVariable("mainColor", XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
+
             XMMATRIX translationMatrix = DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f);
             XMMATRIX rotationMatrix = DirectX::XMMatrixIdentity();
-            XMMATRIX scaleMatrix = DirectX::XMMatrixScaling(25.0f, 0.0f, 25.0f);
+            XMMATRIX scaleMatrix = DirectX::XMMatrixScaling(25.0f, 1.0f, 25.0f);
             XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
             m_GameObjects.push_back(GameObject(worldMatrix, model, material));
         }
@@ -243,10 +275,6 @@ bool ToonDemo::LoadContent()
     }
 
     {
-        // const UINT msaaSampleCount = 8;
-        // const UINT msaaColorQualityLevel = GetMsaaQualityLevels(device, backBufferFormat, msaaSampleCount) - 1;
-        // const UINT msaaDepthQualityLevel = GetMsaaQualityLevels(device, depthBufferFormat, msaaSampleCount) - 1;
-
         const UINT msaaSampleCount = 1;
         const UINT msaaColorQualityLevel = 0;
         const UINT msaaDepthQualityLevel = 0;
@@ -435,9 +463,6 @@ void ToonDemo::OnRender(RenderEventArgs& e)
         commandList->ClearDepthStencilTexture(*m_RenderTarget.GetTexture(DepthStencil), D3D12_CLEAR_FLAG_DEPTH);
     }
 
-    commandList->SetViewport(m_Viewport);
-    commandList->SetScissorRect(m_ScissorRect);
-
     const XMMATRIX viewMatrix = m_Camera.GetViewMatrix();
     const XMMATRIX projectionMatrix = m_Camera.GetProjectionMatrix();
     const XMMATRIX viewProjectionMatrix = viewMatrix * projectionMatrix;
@@ -458,12 +483,37 @@ void ToonDemo::OnRender(RenderEventArgs& e)
         pipelineCBuffer.m_ScreenResolution = { static_cast<float>(m_Width), static_cast<float>(m_Height) };
         pipelineCBuffer.m_ScreenTexelSize = { 1.0f / pipelineCBuffer.m_ScreenResolution.x, 1.0f / pipelineCBuffer.m_ScreenResolution.y };
 
-        pipelineCBuffer.m_DirectionalLightViewProjection = DirectX::XMMatrixIdentity(); // TODO: use actual shadow matrix
+        {
+            const auto sceneBounds = ComputeSphereBounds(m_GameObjects);
+            pipelineCBuffer.m_DirectionalLightViewProjection = m_ShadowsPass->ComputeShadowViewProjectionMatrix(sceneBounds, m_DirectionalLight);
+        }
+
+        pipelineCBuffer.m_DirectionalLightShadowsBias = { 0.0005f, -0.1f, 0, 0 };
 
         pipelineCBuffer.m_DirectionalLight = m_DirectionalLight;
     }
 
     m_RootSignature->SetPipelineConstantBuffer(*commandList, pipelineCBuffer);
+
+    {
+        PIXScope(*commandList, "Shadows Pass");
+
+        m_ShadowsPass->Begin(*commandList);
+
+        for (const auto& go : m_GameObjects)
+        {
+            Demo::Model::CBuffer modelCBuffer{};
+            modelCBuffer.Compute(go.GetWorldMatrix(), viewProjectionMatrix);
+            m_RootSignature->SetModelConstantBuffer(*commandList, modelCBuffer);
+
+            go.GetModel()->Draw(*commandList);
+        }
+
+        m_ShadowsPass->End(*commandList);
+    }
+
+    commandList->SetViewport(m_Viewport);
+    commandList->SetScissorRect(m_ScissorRect);
 
     {
         PIXScope(*commandList, "Depth Normals Pass");
@@ -492,6 +542,13 @@ void ToonDemo::OnRender(RenderEventArgs& e)
 
     // only read from the depth buffer, disable write
     commandList->SetRenderTarget(m_RenderTarget, -1, 0, true, true);
+
+    // bind shadow map
+    m_RootSignature->SetPipelineShaderResourceView(
+        *commandList,
+        Pipeline::SHADOW_MAP_REGISTER_INDEX,
+        m_ShadowsPass->GetShadowMapShaderResourceView()
+    );
 
     {
         PIXScope(*commandList, "Main Pass");

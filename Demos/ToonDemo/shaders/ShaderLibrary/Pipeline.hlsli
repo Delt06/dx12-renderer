@@ -25,6 +25,7 @@ cbuffer PipelineCBuffer : register(b0, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE)
     float2 g_Pipeline_Screen_TexelSize;
 
     matrix g_Pipeline_DirectionalLight_ViewProjection;
+    float4 g_Pipeline_DirectionalLight_ShadowsBias; // x - depth, y - normal
 
     DirectionalLight g_Pipeline_DirectionalLight;
 };

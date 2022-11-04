@@ -1,3 +1,5 @@
+#include <ShaderLibrary/Common/RootSignature.hlsli>
+
 #include "ShaderLibrary/Pipeline.hlsli"
 
 struct PixelShaderInput
@@ -5,6 +7,7 @@ struct PixelShaderInput
     float3 NormalWS : NORMAL;
     float2 UV : TEXCOORD;
     float3 EyeWS : EYE_WS;
+    float4 ShadowCoords : SHADOW_COORDS;
 };
 
 cbuffer Material : register(b0)
@@ -24,6 +27,8 @@ cbuffer Material : register(b0)
 
 Texture2D mainTexture : register(t0);
 
+Texture2D<float> shadowMap : register(t0, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE);
+
 #define APPLY_RAMP(threshold, smoothness, value) (smoothstep((threshold), (threshold) + (smoothness), (value)))
 
 inline float ApplyRamp(float value)
@@ -36,6 +41,11 @@ inline float ApplySpecularRamp(float value)
     return APPLY_RAMP(specularRampThreshold, specularRampSmoothness, value);
 }
 
+inline float SampleShadowAttenuation(float4 shadowCoords)
+{
+    return shadowMap.SampleCmpLevelZero(g_Common_ShadowMapSampler, shadowCoords.xy, shadowCoords.z);
+}
+
 float4 main(PixelShaderInput IN) : SV_TARGET
 {
     const float3 normalWS = normalize(IN.NormalWS);
@@ -44,15 +54,16 @@ float4 main(PixelShaderInput IN) : SV_TARGET
         albedo *= mainTexture.Sample(g_Common_LinearWrapSampler, IN.UV).rgb;
 
     const float3 lightDirectionWS = g_Pipeline_DirectionalLight.DirectionWs.xyz;
+    const float shadowAttenuation = SampleShadowAttenuation(IN.ShadowCoords);
     const float NdotL = dot(normalWS, lightDirectionWS);
 
-    const float diffuseAttenuation = ApplyRamp(NdotL);
+    const float diffuseAttenuation = ApplyRamp(min(NdotL, NdotL * shadowAttenuation));
     const float3 shadowColor = lerp(albedo, shadowColorOpacity.rgb, shadowColorOpacity.a);
     const float3 diffuse = lerp(shadowColor, albedo, diffuseAttenuation);
 
     const float3 r = normalize(reflect(lightDirectionWS , normalWS));
-    const float RdotV = max(0, dot(r, IN.EyeWS));
-    const float specularAttenuation = ApplySpecularRamp(pow(RdotV, specularExponent));
+    const float RdotV = pow(max(0, dot(r, IN.EyeWS)), specularExponent);
+    const float specularAttenuation = ApplySpecularRamp(min(RdotV, RdotV * shadowAttenuation));
     const float3 specular = specularColor.rgb * specularAttenuation;
 
     const float3 resultColor = (diffuse + specular) * g_Pipeline_DirectionalLight.Color.rgb;

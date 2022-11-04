@@ -21,6 +21,8 @@ namespace Demo::Pipeline
 
         DirectX::XMMATRIX m_DirectionalLightViewProjection;
 
+        DirectX::XMFLOAT4 m_DirectionalLightShadowsBias;
+
         DirectionalLight m_DirectionalLight;
     };
 }

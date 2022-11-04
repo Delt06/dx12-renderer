@@ -17,6 +17,7 @@
 #include <Framework/Material.h>
 #include <Framework/CommonRootSignature.h>
 
+#include "DirectionalLightShadowsPass.h"
 #include "OutlinePass.h"
 #include "FXAAPass.h"
 
@@ -57,6 +58,7 @@ private:
 
     std::shared_ptr<CommonRootSignature> m_RootSignature;
     std::shared_ptr<Material> m_DepthNormalsMaterial;
+    std::unique_ptr<DirectionalLightShadowsPass> m_ShadowsPass;
     std::unique_ptr<OutlinePass> m_OutlinePass;
     std::unique_ptr<FXAAPass> m_FXAAPass;
 
