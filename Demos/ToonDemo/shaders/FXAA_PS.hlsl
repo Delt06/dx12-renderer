@@ -6,6 +6,12 @@
 #include "ShaderLibrary/Pipeline.hlsli"
 #include "ShaderLibrary/Normals.hlsli"
 
+#define EDGE_SEARCH_STEPS 3
+#define EDGE_SEARCH_STEP_SIZES 1.5, 2.0, 2.0
+#define EDGE_SEARCH_LAST_STEP_GUESS 8.0
+
+static const float EdgeStepSizes[EDGE_SEARCH_STEPS] = { EDGE_SEARCH_STEP_SIZES };
+
 struct PixelShaderInput
 {
     float2 UV : TEXCOORD;
@@ -107,6 +113,7 @@ struct Edge
 {
     bool IsHorizontal;
     float PixelStep;
+    float LuminanceGradient, OtherLuminance;
 };
 
 Edge GetEdge(in LuminanceNeighborhood lumiance)
@@ -134,9 +141,105 @@ Edge GetEdge(in LuminanceNeighborhood lumiance)
     if (gradientPositive < gradientNegative)
     {
         edge.PixelStep = -edge.PixelStep;
+        edge.LuminanceGradient = gradientNegative;
+        edge.OtherLuminance = luminanceNegative;
+    }
+    else
+    {
+        edge.LuminanceGradient = gradientPositive;
+        edge.OtherLuminance = luminancePositive;
     }
 
     return edge;
+}
+
+float GetEdgeBlendFactor(in LuminanceNeighborhood luminance, in Edge edge, float2 uv)
+{
+    float2 edgeUV = uv;
+    float2 uvStep = 0;
+
+    if (edge.IsHorizontal)
+    {
+        edgeUV.y += 0.5 * edge.PixelStep;
+        uvStep.x = g_Pipeline_Screen_TexelSize.x;
+    }
+    else
+    {
+        edgeUV.x += 0.5 * edge.PixelStep;
+        uvStep.y = g_Pipeline_Screen_TexelSize.y;
+    }
+
+    float edgeLuminance = 0.5 * (luminance.Center + edge.OtherLuminance);
+    float gradientThreshold = 0.25 * edge.LuminanceGradient;
+
+    float2 uvPositive = edgeUV + uvStep;
+    float lumaGradientPositive = GetSceneLuminance(uvPositive) - edgeLuminance;
+    bool atEndPositive = abs(lumaGradientPositive) >= gradientThreshold;
+
+    uint i;
+    [unroll]
+    for (i = 0; i < EDGE_SEARCH_STEPS && !atEndPositive; ++i)
+    {
+        uvPositive += uvStep * EdgeStepSizes[i];
+        lumaGradientPositive = GetSceneLuminance(uvPositive) - edgeLuminance;
+        atEndPositive = abs(lumaGradientPositive) >= gradientThreshold;
+    }
+
+    if (!atEndPositive)
+    {
+        uvPositive += uvStep * EDGE_SEARCH_LAST_STEP_GUESS;
+    }
+
+    float2 uvNegative = edgeUV - uvStep;
+    float lumaGradientNegative = GetSceneLuminance(uvNegative) - edgeLuminance;
+    bool atEndNegative = abs(lumaGradientNegative) >= gradientThreshold;
+
+    [unroll]
+    for (i = 0; i < EDGE_SEARCH_STEPS && !atEndNegative; ++i)
+    {
+        uvNegative -= uvStep * EdgeStepSizes[i];
+        lumaGradientNegative = GetSceneLuminance(uvNegative) - edgeLuminance;
+        atEndNegative = abs(lumaGradientNegative) >= gradientThreshold;
+    }
+
+    if (!atEndNegative)
+    {
+        uvNegative -= uvStep * EDGE_SEARCH_LAST_STEP_GUESS;
+    }
+
+    float distanceToEndPositive, distanceToEndNegative;
+	if (edge.IsHorizontal)
+    {
+		distanceToEndPositive = uvPositive.x - uv.x;
+        distanceToEndNegative = uv.x - uvNegative.x;
+	}
+	else
+    {
+		distanceToEndPositive = uvPositive.y - uv.y;
+        distanceToEndNegative = uv.y - uvNegative.y;
+	}
+
+    float distanceToNearestEnd;
+    bool deltaSign;
+    if (distanceToEndPositive <= distanceToEndNegative)
+    {
+        distanceToNearestEnd = distanceToEndPositive;
+        deltaSign = lumaGradientPositive >= 0;
+    }
+    else
+    {
+        distanceToNearestEnd = distanceToEndNegative;
+        deltaSign = lumaGradientNegative >= 0;
+    }
+
+    if (deltaSign == (luminance.Center - edgeLuminance >= 0))
+    {
+        return 0.0;
+    }
+    else
+    {
+        return 0.5 - distanceToNearestEnd / (distanceToEndPositive + distanceToEndNegative);
+    }
 }
 
 float4 main(PixelShaderInput IN) : SV_Target
@@ -150,7 +253,10 @@ float4 main(PixelShaderInput IN) : SV_Target
     }
 
     Edge edge = GetEdge(luminance);
-    float blendFactor = GetSubpixelBlendFactor(luminance);
+    float blendFactor = max(
+        GetSubpixelBlendFactor(luminance),
+        GetEdgeBlendFactor(luminance, edge, uv)
+    );
     float2 blendUV = uv;
     if (edge.IsHorizontal)
     {
