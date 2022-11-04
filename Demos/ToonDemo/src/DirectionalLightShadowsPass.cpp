@@ -25,12 +25,9 @@ DirectionalLightShadowsPass::DirectionalLightShadowsPass(const std::shared_ptr<C
             rootSignature,
             ShaderBlob(ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS),
             ShaderBlob(L"VarianceShadows_GaussianBlur_PS.cso"),
-            [](PipelineStateBuilder& builder)
-            {
-                builder.WithDisabledDepthStencil();
-            }
-        ))
-    )
+            [](PipelineStateBuilder& builder) { builder.WithDisabledDepthStencil(); }
+            )
+    ))
     , m_BlitTriangle(Mesh::CreateBlitTriangle(commandList))
     , m_VarianceMapClearValue(VARIANCE_MAP_FORMAT, DirectX::XMFLOAT4{ INFINITY, INFINITY, 0, 0 })
 {
