@@ -55,16 +55,16 @@ float3 SampleNormal(float2 uv)
 // https://alexanderameye.github.io/notes/rendering-outlines/
 static const int SobelX[KERNEL_SIZE] =
 {
+    0, 0, 0,
     1, 0, -1,
-    2, 0, -2,
-    1, 0, -1
+    0, 0, 0
 };
 
 static const int SobelY[KERNEL_SIZE] =
 {
-    1, 2, 1,
+    0, 1, 0,
     0, 0, 0,
-    -1, -2, -1
+    0, -1, 0
 };
 
 static const float2 SampleOffsets[KERNEL_SIZE] =
