@@ -238,7 +238,7 @@ bool ToonDemo::LoadContent()
             material->SetVariable("specularColor", XMFLOAT4(0.5f, 0.0f, 0.0f, 1.0f));
             material->SetVariable("specularExponent", 50.0f);
 
-            XMMATRIX translationMatrix = DirectX::XMMatrixTranslation(-5.0f, 2.0f, 0.0f);
+            XMMATRIX translationMatrix = DirectX::XMMatrixTranslation(-2.5f, 2.0f, 0.0f);
             XMMATRIX rotationMatrix = DirectX::XMMatrixIdentity();
             XMMATRIX scaleMatrix = DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f);
             XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
@@ -269,6 +269,26 @@ bool ToonDemo::LoadContent()
             material->SetVariable("specularExponent", 35.0f);
 
             XMMATRIX translationMatrix = DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+            XMMATRIX rotationMatrix = DirectX::XMMatrixRotationRollPitchYaw(
+                XMConvertToRadians(0.0f),
+                XMConvertToRadians(0.0f),
+                XMConvertToRadians(0.0f)
+            );
+            XMMATRIX scaleMatrix = DirectX::XMMatrixScaling(0.01f, 0.01f, 0.01f);
+            XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+            m_GameObjects.push_back(GameObject(worldMatrix, model, material));
+        }
+
+        {
+            auto model = modelLoader.Load(*commandList, "Assets/Models/Quaternius/Leela_smooth.fbx");
+            auto material = Material::Create(toonMaterialPreset);
+
+            MaterialSetTexture(*material, "mainTexture", L"Assets/Models/Quaternius/Leela_4_Texture.png");
+
+            material->SetVariable("specularColor", XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+            material->SetVariable("specularExponent", 35.0f);
+
+            XMMATRIX translationMatrix = DirectX::XMMatrixTranslation(4.5f, 0.0f, 0.0f);
             XMMATRIX rotationMatrix = DirectX::XMMatrixRotationRollPitchYaw(
                 XMConvertToRadians(0.0f),
                 XMConvertToRadians(0.0f),
