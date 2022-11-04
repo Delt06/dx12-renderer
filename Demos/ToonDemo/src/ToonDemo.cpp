@@ -191,6 +191,7 @@ bool ToonDemo::LoadContent()
     m_ShadowsPass = std::make_unique<DirectionalLightShadowsPass>(m_RootSignature, *commandList, 1024);
     m_OutlinePass = std::make_unique<OutlinePass>(m_RootSignature, *commandList);
     m_FXAAPass = std::make_unique<FXAAPass>(m_RootSignature, *commandList);
+    m_BloomPass = std::make_unique<Bloom>(m_RootSignature, *commandList, m_Width, m_Height, backBufferFormat, 4);
 
     m_DirectionalLight.m_Color = XMFLOAT4(1, 1, 1, 1);
     m_DirectionalLight.m_DirectionWs = XMFLOAT4(1, 1, 0, 0);
@@ -248,6 +249,7 @@ bool ToonDemo::LoadContent()
             auto material = Material::Create(toonMaterialPreset);
 
             material->SetVariable("mainColor", XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
+            material->SetVariable("specularColor", XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f));
 
             XMMATRIX translationMatrix = DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f);
             XMMATRIX rotationMatrix = DirectX::XMMatrixIdentity();
@@ -261,6 +263,9 @@ bool ToonDemo::LoadContent()
             auto material = Material::Create(toonMaterialPreset);
 
             MaterialSetTexture(*material, "mainTexture", L"Assets/Models/Quaternius/George_Texture.png");
+
+            material->SetVariable("specularColor", XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+            material->SetVariable("specularExponent", 35.0f);
 
             XMMATRIX translationMatrix = DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f);
             XMMATRIX rotationMatrix = DirectX::XMMatrixRotationRollPitchYaw(
@@ -378,6 +383,9 @@ void ToonDemo::OnResize(ResizeEventArgs& e)
 
         m_PostFxRenderTarget.Resize(m_Width, m_Height);
         m_PostFxRenderTarget2.Resize(m_Width, m_Height);
+
+        if (m_BloomPass != nullptr)
+            m_BloomPass->Resize(m_Width, m_Height);
     }
 }
 
@@ -571,6 +579,20 @@ void ToonDemo::OnRender(RenderEventArgs& e)
         commandList->SetAutomaticViewportAndScissorRect(m_PostFxRenderTarget2);
 
         m_FXAAPass->Render(*commandList, m_PostFxRenderTarget.GetTexture(Color0));
+    }
+
+    {
+        BloomParameters parameters{};
+        parameters.Threshold = 1.25f;
+        parameters.SoftThreshold = 0.3f;
+        parameters.Intensity = 50.0f;
+
+        m_BloomPass->Draw(
+            *commandList,
+            m_PostFxRenderTarget2.GetTexture(Color0),
+            m_PostFxRenderTarget2,
+            parameters
+        );
     }
 
     commandQueue->ExecuteCommandList(commandList);

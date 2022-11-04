@@ -16,6 +16,7 @@
 #include <Framework/Mesh.h>
 #include <Framework/Material.h>
 #include <Framework/CommonRootSignature.h>
+#include <Framework/Bloom.h>
 
 #include "DirectionalLightShadowsPass.h"
 #include "OutlinePass.h"
@@ -60,6 +61,7 @@ private:
     std::unique_ptr<DirectionalLightShadowsPass> m_ShadowsPass;
     std::unique_ptr<OutlinePass> m_OutlinePass;
     std::unique_ptr<FXAAPass> m_FXAAPass;
+    std::unique_ptr<Bloom> m_BloomPass;
 
     D3D12_VIEWPORT m_Viewport;
     D3D12_RECT m_ScissorRect;
