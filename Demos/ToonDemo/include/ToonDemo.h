@@ -47,7 +47,6 @@ private:
     RenderTarget m_RenderTarget;
     RenderTarget m_DepthNormalsRenderTarget;
     std::shared_ptr<Texture> m_DepthTexture;
-    std::shared_ptr<Texture> m_NormalsTexture;
     RenderTarget m_PostFxRenderTarget;
     RenderTarget m_PostFxRenderTarget2;
 

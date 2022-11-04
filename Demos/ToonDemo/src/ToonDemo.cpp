@@ -330,11 +330,6 @@ bool ToonDemo::LoadContent()
             D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
         );
         m_DepthTexture = std::make_shared<Texture>(resolvedDepthDesc, nullptr, TextureUsageType::Other, L"Depth Texture");
-
-        auto resolvedNormalsDesc = CD3DX12_RESOURCE_DESC::Tex2D(normalsBufferFormat,
-            m_Width, m_Height,
-            1, 1);
-        m_NormalsTexture = std::make_shared<Texture>(resolvedNormalsDesc, nullptr, TextureUsageType::Other, L"Normals Texture");
     }
 
     {
@@ -380,8 +375,6 @@ void ToonDemo::OnResize(ResizeEventArgs& e)
 
         if (m_DepthTexture != nullptr)
             m_DepthTexture->Resize(m_Width, m_Height);
-        if (m_NormalsTexture != nullptr)
-            m_NormalsTexture->Resize(m_Width, m_Height);
 
         m_PostFxRenderTarget.Resize(m_Width, m_Height);
         m_PostFxRenderTarget2.Resize(m_Width, m_Height);
@@ -541,7 +534,6 @@ void ToonDemo::OnRender(RenderEventArgs& e)
     {
         PIXScope(*commandList, "Copy Depth and Normals");
         commandList->CopyResource(*m_DepthTexture, *m_DepthNormalsRenderTarget.GetTexture(DepthStencil));
-        commandList->CopyResource(*m_NormalsTexture, *m_DepthNormalsRenderTarget.GetTexture(Color0));
     }
 
     // only read from the depth buffer, disable write
@@ -571,7 +563,7 @@ void ToonDemo::OnRender(RenderEventArgs& e)
         commandList->SetRenderTarget(m_PostFxRenderTarget);
         commandList->SetAutomaticViewportAndScissorRect(m_PostFxRenderTarget);
 
-        m_OutlinePass->Render(*commandList, m_RenderTarget.GetTexture(Color0), m_DepthTexture, m_NormalsTexture);
+        m_OutlinePass->Render(*commandList, m_RenderTarget.GetTexture(Color0), m_DepthTexture, m_DepthNormalsRenderTarget.GetTexture(Color0));
     }
 
     {
