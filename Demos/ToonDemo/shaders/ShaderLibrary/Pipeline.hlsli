@@ -24,8 +24,9 @@ cbuffer PipelineCBuffer : register(b0, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE)
     float2 g_Pipeline_Screen_Resolution;
     float2 g_Pipeline_Screen_TexelSize;
 
+    matrix g_Pipeline_DirectionalLight_View;
     matrix g_Pipeline_DirectionalLight_ViewProjection;
-    float4 g_Pipeline_DirectionalLight_ShadowsBias; // x - depth, y - normal
+    float4 g_Pipeline_DirectionalLight_ShadowsBias; // x - depth, y - normal, z - shadow map depth scale
 
     DirectionalLight g_Pipeline_DirectionalLight;
 };
@@ -36,6 +37,11 @@ ScreenParameters GetScreenParameters()
     result.ScreenSize = g_Pipeline_Screen_Resolution;
     result.OneOverScreenSize = g_Pipeline_Screen_TexelSize;
     return result;
+}
+
+float GetShadowMapDepthScale()
+{
+    return g_Pipeline_DirectionalLight_ShadowsBias.z;
 }
 
 #endif

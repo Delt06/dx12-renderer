@@ -188,7 +188,7 @@ bool ToonDemo::LoadContent()
         m_DepthNormalsMaterial = Material::Create(shader);
     }
 
-    m_ShadowsPass = std::make_unique<DirectionalLightShadowsPass>(m_RootSignature);
+    m_ShadowsPass = std::make_unique<DirectionalLightShadowsPass>(m_RootSignature, *commandList, 1024);
     m_OutlinePass = std::make_unique<OutlinePass>(m_RootSignature, *commandList);
     m_FXAAPass = std::make_unique<FXAAPass>(m_RootSignature, *commandList);
 
@@ -214,7 +214,7 @@ bool ToonDemo::LoadContent()
         toonMaterialPreset.SetVariable("mainColor", XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
         toonMaterialPreset.SetVariable("shadowColorOpacity", XMFLOAT4(0.0f, 0.0f, 0.0f, 0.75f));
 
-        toonMaterialPreset.SetVariable("rampThreshold", 0.01f);
+        toonMaterialPreset.SetVariable("rampThreshold", 0.1f);
         toonMaterialPreset.SetVariable("rampSmoothness", 0.05f);
 
         toonMaterialPreset.SetVariable("specularColor", XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
@@ -485,10 +485,12 @@ void ToonDemo::OnRender(RenderEventArgs& e)
 
         {
             const auto sceneBounds = ComputeSphereBounds(m_GameObjects);
-            pipelineCBuffer.m_DirectionalLightViewProjection = m_ShadowsPass->ComputeShadowViewProjectionMatrix(sceneBounds, m_DirectionalLight);
+            const auto shadowMatrices = m_ShadowsPass->ComputeMatrices(sceneBounds, m_DirectionalLight);
+            pipelineCBuffer.m_DirectionalLightView = shadowMatrices.m_ViewMatrix;
+            pipelineCBuffer.m_DirectionalLightViewProjection = shadowMatrices.m_ViewProjectionMatrix;
         }
 
-        pipelineCBuffer.m_DirectionalLightShadowsBias = { 0.0005f, -0.1f, 0, 0 };
+        pipelineCBuffer.m_DirectionalLightShadowsBias = { 0.0005f, 0.f, 0.1f, 0 };
 
         pipelineCBuffer.m_DirectionalLight = m_DirectionalLight;
     }
@@ -498,7 +500,7 @@ void ToonDemo::OnRender(RenderEventArgs& e)
     {
         PIXScope(*commandList, "Shadows Pass");
 
-        m_ShadowsPass->Begin(*commandList);
+        m_ShadowsPass->BeginShadowCasterPass(*commandList);
 
         for (const auto& go : m_GameObjects)
         {
@@ -509,7 +511,9 @@ void ToonDemo::OnRender(RenderEventArgs& e)
             go.GetModel()->Draw(*commandList);
         }
 
-        m_ShadowsPass->End(*commandList);
+        m_ShadowsPass->EndShadowCasterPass(*commandList);
+
+        m_ShadowsPass->Blur(*commandList);
     }
 
     commandList->SetViewport(m_Viewport);
@@ -547,7 +551,7 @@ void ToonDemo::OnRender(RenderEventArgs& e)
     m_RootSignature->SetPipelineShaderResourceView(
         *commandList,
         Pipeline::SHADOW_MAP_REGISTER_INDEX,
-        m_ShadowsPass->GetShadowMapShaderResourceView()
+        m_ShadowsPass->GetVarianceMapShaderResourceView()
     );
 
     {

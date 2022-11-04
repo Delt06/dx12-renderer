@@ -1,11 +1,17 @@
 #include "ShaderLibrary/Pipeline.hlsli"
 #include "ShaderLibrary/Model.hlsli"
 
-struct VertexAttributes
+struct VertexShaderInput
 {
     float3 PositionOs : POSITION;
     float3 Normal : NORMAL;
     float2 Uv : TEXCOORD;
+};
+
+struct VertexShaderOutput
+{
+    float Depth : VIEW_Z;
+    float4 PositionCS : SV_POSITION;
 };
 
 // From Unity URP Shader Library
@@ -21,12 +27,19 @@ float3 ApplyBias(float3 position, const float3 normal, const float3 lightDirecti
     return position;
 }
 
-float4 main(VertexAttributes IN) : SV_POSITION
+VertexShaderOutput main(VertexShaderInput IN)
 {
-    float3 positionWs = mul(g_Model_Model, float4(IN.PositionOs, 1.0f)).xyz;
+    VertexShaderOutput OUT;
+
+    float4 positionWs = mul(g_Model_Model, float4(IN.PositionOs, 1.0f));
     const float3 normalWs = normalize(mul((float3x3) g_Model_InverseTransposeModel, IN.Normal));
 
     const float3 lightDirectionWs = g_Pipeline_DirectionalLight.DirectionWs.xyz;
-    positionWs = ApplyBias(positionWs, normalWs, lightDirectionWs);
-    return mul(g_Pipeline_DirectionalLight_ViewProjection, float4(positionWs, 1.0f));
+    positionWs = float4(ApplyBias(positionWs.xyz, normalWs, lightDirectionWs), 1.0);
+
+    float depth = mul(g_Pipeline_DirectionalLight_View, positionWs).z;
+    OUT.Depth = depth * GetShadowMapDepthScale();
+    OUT.PositionCS = mul(g_Pipeline_DirectionalLight_ViewProjection, positionWs);
+
+    return OUT;
 }

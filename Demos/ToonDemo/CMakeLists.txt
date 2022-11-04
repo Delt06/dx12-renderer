@@ -30,6 +30,7 @@ set(SHADER_FILES_PIXEL
         shaders/ShadowCaster_PS.hlsl
         shaders/Outline_PS.hlsl
         shaders/FXAA_PS.hlsl
+        shaders/VarianceShadows_GaussianBlur_PS.hlsl
         )
 
 set(SHADER_FILES_COMPUTE

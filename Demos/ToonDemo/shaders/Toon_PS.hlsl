@@ -27,7 +27,7 @@ cbuffer Material : register(b0)
 
 Texture2D mainTexture : register(t0);
 
-Texture2D<float> shadowMap : register(t0, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE);
+Texture2D<float2> varianceShadowMap : register(t0, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE);
 
 #define APPLY_RAMP(threshold, smoothness, value) (smoothstep((threshold), (threshold) + (smoothness), (value)))
 
@@ -43,7 +43,15 @@ inline float ApplySpecularRamp(float value)
 
 inline float SampleShadowAttenuation(float4 shadowCoords)
 {
-    return shadowMap.SampleCmpLevelZero(g_Common_ShadowMapSampler, shadowCoords.xy, shadowCoords.z);
+    float2 varianceSample = varianceShadowMap.Sample(g_Common_LinearClampSampler, shadowCoords.xy);
+    float variance = varianceSample.y - varianceSample.x * varianceSample.x;
+    float difference = shadowCoords.z - varianceSample.x;
+    if (difference > 0.00001)
+    {
+        return smoothstep(0.4, 1.0, variance / (variance + difference * difference));
+    }
+
+    return 1.0;
 }
 
 float4 main(PixelShaderInput IN) : SV_TARGET

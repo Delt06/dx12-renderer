@@ -18,6 +18,16 @@ ClearValue::ClearValue(DXGI_FORMAT format, const COLOR color)
     memcpy(m_Color, color, sizeof(COLOR));
 }
 
+ClearValue::ClearValue(DXGI_FORMAT format, const DirectX::XMFLOAT4& color)
+    : m_D3D12ClearValue(new D3D12_CLEAR_VALUE)
+    , m_Color()
+    , m_DepthStencil{}
+{
+    m_D3D12ClearValue->Format = format;
+    memcpy(m_D3D12ClearValue->Color, &color, sizeof(COLOR));
+    memcpy(m_Color, &color, sizeof(COLOR));
+}
+
 ClearValue::ClearValue(DXGI_FORMAT format, const DEPTH_STENCIL_VALUE depthStencilValue)
     : m_D3D12ClearValue(new D3D12_CLEAR_VALUE)
     , m_Color()

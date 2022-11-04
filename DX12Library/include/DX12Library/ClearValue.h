@@ -1,6 +1,7 @@
 #pragma once
 
 #include <d3d12.h>
+#include <DirectXMath.h>
 #include <memory>
 
 class ClearValue
@@ -12,6 +13,7 @@ public:
     ClearValue();
 	explicit ClearValue(const COLOR color);
 	explicit ClearValue(DXGI_FORMAT format, const COLOR color);
+	explicit ClearValue(DXGI_FORMAT format, const DirectX::XMFLOAT4& color);
 	explicit ClearValue(DXGI_FORMAT format, const DEPTH_STENCIL_VALUE depthStencilValue);
 
 	ClearValue(const ClearValue&) = delete;

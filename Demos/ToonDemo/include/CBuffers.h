@@ -19,6 +19,7 @@ namespace Demo::Pipeline
         DirectX::XMFLOAT2 m_ScreenResolution;
         DirectX::XMFLOAT2 m_ScreenTexelSize;
 
+        DirectX::XMMATRIX m_DirectionalLightView;
         DirectX::XMMATRIX m_DirectionalLightViewProjection;
 
         DirectX::XMFLOAT4 m_DirectionalLightShadowsBias;

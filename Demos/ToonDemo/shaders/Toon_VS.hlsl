@@ -30,7 +30,9 @@ VertexShaderOutput main(VertexAttributes IN)
     float4 positionWS = mul(g_Model_Model, float4(IN.PositionOS, 1.0f));
     OUT.EyeWS = normalize(positionWS.xyz - g_Pipeline_CameraPosition.xyz);
 
-    OUT.ShadowCoords = HClipToShadowCoords(mul(g_Pipeline_DirectionalLight_ViewProjection, positionWS));
+    float4 shadowCoords = HClipToShadowCoords(mul(g_Pipeline_DirectionalLight_ViewProjection, positionWS));
+    float4 shadowCoordsVS = mul(g_Pipeline_DirectionalLight_View, positionWS);
+    OUT.ShadowCoords = float4(shadowCoords.xy, shadowCoordsVS.z * GetShadowMapDepthScale(), 1.0);
 
     return OUT;
 }
