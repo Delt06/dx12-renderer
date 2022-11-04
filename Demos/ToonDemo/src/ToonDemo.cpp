@@ -150,8 +150,6 @@ bool ToonDemo::LoadContent()
 
     m_RootSignature = std::make_shared<CommonRootSignature>(m_WhiteTexture2d);
 
-    m_MSAADepthResolvePass = std::make_unique<MSAADepthResolvePass>(m_RootSignature);
-
     // depth pre-pass
     {
         auto shader = std::make_shared<Shader>(m_RootSignature,
@@ -245,9 +243,13 @@ bool ToonDemo::LoadContent()
     }
 
     {
-        const UINT msaaSampleCount = 8;
-        const UINT msaaColorQualityLevel = GetMsaaQualityLevels(device, backBufferFormat, msaaSampleCount) - 1;
-        const UINT msaaDepthQualityLevel = GetMsaaQualityLevels(device, depthBufferFormat, msaaSampleCount) - 1;
+        // const UINT msaaSampleCount = 8;
+        // const UINT msaaColorQualityLevel = GetMsaaQualityLevels(device, backBufferFormat, msaaSampleCount) - 1;
+        // const UINT msaaDepthQualityLevel = GetMsaaQualityLevels(device, depthBufferFormat, msaaSampleCount) - 1;
+
+        const UINT msaaSampleCount = 1;
+        const UINT msaaColorQualityLevel = 0;
+        const UINT msaaDepthQualityLevel = 0;
 
         auto colorDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat,
             m_Width, m_Height,
@@ -293,23 +295,18 @@ bool ToonDemo::LoadContent()
     }
 
     {
-        auto resolvedColorDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat,
-            m_Width, m_Height,
-            1, 1);
-        m_ResolvedColor = std::make_shared<Texture>(resolvedColorDesc, nullptr, TextureUsageType::Other, L"Resolved Color");
-
         auto resolvedDepthDesc = CD3DX12_RESOURCE_DESC::Tex2D(resolvedDepthBufferFormat,
             m_Width, m_Height,
             1, 1,
             1, 0,
             D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
         );
-        m_ResolvedDepth = std::make_shared<Texture>(resolvedDepthDesc, nullptr, TextureUsageType::Other, L"Resolved Depth");
+        m_DepthTexture = std::make_shared<Texture>(resolvedDepthDesc, nullptr, TextureUsageType::Other, L"Depth Texture");
 
         auto resolvedNormalsDesc = CD3DX12_RESOURCE_DESC::Tex2D(normalsBufferFormat,
             m_Width, m_Height,
             1, 1);
-        m_ResolvedNormals = std::make_shared<Texture>(resolvedNormalsDesc, nullptr, TextureUsageType::Other, L"Resolved Normals");
+        m_NormalsTexture = std::make_shared<Texture>(resolvedNormalsDesc, nullptr, TextureUsageType::Other, L"Normals Texture");
     }
 
     {
@@ -353,12 +350,10 @@ void ToonDemo::OnResize(ResizeEventArgs& e)
         m_RenderTarget.Resize(m_Width, m_Height);
         m_DepthNormalsRenderTarget.Resize(m_Width, m_Height);
 
-        if (m_ResolvedColor != nullptr)
-            m_ResolvedColor->Resize(m_Width, m_Height);
-        if (m_ResolvedDepth != nullptr)
-            m_ResolvedDepth->Resize(m_Width, m_Height);
-        if (m_ResolvedNormals != nullptr)
-            m_ResolvedNormals->Resize(m_Width, m_Height);
+        if (m_DepthTexture != nullptr)
+            m_DepthTexture->Resize(m_Width, m_Height);
+        if (m_NormalsTexture != nullptr)
+            m_NormalsTexture->Resize(m_Width, m_Height);
 
         m_PostFxRenderTarget.Resize(m_Width, m_Height);
         m_PostFxRenderTarget2.Resize(m_Width, m_Height);
@@ -490,12 +485,9 @@ void ToonDemo::OnRender(RenderEventArgs& e)
     }
 
     {
-        PIXScope(*commandList, "MSAA - Resolve Depth and Normals");
-        m_MSAADepthResolvePass->Resolve(*commandList, m_DepthNormalsRenderTarget.GetTexture(DepthStencil), m_ResolvedDepth);
-        commandList->ResolveSubresource(*m_ResolvedNormals, *m_DepthNormalsRenderTarget.GetTexture(Color0));
-
-        m_RootSignature->UnbindMaterialShaderResourceViews(*commandList);
-        commandList->CommitStagedDescriptors();
+        PIXScope(*commandList, "Copy Depth and Normals");
+        commandList->CopyResource(*m_DepthTexture, *m_DepthNormalsRenderTarget.GetTexture(DepthStencil));
+        commandList->CopyResource(*m_NormalsTexture, *m_DepthNormalsRenderTarget.GetTexture(Color0));
     }
 
     // only read from the depth buffer, disable write
@@ -515,15 +507,10 @@ void ToonDemo::OnRender(RenderEventArgs& e)
     }
 
     {
-        PIXScope(*commandList, "MSAA - Resolve Color");
-        commandList->ResolveSubresource(*m_ResolvedColor, *m_RenderTarget.GetTexture(Color0));
-    }
-
-    {
         commandList->SetRenderTarget(m_PostFxRenderTarget);
         commandList->SetAutomaticViewportAndScissorRect(m_PostFxRenderTarget);
 
-        m_OutlinePass->Render(*commandList, m_ResolvedColor, m_ResolvedDepth, m_ResolvedNormals);
+        m_OutlinePass->Render(*commandList, m_RenderTarget.GetTexture(Color0), m_DepthTexture, m_NormalsTexture);
     }
 
     {

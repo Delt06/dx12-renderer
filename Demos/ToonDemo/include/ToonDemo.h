@@ -16,7 +16,6 @@
 #include <Framework/Mesh.h>
 #include <Framework/Material.h>
 #include <Framework/CommonRootSignature.h>
-#include <Framework/MSAADepthResolvePass.h>
 
 #include "OutlinePass.h"
 #include "FXAAPass.h"
@@ -46,9 +45,8 @@ private:
 
     RenderTarget m_RenderTarget;
     RenderTarget m_DepthNormalsRenderTarget;
-    std::shared_ptr<Texture> m_ResolvedColor;
-    std::shared_ptr<Texture> m_ResolvedDepth;
-    std::shared_ptr<Texture> m_ResolvedNormals;
+    std::shared_ptr<Texture> m_DepthTexture;
+    std::shared_ptr<Texture> m_NormalsTexture;
     RenderTarget m_PostFxRenderTarget;
     RenderTarget m_PostFxRenderTarget2;
 
@@ -58,7 +56,6 @@ private:
     bool m_AnimateLights = false;
 
     std::shared_ptr<CommonRootSignature> m_RootSignature;
-    std::unique_ptr<MSAADepthResolvePass> m_MSAADepthResolvePass;
     std::shared_ptr<Material> m_DepthNormalsMaterial;
     std::unique_ptr<OutlinePass> m_OutlinePass;
     std::unique_ptr<FXAAPass> m_FXAAPass;
