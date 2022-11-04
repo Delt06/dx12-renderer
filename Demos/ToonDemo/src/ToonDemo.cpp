@@ -61,7 +61,7 @@ namespace
     }
 
     bool allowFullscreenToggle = true;
-    constexpr FLOAT CLEAR_COLOR[] = { 0.4f, 0.6f, 0.9f, 1.0f };
+    constexpr FLOAT CLEAR_COLOR[] = { 138.0f / 255.0f, 82.0f / 255.0f, 52.0f / 255.0f, 1.0f };
     constexpr FLOAT NORMALS_CLEAR_COLOR[] = { 0.5f, 0.5f, 0.5f, 1.0f };
 
     // Builds a look-at (world) matrix from a point, up and direction vectors.
@@ -232,10 +232,11 @@ bool ToonDemo::LoadContent()
             auto model = std::make_shared<Model>(Mesh::CreateSphere(*commandList));
             auto material = Material::Create(toonMaterialPreset);
 
-            material->SetVariable("mainColor", XMFLOAT4(0.1f, 0.9f, 0.1f, 1.0f));
+            material->SetVariable("mainColor", XMFLOAT4(0.75f, 0.65f, 0.1f, 1.0f));
             material->SetVariable("shadowColorOpacity", XMFLOAT4(0.1f, 0.1f, 0.1f, 0.5f));
 
-            material->SetVariable("specularColor", XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f));
+            material->SetVariable("specularColor", XMFLOAT4(0.5f, 0.0f, 0.0f, 1.0f));
+            material->SetVariable("specularExponent", 50.0f);
 
             XMMATRIX translationMatrix = DirectX::XMMatrixTranslation(-5.0f, 2.0f, 0.0f);
             XMMATRIX rotationMatrix = DirectX::XMMatrixIdentity();
@@ -248,7 +249,7 @@ bool ToonDemo::LoadContent()
             auto model = std::make_shared<Model>(Mesh::CreatePlane(*commandList));
             auto material = Material::Create(toonMaterialPreset);
 
-            material->SetVariable("mainColor", XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
+            material->SetVariable("mainColor", XMFLOAT4(68.0f / 255.0f, 58.0f / 255.0f, 66.0f / 255.0f, 1.0f));
             material->SetVariable("specularColor", XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f));
 
             XMMATRIX translationMatrix = DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f);
