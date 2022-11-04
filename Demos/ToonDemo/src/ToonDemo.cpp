@@ -162,6 +162,7 @@ bool ToonDemo::LoadContent()
     }
 
     m_OutlinePass = std::make_unique<OutlinePass>(m_RootSignature, *commandList);
+    m_FXAAPass = std::make_unique<FXAAPass>(m_RootSignature, *commandList);
 
     m_DirectionalLight.m_Color = XMFLOAT4(1, 1, 1, 1);
     m_DirectionalLight.m_DirectionWs = XMFLOAT4(1, 1, 0, 0);
@@ -312,14 +313,20 @@ bool ToonDemo::LoadContent()
     }
 
     {
-        auto postFxColorDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat,
-            m_Width, m_Height,
-            1, 1,
-            1, 0,
-            D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET
-        );
-        auto postFxColorTexture = std::make_shared<Texture>(postFxColorDesc, nullptr, TextureUsageType::RenderTarget, L"PostFX Color");
-        m_PostFxRenderTarget.AttachTexture(Color0, postFxColorTexture);
+        const auto CreatePostFxTexture = [this](const std::wstring& name)
+        {
+            auto postFxColorDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat,
+                m_Width, m_Height,
+                1, 1,
+                1, 0,
+                D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET
+            );
+            auto postFxColorTexture = std::make_shared<Texture>(postFxColorDesc, nullptr, TextureUsageType::RenderTarget, name);
+            return postFxColorTexture;
+        };
+
+        m_PostFxRenderTarget.AttachTexture(Color0, CreatePostFxTexture(L"PostFX Color"));
+        m_PostFxRenderTarget2.AttachTexture(Color0, CreatePostFxTexture(L"PostFX Color 2"));
     }
 
     auto fenceValue = commandQueue->ExecuteCommandList(commandList);
@@ -354,6 +361,7 @@ void ToonDemo::OnResize(ResizeEventArgs& e)
             m_ResolvedNormals->Resize(m_Width, m_Height);
 
         m_PostFxRenderTarget.Resize(m_Width, m_Height);
+        m_PostFxRenderTarget2.Resize(m_Width, m_Height);
     }
 }
 
@@ -518,8 +526,15 @@ void ToonDemo::OnRender(RenderEventArgs& e)
         m_OutlinePass->Render(*commandList, m_ResolvedColor, m_ResolvedDepth, m_ResolvedNormals);
     }
 
+    {
+        commandList->SetRenderTarget(m_PostFxRenderTarget2);
+        commandList->SetAutomaticViewportAndScissorRect(m_PostFxRenderTarget2);
+
+        m_FXAAPass->Render(*commandList, m_PostFxRenderTarget.GetTexture(Color0));
+    }
+
     commandQueue->ExecuteCommandList(commandList);
-    PWindow->Present(*m_PostFxRenderTarget.GetTexture(Color0));
+    PWindow->Present(*m_PostFxRenderTarget2.GetTexture(Color0));
 }
 
 void ToonDemo::OnKeyPressed(KeyEventArgs& e)

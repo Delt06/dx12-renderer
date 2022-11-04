@@ -27,7 +27,7 @@ void OutlinePass::Render(CommandList& commandList, const std::shared_ptr<Texture
 
     m_Material->SetVariable<DirectX::XMFLOAT4>("outlineColor", { 0.0f, 0.0f, 0.0f, 1.0f });
     m_Material->SetVariable("depthThreshold", 0.005f);
-    m_Material->SetVariable("normalsThreshold", 4.0f);
+    m_Material->SetVariable("normalsThreshold", 3.0f);
 
     m_Material->Bind(commandList);
     m_BlitMesh->Draw(commandList);

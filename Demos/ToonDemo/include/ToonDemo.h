@@ -19,6 +19,7 @@
 #include <Framework/MSAADepthResolvePass.h>
 
 #include "OutlinePass.h"
+#include "FXAAPass.h"
 
 class ToonDemo final : public Game
 {
@@ -49,6 +50,7 @@ private:
     std::shared_ptr<Texture> m_ResolvedDepth;
     std::shared_ptr<Texture> m_ResolvedNormals;
     RenderTarget m_PostFxRenderTarget;
+    RenderTarget m_PostFxRenderTarget2;
 
     Camera m_Camera;
     std::vector<GameObject> m_GameObjects;
@@ -59,6 +61,7 @@ private:
     std::unique_ptr<MSAADepthResolvePass> m_MSAADepthResolvePass;
     std::shared_ptr<Material> m_DepthNormalsMaterial;
     std::unique_ptr<OutlinePass> m_OutlinePass;
+    std::unique_ptr<FXAAPass> m_FXAAPass;
 
     D3D12_VIEWPORT m_Viewport;
     D3D12_RECT m_ScissorRect;
