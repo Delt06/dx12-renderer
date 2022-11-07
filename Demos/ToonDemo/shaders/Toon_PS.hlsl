@@ -23,6 +23,9 @@ cbuffer Material : register(b0)
     float specularRampThreshold;
     float specularRampSmoothness;
     float specularExponent;
+
+    float fresnelRampThreshold;
+    float fresnelRampSmoothness;
 };
 
 Texture2D mainTexture : register(t0);
@@ -39,6 +42,11 @@ inline float ApplyRamp(float value)
 inline float ApplySpecularRamp(float value)
 {
     return APPLY_RAMP(specularRampThreshold, specularRampSmoothness, value);
+}
+
+inline float ApplyFresnelRamp(float value)
+{
+    return APPLY_RAMP(fresnelRampThreshold, fresnelRampSmoothness, value);
 }
 
 inline float SampleShadowAttenuation(float4 shadowCoords)
@@ -70,9 +78,13 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     const float3 diffuse = lerp(shadowColor, albedo, diffuseAttenuation);
 
     const float3 r = normalize(reflect(lightDirectionWS , normalWS));
-    const float RdotV = pow(max(0, dot(r, IN.EyeWS)), specularExponent);
-    const float specularAttenuation = ApplySpecularRamp(min(RdotV, RdotV * shadowAttenuation));
-    const float3 specular = specularColor.rgb * specularAttenuation;
+    const float RdotV = max(0, dot(r, IN.EyeWS));
+    const float specularIntensity = pow(RdotV, specularExponent);
+    const float specularAttenuation = ApplySpecularRamp(min(specularIntensity, specularIntensity * shadowAttenuation));
+
+    const float fresnelIntensity = 1 - saturate(dot(-IN.EyeWS, normalWS));
+    const float fresnelAttenuation = ApplyFresnelRamp(min(fresnelIntensity, fresnelIntensity * shadowAttenuation * diffuseAttenuation));
+    const float3 specular = specularColor.rgb * max(specularAttenuation, fresnelAttenuation);
 
     const float3 resultColor = (diffuse + specular) * g_Pipeline_DirectionalLight.Color.rgb;
 

@@ -223,6 +223,9 @@ bool ToonDemo::LoadContent()
         toonMaterialPreset.SetVariable("specularRampSmoothness", 0.05f);
         toonMaterialPreset.SetVariable("specularExponent", 15.0f);
 
+        toonMaterialPreset.SetVariable("fresnelRampThreshold", 0.45f);
+        toonMaterialPreset.SetVariable("fresnelRampSmoothness", 0.05f);
+
         const auto MaterialSetTexture = [&modelLoader, &commandList](Material& material, const std::string& propertyName, const std::wstring& texturePath, TextureUsageType usage = TextureUsageType::Albedo)
         {
             material.SetShaderResourceView(propertyName, ShaderResourceView(modelLoader.LoadTexture(*commandList, texturePath, usage)));
