@@ -2,6 +2,7 @@
 
 #include "ShaderLibrary/Model.hlsli"
 #include "ShaderLibrary/Pipeline.hlsli"
+#include "ToonVaryings.hlsli"
 
 struct VertexAttributes
 {
@@ -10,18 +11,9 @@ struct VertexAttributes
     float2 UV : TEXCOORD;
 };
 
-struct VertexShaderOutput
+ToonVaryings main(VertexAttributes IN)
 {
-    float3 NormalWS : NORMAL;
-    float2 UV : TEXCOORD;
-    float3 EyeWS : EYE_WS;
-    float4 ShadowCoords : SHADOW_COORDS;
-    float4 PositionCS : SV_POSITION;
-};
-
-VertexShaderOutput main(VertexAttributes IN)
-{
-    VertexShaderOutput OUT;
+    ToonVaryings OUT;
 
     OUT.NormalWS = mul((float3x3) g_Model_InverseTransposeModel, IN.Normal);
     OUT.PositionCS = mul(g_Model_ModelViewProjection, float4(IN.PositionOS, 1.0f));
@@ -33,6 +25,8 @@ VertexShaderOutput main(VertexAttributes IN)
     float4 shadowCoords = HClipToShadowCoords(mul(g_Pipeline_DirectionalLight_ViewProjection, positionWS));
     float4 shadowCoordsVS = mul(g_Pipeline_DirectionalLight_View, positionWS);
     OUT.ShadowCoords = float4(shadowCoords.xy, shadowCoordsVS.z * GetShadowMapDepthScale(), 1.0);
+
+    OUT.PositionVS = mul(g_Pipeline_View, positionWS);
 
     return OUT;
 }

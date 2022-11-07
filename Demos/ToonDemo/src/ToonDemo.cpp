@@ -217,9 +217,6 @@ bool ToonDemo::LoadContent()
         toonMaterialPreset.SetVariable("mainColor", XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
         toonMaterialPreset.SetVariable("shadowColorOpacity", XMFLOAT4(0.0f, 0.0f, 0.0f, 0.75f));
 
-        toonMaterialPreset.SetVariable("rampThreshold", 0.1f);
-        toonMaterialPreset.SetVariable("rampSmoothness", 0.05f);
-
         toonMaterialPreset.SetVariable("specularColor", XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
         toonMaterialPreset.SetVariable("specularRampThreshold", 0.5f);
         toonMaterialPreset.SetVariable("specularRampSmoothness", 0.05f);
@@ -227,6 +224,16 @@ bool ToonDemo::LoadContent()
 
         toonMaterialPreset.SetVariable("fresnelRampThreshold", 0.45f);
         toonMaterialPreset.SetVariable("fresnelRampSmoothness", 0.05f);
+
+        toonMaterialPreset.SetVariable("crossHatchTilingOffset", XMFLOAT4{ 1.0f, 1.0f, 0, 0 });
+        toonMaterialPreset.SetVariable("crossHatchThreshold", 0.5f);
+        toonMaterialPreset.SetVariable("crossHatchSmoothness", 0.05f);
+
+        const auto toonRamp = modelLoader.LoadTexture(*commandList, L"Assets/Textures/toon_ramp.png", TextureUsageType::Other);
+        toonMaterialPreset.SetShaderResourceView("toonRamp", ShaderResourceView(toonRamp));
+
+        const auto crossHatchPatternTexture = modelLoader.LoadTexture(*commandList, L"Assets/Textures/crosshatching.jpg", TextureUsageType::Other);
+        toonMaterialPreset.SetShaderResourceView("crossHatchPatternTexture", ShaderResourceView(crossHatchPatternTexture));
 
         const auto MaterialSetTexture = [&modelLoader, &commandList](Material& material, const std::string& propertyName, const std::wstring& texturePath, TextureUsageType usage = TextureUsageType::Albedo)
         {
@@ -238,7 +245,7 @@ bool ToonDemo::LoadContent()
             auto material = Material::Create(toonMaterialPreset);
 
             material->SetVariable("mainColor", XMFLOAT4(0.75f, 0.65f, 0.1f, 1.0f));
-            material->SetVariable("shadowColorOpacity", XMFLOAT4(0.1f, 0.1f, 0.1f, 0.5f));
+            material->SetVariable("shadowColorOpacity", XMFLOAT4(0.5f, 0.3f, 0.1f, 1.0f));
 
             material->SetVariable("specularColor", XMFLOAT4(0.5f, 0.0f, 0.0f, 1.0f));
             material->SetVariable("specularExponent", 50.0f);
