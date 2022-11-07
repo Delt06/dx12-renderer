@@ -8,6 +8,7 @@ struct PixelShaderInput
     float2 UV : TEXCOORD;
     float3 EyeWS : EYE_WS;
     float4 ShadowCoords : SHADOW_COORDS;
+    float4 PositionCS : SV_POSITION;
 };
 
 cbuffer Material : register(b0)
@@ -31,6 +32,7 @@ cbuffer Material : register(b0)
 Texture2D mainTexture : register(t0);
 
 Texture2D<float2> varianceShadowMap : register(t0, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE);
+Texture2D<float> ssaoTexture : register(t1, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE);
 
 #define APPLY_RAMP(threshold, smoothness, value) (smoothstep((threshold), (threshold) + (smoothness), (value)))
 
@@ -62,6 +64,11 @@ inline float SampleShadowAttenuation(float4 shadowCoords)
     return 1.0;
 }
 
+float2 GetScreenSpaceUV(float4 positionCS)
+{
+    return positionCS.xy /= g_Pipeline_Screen_Resolution;
+}
+
 float4 main(PixelShaderInput IN) : SV_TARGET
 {
     const float3 normalWS = normalize(IN.NormalWS);
@@ -70,7 +77,8 @@ float4 main(PixelShaderInput IN) : SV_TARGET
         albedo *= mainTexture.Sample(g_Common_LinearWrapSampler, IN.UV).rgb;
 
     const float3 lightDirectionWS = g_Pipeline_DirectionalLight.DirectionWs.xyz;
-    const float shadowAttenuation = SampleShadowAttenuation(IN.ShadowCoords);
+    const float ao = ssaoTexture.Sample(g_Common_LinearClampSampler, GetScreenSpaceUV(IN.PositionCS));
+    const float shadowAttenuation = SampleShadowAttenuation(IN.ShadowCoords) * ao;
     const float NdotL = dot(normalWS, lightDirectionWS);
 
     const float diffuseAttenuation = ApplyRamp(min(NdotL, NdotL * shadowAttenuation));

@@ -31,6 +31,7 @@ set(HEADER_FILES
         "include/Framework/UnorderedAccessView.h"
         "include/Framework/ComputeShader.h"
         "include/Framework/MSAADepthResolvePass.h"
+        "include/Framework/SSAOUtils.h"
 )
 
 set(SOURCE_FILES
@@ -58,6 +59,7 @@ set(SOURCE_FILES
         "src/ShaderBlob.cpp"
         "src/ComputeShader.cpp"
         "src/MSAADepthResolvePass.cpp"
+        "src/SSAOUtils.cpp"
         )
 
 set(SHADER_FILES_VERTEX

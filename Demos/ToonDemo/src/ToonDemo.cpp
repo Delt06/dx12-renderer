@@ -124,6 +124,7 @@ namespace
 namespace Pipeline
 {
     constexpr UINT SHADOW_MAP_REGISTER_INDEX = 0;
+    constexpr UINT SSAO_MAP_REGISTER_INDEX = 1;
 }
 
 ToonDemo::ToonDemo(const std::wstring& name, int width, int height, GraphicsSettings graphicsSettings)
@@ -192,6 +193,7 @@ bool ToonDemo::LoadContent()
     m_OutlinePass = std::make_unique<OutlinePass>(m_RootSignature, *commandList);
     m_FXAAPass = std::make_unique<FXAAPass>(m_RootSignature, *commandList);
     m_BloomPass = std::make_unique<Bloom>(m_RootSignature, *commandList, m_Width, m_Height, backBufferFormat, 4);
+    m_SSAOPass = std::make_unique<SSAOPass>(m_RootSignature, *commandList, m_Width, m_Height);
 
     m_DirectionalLight.m_Color = XMFLOAT4(1, 1, 1, 1);
     m_DirectionalLight.m_DirectionWs = XMFLOAT4(1, 1, 0, 0);
@@ -410,6 +412,9 @@ void ToonDemo::OnResize(ResizeEventArgs& e)
 
         if (m_BloomPass != nullptr)
             m_BloomPass->Resize(m_Width, m_Height);
+
+        if (m_SSAOPass != nullptr)
+            m_SSAOPass->Resize(m_Width, m_Height);
     }
 }
 
@@ -568,6 +573,11 @@ void ToonDemo::OnRender(RenderEventArgs& e)
         commandList->CopyResource(*m_DepthTexture, *m_DepthNormalsRenderTarget.GetTexture(DepthStencil));
     }
 
+    if (m_EnableSSAO)
+    {
+        m_SSAOPass->Execute(*commandList, m_DepthTexture, m_DepthNormalsRenderTarget.GetTexture(Color0));
+    }
+
     // only read from the depth buffer, disable write
     commandList->SetRenderTarget(m_RenderTarget, -1, 0, true, true);
 
@@ -577,6 +587,16 @@ void ToonDemo::OnRender(RenderEventArgs& e)
         Pipeline::SHADOW_MAP_REGISTER_INDEX,
         m_ShadowsPass->GetVarianceMapShaderResourceView()
     );
+
+    // bind SSAO texture
+    m_RootSignature->SetPipelineShaderResourceView(
+        *commandList,
+        Pipeline::SSAO_MAP_REGISTER_INDEX,
+        ShaderResourceView(m_EnableSSAO ? m_SSAOPass->GetFinalTexture() : m_WhiteTexture2d)
+    );
+
+    commandList->SetViewport(m_Viewport);
+    commandList->SetScissorRect(m_ScissorRect);
 
     {
         PIXScope(*commandList, "Main Pass");
@@ -678,6 +698,9 @@ void ToonDemo::OnKeyPressed(KeyEventArgs& e)
         break;
     case KeyCode::L:
         m_AnimateLights = !m_AnimateLights;
+        break;
+    case KeyCode::O:
+        m_EnableSSAO = !m_EnableSSAO;
         break;
     case KeyCode::ShiftKey:
         m_CameraController.m_Shift = true;

@@ -8,6 +8,7 @@ set(HEADER_FILES
         include/OutlinePass.h
         include/FXAAPass.h
         include/DirectionalLightShadowsPass.h
+        include/SSAOPass.h
         )
 
 set(SOURCE_FILES
@@ -16,6 +17,7 @@ set(SOURCE_FILES
         src/OutlinePass.cpp
         src/FXAAPass.cpp
         src/DirectionalLightShadowsPass.cpp
+        src/SSAOPass.cpp
         )
 
 set(SHADER_FILES_VERTEX
@@ -31,6 +33,8 @@ set(SHADER_FILES_PIXEL
         shaders/Outline_PS.hlsl
         shaders/FXAA_PS.hlsl
         shaders/VarianceShadows_GaussianBlur_PS.hlsl
+        shaders/SSAO_PS.hlsl
+        shaders/SSAO_Blur_PS.hlsl
         )
 
 set(SHADER_FILES_COMPUTE

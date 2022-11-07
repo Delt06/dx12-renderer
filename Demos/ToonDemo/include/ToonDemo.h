@@ -21,6 +21,7 @@
 #include "DirectionalLightShadowsPass.h"
 #include "OutlinePass.h"
 #include "FXAAPass.h"
+#include "SSAOPass.h"
 
 class ToonDemo final : public Game
 {
@@ -55,6 +56,7 @@ private:
     std::vector<GameObject> m_GameObjects;
     DirectionalLight m_DirectionalLight;
     bool m_AnimateLights = false;
+    bool m_EnableSSAO = false;
 
     std::shared_ptr<CommonRootSignature> m_RootSignature;
     std::shared_ptr<Material> m_DepthNormalsMaterial;
@@ -62,6 +64,7 @@ private:
     std::unique_ptr<OutlinePass> m_OutlinePass;
     std::unique_ptr<FXAAPass> m_FXAAPass;
     std::unique_ptr<Bloom> m_BloomPass;
+    std::unique_ptr<SSAOPass> m_SSAOPass;
 
     D3D12_VIEWPORT m_Viewport;
     D3D12_RECT m_ScissorRect;
