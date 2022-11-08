@@ -20,6 +20,10 @@ cbuffer Material : register(b0)
     float4 crossHatchTilingOffset;
     float crossHatchThreshold;
     float crossHatchSmoothness;
+
+    float4 ambientLightingColor;
+    float ambientLightingThreshold;
+    float ambientLightingSmoothness;
 };
 
 Texture2D mainTexture : register(t0);
@@ -50,6 +54,11 @@ inline float ApplyFresnelRamp(float value)
 inline float ApplyCrossHatchRamp(float value)
 {
     return APPLY_RAMP(crossHatchThreshold, crossHatchSmoothness, value);
+}
+
+inline float ApplyAmbientRamp(float value)
+{
+    return APPLY_RAMP(ambientLightingThreshold, ambientLightingSmoothness, value);
 }
 
 inline float SampleShadowAttenuation(float4 shadowCoords)
@@ -105,7 +114,11 @@ float4 main(ToonVaryings IN) : SV_TARGET
     const float fresnelAttenuation = ApplyFresnelRamp(min(fresnelIntensity, fresnelIntensity * shadowAttenuation * diffuseAttenuation));
     const float3 specular = specularColor.rgb * max(specularAttenuation, fresnelAttenuation);
 
-    const float3 resultColor = (diffuse + specular) * g_Pipeline_DirectionalLight.Color.rgb;
+    const float ambientFactor = normalWS.y;
+    const float ambientIntensity = ApplyAmbientRamp(ambientFactor);
+    const float3 ambient = albedo * ambientLightingColor.rgb * ambientIntensity;
+
+    const float3 resultColor = (diffuse + specular) * g_Pipeline_DirectionalLight.Color.rgb + ambient;
 
     return float4(resultColor, 1.0f);
 }

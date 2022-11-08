@@ -229,6 +229,10 @@ bool ToonDemo::LoadContent()
         toonMaterialPreset.SetVariable("crossHatchThreshold", 0.5f);
         toonMaterialPreset.SetVariable("crossHatchSmoothness", 0.05f);
 
+        toonMaterialPreset.SetVariable("ambientLightingColor", XMFLOAT4{ 0.25f, 0.25f, 0.25f, 1.0f });
+        toonMaterialPreset.SetVariable("ambientLightingThreshold", 0.25f);
+        toonMaterialPreset.SetVariable("ambientLightingSmoothness", 0.5f);
+
         const auto toonRamp = modelLoader.LoadTexture(*commandList, L"Assets/Textures/toon_ramp.png", TextureUsageType::Other);
         toonMaterialPreset.SetShaderResourceView("toonRamp", ShaderResourceView(toonRamp));
 
