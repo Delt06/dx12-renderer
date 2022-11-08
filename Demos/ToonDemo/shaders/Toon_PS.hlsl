@@ -70,9 +70,9 @@ float2 GetScreenSpaceUV(float4 positionCS)
     return positionCS.xy /= g_Pipeline_Screen_Resolution;
 }
 
-float GetCrossHatchAttenuation(float3 positionVS, float rawDiffuseAttenuation)
+float GetCrossHatchAttenuation(float2 crossHatchingUV, float rawDiffuseAttenuation)
 {
-    const float2 uv = positionVS.xy * crossHatchTilingOffset.xy + crossHatchTilingOffset.zw;
+    const float2 uv = crossHatchingUV * crossHatchTilingOffset.xy + crossHatchTilingOffset.zw;
     float patternSample = crossHatchPatternTexture.Sample(g_Common_LinearWrapSampler, uv);
     return lerp(patternSample, 1.0, ApplyCrossHatchRamp(rawDiffuseAttenuation));
 }
@@ -91,7 +91,7 @@ float4 main(ToonVaryings IN) : SV_TARGET
 
     const float rawDiffuseAttenuation = min(NdotL, NdotL * shadowAttenuation);
     const float diffuseAttenuation = ApplyRamp(rawDiffuseAttenuation);
-    const float crossHatchAttenuation = GetCrossHatchAttenuation(IN.PositionVS.xyz, rawDiffuseAttenuation);
+    const float crossHatchAttenuation = GetCrossHatchAttenuation(IN.CrossHatchingUV, rawDiffuseAttenuation);
     const float brightness = diffuseAttenuation * crossHatchAttenuation;
     const float3 shadowColor = lerp(albedo, shadowColorOpacity.rgb, shadowColorOpacity.a);
     const float3 diffuse = lerp(shadowColor, albedo, brightness);

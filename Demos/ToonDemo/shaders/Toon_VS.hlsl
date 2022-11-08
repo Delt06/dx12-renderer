@@ -26,7 +26,8 @@ ToonVaryings main(VertexAttributes IN)
     float4 shadowCoordsVS = mul(g_Pipeline_DirectionalLight_View, positionWS);
     OUT.ShadowCoords = float4(shadowCoords.xy, shadowCoordsVS.z * GetShadowMapDepthScale(), 1.0);
 
-    OUT.PositionVS = mul(g_Pipeline_View, positionWS);
+    float3 offsetWS = positionWS.xyz - g_Model_Model._m30_m31_m32;
+    OUT.CrossHatchingUV = 0.5f * (offsetWS.xy + offsetWS.yz);
 
     return OUT;
 }
