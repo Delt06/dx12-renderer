@@ -626,11 +626,6 @@ void ToonDemo::OnRender(RenderEventArgs& e)
     }
 
     {
-        PIXScope(*commandList, "Downsample Scene Color");
-        m_DownsampleColorPass->Execute(*commandList, ShaderResourceView(m_RenderTarget.GetTexture(Color0)));
-    }
-
-    {
         commandList->SetRenderTarget(m_PostFxRenderTarget);
         commandList->SetAutomaticViewportAndScissorRect(m_PostFxRenderTarget);
 
