@@ -71,6 +71,27 @@
 - Hold <kbd>LMB</kbd> and move the mouse to orient the camera;
 - Press <kbd>L</kbd> to toggle light animation.
 
+### ToonDemo
+
+- [ToonDemo](./Demos/ToonDemo)
+  - Toon/Cel-Shading:
+    - Diffuse ramp texture;
+    - Configurable specular;
+    - Cross-hatching pattern;
+  - Variance Shadow Mapping (Directional Light);
+  - Post-processing:
+    - Outline (Sobel-filter);
+    - FXAA;
+    - Bloom.
+
+![Toon Demo Screenshot](./Screenshots/ToonDemo.jpg)
+
+#### Controls
+
+- Use <kbd>WASD</kbd>/Arrow Keys to move the camera;
+- Hold <kbd>LMB</kbd> and move the mouse to orient the camera;
+- Press <kbd>L</kbd> to toggle light animation.
+
 ### Animations
 
 - [AnimationsDemo](./Demos/AnimationsDemo)
