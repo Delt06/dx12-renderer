@@ -22,6 +22,7 @@
 #include "OutlinePass.h"
 #include "FXAAPass.h"
 #include "SSAOPass.h"
+#include "DownsamplePass.h"
 
 class ToonDemo final : public Game
 {
@@ -65,6 +66,7 @@ private:
     std::unique_ptr<FXAAPass> m_FXAAPass;
     std::unique_ptr<Bloom> m_BloomPass;
     std::unique_ptr<SSAOPass> m_SSAOPass;
+    std::unique_ptr<DownsamplePass> m_DownsampleColorPass;
 
     D3D12_VIEWPORT m_Viewport;
     D3D12_RECT m_ScissorRect;

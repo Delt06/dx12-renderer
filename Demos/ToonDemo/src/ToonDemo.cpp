@@ -194,6 +194,7 @@ bool ToonDemo::LoadContent()
     m_FXAAPass = std::make_unique<FXAAPass>(m_RootSignature, *commandList);
     m_BloomPass = std::make_unique<Bloom>(m_RootSignature, *commandList, m_Width, m_Height, backBufferFormat, 4);
     m_SSAOPass = std::make_unique<SSAOPass>(m_RootSignature, *commandList, m_Width, m_Height);
+    m_DownsampleColorPass = std::make_unique<DownsamplePass>(m_RootSignature, *commandList, L"Scene Color (Downsampled)", backBufferFormat, m_Width, m_Height);
 
     m_DirectionalLight.m_Color = XMFLOAT4(1, 1, 1, 1);
     m_DirectionalLight.m_DirectionWs = XMFLOAT4(1, 1, 0, 0);
@@ -426,6 +427,8 @@ void ToonDemo::OnResize(ResizeEventArgs& e)
 
         if (m_SSAOPass != nullptr)
             m_SSAOPass->Resize(m_Width, m_Height);
+        if (m_DownsampleColorPass != nullptr)
+            m_DownsampleColorPass->Resize(m_Width, m_Height);
     }
 }
 
@@ -620,6 +623,11 @@ void ToonDemo::OnRender(RenderEventArgs& e)
 
             go.Draw(*commandList);
         }
+    }
+
+    {
+        PIXScope(*commandList, "Downsample Scene Color");
+        m_DownsampleColorPass->Execute(*commandList, ShaderResourceView(m_RenderTarget.GetTexture(Color0)));
     }
 
     {

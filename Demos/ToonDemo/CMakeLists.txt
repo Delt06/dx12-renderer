@@ -9,6 +9,7 @@ set(HEADER_FILES
         include/FXAAPass.h
         include/DirectionalLightShadowsPass.h
         include/SSAOPass.h
+        include/DownsamplePass.h
         )
 
 set(SOURCE_FILES
@@ -18,6 +19,7 @@ set(SOURCE_FILES
         src/FXAAPass.cpp
         src/DirectionalLightShadowsPass.cpp
         src/SSAOPass.cpp
+        src/DownsamplePass.cpp
         )
 
 set(SHADER_FILES_VERTEX
@@ -35,6 +37,7 @@ set(SHADER_FILES_PIXEL
         shaders/VarianceShadows_GaussianBlur_PS.hlsl
         shaders/SSAO_PS.hlsl
         shaders/SSAO_Blur_PS.hlsl
+        shaders/Downsample_PS.hlsl
         )
 
 set(SHADER_FILES_COMPUTE
