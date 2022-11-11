@@ -4,25 +4,6 @@
 
 namespace
 {
-    namespace RootParameters
-    {
-        enum
-        {
-            // sorted by the change frequency (high to low)
-            ModelCBuffer,
-
-            MaterialCBuffer,
-            MaterialSRVs,
-
-            PipelineCBuffer,
-            PipelineSRVs,
-
-            UAVs,
-
-            NumRootParameters,
-        };
-    }
-
     static constexpr UINT PIPELINE_SRVS_COUNT = 32;
     static constexpr UINT MATERIAL_SRVS_COUNT = 6;
     static constexpr UINT UAVS_COUNT = 6;

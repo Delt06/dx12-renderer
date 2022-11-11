@@ -18,6 +18,8 @@
 #include <Framework/CommonRootSignature.h>
 #include <Framework/Bloom.h>
 
+#include "MultiConstantBuffer.h"
+
 class GrassDemo final : public Game
 {
 public:
@@ -47,6 +49,14 @@ private:
     std::vector<GameObject> m_GameObjects;
 
     std::shared_ptr<CommonRootSignature> m_RootSignature;
+
+    std::shared_ptr<Shader> m_GrassShader;
+    std::shared_ptr<Mesh> m_GrassMesh;
+    Microsoft::WRL::ComPtr<ID3D12CommandSignature> m_GrassCommandSignature;
+
+    std::unique_ptr<MultiConstantBuffer> m_ModelsConstantBuffer;
+    std::unique_ptr<MultiConstantBuffer> m_MaterialsConstantBuffer;
+    std::unique_ptr<StructuredBuffer> m_GrassCommandsBuffer;
 
     D3D12_VIEWPORT m_Viewport;
     D3D12_RECT m_ScissorRect;

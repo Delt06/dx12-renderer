@@ -117,6 +117,9 @@ class Mesh final
 {
 public:
 	void Draw(CommandList& commandList, uint32_t instanceCount = 1) const;
+    void Bind(CommandList& commandList) const;
+
+    UINT GetIndexCount() const;
 
 	static std::shared_ptr<Mesh> CreateCube(CommandList& commandList, float size = 1, bool rhCoords = false);
 	static std::shared_ptr<Mesh> CreateSphere(CommandList& commandList, float diameter = 1, size_t tessellation = 16,

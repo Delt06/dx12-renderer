@@ -40,7 +40,7 @@ DescriptorAllocation DescriptorAllocator::Allocate(uint32_t numDescriptors)
 			iter = AvailableHeaps.erase(iter);
 		}
 
-		// found an allocation 
+		// found an allocation
 		if (!allocation.IsNull())
 		{
 			break;
