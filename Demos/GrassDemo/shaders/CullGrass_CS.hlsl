@@ -30,16 +30,16 @@ cbuffer Parameters : register(b0)
     uint _Count;
 };
 
-StructuredBuffer<GrassModel> _GrassModelCBs : register(t0);
+StructuredBuffer<float4> _Positions : register(t0);
 StructuredBuffer<IndirectCommand> _InputCommands : register(t1);
 AppendStructuredBuffer<IndirectCommand> _OutputCommands : register(u0);
 
-float GetSignedDistanceToPlane(const in Plane plane, float3 position)
+inline float GetSignedDistanceToPlane(const in Plane plane, float3 position)
 {
     return dot(plane.Normal, position) - plane.Distance;
 }
 
-bool IsOnPositiveSide(const in Plane plane, float3 aabbExtents, float3 aabbCenter)
+inline bool IsOnPositiveSide(const in Plane plane, float3 aabbExtents, float3 aabbCenter)
 {
     // Compute the projection interval radius of b onto L(t) = b.c + t * p.n
     const float3 absPlaneNormal = abs(plane.Normal);
@@ -48,7 +48,7 @@ bool IsOnPositiveSide(const in Plane plane, float3 aabbExtents, float3 aabbCente
     return -r <= GetSignedDistanceToPlane(plane, aabbCenter);
 }
 
-bool IsInsideFrustum(const in Frustum frustum, float3 aabbExtents, float3 aabbCenter)
+inline bool IsInsideFrustum(const in Frustum frustum, float3 aabbExtents, float3 aabbCenter)
 {
     bool inside = true;
 
@@ -70,7 +70,7 @@ void main(in uint3 dispatchID : SV_DispatchThreadID)
         return;
     }
 
-    float3 aabbCenter = _GrassModelCBs[index].Model._m03_m13_m23;
+    float3 aabbCenter = _Positions[index].xyz;
     float3 aabbExtents = _BoundsExtents.xyz;
 
     if (IsInsideFrustum(_Frustum, aabbExtents, aabbCenter))

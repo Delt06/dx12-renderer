@@ -57,6 +57,7 @@ private:
     std::shared_ptr<MultiConstantBuffer> m_ModelsConstantBuffer;
     std::shared_ptr<MultiConstantBuffer> m_MaterialsConstantBuffer;
     std::shared_ptr<StructuredBuffer> m_GrassCommandsBuffer;
+    std::shared_ptr<StructuredBuffer> m_GrassPositionsBuffer;
     std::shared_ptr<StructuredBuffer> m_ResultingGrassCommandsBuffers[Window::BUFFER_COUNT];
     std::shared_ptr<ComputeShader> m_CullGrassComputeShader;
     size_t m_FrameIndex = 0;

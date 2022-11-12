@@ -233,9 +233,12 @@ bool GrassDemo::LoadContent()
     {
         m_ModelsConstantBuffer = std::make_shared<MultiConstantBuffer>(GRASS_COUNT, L"Models Constant Buffer");
         m_MaterialsConstantBuffer = std::make_shared<MultiConstantBuffer>(GRASS_COUNT, L"Materials Constant Buffer");
+        const auto positionsBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(GRASS_COUNT * sizeof(XMFLOAT4));
+        m_GrassPositionsBuffer = std::make_shared<StructuredBuffer>(positionsBufferDesc, GRASS_COUNT, sizeof(XMFLOAT4), L"Grass Positions Buffer");
 
         std::vector<Demo::Grass::ModelCBuffer> modelCBuffers(GRASS_COUNT);
         std::vector<Demo::Grass::MaterialCBuffer> materialCBuffers(GRASS_COUNT);
+        std::vector<XMFLOAT4> positions(GRASS_COUNT);
 
 
         const auto sideSize = static_cast<size_t>(sqrt(GRASS_COUNT));
@@ -243,15 +246,18 @@ bool GrassDemo::LoadContent()
         for (size_t i = 0; i < GRASS_COUNT; ++i)
         {
             constexpr float separation = 1.25f;
-            modelCBuffers[i] = { DirectX::XMMatrixTranslation((i / sideSize - sideSize * 0.5f) * separation, 0, (i % sideSize - sideSize * 0.5f) * separation) };
+            XMFLOAT4 position = { (i / sideSize - sideSize * 0.5f) * separation, 0, (i % sideSize - sideSize * 0.5f) * separation, 1.0f };
+            modelCBuffers[i] = { DirectX::XMMatrixTranslation(position.x, position.y, position.z) };
             materialCBuffers[i] = { DirectX::XMFLOAT4{frac(i * 0.1f), frac(i * 0.68f + 0.1f), frac(i * 0.37f), 1.0f} };
+            positions[i] = position;
         }
 
         commandList->CopyBuffer(*m_ModelsConstantBuffer, GRASS_COUNT, sizeof(Demo::Grass::ModelCBuffer), modelCBuffers.data());
         commandList->CopyBuffer(*m_MaterialsConstantBuffer, GRASS_COUNT, sizeof(Demo::Grass::MaterialCBuffer), materialCBuffers.data());
+        commandList->CopyStructuredBuffer(*m_GrassPositionsBuffer, GRASS_COUNT, sizeof(XMFLOAT4), positions.data());
 
-        const auto bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(GRASS_COUNT * sizeof(IndirectCommand));
-        m_GrassCommandsBuffer = std::make_shared<StructuredBuffer>(bufferDesc, GRASS_COUNT, sizeof(IndirectCommand), L"Grass Commands Buffer");
+        const auto commandsBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(GRASS_COUNT * sizeof(IndirectCommand));
+        m_GrassCommandsBuffer = std::make_shared<StructuredBuffer>(commandsBufferDesc, GRASS_COUNT, sizeof(IndirectCommand), L"Grass Commands Buffer");
 
         std::vector<IndirectCommand> commands(GRASS_COUNT);
 
@@ -444,17 +450,8 @@ void GrassDemo::OnRender(RenderEventArgs& e)
         }
 
         {
-            D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-            srvDesc.Format = DXGI_FORMAT_UNKNOWN;
-            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-            srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-            srvDesc.Buffer.NumElements = GRASS_COUNT;
-            srvDesc.Buffer.StructureByteStride = sizeof(Demo::Grass::ModelCBuffer);
-            srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-            srvDesc.Buffer.FirstElement = 0;
-
             m_RootSignature->SetComputeShaderResourceView(*commandList, 0,
-                ShaderResourceView(m_ModelsConstantBuffer, srvDesc)
+                ShaderResourceView(m_GrassPositionsBuffer)
             );
         }
 
