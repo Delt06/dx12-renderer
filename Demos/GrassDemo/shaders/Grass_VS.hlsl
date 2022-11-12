@@ -1,11 +1,9 @@
 #include <ShaderLibrary/Common/RootSignature.hlsli>
 
 #include "ShaderLibrary/Pipeline.hlsli"
+#include "GrassModel.hlsli"
 
-cbuffer Model : register(b0, COMMON_ROOT_SIGNATURE_MODEL_SPACE)
-{
-    matrix g_Model;
-};
+ConstantBuffer<GrassModel> _GrassModelCB : register(b0, COMMON_ROOT_SIGNATURE_MODEL_SPACE);
 
 struct VertexAttributes
 {
@@ -20,6 +18,6 @@ struct Varyings
 Varyings main(VertexAttributes IN)
 {
     Varyings OUT;
-    OUT.PositionCS = mul(g_Pipeline_ViewProjection, mul(g_Model, float4(IN.PositionOS, 1.0)));
+    OUT.PositionCS = mul(g_Pipeline_ViewProjection, mul(_GrassModelCB.Model, float4(IN.PositionOS, 1.0)));
     return OUT;
 }

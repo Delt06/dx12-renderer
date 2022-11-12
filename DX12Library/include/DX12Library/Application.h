@@ -147,7 +147,7 @@ public:
 
     static uint64_t GetFrameCount()
     {
-        return ms_FrameCount;
+        return s_FrameCount;
     }
 
     const Microsoft::WRL::ComPtr<IDxcLibrary>& GetDxcLibrary() const;
@@ -183,5 +183,5 @@ private:
 
     bool m_TearingSupported;
 
-    static uint64_t ms_FrameCount;
+    static uint64_t s_FrameCount;
 };

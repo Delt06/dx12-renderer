@@ -39,7 +39,7 @@ CommonRootSignature::CommonRootSignature(const std::shared_ptr<Resource>& emptyR
     rootParameters[RootParameters::MaterialSRVs].InitAsDescriptorTable(1, &materialSrvRange, D3D12_SHADER_VISIBILITY_ALL);
 
     DescriptorRange pipelineSrvRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, PIPELINE_SRVS_COUNT, 0u, PIPELINE_REGISTER_SPACE);
-    rootParameters[RootParameters::PipelineSRVs].InitAsDescriptorTable(1, &pipelineSrvRange, D3D12_SHADER_VISIBILITY_PIXEL);
+    rootParameters[RootParameters::PipelineSRVs].InitAsDescriptorTable(1, &pipelineSrvRange, D3D12_SHADER_VISIBILITY_ALL);
 
     DescriptorRange uavsRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, UAVS_COUNT, 0u, 0u, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE);
     rootParameters[RootParameters::UAVs].InitAsDescriptorTable(1, &uavsRange, D3D12_SHADER_VISIBILITY_ALL);

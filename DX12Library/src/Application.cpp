@@ -19,7 +19,7 @@ static Application* gs_pSingelton = nullptr;
 static WindowMap gs_Windows;
 static WindowNameMap gs_WindowByName;
 
-uint64_t Application::ms_FrameCount = 0;
+uint64_t Application::s_FrameCount = 0;
 
 static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -105,7 +105,7 @@ void Application::Initialize()
     }
 
     // Initialize frame counter
-    ms_FrameCount = 0;
+    s_FrameCount = 0;
 
     srand(static_cast <unsigned> (time(nullptr)));
 
@@ -513,12 +513,12 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM l
         {
         case WM_PAINT:
             {
-                ++Application::ms_FrameCount;
+                ++Application::s_FrameCount;
 
                 // Delta time will be filled in by the Window.
-                UpdateEventArgs updateEventArgs(0.0f, 0.0f, Application::ms_FrameCount);
+                UpdateEventArgs updateEventArgs(0.0f, 0.0f, Application::s_FrameCount);
                 pWindow->OnUpdate(updateEventArgs);
-                RenderEventArgs renderEventArgs(0.0f, 0.0f, Application::ms_FrameCount);
+                RenderEventArgs renderEventArgs(0.0f, 0.0f, Application::s_FrameCount);
                 // Delta time will be filled in by the Window.
                 pWindow->OnRender(renderEventArgs);
             }

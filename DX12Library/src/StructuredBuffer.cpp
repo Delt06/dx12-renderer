@@ -76,7 +76,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE StructuredBuffer::GetUnorderedAccessView(const D3D12
 	return m_Uav.GetDescriptorHandle();
 }
 
-const ByteAddressBuffer& StructuredBuffer::GetCounterBuffer()
+ByteAddressBuffer& StructuredBuffer::GetCounterBuffer()
 {
 	return m_CounterBuffer;
 }

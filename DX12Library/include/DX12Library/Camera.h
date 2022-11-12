@@ -41,6 +41,34 @@ enum class Space
 class Camera
 {
 public:
+
+    struct FrustumPlane
+    {
+        DirectX::XMFLOAT3 m_Normal;
+        float m_Distance;
+
+        FrustumPlane(DirectX::XMVECTOR normal, DirectX::XMVECTOR point);
+        FrustumPlane(DirectX::XMVECTOR normal, DirectX::XMVECTOR point, DirectX::XMMATRIX view);
+        FrustumPlane();
+    };
+
+    struct Frustum
+    {
+        enum : uint32_t
+        {
+            NearPlane = 0,
+            FarPlane,
+            LeftPlane,
+            RightPlane,
+            TopPlane,
+            BottomPlane
+        };
+
+        constexpr static uint32_t PLANES_COUNT = 6;
+
+        FrustumPlane m_Planes[PLANES_COUNT];
+    };
+
 	Camera();
 	virtual ~Camera();
 
@@ -80,6 +108,8 @@ public:
 
 	void XM_CALLCONV Translate(DirectX::FXMVECTOR translation, Space space = Space::Local);
 	void Rotate(DirectX::FXMVECTOR qRotation);
+
+    Frustum GetFrustum() const;
 
 protected:
 	virtual void UpdateViewMatrix() const;

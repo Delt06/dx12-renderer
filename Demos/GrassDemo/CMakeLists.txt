@@ -23,6 +23,7 @@ set(SHADER_FILES_PIXEL
         )
 
 set(SHADER_FILES_COMPUTE
+        shaders/CullGrass_CS.hlsl
         )
 
 set(TARGET_NAME GrassDemo)

@@ -16,7 +16,7 @@
 #include <Framework/Mesh.h>
 #include <Framework/Material.h>
 #include <Framework/CommonRootSignature.h>
-#include <Framework/Bloom.h>
+#include <Framework/ComputeShader.h>
 
 #include "MultiConstantBuffer.h"
 
@@ -54,9 +54,12 @@ private:
     std::shared_ptr<Mesh> m_GrassMesh;
     Microsoft::WRL::ComPtr<ID3D12CommandSignature> m_GrassCommandSignature;
 
-    std::unique_ptr<MultiConstantBuffer> m_ModelsConstantBuffer;
-    std::unique_ptr<MultiConstantBuffer> m_MaterialsConstantBuffer;
-    std::unique_ptr<StructuredBuffer> m_GrassCommandsBuffer;
+    std::shared_ptr<MultiConstantBuffer> m_ModelsConstantBuffer;
+    std::shared_ptr<MultiConstantBuffer> m_MaterialsConstantBuffer;
+    std::shared_ptr<StructuredBuffer> m_GrassCommandsBuffer;
+    std::shared_ptr<StructuredBuffer> m_ResultingGrassCommandsBuffers[Window::BUFFER_COUNT];
+    std::shared_ptr<ComputeShader> m_CullGrassComputeShader;
+    size_t m_FrameIndex = 0;
 
     D3D12_VIEWPORT m_Viewport;
     D3D12_RECT m_ScissorRect;
