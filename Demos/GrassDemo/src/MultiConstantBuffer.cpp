@@ -9,8 +9,8 @@ MultiConstantBuffer::MultiConstantBuffer(size_t numElements, const std::wstring&
     , m_SizeInBytes(0)
     , m_AlignedItemSize(0)
 {
-    auto descriptorPage = std::make_shared<DescriptorAllocatorPage>(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, numElements);
-    m_ConstantBufferViewBase = descriptorPage->Allocate(numElements);
+    auto descriptorPage = std::make_shared<DescriptorAllocatorPage>(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, static_cast<uint32_t>(numElements));
+    m_ConstantBufferViewBase = descriptorPage->Allocate(static_cast<uint32_t>(numElements));
 }
 
 MultiConstantBuffer::~MultiConstantBuffer() = default;
@@ -26,7 +26,7 @@ void MultiConstantBuffer::CreateViews(const size_t numElements, const size_t ele
     {
         D3D12_CONSTANT_BUFFER_VIEW_DESC bufferViewDesc;
         bufferViewDesc.BufferLocation = GetItemGPUAddress(i);
-        bufferViewDesc.SizeInBytes = m_AlignedItemSize;
+        bufferViewDesc.SizeInBytes = static_cast<UINT>(m_AlignedItemSize);
         device->CreateConstantBufferView(&bufferViewDesc, GetConstantBufferView(i));
     }
 }

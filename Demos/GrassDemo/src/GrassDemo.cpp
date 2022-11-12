@@ -130,6 +130,7 @@ namespace
     {
         Camera::Frustum m_Frustum;
         DirectX::XMFLOAT4 m_BoundsExtents;
+        uint32_t m_Count;
     };
 
     constexpr uint32_t GRASS_COUNT = 300 * 1000;
@@ -432,12 +433,13 @@ void GrassDemo::OnRender(RenderEventArgs& e)
         commandList->CopyByteAddressBuffer<uint32_t>(
             resultingGrassCommandsBuffer->GetCounterBuffer(),
             0U
-        );
+            );
 
         {
             CullGrassCBuffer cullGrassCBuffer;
             cullGrassCBuffer.m_Frustum = m_Camera.GetFrustum();
             cullGrassCBuffer.m_BoundsExtents = { 0.5f, 0.5f, 0.5f, 0.0f };
+            cullGrassCBuffer.m_Count = GRASS_COUNT;
             m_RootSignature->SetComputeConstantBuffer(*commandList, cullGrassCBuffer);
         }
 

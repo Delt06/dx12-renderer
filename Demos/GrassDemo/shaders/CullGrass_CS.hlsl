@@ -27,6 +27,7 @@ cbuffer Parameters : register(b0)
 {
     Frustum _Frustum;
     float4 _BoundsExtents;
+    uint _Count;
 };
 
 StructuredBuffer<GrassModel> _GrassModelCBs : register(t0);
@@ -63,11 +64,8 @@ bool IsInsideFrustum(const in Frustum frustum, float3 aabbExtents, float3 aabbCe
 [numthreads(THREAD_BLOCK_SIZE, 1, 1)]
 void main(in uint3 dispatchID : SV_DispatchThreadID)
 {
-    uint count, stride;
-    _InputCommands.GetDimensions(count, stride);
-
     uint index = dispatchID.x;
-    if (index >= count)
+    if (index >= _Count)
     {
         return;
     }
