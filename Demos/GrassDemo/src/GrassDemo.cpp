@@ -133,7 +133,7 @@ namespace
         uint32_t m_Count;
     };
 
-    constexpr uint32_t GRASS_COUNT = 300 * 1000;
+    constexpr uint32_t GRASS_COUNT = 500 * 1000;
 
     float frac(float value)
     {
@@ -345,7 +345,7 @@ void GrassDemo::OnResize(ResizeEventArgs& e)
         m_Height = std::max(1, e.Height);
 
         const float aspectRatio = static_cast<float>(m_Width) / static_cast<float>(m_Height);
-        m_Camera.SetProjection(45.0f, aspectRatio, 0.1f, 100.0f);
+        m_Camera.SetProjection(45.0f, aspectRatio, 0.1f, 250.0f);
 
         m_Viewport = CD3DX12_VIEWPORT(0.0f, 0.0f,
             static_cast<float>(m_Width), static_cast<float>(m_Height));
