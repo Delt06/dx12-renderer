@@ -27,7 +27,8 @@ void MultiConstantBuffer::CreateViews(const size_t numElements, const size_t ele
         D3D12_CONSTANT_BUFFER_VIEW_DESC bufferViewDesc;
         bufferViewDesc.BufferLocation = GetItemGPUAddress(i);
         bufferViewDesc.SizeInBytes = static_cast<UINT>(m_AlignedItemSize);
-        device->CreateConstantBufferView(&bufferViewDesc, GetConstantBufferView(i));
+        auto destDescriptor = GetConstantBufferView(i);
+        device->CreateConstantBufferView(&bufferViewDesc, destDescriptor);
     }
 }
 
