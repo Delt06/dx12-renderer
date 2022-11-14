@@ -408,7 +408,7 @@ void GrassDemo::OnUpdate(UpdateEventArgs& e)
     }
 
     // Update the camera.
-    float speedMultiplier = (m_CameraController.m_Shift ? 16.0f : 4.0f);
+    float speedMultiplier = (m_CameraController.m_Shift ? 64.0f : 16.0f);
 
     XMVECTOR cameraTranslate = XMVectorSet(m_CameraController.m_Right - m_CameraController.m_Left, 0.0f,
         m_CameraController.m_Forward - m_CameraController.m_Backward,
