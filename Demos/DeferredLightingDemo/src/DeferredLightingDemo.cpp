@@ -480,7 +480,7 @@ bool DeferredLightingDemo::LoadContent()
         }
 
         {
-            m_Taa = std::make_unique<Taa>(m_CommonRootSignature, *commandList, resultFormat, m_Width, m_Height);
+            m_Taa = std::make_unique<TAA>(m_CommonRootSignature, *commandList, resultFormat, m_Width, m_Height);
         }
     }
 

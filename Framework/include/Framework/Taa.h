@@ -12,10 +12,10 @@
 class CommandList;
 class Mesh;
 
-class Taa
+class TAA
 {
 public:
-	explicit Taa(const std::shared_ptr<CommonRootSignature>& rootSignature, CommandList& commandList, DXGI_FORMAT backBufferFormat, uint32_t width, uint32_t height);
+	explicit TAA(const std::shared_ptr<CommonRootSignature>& rootSignature, CommandList& commandList, DXGI_FORMAT backBufferFormat, uint32_t width, uint32_t height);
 
 	[[nodiscard]] DirectX::XMFLOAT2 ComputeJitterOffset() const;
 	[[nodiscard]] const DirectX::XMMATRIX& GetPreviousViewProjectionMatrix() const;

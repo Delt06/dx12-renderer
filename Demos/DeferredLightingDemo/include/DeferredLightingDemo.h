@@ -16,7 +16,7 @@
 #include <Framework/GraphicsSettings.h>
 #include <HDR/ToneMapping.h>
 #include <Ssao.h>
-#include <Framework/Taa.h>
+#include <Framework/TAA.h>
 #include <SSR/Ssr.h>
 #include <Reflections.h>
 #include "Framework/Bloom.h"
@@ -107,7 +107,7 @@ private:
 	float m_DeltaTime;
 
 	bool m_TaaEnabled = true;
-	std::unique_ptr<Taa> m_Taa;
+	std::unique_ptr<TAA> m_Taa;
 
 	std::shared_ptr<CommonRootSignature> m_CommonRootSignature = nullptr;
 

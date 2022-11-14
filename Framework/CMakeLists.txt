@@ -32,7 +32,7 @@ set(HEADER_FILES
         "include/Framework/ComputeShader.h"
         "include/Framework/MSAADepthResolvePass.h"
         "include/Framework/SSAOUtils.h"
-        "include/Framework/Taa.h"
+        "include/Framework/TAA.h"
 )
 
 set(SOURCE_FILES
@@ -61,7 +61,7 @@ set(SOURCE_FILES
         "src/ComputeShader.cpp"
         "src/MSAADepthResolvePass.cpp"
         "src/SSAOUtils.cpp"
-        "src/Taa.cpp"
+        "src/TAA.cpp"
         )
 
 set(SHADER_FILES_VERTEX

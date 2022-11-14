@@ -1,4 +1,4 @@
-#include "Taa.h"
+#include "TAA.h"
 #include <Framework/Mesh.h>
 #include <DX12Library/Helpers.h>
 #include <DX12Library/CommandList.h>
@@ -15,7 +15,7 @@ namespace
     };
 }
 
-Taa::Taa(const std::shared_ptr<CommonRootSignature>& rootSignature, CommandList& commandList, DXGI_FORMAT backBufferFormat, uint32_t width, uint32_t height)
+TAA::TAA(const std::shared_ptr<CommonRootSignature>& rootSignature, CommandList& commandList, DXGI_FORMAT backBufferFormat, uint32_t width, uint32_t height)
     : m_BlitMesh(Mesh::CreateBlitTriangle(commandList))
     , m_RootSignature(rootSignature)
     , m_Width(width)
@@ -35,7 +35,7 @@ Taa::Taa(const std::shared_ptr<CommonRootSignature>& rootSignature, CommandList&
     m_HistoryBuffer = std::make_shared<Texture>(historyBufferDesc, nullptr, TextureUsageType::Other, L"TAA History Buffer");
 }
 
-DirectX::XMFLOAT2 Taa::ComputeJitterOffset() const
+DirectX::XMFLOAT2 TAA::ComputeJitterOffset() const
 {
     DirectX::XMFLOAT2 jitterOffset = JITTER_OFFSETS[m_FrameIndex];
     DirectX::XMFLOAT2 viewSize = { static_cast<float>(m_Width), static_cast<float>(m_Height) };
@@ -45,12 +45,12 @@ DirectX::XMFLOAT2 Taa::ComputeJitterOffset() const
     return jitterOffset;
 }
 
-const DirectX::XMMATRIX& Taa::GetPreviousViewProjectionMatrix() const
+const DirectX::XMMATRIX& TAA::GetPreviousViewProjectionMatrix() const
 {
     return m_PreviousViewProjectionMatrix;
 }
 
-void Taa::Resolve(CommandList& commandList, const std::shared_ptr<Texture>& currentBuffer, const std::shared_ptr<Texture>& velocityBuffer)
+void TAA::Resolve(CommandList& commandList, const std::shared_ptr<Texture>& currentBuffer, const std::shared_ptr<Texture>& velocityBuffer)
 {
     PIXScope(commandList, "TAA");
 
@@ -86,7 +86,7 @@ void Taa::Resolve(CommandList& commandList, const std::shared_ptr<Texture>& curr
     }
 }
 
-void Taa::Resize(uint32_t width, uint32_t height)
+void TAA::Resize(uint32_t width, uint32_t height)
 {
     m_Width = width;
     m_Height = height;
@@ -94,17 +94,17 @@ void Taa::Resize(uint32_t width, uint32_t height)
     m_ResolveRenderTarget.Resize(width, height);
 }
 
-const std::shared_ptr<Texture>& Taa::GetResolvedTexture() const
+const std::shared_ptr<Texture>& TAA::GetResolvedTexture() const
 {
     return m_ResolveRenderTarget.GetTexture(Color0);
 }
 
-DirectX::XMFLOAT2 Taa::GetCurrentJitterOffset() const
+DirectX::XMFLOAT2 TAA::GetCurrentJitterOffset() const
 {
     return JITTER_OFFSETS[m_FrameIndex];
 }
 
-void Taa::OnRenderedFrame(const DirectX::XMMATRIX& viewProjectionMatrix)
+void TAA::OnRenderedFrame(const DirectX::XMMATRIX& viewProjectionMatrix)
 {
     m_PreviousViewProjectionMatrix = viewProjectionMatrix;
     m_FrameIndex = (m_FrameIndex + 1) % JITTER_OFFSETS_COUNT;
