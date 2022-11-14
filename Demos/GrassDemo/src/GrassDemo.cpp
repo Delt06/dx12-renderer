@@ -157,8 +157,8 @@ GrassDemo::GrassDemo(const std::wstring& name, int width, int height, GraphicsSe
     , m_Width(0)
     , m_Height(0)
 {
-    const XMVECTOR cameraPos = XMVectorSet(0, 10, -20, 1);
-    const XMVECTOR cameraTarget = XMVectorSet(0, 5, 0, 1);
+    const XMVECTOR cameraPos = XMVectorSet(0, 40, -20, 1);
+    const XMVECTOR cameraTarget = XMVectorSet(0, 0, 0, 1);
     const XMVECTOR cameraUp = XMVectorSet(0, 1, 0, 0);
 
     m_Camera.SetLookAt(cameraPos, cameraTarget, cameraUp);
