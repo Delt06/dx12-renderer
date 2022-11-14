@@ -23,6 +23,7 @@ using namespace Microsoft::WRL;
 #include <d3dx12.h>
 #include <DirectXColors.h>
 #include "CBuffers.h"
+#include <random>
 
 using namespace DirectX;
 
@@ -156,7 +157,7 @@ GrassDemo::GrassDemo(const std::wstring& name, int width, int height, GraphicsSe
     , m_Width(0)
     , m_Height(0)
 {
-    const XMVECTOR cameraPos = XMVectorSet(0, 5, -20, 1);
+    const XMVECTOR cameraPos = XMVectorSet(0, 10, -20, 1);
     const XMVECTOR cameraTarget = XMVectorSet(0, 5, 0, 1);
     const XMVECTOR cameraUp = XMVectorSet(0, 1, 0, 0);
 
@@ -204,7 +205,7 @@ bool GrassDemo::LoadContent()
     {
         ModelLoader modelLoader;
 
-        m_GrassMesh = Mesh::CreateCube(*commandList);
+        m_GrassMesh = modelLoader.Load(*commandList, "Assets/Models/grass_cone.fbx")->GetMeshes()[0];
         m_GrassShader = std::make_shared<Shader>(
             m_RootSignature,
             ShaderBlob(L"Grass_VS.cso"),
@@ -243,13 +244,15 @@ bool GrassDemo::LoadContent()
 
 
         const auto sideSize = static_cast<size_t>(sqrt(GRASS_COUNT));
+        std::normal_distribution<float> distribution(0.5f, 0.2f);
+        std::mt19937 gen;
 
         for (size_t i = 0; i < GRASS_COUNT; ++i)
         {
             constexpr float separation = 1.25f;
             XMFLOAT4 position = { (i / sideSize - sideSize * 0.5f) * separation, 0, (i % sideSize - sideSize * 0.5f) * separation, 1.0f };
-            modelCBuffers[i] = { DirectX::XMMatrixTranslation(position.x, position.y, position.z) };
-            materialCBuffers[i] = { DirectX::XMFLOAT4{frac(i * 0.1f), frac(i * 0.68f + 0.1f), frac(i * 0.37f), 1.0f} };
+            modelCBuffers[i] = { DirectX::XMMatrixScaling(0.01f, distribution(gen) * 0.02f, 0.01f) * DirectX::XMMatrixTranslation(position.x, position.y, position.z) };
+            materialCBuffers[i] = { DirectX::XMFLOAT4{distribution(gen) * 0.1f, distribution(gen) + 0.1f, distribution(gen) * 0.02f, 1.0f} };
             positions[i] = position;
         }
 
@@ -444,7 +447,7 @@ void GrassDemo::OnRender(RenderEventArgs& e)
         {
             CullGrassCBuffer cullGrassCBuffer;
             cullGrassCBuffer.m_Frustum = m_Camera.GetFrustum();
-            cullGrassCBuffer.m_BoundsExtents = { 0.5f, 0.5f, 0.5f, 0.0f };
+            cullGrassCBuffer.m_BoundsExtents = { 0.5f, 20.0f, 0.5f, 0.0f };
             cullGrassCBuffer.m_Count = GRASS_COUNT;
             m_RootSignature->SetComputeConstantBuffer(*commandList, cullGrassCBuffer);
         }

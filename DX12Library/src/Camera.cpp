@@ -1,4 +1,4 @@
-#include "Camera.h"
+﻿#include "Camera.h"
 
 using namespace DirectX;
 
@@ -162,7 +162,7 @@ Camera::Frustum Camera::GetFrustum() const
     frustum.m_Planes[Frustum::NearPlane] = FrustumPlane(XMVectorSet(0, 0, 1, 0), XMVectorSet(0, 0, ZNear, 1), toWorld);
     frustum.m_Planes[Frustum::FarPlane] = FrustumPlane(XMVectorSet(0, 0, -1, 0), XMVectorSet(0, 0, ZFar, 1), toWorld);
 
-    const float hh = tanf(VFov * 0.5f);
+    const float hh = tanf(XMConvertToRadians(VFov) * 0.5f);
     const float hw = hh * AspectRatio;
 
     const auto nw = XMVector3Normalize(XMVectorSet(-hw, hh, 1, 0));
