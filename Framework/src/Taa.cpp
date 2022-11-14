@@ -12,6 +12,7 @@ namespace
     struct RootConstants
     {
         DirectX::XMFLOAT2 m_TexelSize;
+        float m_ModulationFactor;
     };
 }
 
@@ -50,7 +51,7 @@ const DirectX::XMMATRIX& TAA::GetPreviousViewProjectionMatrix() const
     return m_PreviousViewProjectionMatrix;
 }
 
-void TAA::Resolve(CommandList& commandList, const std::shared_ptr<Texture>& currentBuffer, const std::shared_ptr<Texture>& velocityBuffer)
+void TAA::Resolve(CommandList& commandList, const std::shared_ptr<Texture>& currentBuffer, const std::shared_ptr<Texture>& velocityBuffer, float modulationFactor)
 {
     PIXScope(commandList, "TAA");
 
@@ -64,6 +65,7 @@ void TAA::Resolve(CommandList& commandList, const std::shared_ptr<Texture>& curr
                 1.0f / static_cast<float>(m_Width),
                 1.0f / static_cast<float>(m_Height),
             };
+            rootConstants.m_ModulationFactor = modulationFactor;
             m_RootSignature->SetGraphicsRootConstants(commandList, rootConstants);
         }
 

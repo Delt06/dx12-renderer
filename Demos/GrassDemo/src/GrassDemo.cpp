@@ -536,7 +536,11 @@ void GrassDemo::OnRender(RenderEventArgs& e)
 
     if (m_TaaEnabled)
     {
-        m_Taa->Resolve(*commandList, m_RenderTarget.GetTexture(Color0), m_RenderTarget.GetTexture(Color1));
+        const auto& colorBuffer = m_RenderTarget.GetTexture(Color0);
+        const auto& velocityBuffer = m_RenderTarget.GetTexture(Color1);
+        const float modulationFactor = 0.8f;
+        m_Taa->Resolve(*commandList, colorBuffer, velocityBuffer, modulationFactor);
+
         m_Taa->OnRenderedFrame(viewProjectionMatrix);
     }
 
