@@ -17,7 +17,7 @@ class Taa
 public:
 	explicit Taa(const std::shared_ptr<CommonRootSignature>& rootSignature, CommandList& commandList, DXGI_FORMAT backBufferFormat, uint32_t width, uint32_t height);
 
-	[[nodiscard]] DirectX::XMFLOAT2 ComputeJitterOffset(uint32_t width, uint32_t height) const;
+	[[nodiscard]] DirectX::XMFLOAT2 ComputeJitterOffset() const;
 	[[nodiscard]] const DirectX::XMMATRIX& GetPreviousViewProjectionMatrix() const;
 
 	void Resolve(CommandList& commandList, const std::shared_ptr<Texture>& currentBuffer, const std::shared_ptr<Texture>& velocityBuffer);
@@ -29,7 +29,7 @@ public:
 
 private:
 	RenderTarget m_ResolveRenderTarget;
-	RootSignature m_ResolveRootSignature;
+    std::shared_ptr<CommonRootSignature> m_RootSignature;
 
 	std::shared_ptr<Mesh> m_BlitMesh;
 	std::shared_ptr<Material> m_Material;
@@ -63,5 +63,7 @@ private:
 	constexpr static uint32_t JITTER_OFFSETS_COUNT = _countof(JITTER_OFFSETS);
 	DirectX::XMMATRIX m_PreviousViewProjectionMatrix;
 	uint32_t m_FrameIndex = 0;
+
+    uint32_t m_Width, m_Height;
 };
 

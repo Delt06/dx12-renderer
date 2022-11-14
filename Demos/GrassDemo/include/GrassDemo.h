@@ -17,6 +17,7 @@
 #include <Framework/Material.h>
 #include <Framework/CommonRootSignature.h>
 #include <Framework/ComputeShader.h>
+#include <Framework/Taa.h>
 
 #include "MultiConstantBuffer.h"
 
@@ -49,6 +50,7 @@ private:
     std::vector<GameObject> m_GameObjects;
 
     std::shared_ptr<CommonRootSignature> m_RootSignature;
+    std::unique_ptr<Taa> m_Taa;
 
     std::shared_ptr<Shader> m_GrassShader;
     std::shared_ptr<Mesh> m_GrassMesh;
@@ -67,6 +69,7 @@ private:
 
     GraphicsSettings m_GraphicsSettings;
 
+    bool m_TaaEnabled = true;
     double m_Time = 0;
 
     static constexpr size_t ALIGNMENT = 16;

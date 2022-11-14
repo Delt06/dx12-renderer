@@ -62,7 +62,7 @@ namespace
 
     bool allowFullscreenToggle = true;
     constexpr FLOAT CLEAR_COLOR[] = { 138.0f / 255.0f, 82.0f / 255.0f, 52.0f / 255.0f, 1.0f };
-    constexpr FLOAT NORMALS_CLEAR_COLOR[] = { 0.5f, 0.5f, 0.5f, 1.0f };
+    constexpr FLOAT ZERO_CLEAR_COLOR[] = { 0.5f, 0.5f, 0.5f, 1.0f };
 
     // Builds a look-at (world) matrix from a point, up and direction vectors.
     XMMATRIX XM_CALLCONV LookAtMatrix(FXMVECTOR position, FXMVECTOR direction, FXMVECTOR up)
@@ -170,7 +170,7 @@ bool ToonDemo::LoadContent()
 
     D3D12_CLEAR_VALUE normalsClearValue;
     normalsClearValue.Format = normalsBufferFormat;
-    memcpy(normalsClearValue.Color, NORMALS_CLEAR_COLOR, sizeof NORMALS_CLEAR_COLOR);
+    memcpy(normalsClearValue.Color, ZERO_CLEAR_COLOR, sizeof ZERO_CLEAR_COLOR);
 
     // Generate default texture
     {
@@ -503,7 +503,7 @@ void ToonDemo::OnRender(RenderEventArgs& e)
     // Clear the render targets
     {
         commandList->ClearTexture(*m_RenderTarget.GetTexture(Color0), CLEAR_COLOR);
-        commandList->ClearTexture(*m_DepthNormalsRenderTarget.GetTexture(Color0), NORMALS_CLEAR_COLOR);
+        commandList->ClearTexture(*m_DepthNormalsRenderTarget.GetTexture(Color0), ZERO_CLEAR_COLOR);
         commandList->ClearDepthStencilTexture(*m_RenderTarget.GetTexture(DepthStencil), D3D12_CLEAR_FLAG_DEPTH);
     }
 

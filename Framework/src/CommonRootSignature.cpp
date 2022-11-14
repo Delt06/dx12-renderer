@@ -126,7 +126,7 @@ void CommonRootSignature::SetComputeConstantBuffer(CommandList& commandList, siz
 
 void CommonRootSignature::SetGraphicsRootConstants(CommandList& commandList, size_t size, const void* data) const
 {
-    commandList.SetGraphics32BitConstants(RootParameters::Constants, static_cast<uint32_t>(size), data);
+    commandList.SetGraphics32BitConstants(RootParameters::Constants, static_cast<uint32_t>(size) / sizeof(uint32_t), data);
 }
 
 void CommonRootSignature::SetPipelineShaderResourceView(CommandList& commandList, UINT index, const ShaderResourceView& srv) const

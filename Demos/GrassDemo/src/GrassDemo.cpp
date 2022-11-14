@@ -62,7 +62,7 @@ namespace
 
     bool allowFullscreenToggle = true;
     constexpr FLOAT CLEAR_COLOR[] = { 138.0f / 255.0f, 82.0f / 255.0f, 52.0f / 255.0f, 1.0f };
-    constexpr FLOAT NORMALS_CLEAR_COLOR[] = { 0.5f, 0.5f, 0.5f, 1.0f };
+    constexpr FLOAT ZERO_CLEAR_COLOR[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
     // Builds a look-at (world) matrix from a point, up and direction vectors.
     XMMATRIX XM_CALLCONV LookAtMatrix(FXMVECTOR position, FXMVECTOR direction, FXMVECTOR up)
@@ -183,15 +183,15 @@ bool GrassDemo::LoadContent()
     // sRGB formats provide free gamma correction!
     constexpr DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
     constexpr DXGI_FORMAT depthBufferFormat = DXGI_FORMAT_D32_FLOAT;
-    constexpr DXGI_FORMAT normalsBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+    constexpr DXGI_FORMAT velocityBufferFormat = DXGI_FORMAT_R8G8B8A8_SNORM;
     constexpr DXGI_FORMAT resolvedDepthBufferFormat = DXGI_FORMAT_R32_FLOAT;
     D3D12_CLEAR_VALUE colorClearValue;
     colorClearValue.Format = backBufferFormat;
     memcpy(colorClearValue.Color, CLEAR_COLOR, sizeof CLEAR_COLOR);
 
-    D3D12_CLEAR_VALUE normalsClearValue;
-    normalsClearValue.Format = normalsBufferFormat;
-    memcpy(normalsClearValue.Color, NORMALS_CLEAR_COLOR, sizeof NORMALS_CLEAR_COLOR);
+    D3D12_CLEAR_VALUE velocityClearValue;
+    velocityClearValue.Format = velocityBufferFormat;
+    memcpy(velocityClearValue.Color, ZERO_CLEAR_COLOR, sizeof ZERO_CLEAR_COLOR);
 
     // Generate default texture
     {
@@ -211,6 +211,10 @@ bool GrassDemo::LoadContent()
             ShaderBlob(L"Grass_VS.cso"),
             ShaderBlob(L"Grass_PS.cso")
             );
+    }
+
+    {
+        m_Taa = std::make_unique<Taa>(m_RootSignature, *commandList, backBufferFormat, m_Width, m_Height);
     }
 
     {
@@ -328,7 +332,19 @@ bool GrassDemo::LoadContent()
             TextureUsageType::Depth,
             L"Depth Render Target");
 
+        auto velocityDesc = CD3DX12_RESOURCE_DESC::Tex2D(velocityBufferFormat,
+            m_Width, m_Height,
+            1, 1,
+            msaaSampleCount, msaaColorQualityLevel,
+            D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET
+        );
+
+        auto velocityTexture = std::make_shared<Texture>(velocityDesc, &velocityClearValue,
+            TextureUsageType::RenderTarget,
+            L"Velocity Render Target");
+
         m_RenderTarget.AttachTexture(Color0, colorTexture);
+        m_RenderTarget.AttachTexture(Color1, velocityTexture);
         m_RenderTarget.AttachTexture(DepthStencil, depthTexture);
     }
 
@@ -354,6 +370,9 @@ void GrassDemo::OnResize(ResizeEventArgs& e)
             static_cast<float>(m_Width), static_cast<float>(m_Height));
 
         m_RenderTarget.Resize(m_Width, m_Height);
+
+        if (m_Taa != nullptr)
+            m_Taa->Resize(m_Width, m_Height);
     }
 }
 
@@ -413,6 +432,7 @@ void GrassDemo::OnRender(RenderEventArgs& e)
     // Clear the render targets
     {
         commandList->ClearTexture(*m_RenderTarget.GetTexture(Color0), CLEAR_COLOR);
+        commandList->ClearTexture(*m_RenderTarget.GetTexture(Color1), ZERO_CLEAR_COLOR);
         commandList->ClearDepthStencilTexture(*m_RenderTarget.GetTexture(DepthStencil), D3D12_CLEAR_FLAG_DEPTH);
     }
 
@@ -427,6 +447,9 @@ void GrassDemo::OnRender(RenderEventArgs& e)
         pipelineCBuffer.m_View = viewMatrix;
         pipelineCBuffer.m_Projection = projectionMatrix;
         pipelineCBuffer.m_ViewProjection = viewProjectionMatrix;
+
+        pipelineCBuffer.m_TAA_PreviousViewProjection = m_Taa->GetPreviousViewProjectionMatrix();
+        pipelineCBuffer.m_TAA_JitterOffset = m_Taa->ComputeJitterOffset();
     }
     m_RootSignature->SetPipelineConstantBuffer(*commandList, pipelineCBuffer);
 
@@ -504,10 +527,16 @@ void GrassDemo::OnRender(RenderEventArgs& e)
         m_GrassShader->Unbind(*commandList);
     }
 
+    if (m_TaaEnabled)
+    {
+        m_Taa->Resolve(*commandList, m_RenderTarget.GetTexture(Color0), m_RenderTarget.GetTexture(Color1));
+        m_Taa->OnRenderedFrame(viewProjectionMatrix);
+    }
+
     m_FrameIndex = (m_FrameIndex + 1) % Window::BUFFER_COUNT;
 
     commandQueue->ExecuteCommandList(commandList);
-    PWindow->Present(*m_RenderTarget.GetTexture(Color0));
+    PWindow->Present(m_TaaEnabled ? *m_Taa->GetResolvedTexture() : *m_RenderTarget.GetTexture(Color0));
 }
 
 void GrassDemo::OnKeyPressed(KeyEventArgs& e)
@@ -562,6 +591,9 @@ void GrassDemo::OnKeyPressed(KeyEventArgs& e)
         break;
     case KeyCode::E:
         m_CameraController.m_Up = 1.0f;
+        break;
+    case KeyCode::T:
+        m_TaaEnabled = !m_TaaEnabled;
         break;
     case KeyCode::ShiftKey:
         m_CameraController.m_Shift = true;

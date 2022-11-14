@@ -9,6 +9,9 @@ namespace Demo
         DirectX::XMMATRIX m_View;
         DirectX::XMMATRIX m_Projection;
         DirectX::XMMATRIX m_ViewProjection;
+
+        DirectX::XMMATRIX m_TAA_PreviousViewProjection;
+        DirectX::XMFLOAT2 m_TAA_JitterOffset;
     };
 
     namespace Grass

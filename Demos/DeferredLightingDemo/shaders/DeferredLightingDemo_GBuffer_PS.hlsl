@@ -1,4 +1,5 @@
 #include <ShaderLibrary/Common/RootSignature.hlsli>
+#include <ShaderLibrary/TAA.hlsli>
 
 struct PixelShaderInput
 {
@@ -49,19 +50,6 @@ float3 ApplyNormalMap(const float3x3 tbn, Texture2D map, const float2 uv)
 {
     const float3 normalTs = UnpackNormal(map.Sample(g_Common_LinearWrapSampler, uv).xyz);
     return normalize(mul(normalTs, tbn));
-}
-
-float4 HClipToScreenSpaceUV(float4 positionCS)
-{
-    positionCS /= positionCS.w;
-    positionCS.xy = (positionCS.xy + 1) * 0.5f;
-    positionCS.y = 1 - positionCS.y;
-    return positionCS;
-}
-
-float2 CalculateVelocity(float4 newPositionCS, float4 oldPositionCS)
-{
-    return (HClipToScreenSpaceUV(newPositionCS) - HClipToScreenSpaceUV(oldPositionCS)).xy;
 }
 
 PixelShaderOutput main(PixelShaderInput IN)

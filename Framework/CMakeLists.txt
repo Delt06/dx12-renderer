@@ -32,6 +32,7 @@ set(HEADER_FILES
         "include/Framework/ComputeShader.h"
         "include/Framework/MSAADepthResolvePass.h"
         "include/Framework/SSAOUtils.h"
+        "include/Framework/Taa.h"
 )
 
 set(SOURCE_FILES
@@ -60,6 +61,7 @@ set(SOURCE_FILES
         "src/ComputeShader.cpp"
         "src/MSAADepthResolvePass.cpp"
         "src/SSAOUtils.cpp"
+        "src/Taa.cpp"
         )
 
 set(SHADER_FILES_VERTEX
@@ -70,6 +72,7 @@ set(SHADER_FILES_PIXEL
         "shaders/Blit_PS.hlsl"
         "shaders/Bloom_Prefilter_PS.hlsl"
         "shaders/Bloom_Downsample_PS.hlsl"
+        "shaders/TAA_Resolve_PS.hlsl"
         )
 
 set(SHADER_FILES_COMPUTE
