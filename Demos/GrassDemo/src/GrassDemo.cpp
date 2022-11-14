@@ -132,7 +132,7 @@ namespace
         uint32_t m_Count;
     };
 
-    constexpr uint32_t GRASS_COUNT = 2 * 1000 * 1000;
+    constexpr uint32_t GRASS_COUNT = 500 * 1000;
 
     float frac(float value)
     {
