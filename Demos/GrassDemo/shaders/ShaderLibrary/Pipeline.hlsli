@@ -16,6 +16,9 @@ cbuffer PipelineCBuffer : register(b0, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE)
     matrix g_Pipeline_Projection;
     matrix g_Pipeline_ViewProjection;
 
+    float g_Pipeline_Time;
+    float g_Pipeline_DeltaTime;
+
     matrix g_Pipeline_TAA_PreviousViewProjection;
     float2 g_Pipeline_TAA_JitterOffset;
 };

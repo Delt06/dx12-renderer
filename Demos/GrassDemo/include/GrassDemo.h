@@ -54,6 +54,7 @@ private:
 
     std::shared_ptr<Shader> m_GrassShader;
     std::shared_ptr<Mesh> m_GrassMesh;
+    std::shared_ptr<Texture> m_WindNoise;
     Microsoft::WRL::ComPtr<ID3D12CommandSignature> m_GrassCommandSignature;
 
     std::shared_ptr<StructuredBuffer> m_ModelsStructuredBuffer;
@@ -71,6 +72,7 @@ private:
 
     bool m_TaaEnabled = true;
     double m_Time = 0;
+    double m_DeltaTime = 0;
 
     static constexpr size_t ALIGNMENT = 16;
 

@@ -211,6 +211,8 @@ bool GrassDemo::LoadContent()
             ShaderBlob(L"Grass_VS.cso"),
             ShaderBlob(L"Grass_PS.cso")
             );
+
+        m_WindNoise = modelLoader.LoadTexture(*commandList, L"Assets/Textures/wind_noise.png", TextureUsageType::Other);
     }
 
     {
@@ -390,6 +392,7 @@ void GrassDemo::OnUpdate(UpdateEventArgs& e)
 
     totalTime += e.ElapsedTime;
     m_Time += e.ElapsedTime;
+    m_DeltaTime = e.ElapsedTime;
     frameCount++;
 
     if (totalTime > 1.0)
@@ -447,6 +450,9 @@ void GrassDemo::OnRender(RenderEventArgs& e)
         pipelineCBuffer.m_View = viewMatrix;
         pipelineCBuffer.m_Projection = projectionMatrix;
         pipelineCBuffer.m_ViewProjection = viewProjectionMatrix;
+
+        pipelineCBuffer.m_Time = static_cast<float>(m_Time);
+        pipelineCBuffer.m_DeltaTime = static_cast<float>(m_DeltaTime);
 
         pipelineCBuffer.m_TAA_PreviousViewProjection = m_Taa->GetPreviousViewProjectionMatrix();
         pipelineCBuffer.m_TAA_JitterOffset = m_Taa->ComputeJitterOffset();
@@ -512,6 +518,7 @@ void GrassDemo::OnRender(RenderEventArgs& e)
         {
             m_RootSignature->SetPipelineShaderResourceView(*commandList, 0, ShaderResourceView(m_ModelsStructuredBuffer));
             m_RootSignature->SetPipelineShaderResourceView(*commandList, 1, ShaderResourceView(m_MaterialsStructuredBuffer));
+            m_RootSignature->SetPipelineShaderResourceView(*commandList, 2, ShaderResourceView(m_WindNoise));
             commandList->CommitStagedDescriptors();
         }
 
