@@ -132,7 +132,7 @@ namespace
         uint32_t m_Count;
     };
 
-    constexpr uint32_t GRASS_COUNT = 500 * 1000;
+    constexpr uint32_t GRASS_COUNT = 2 * 1000 * 1000;
 
     float frac(float value)
     {
@@ -468,7 +468,7 @@ void GrassDemo::OnRender(RenderEventArgs& e)
         }
 
         m_CullGrassComputeShader->Bind(*commandList);
-        commandList->Dispatch(Math::AlignUp(GRASS_COUNT, 128u), 1, 1);
+        commandList->Dispatch(Math::AlignUp(GRASS_COUNT, 32u), 1, 1);
     }
 
     {

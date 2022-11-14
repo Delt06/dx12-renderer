@@ -1,6 +1,6 @@
 #include "GrassModel.hlsli"
 
-#define THREAD_BLOCK_SIZE 128
+#define THREAD_BLOCK_SIZE 32
 
 struct IndirectCommand
 {
