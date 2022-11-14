@@ -14,7 +14,7 @@ struct Targets
 Targets main(Varyings IN)
 {
     Targets OUT;
-    OUT.Color = _Colors[_Index];
-    OUT.Velocity = OUT.Velocity = float4(CalculateVelocity(IN.CurrentPositionCS, IN.PreviousPositionCS), 0, 0);;
+    OUT.Color = lerp(_Colors[_Index], 0, IN.UV.y);
+    OUT.Velocity = OUT.Velocity = float4(CalculateVelocity(IN.CurrentPositionCS, IN.PreviousPositionCS), 0, 0);
     return OUT;
 }

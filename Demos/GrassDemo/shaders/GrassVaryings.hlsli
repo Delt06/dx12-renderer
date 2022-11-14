@@ -5,8 +5,8 @@ struct Varyings
 {
     float4 CurrentPositionCS : CURRENT_POSITION_CS;
     float4 PreviousPositionCS : PREVIOUS_POSITION_CS;
-
     float4 PositionCS : SV_POSITION;
+    float2 UV : TEXCOORD;
 };
 
 #endif

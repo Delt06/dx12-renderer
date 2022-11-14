@@ -69,5 +69,7 @@ Varyings main(VertexAttributes IN)
     const float4 previousPositionWS = VertexAnimationWS(positionOS, uv, g_Pipeline_Time - g_Pipeline_DeltaTime);
     OUT.PreviousPositionCS = mul(g_Pipeline_TAA_PreviousViewProjection, previousPositionWS);
 
+    OUT.UV = uv;
+
     return OUT;
 }
