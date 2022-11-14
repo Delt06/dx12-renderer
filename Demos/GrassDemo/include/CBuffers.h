@@ -13,12 +13,12 @@ namespace Demo
 
     namespace Grass
     {
-        struct alignas(256) ModelCBuffer
+        struct ModelCBuffer
         {
             DirectX::XMMATRIX m_Model;
         };
 
-        struct alignas(256) MaterialCBuffer
+        struct MaterialCBuffer
         {
             DirectX::XMFLOAT4 m_Color;
         };

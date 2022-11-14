@@ -40,6 +40,14 @@ public:
     void SetComputeConstantBuffer(CommandList& commandList, size_t size, const void* data) const;
 
     template<typename T>
+    inline void SetGraphicsRootConstants(CommandList& commandList, const T& data) const
+    {
+        SetGraphicsRootConstants(commandList, sizeof(T), &data);
+    }
+
+    void SetGraphicsRootConstants(CommandList& commandList, size_t size, const void* data) const;
+
+    template<typename T>
     inline void SetComputeConstantBuffer(CommandList& commandList, const T& data) const
     {
         SetComputeConstantBuffer(commandList, sizeof(T), &data);
@@ -58,12 +66,14 @@ public:
     static constexpr UINT MATERIAL_REGISTER_SPACE = 0u;
     static constexpr UINT MODEL_REGISTER_SPACE = 1u;
     static constexpr UINT PIPELINE_REGISTER_SPACE = 2u;
+    static constexpr UINT CONSTANTS_REGISTER_SPACE = 3u;
 
     struct RootParameters
     {
         enum
         {
             // sorted by the change frequency (high to low)
+            Constants,
             ModelCBuffer,
 
             MaterialCBuffer,

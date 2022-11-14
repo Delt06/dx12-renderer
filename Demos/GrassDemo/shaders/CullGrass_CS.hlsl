@@ -4,10 +4,9 @@
 
 struct IndirectCommand
 {
-    uint2 ModelCBV;
-    uint2 MaterialCBV;
+    uint Index;
     uint4 DrawArguments;
-    uint2 _Padding;
+    uint _Padding;
 };
 
 struct Plane

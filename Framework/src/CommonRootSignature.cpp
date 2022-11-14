@@ -30,6 +30,7 @@ CommonRootSignature::CommonRootSignature(const std::shared_ptr<Resource>& emptyR
     std::vector<CommonRootSignature::RootParameter> rootParameters(RootParameters::NumRootParameters);
 
     // constant buffers
+    rootParameters[RootParameters::Constants].InitAsConstants(4u, 0u, CONSTANTS_REGISTER_SPACE);
     rootParameters[RootParameters::PipelineCBuffer].InitAsConstantBufferView(0u, PIPELINE_REGISTER_SPACE);
     rootParameters[RootParameters::MaterialCBuffer].InitAsConstantBufferView(0u, MATERIAL_REGISTER_SPACE);
     rootParameters[RootParameters::ModelCBuffer].InitAsConstantBufferView(0u, MODEL_REGISTER_SPACE);
@@ -121,6 +122,11 @@ void CommonRootSignature::SetModelConstantBuffer(CommandList& commandList, size_
 void CommonRootSignature::SetComputeConstantBuffer(CommandList& commandList, size_t size, const void* data) const
 {
     commandList.SetComputeDynamicConstantBuffer(RootParameters::MaterialCBuffer, size, data);
+}
+
+void CommonRootSignature::SetGraphicsRootConstants(CommandList& commandList, size_t size, const void* data) const
+{
+    commandList.SetGraphics32BitConstants(RootParameters::Constants, size, data);
 }
 
 void CommonRootSignature::SetPipelineShaderResourceView(CommandList& commandList, UINT index, const ShaderResourceView& srv) const

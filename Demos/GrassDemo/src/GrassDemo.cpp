@@ -121,8 +121,7 @@ namespace
 
     struct IndirectCommand
     {
-        D3D12_GPU_VIRTUAL_ADDRESS ModelCBV;
-        D3D12_GPU_VIRTUAL_ADDRESS MaterialCBV;
+        uint32_t Index;
         D3D12_DRAW_INDEXED_ARGUMENTS DrawArguments;
     };
 
@@ -214,12 +213,12 @@ bool GrassDemo::LoadContent()
     }
 
     {
-        D3D12_INDIRECT_ARGUMENT_DESC argumentDescs[3] = {};
-        argumentDescs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_CONSTANT_BUFFER_VIEW;
-        argumentDescs[0].ConstantBufferView.RootParameterIndex = CommonRootSignature::RootParameters::ModelCBuffer;
-        argumentDescs[1].Type = D3D12_INDIRECT_ARGUMENT_TYPE_CONSTANT_BUFFER_VIEW;
-        argumentDescs[1].ConstantBufferView.RootParameterIndex = CommonRootSignature::RootParameters::MaterialCBuffer;
-        argumentDescs[2].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
+        D3D12_INDIRECT_ARGUMENT_DESC argumentDescs[2] = {};
+        argumentDescs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_CONSTANT;
+        argumentDescs[0].Constant.DestOffsetIn32BitValues = 0;
+        argumentDescs[0].Constant.Num32BitValuesToSet = 1;
+        argumentDescs[0].Constant.RootParameterIndex = CommonRootSignature::RootParameters::Constants;
+        argumentDescs[1].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
 
         D3D12_COMMAND_SIGNATURE_DESC commandSignatureDesc = {};
         commandSignatureDesc.pArgumentDescs = argumentDescs;
@@ -231,8 +230,10 @@ bool GrassDemo::LoadContent()
     }
 
     {
-        m_ModelsConstantBuffer = std::make_shared<MultiConstantBuffer>(GRASS_COUNT, L"Models Constant Buffer");
-        m_MaterialsConstantBuffer = std::make_shared<MultiConstantBuffer>(GRASS_COUNT, L"Materials Constant Buffer");
+        const auto modelsBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(GRASS_COUNT * sizeof(Demo::Grass::ModelCBuffer));
+        m_ModelsStructuredBuffer = std::make_shared<StructuredBuffer>(modelsBufferDesc, GRASS_COUNT, sizeof(Demo::Grass::ModelCBuffer), L"Models Buffer");
+        const auto materialsBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(GRASS_COUNT * sizeof(Demo::Grass::MaterialCBuffer));
+        m_MaterialsStructuredBuffer = std::make_shared<StructuredBuffer>(materialsBufferDesc, GRASS_COUNT, sizeof(Demo::Grass::MaterialCBuffer), L"Materials Buffer");
         const auto positionsBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(GRASS_COUNT * sizeof(XMFLOAT4));
         m_GrassPositionsBuffer = std::make_shared<StructuredBuffer>(positionsBufferDesc, GRASS_COUNT, sizeof(XMFLOAT4), L"Grass Positions Buffer");
 
@@ -252,8 +253,8 @@ bool GrassDemo::LoadContent()
             positions[i] = position;
         }
 
-        commandList->CopyBuffer(*m_ModelsConstantBuffer, GRASS_COUNT, sizeof(Demo::Grass::ModelCBuffer), modelCBuffers.data());
-        commandList->CopyBuffer(*m_MaterialsConstantBuffer, GRASS_COUNT, sizeof(Demo::Grass::MaterialCBuffer), materialCBuffers.data());
+        commandList->CopyBuffer(*m_ModelsStructuredBuffer, GRASS_COUNT, sizeof(Demo::Grass::ModelCBuffer), modelCBuffers.data());
+        commandList->CopyBuffer(*m_MaterialsStructuredBuffer, GRASS_COUNT, sizeof(Demo::Grass::MaterialCBuffer), materialCBuffers.data());
         commandList->CopyStructuredBuffer(*m_GrassPositionsBuffer, GRASS_COUNT, sizeof(XMFLOAT4), positions.data());
 
         const auto commandsBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(GRASS_COUNT * sizeof(IndirectCommand));
@@ -265,8 +266,7 @@ bool GrassDemo::LoadContent()
         {
             auto& command = commands[i];
 
-            command.ModelCBV = m_ModelsConstantBuffer->GetItemGPUAddress(i);
-            command.MaterialCBV = m_MaterialsConstantBuffer->GetItemGPUAddress(i);
+            command.Index = i;
 
             command.DrawArguments.BaseVertexLocation = 0;
             command.DrawArguments.IndexCountPerInstance = m_GrassMesh->GetIndexCount();
@@ -477,9 +477,17 @@ void GrassDemo::OnRender(RenderEventArgs& e)
         m_GrassShader->Bind(*commandList);
         m_GrassMesh->Bind(*commandList);
 
-        commandList->TransitionBarrier(*resultingGrassCommandsBuffer, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-        commandList->TransitionBarrier(resultingGrassCommandsBuffer->GetCounterBuffer(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-        commandList->FlushResourceBarriers();
+        {
+            commandList->TransitionBarrier(*resultingGrassCommandsBuffer, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+            commandList->TransitionBarrier(resultingGrassCommandsBuffer->GetCounterBuffer(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+            commandList->FlushResourceBarriers();
+        }
+
+        {
+            m_RootSignature->SetPipelineShaderResourceView(*commandList, 0, ShaderResourceView(m_ModelsStructuredBuffer));
+            m_RootSignature->SetPipelineShaderResourceView(*commandList, 1, ShaderResourceView(m_MaterialsStructuredBuffer));
+            commandList->CommitStagedDescriptors();
+        }
 
         commandList->GetGraphicsCommandList()->ExecuteIndirect(
             m_GrassCommandSignature.Get(),

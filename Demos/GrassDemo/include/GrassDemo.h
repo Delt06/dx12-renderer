@@ -54,8 +54,8 @@ private:
     std::shared_ptr<Mesh> m_GrassMesh;
     Microsoft::WRL::ComPtr<ID3D12CommandSignature> m_GrassCommandSignature;
 
-    std::shared_ptr<MultiConstantBuffer> m_ModelsConstantBuffer;
-    std::shared_ptr<MultiConstantBuffer> m_MaterialsConstantBuffer;
+    std::shared_ptr<StructuredBuffer> m_ModelsStructuredBuffer;
+    std::shared_ptr<StructuredBuffer> m_MaterialsStructuredBuffer;
     std::shared_ptr<StructuredBuffer> m_GrassCommandsBuffer;
     std::shared_ptr<StructuredBuffer> m_GrassPositionsBuffer;
     std::shared_ptr<StructuredBuffer> m_ResultingGrassCommandsBuffers[Window::BUFFER_COUNT];

@@ -2,8 +2,9 @@
 
 #include "ShaderLibrary/Pipeline.hlsli"
 #include "GrassModel.hlsli"
+#include "GrassConstants.hlsli"
 
-ConstantBuffer<GrassModel> _GrassModelCB : register(b0, COMMON_ROOT_SIGNATURE_MODEL_SPACE);
+StructuredBuffer<GrassModel> _GrassModelsSB : register(t0, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE);
 
 struct VertexAttributes
 {
@@ -18,6 +19,6 @@ struct Varyings
 Varyings main(VertexAttributes IN)
 {
     Varyings OUT;
-    OUT.PositionCS = mul(g_Pipeline_ViewProjection, mul(_GrassModelCB.Model, float4(IN.PositionOS, 1.0)));
+    OUT.PositionCS = mul(g_Pipeline_ViewProjection, mul(_GrassModelsSB[_Index].Model, float4(IN.PositionOS, 1.0)));
     return OUT;
 }
