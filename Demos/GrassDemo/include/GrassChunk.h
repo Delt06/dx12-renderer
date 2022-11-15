@@ -31,7 +31,7 @@ public:
     bool IsVisible();
 
     void DispatchCulling(CommandList& commandList);
-    void Draw(CommandList& commandList);
+    void Draw(CommandList& commandList, bool ignoreCulling = true);
 
 private:
     uint32_t m_TotalCount;

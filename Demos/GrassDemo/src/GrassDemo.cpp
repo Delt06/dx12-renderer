@@ -421,7 +421,7 @@ void GrassDemo::OnRender(RenderEventArgs& e)
         }
     }
 
-
+    if (m_CullingEnabled)
     {
         PIXScope(*commandList, "Cull Grass Batch");
 
@@ -440,9 +440,11 @@ void GrassDemo::OnRender(RenderEventArgs& e)
         m_GrassMesh->Bind(*commandList);
         m_RootSignature->SetPipelineShaderResourceView(*commandList, 2, ShaderResourceView(m_WindNoise));
 
+        const bool ignoreCulling = !m_CullingEnabled;
+
         for (const auto index : m_VisibleGrassChunks)
         {
-            m_GrassChunks[index].Draw(*commandList);
+            m_GrassChunks[index].Draw(*commandList, ignoreCulling);
         }
 
         m_GrassShader->Unbind(*commandList);
@@ -517,6 +519,9 @@ void GrassDemo::OnKeyPressed(KeyEventArgs& e)
         break;
     case KeyCode::T:
         m_TaaEnabled = !m_TaaEnabled;
+        break;
+    case KeyCode::C:
+        m_CullingEnabled = !m_CullingEnabled;
         break;
     case KeyCode::ShiftKey:
         m_CameraController.m_Shift = true;

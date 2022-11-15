@@ -66,6 +66,7 @@ private:
     GraphicsSettings m_GraphicsSettings;
 
     bool m_TaaEnabled = true;
+    bool m_CullingEnabled = true;
     double m_Time = 0;
     double m_DeltaTime = 0;
 

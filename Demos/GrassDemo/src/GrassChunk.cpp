@@ -213,15 +213,15 @@ void GrassChunk::DispatchCulling(CommandList& commandList)
     }
 }
 
-void GrassChunk::Draw(CommandList& commandList)
+void GrassChunk::Draw(CommandList& commandList, bool ignoreCulling)
 {
     PIXScope(commandList, "Draw Grass");
 
-    const auto& outputCommandsBuffer = m_OutputCommandsBuffers[m_FrameIndex];
+    const auto& commandsBuffer = ignoreCulling ? m_InputCommandsBuffer : m_OutputCommandsBuffers[m_FrameIndex];
 
     {
-        commandList.TransitionBarrier(*outputCommandsBuffer, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-        commandList.TransitionBarrier(outputCommandsBuffer->GetCounterBuffer(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+        commandList.TransitionBarrier(*commandsBuffer, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+        commandList.TransitionBarrier(commandsBuffer->GetCounterBuffer(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
         commandList.FlushResourceBarriers();
     }
 
@@ -234,9 +234,9 @@ void GrassChunk::Draw(CommandList& commandList)
     commandList.GetGraphicsCommandList()->ExecuteIndirect(
         m_CommandSignature.Get(),
         m_TotalCount,
-        outputCommandsBuffer->GetD3D12Resource().Get(),
+        commandsBuffer->GetD3D12Resource().Get(),
         0,
-        outputCommandsBuffer->GetCounterBuffer().GetD3D12Resource().Get(),
+        ignoreCulling ? nullptr : commandsBuffer->GetCounterBuffer().GetD3D12Resource().Get(),
         0
     );
 }
