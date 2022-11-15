@@ -89,6 +89,7 @@ GrassChunk::GrassChunk(
     : m_TotalCount(sideCount * sideCount)
     , m_RootSignature(rootSignature)
     , m_CommandSignature(indirectCommandSignature)
+    , m_ChunkAabb{ XMLoadFloat3(&origin), XMLoadFloat3(&origin) }
 {
     const auto modelsBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(m_TotalCount * sizeof(Demo::Grass::ModelCBuffer));
     m_ModelsStructuredBuffer = std::make_shared<StructuredBuffer>(modelsBufferDesc, m_TotalCount, sizeof(Demo::Grass::ModelCBuffer), L"Models Buffer");
