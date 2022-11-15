@@ -20,6 +20,7 @@
 #include <Framework/TAA.h>
 
 #include "MultiConstantBuffer.h"
+#include "GrassChunk.h"
 
 class GrassDemo final : public Game
 {
@@ -55,15 +56,8 @@ private:
     std::shared_ptr<Shader> m_GrassShader;
     std::shared_ptr<Mesh> m_GrassMesh;
     std::shared_ptr<Texture> m_WindNoise;
-    Microsoft::WRL::ComPtr<ID3D12CommandSignature> m_GrassCommandSignature;
-
-    std::shared_ptr<StructuredBuffer> m_ModelsStructuredBuffer;
-    std::shared_ptr<StructuredBuffer> m_MaterialsStructuredBuffer;
-    std::shared_ptr<StructuredBuffer> m_GrassCommandsBuffer;
-    std::shared_ptr<StructuredBuffer> m_GrassPositionsBuffer;
-    std::shared_ptr<StructuredBuffer> m_ResultingGrassCommandsBuffers[Window::BUFFER_COUNT];
+    std::unique_ptr<GrassChunk> m_GrassChunk;
     std::shared_ptr<ComputeShader> m_CullGrassComputeShader;
-    size_t m_FrameIndex = 0;
 
     D3D12_VIEWPORT m_Viewport;
     D3D12_RECT m_ScissorRect;

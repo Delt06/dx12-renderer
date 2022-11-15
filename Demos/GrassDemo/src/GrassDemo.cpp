@@ -23,6 +23,7 @@ using namespace Microsoft::WRL;
 #include <d3dx12.h>
 #include <DirectXColors.h>
 #include "CBuffers.h"
+#include "GrassIndirectCommand.h"
 #include <random>
 
 using namespace DirectX;
@@ -120,26 +121,7 @@ namespace
         return { radius, center };
     }
 
-    struct IndirectCommand
-    {
-        uint32_t Index;
-        D3D12_DRAW_INDEXED_ARGUMENTS DrawArguments;
-    };
-
-    struct CullGrassCBuffer
-    {
-        Camera::Frustum m_Frustum;
-        DirectX::XMFLOAT4 m_BoundsExtents;
-        uint32_t m_Count;
-    };
-
-    constexpr uint32_t GRASS_COUNT = 500 * 1000;
-
-    float frac(float value)
-    {
-        float x;
-        return modff(value, &x);
-    }
+    constexpr uint32_t GRASS_SIDE_COUNT = 1000;
 }
 
 namespace Pipeline
@@ -220,112 +202,34 @@ bool GrassDemo::LoadContent()
     }
 
     {
-        D3D12_INDIRECT_ARGUMENT_DESC argumentDescs[2] = {};
-        argumentDescs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_CONSTANT;
-        argumentDescs[0].Constant.DestOffsetIn32BitValues = 0;
-        argumentDescs[0].Constant.Num32BitValuesToSet = 1;
-        argumentDescs[0].Constant.RootParameterIndex = CommonRootSignature::RootParameters::Constants;
-        argumentDescs[1].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
+        Microsoft::WRL::ComPtr<ID3D12CommandSignature> commandSignature;
+        {
+            D3D12_INDIRECT_ARGUMENT_DESC argumentDescs[2] = {};
+            argumentDescs[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_CONSTANT;
+            argumentDescs[0].Constant.DestOffsetIn32BitValues = 0;
+            argumentDescs[0].Constant.Num32BitValuesToSet = 1;
+            argumentDescs[0].Constant.RootParameterIndex = CommonRootSignature::RootParameters::Constants;
+            argumentDescs[1].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
 
-        D3D12_COMMAND_SIGNATURE_DESC commandSignatureDesc = {};
-        commandSignatureDesc.pArgumentDescs = argumentDescs;
-        commandSignatureDesc.NumArgumentDescs = _countof(argumentDescs);
-        commandSignatureDesc.ByteStride = sizeof(IndirectCommand);
+            D3D12_COMMAND_SIGNATURE_DESC commandSignatureDesc = {};
+            commandSignatureDesc.pArgumentDescs = argumentDescs;
+            commandSignatureDesc.NumArgumentDescs = _countof(argumentDescs);
+            commandSignatureDesc.ByteStride = sizeof(GrassIndirectCommand);
 
-        ThrowIfFailed(device->CreateCommandSignature(&commandSignatureDesc, m_RootSignature->GetRootSignature().Get(), IID_PPV_ARGS(&m_GrassCommandSignature)));
-        m_GrassCommandSignature->SetName(L"Grass Command Signature");
+            ThrowIfFailed(device->CreateCommandSignature(&commandSignatureDesc, m_RootSignature->GetRootSignature().Get(), IID_PPV_ARGS(&commandSignature)));
+            commandSignature->SetName(L"Grass Command Signature");
+        }
+
+        m_GrassChunk = std::make_unique<GrassChunk>(
+            m_RootSignature,
+            commandSignature,
+            m_GrassMesh,
+            *commandList,
+            GRASS_SIDE_COUNT
+            );
     }
 
     {
-        const auto modelsBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(GRASS_COUNT * sizeof(Demo::Grass::ModelCBuffer));
-        m_ModelsStructuredBuffer = std::make_shared<StructuredBuffer>(modelsBufferDesc, GRASS_COUNT, sizeof(Demo::Grass::ModelCBuffer), L"Models Buffer");
-        const auto materialsBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(GRASS_COUNT * sizeof(Demo::Grass::MaterialCBuffer));
-        m_MaterialsStructuredBuffer = std::make_shared<StructuredBuffer>(materialsBufferDesc, GRASS_COUNT, sizeof(Demo::Grass::MaterialCBuffer), L"Materials Buffer");
-        const auto positionsBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(GRASS_COUNT * sizeof(XMFLOAT4));
-        m_GrassPositionsBuffer = std::make_shared<StructuredBuffer>(positionsBufferDesc, GRASS_COUNT, sizeof(XMFLOAT4), L"Grass Positions Buffer");
-
-        std::vector<Demo::Grass::ModelCBuffer> modelCBuffers(GRASS_COUNT);
-        std::vector<Demo::Grass::MaterialCBuffer> materialCBuffers(GRASS_COUNT);
-        std::vector<XMFLOAT4> positions(GRASS_COUNT);
-
-
-        const auto sideSize = static_cast<size_t>(sqrt(GRASS_COUNT));
-
-        constexpr XMFLOAT2 POISSON_DISK[] = {
-            {0.94558609f, -0.76890725f},
-            {-0.81544232f, -0.87912464f},
-            {0.97484398f, 0.75648379f},
-            {-0.91588581f, 0.45771432f},
-            {-0.94201624f, -0.39906216f},
-            {-0.094184101f, -0.92938870f},
-            {0.34495938f, 0.29387760f},
-            {-0.38277543f, 0.27676845f},
-            {0.44323325f, -0.97511554f},
-            {0.53742981f, -0.47373420f},
-            {-0.26496911f, -0.41893023f},
-            {0.79197514f, 0.19090188f},
-            {-0.24188840f, 0.99706507f},
-            {-0.81409955f, 0.91437590f},
-            {0.19984126f, 0.78641367f},
-            {0.14383161f, -0.14100790f}
-        };
-
-        std::normal_distribution<float> distribution(0.5f, 0.15f);
-        std::mt19937 gen;
-
-        for (size_t i = 0; i < GRASS_COUNT; ++i)
-        {
-            constexpr float separation = 2.0f;
-            const auto& poissonSample = POISSON_DISK[i % _countof(POISSON_DISK)];
-            XMFLOAT4 position =
-            {
-                (i / sideSize - sideSize * 0.5f + poissonSample.x) * separation,
-                0,
-                (i % sideSize - sideSize * 0.5f + poissonSample.y) * separation,
-                1.0f
-            };
-            modelCBuffers[i] = { DirectX::XMMatrixScaling(0.01f, distribution(gen) * 0.02f, 0.01f) * DirectX::XMMatrixTranslation(position.x, position.y, position.z) };
-            materialCBuffers[i] = { DirectX::XMFLOAT4{distribution(gen) * 0.15f, distribution(gen) + 0.15f, distribution(gen) * 0.02f, 1.0f} };
-            positions[i] = position;
-        }
-
-        commandList->CopyBuffer(*m_ModelsStructuredBuffer, GRASS_COUNT, sizeof(Demo::Grass::ModelCBuffer), modelCBuffers.data());
-        commandList->CopyBuffer(*m_MaterialsStructuredBuffer, GRASS_COUNT, sizeof(Demo::Grass::MaterialCBuffer), materialCBuffers.data());
-        commandList->CopyStructuredBuffer(*m_GrassPositionsBuffer, GRASS_COUNT, sizeof(XMFLOAT4), positions.data());
-
-        const auto commandsBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(GRASS_COUNT * sizeof(IndirectCommand));
-        m_GrassCommandsBuffer = std::make_shared<StructuredBuffer>(commandsBufferDesc, GRASS_COUNT, sizeof(IndirectCommand), L"Grass Commands Buffer");
-
-        std::vector<IndirectCommand> commands(GRASS_COUNT);
-
-        for (uint32_t i = 0; i < GRASS_COUNT; ++i)
-        {
-            auto& command = commands[i];
-
-            command.Index = i;
-
-            command.DrawArguments.BaseVertexLocation = 0;
-            command.DrawArguments.IndexCountPerInstance = m_GrassMesh->GetIndexCount();
-            command.DrawArguments.InstanceCount = 1;
-            command.DrawArguments.StartIndexLocation = 0;
-            command.DrawArguments.StartInstanceLocation = 0;
-        }
-
-        commandList->CopyStructuredBuffer(*m_GrassCommandsBuffer, commands);
-
-        for (uint32_t i = 0; i < _countof(m_ResultingGrassCommandsBuffers); ++i)
-        {
-            const auto resultBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(GRASS_COUNT * sizeof(IndirectCommand), D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-
-            auto buffer = std::make_shared<StructuredBuffer>(resultBufferDesc,
-                GRASS_COUNT,
-                sizeof(IndirectCommand),
-                L"Resulting Grass Commands Buffer " + std::to_wstring(i)
-                );
-            commandList->CopyStructuredBuffer(*buffer, GRASS_COUNT, sizeof(IndirectCommand), nullptr);
-            m_ResultingGrassCommandsBuffers[i] = buffer;
-        }
-
         m_CullGrassComputeShader = std::make_shared<ComputeShader>(m_RootSignature,
             ShaderBlob(L"CullGrass_CS.cso")
             );
@@ -490,73 +394,23 @@ void GrassDemo::OnRender(RenderEventArgs& e)
     commandList->SetViewport(m_Viewport);
     commandList->SetScissorRect(m_ScissorRect);
 
-    const auto& resultingGrassCommandsBuffer = m_ResultingGrassCommandsBuffers[m_FrameIndex];
+    m_GrassChunk->SetFrustum(m_Camera.GetFrustum());
 
     {
-        PIXScope(*commandList, "Cull Grass");
-
-        commandList->CopyByteAddressBuffer<uint32_t>(
-            resultingGrassCommandsBuffer->GetCounterBuffer(),
-            0U
-            );
-
-        {
-            CullGrassCBuffer cullGrassCBuffer;
-            cullGrassCBuffer.m_Frustum = m_Camera.GetFrustum();
-            cullGrassCBuffer.m_BoundsExtents = { 0.5f, 20.0f, 0.5f, 0.0f };
-            cullGrassCBuffer.m_Count = GRASS_COUNT;
-            m_RootSignature->SetComputeConstantBuffer(*commandList, cullGrassCBuffer);
-        }
-
-        {
-            m_RootSignature->SetComputeShaderResourceView(*commandList, 0,
-                ShaderResourceView(m_GrassPositionsBuffer)
-            );
-        }
-
-        {
-            m_RootSignature->SetComputeShaderResourceView(*commandList, 1,
-                ShaderResourceView(m_GrassCommandsBuffer)
-            );
-        }
-
-        {
-            m_RootSignature->SetUnorderedAccessView(*commandList, 0,
-                UnorderedAccessView(resultingGrassCommandsBuffer)
-            );
-        }
+        PIXScope(*commandList, "Cull Grass Batch");
 
         m_CullGrassComputeShader->Bind(*commandList);
-        commandList->Dispatch(Math::AlignUp(GRASS_COUNT, 32u), 1, 1);
+        m_GrassChunk->DispatchCulling(*commandList);
     }
 
     {
-        PIXScope(*commandList, "Draw Grass");
+        PIXScope(*commandList, "Draw Grass Batch");
 
         m_GrassShader->Bind(*commandList);
         m_GrassMesh->Bind(*commandList);
+        m_RootSignature->SetPipelineShaderResourceView(*commandList, 2, ShaderResourceView(m_WindNoise));
 
-        {
-            commandList->TransitionBarrier(*resultingGrassCommandsBuffer, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-            commandList->TransitionBarrier(resultingGrassCommandsBuffer->GetCounterBuffer(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-            commandList->FlushResourceBarriers();
-        }
-
-        {
-            m_RootSignature->SetPipelineShaderResourceView(*commandList, 0, ShaderResourceView(m_ModelsStructuredBuffer));
-            m_RootSignature->SetPipelineShaderResourceView(*commandList, 1, ShaderResourceView(m_MaterialsStructuredBuffer));
-            m_RootSignature->SetPipelineShaderResourceView(*commandList, 2, ShaderResourceView(m_WindNoise));
-            commandList->CommitStagedDescriptors();
-        }
-
-        commandList->GetGraphicsCommandList()->ExecuteIndirect(
-            m_GrassCommandSignature.Get(),
-            GRASS_COUNT,
-            resultingGrassCommandsBuffer->GetD3D12Resource().Get(),
-            0,
-            resultingGrassCommandsBuffer->GetCounterBuffer().GetD3D12Resource().Get(),
-            0
-        );
+        m_GrassChunk->Draw(*commandList);
 
         m_GrassShader->Unbind(*commandList);
     }
@@ -570,8 +424,6 @@ void GrassDemo::OnRender(RenderEventArgs& e)
 
         m_Taa->OnRenderedFrame(viewProjectionMatrix);
     }
-
-    m_FrameIndex = (m_FrameIndex + 1) % Window::BUFFER_COUNT;
 
     commandQueue->ExecuteCommandList(commandList);
     PWindow->Present(m_TaaEnabled ? *m_Taa->GetResolvedTexture() : *m_RenderTarget.GetTexture(Color0));

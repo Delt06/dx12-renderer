@@ -6,12 +6,15 @@ set(HEADER_FILES
         include/GrassDemo.h
         include/CBuffers.h
         include/MultiConstantBuffer.h
+        include/GrassChunk.h
+        include/GrassIndirectCommand.h
         )
 
 set(SOURCE_FILES
         src/main.cpp
         src/GrassDemo.cpp
         src/MultiConstantBuffer.cpp
+        src/GrassChunk.cpp
         )
 
 set(SHADER_FILES_VERTEX
