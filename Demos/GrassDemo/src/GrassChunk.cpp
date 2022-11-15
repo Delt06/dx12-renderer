@@ -2,8 +2,6 @@
 
 #include <random>
 
-#include <DirectXMath.h>
-
 #include <DX12Library/Helpers.h>
 
 #include "CBuffers.h"
@@ -43,6 +41,40 @@ namespace
         {0.19984126f, 0.78641367f},
         {0.14383161f, -0.14100790f}
     };
+
+    constexpr XMFLOAT4 BOUNDS_EXTENTS = { 0.5f, 20.0f, 0.5f, 0.0f };
+
+    inline float GetSignedDistanceToPlane(const Camera::FrustumPlane& plane, const XMVECTOR& position)
+    {
+        const auto normal = XMLoadFloat3(&plane.m_Normal);
+        float distance;
+        XMStoreFloat(&distance, XMVector3Dot(normal, position));
+        return distance - plane.m_Distance;
+    }
+
+    inline bool IsOnPositiveSide(const Camera::FrustumPlane& plane, const Aabb& aabb)
+    {
+        // Compute the projection interval radius of b onto L(t) = b.c + t * p.n
+        const auto normal = XMLoadFloat3(&plane.m_Normal);
+        const auto absPlaneNormal = XMVectorAbs(normal);
+        const auto aabbExtents = (aabb.Max - aabb.Min) * 0.5f;
+        const auto aabbCenter = aabb.Min + aabbExtents;
+        float r;
+        XMStoreFloat(&r, XMVector3Dot(aabbExtents, absPlaneNormal));
+
+        return -r <= GetSignedDistanceToPlane(plane, aabbCenter);
+    }
+
+    inline bool IsInsideFrustum(const Camera::Frustum& frustum, const Aabb& aabb)
+    {
+        for (uint32_t i = 0; i < Camera::Frustum::PLANES_COUNT; ++i)
+        {
+            if (!IsOnPositiveSide(frustum.m_Planes[i], aabb))
+                return false;
+        }
+
+        return true;
+    }
 }
 
 GrassChunk::GrassChunk(
@@ -50,7 +82,9 @@ GrassChunk::GrassChunk(
     const Microsoft::WRL::ComPtr<ID3D12CommandSignature>& indirectCommandSignature,
     const std::shared_ptr<Mesh>& mesh,
     CommandList& commandList,
-    uint32_t sideCount
+    uint32_t sideCount,
+    float spacing,
+    const DirectX::XMFLOAT3& origin
 )
     : m_TotalCount(sideCount * sideCount)
     , m_RootSignature(rootSignature)
@@ -69,18 +103,23 @@ GrassChunk::GrassChunk(
 
     for (size_t i = 0; i < m_TotalCount; ++i)
     {
-        constexpr float separation = 2.0f;
         const auto& poissonSample = POISSON_DISK[i % _countof(POISSON_DISK)];
         XMFLOAT4 position =
         {
-            (i / sideCount - sideCount * 0.5f + poissonSample.x) * separation,
-            0,
-            (i % sideCount - sideCount * 0.5f + poissonSample.y) * separation,
+            (i / sideCount - sideCount * 0.5f + poissonSample.x) * spacing + origin.x,
+            origin.y,
+            (i % sideCount - sideCount * 0.5f + poissonSample.y) * spacing + origin.z,
             1.0f
         };
         modelCBuffers[i] = { DirectX::XMMatrixScaling(0.01f, s_Distribution05(s_Gen) * 0.02f, 0.01f) * DirectX::XMMatrixTranslation(position.x, position.y, position.z) };
         materialCBuffers[i] = { DirectX::XMFLOAT4{s_Distribution05(s_Gen) * 0.15f, s_Distribution05(s_Gen) + 0.15f, s_Distribution05(s_Gen) * 0.02f, 1.0f} };
         positions[i] = position;
+
+        Aabb grassAabb;
+        grassAabb.Min = XMLoadFloat4(&position) - XMLoadFloat4(&BOUNDS_EXTENTS);
+        grassAabb.Max = grassAabb.Min + XMLoadFloat4(&BOUNDS_EXTENTS);
+
+        m_ChunkAabb.Encapsulate(grassAabb);
     }
 
     commandList.CopyBuffer(*m_ModelsStructuredBuffer, m_TotalCount, sizeof(Demo::Grass::ModelCBuffer), modelCBuffers.data());
@@ -128,8 +167,7 @@ void GrassChunk::SetFrustum(const Camera::Frustum& frustum)
 
 bool GrassChunk::IsVisible()
 {
-    // todo: implement frustum culling for the whole AABB of the chunk
-    return true;
+    return IsInsideFrustum(m_Frustum, m_ChunkAabb);
 }
 
 void GrassChunk::DispatchCulling(CommandList& commandList)
@@ -148,7 +186,7 @@ void GrassChunk::DispatchCulling(CommandList& commandList)
         {
             CullGrassCBuffer cullGrassCBuffer;
             cullGrassCBuffer.m_Frustum = m_Frustum;
-            cullGrassCBuffer.m_BoundsExtents = { 0.5f, 20.0f, 0.5f, 0.0f };
+            cullGrassCBuffer.m_BoundsExtents = BOUNDS_EXTENTS;
             cullGrassCBuffer.m_Count = m_TotalCount;
             m_RootSignature->SetComputeConstantBuffer(commandList, cullGrassCBuffer);
         }

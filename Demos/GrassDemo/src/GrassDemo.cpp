@@ -121,7 +121,9 @@ namespace
         return { radius, center };
     }
 
-    constexpr uint32_t GRASS_SIDE_COUNT = 1000;
+    constexpr uint32_t GRASS_SIDE_COUNT = 500;
+    constexpr uint32_t GRASS_CHUNKS_SIDE_COUNT = 4;
+    constexpr float GRASS_SPACING = 2.0f;
 }
 
 namespace Pipeline
@@ -220,13 +222,23 @@ bool GrassDemo::LoadContent()
             commandSignature->SetName(L"Grass Command Signature");
         }
 
-        m_GrassChunk = std::make_unique<GrassChunk>(
-            m_RootSignature,
-            commandSignature,
-            m_GrassMesh,
-            *commandList,
-            GRASS_SIDE_COUNT
-            );
+        for (int32_t i = 0; i < GRASS_CHUNKS_SIDE_COUNT; ++i)
+        {
+            for (int32_t j = 0; j < GRASS_CHUNKS_SIDE_COUNT; ++j)
+            {
+                const float chunkSize = GRASS_SPACING * GRASS_SIDE_COUNT;
+                const int32_t offset = GRASS_CHUNKS_SIDE_COUNT / 2;
+                const XMFLOAT3 origin = { chunkSize * (i - offset), 0, chunkSize * (j - offset) };
+                m_GrassChunks.emplace_back(m_RootSignature,
+                    commandSignature,
+                    m_GrassMesh,
+                    *commandList,
+                    GRASS_SIDE_COUNT,
+                    GRASS_SPACING,
+                    origin
+                );
+            }
+        }
     }
 
     {
@@ -394,13 +406,31 @@ void GrassDemo::OnRender(RenderEventArgs& e)
     commandList->SetViewport(m_Viewport);
     commandList->SetScissorRect(m_ScissorRect);
 
-    m_GrassChunk->SetFrustum(m_Camera.GetFrustum());
+    {
+        const auto frustum = m_Camera.GetFrustum();
+        m_VisibleGrassChunks.clear();
+
+        for (size_t i = 0; i < m_GrassChunks.size(); ++i)
+        {
+            auto& chunk = m_GrassChunks[i];
+            chunk.SetFrustum(frustum);
+            if (chunk.IsVisible())
+            {
+                m_VisibleGrassChunks.push_back(i);
+            }
+        }
+    }
+
 
     {
         PIXScope(*commandList, "Cull Grass Batch");
 
         m_CullGrassComputeShader->Bind(*commandList);
-        m_GrassChunk->DispatchCulling(*commandList);
+
+        for (const auto index : m_VisibleGrassChunks)
+        {
+            m_GrassChunks[index].DispatchCulling(*commandList);
+        }
     }
 
     {
@@ -410,7 +440,10 @@ void GrassDemo::OnRender(RenderEventArgs& e)
         m_GrassMesh->Bind(*commandList);
         m_RootSignature->SetPipelineShaderResourceView(*commandList, 2, ShaderResourceView(m_WindNoise));
 
-        m_GrassChunk->Draw(*commandList);
+        for (const auto index : m_VisibleGrassChunks)
+        {
+            m_GrassChunks[index].Draw(*commandList);
+        }
 
         m_GrassShader->Unbind(*commandList);
     }

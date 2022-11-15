@@ -56,7 +56,8 @@ private:
     std::shared_ptr<Shader> m_GrassShader;
     std::shared_ptr<Mesh> m_GrassMesh;
     std::shared_ptr<Texture> m_WindNoise;
-    std::unique_ptr<GrassChunk> m_GrassChunk;
+    std::vector<GrassChunk> m_GrassChunks;
+    std::vector<size_t> m_VisibleGrassChunks;
     std::shared_ptr<ComputeShader> m_CullGrassComputeShader;
 
     D3D12_VIEWPORT m_Viewport;
