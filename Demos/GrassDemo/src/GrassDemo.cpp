@@ -250,15 +250,42 @@ bool GrassDemo::LoadContent()
 
 
         const auto sideSize = static_cast<size_t>(sqrt(GRASS_COUNT));
-        std::normal_distribution<float> distribution(0.5f, 0.2f);
+
+        constexpr XMFLOAT2 POISSON_DISK[] = {
+            {0.94558609f, -0.76890725f},
+            {-0.81544232f, -0.87912464f},
+            {0.97484398f, 0.75648379f},
+            {-0.91588581f, 0.45771432f},
+            {-0.94201624f, -0.39906216f},
+            {-0.094184101f, -0.92938870f},
+            {0.34495938f, 0.29387760f},
+            {-0.38277543f, 0.27676845f},
+            {0.44323325f, -0.97511554f},
+            {0.53742981f, -0.47373420f},
+            {-0.26496911f, -0.41893023f},
+            {0.79197514f, 0.19090188f},
+            {-0.24188840f, 0.99706507f},
+            {-0.81409955f, 0.91437590f},
+            {0.19984126f, 0.78641367f},
+            {0.14383161f, -0.14100790f}
+        };
+
+        std::normal_distribution<float> distribution(0.5f, 0.15f);
         std::mt19937 gen;
 
         for (size_t i = 0; i < GRASS_COUNT; ++i)
         {
-            constexpr float separation = 1.25f;
-            XMFLOAT4 position = { (i / sideSize - sideSize * 0.5f) * separation, 0, (i % sideSize - sideSize * 0.5f) * separation, 1.0f };
+            constexpr float separation = 2.0f;
+            const auto& poissonSample = POISSON_DISK[i % _countof(POISSON_DISK)];
+            XMFLOAT4 position =
+            {
+                (i / sideSize - sideSize * 0.5f + poissonSample.x) * separation,
+                0,
+                (i % sideSize - sideSize * 0.5f + poissonSample.y) * separation,
+                1.0f
+            };
             modelCBuffers[i] = { DirectX::XMMatrixScaling(0.01f, distribution(gen) * 0.02f, 0.01f) * DirectX::XMMatrixTranslation(position.x, position.y, position.z) };
-            materialCBuffers[i] = { DirectX::XMFLOAT4{distribution(gen) * 0.1f, distribution(gen) + 0.1f, distribution(gen) * 0.02f, 1.0f} };
+            materialCBuffers[i] = { DirectX::XMFLOAT4{distribution(gen) * 0.15f, distribution(gen) + 0.15f, distribution(gen) * 0.02f, 1.0f} };
             positions[i] = position;
         }
 
@@ -366,7 +393,7 @@ void GrassDemo::OnResize(ResizeEventArgs& e)
         m_Height = std::max(1, e.Height);
 
         const float aspectRatio = static_cast<float>(m_Width) / static_cast<float>(m_Height);
-        m_Camera.SetProjection(45.0f, aspectRatio, 0.1f, 250.0f);
+        m_Camera.SetProjection(45.0f, aspectRatio, 0.1f, 500.0f);
 
         m_Viewport = CD3DX12_VIEWPORT(0.0f, 0.0f,
             static_cast<float>(m_Width), static_cast<float>(m_Height));
