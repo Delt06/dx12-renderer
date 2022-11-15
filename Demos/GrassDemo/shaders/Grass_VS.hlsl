@@ -14,20 +14,19 @@ struct VertexAttributes
     float2 UV : TEXCOORD;
 };
 
-float3 RotateAboutAxisRadians(const float3 value, float3 axis, float rotation)
+float3 RotateAboutZRadians(const float3 value, float rotation)
 {
     float s, c;
     sincos(rotation, s, c);
     const float oneMinusC = 1.0 - c;
 
-    axis = normalize(axis);
     const float3x3 rotationMatrix =
     {
-        oneMinusC * axis.x * axis.x + c, oneMinusC * axis.x * axis.y - axis.z * s, oneMinusC * axis.z * axis.x + axis.y * s,
-        oneMinusC * axis.x * axis.y + axis.z * s, oneMinusC * axis.y * axis.y + c, oneMinusC * axis.y * axis.z - axis.x * s,
-        oneMinusC * axis.z * axis.x - axis.y * s, oneMinusC * axis.y * axis.z + axis.x * s, oneMinusC * axis.z * axis.z + c
+        c, -s, 0,
+        s, c, 0,
+        0, 0, oneMinusC + c
     };
-    return mul(transpose(rotationMatrix), value);
+    return mul(rotationMatrix, value);
 }
 
 inline float4 TransformObjectToWorldPosition(float3 positionOS)
@@ -47,7 +46,7 @@ float4 VertexAnimationWS(float3 positionOS, float2 uv, float time)
 
     wind *= 1 - uv.y;
     wind *= 0.05f;//_WindAmplitude;
-    positionOS = RotateAboutAxisRadians(positionOS, float3(0, 0, 1), wind);
+    positionOS = RotateAboutZRadians(positionOS, wind);
 
     return TransformObjectToWorldPosition(positionOS);
 }
