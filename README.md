@@ -97,7 +97,8 @@
 - [GrassDemo](./Demos/GrassDemo)
   - ~45k individual grass blades sent to rendering after culling, 4kk total.
   - Grass animation in the vertex shader;
-  - Grass chunk frustum culling (CPU);
+  - Per-chunk frustum culling (CPU);
+    - Chunks consist of 500x500 instances;
   - Per-instance frustum culling (GPU, compute);
   - Grass instances rendered via `ExecuteIndirect`;
   - TAA.
