@@ -6,8 +6,6 @@ set(HEADER_FILES
         include/DeferredLightingDemo.h
         include/Reflections.h
         include/Ssao.h
-        include/Taa.h
-        include/TaaCBuffer.h
 
         include/HDR/AutoExposure.h
         include/HDR/ToneMapping.h
@@ -27,8 +25,6 @@ set(SOURCE_FILES
 
         src/Reflections.cpp
         src/Ssao.cpp
-        src/Taa.cpp
-        src/TaaCBuffer.cpp
 
         src/HDR/AutoExposure.cpp
         src/HDR/ToneMapping.cpp
@@ -69,7 +65,6 @@ set(SHADER_FILES_PIXEL
         shaders/SSAO_PS.hlsl
         shaders/SSR_Trace_PS.hlsl
         shaders/SSR_BlurPass_PS.hlsl
-        shaders/TAA_Resolve_PS.hlsl
         )
 
 set(SHADER_FILES_COMPUTE

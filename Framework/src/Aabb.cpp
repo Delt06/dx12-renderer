@@ -1,4 +1,4 @@
-﻿#include <Framework/Aabb.h>
+#include <Framework/Aabb.h>
 #include <DirectXMath.h>
 
 using namespace DirectX;
@@ -45,12 +45,12 @@ Aabb Aabb::Transform(const XMMATRIX transform, const Aabb& aabb)
 void Aabb::GetAllPoints(XMVECTOR points[POINTS_COUNT]) const
 {
 	const float minX = XMVectorGetX(Min);
-	const float minY = XMVectorGetX(Min);
-	const float minZ = XMVectorGetX(Min);
+	const float minY = XMVectorGetY(Min);
+	const float minZ = XMVectorGetZ(Min);
 
 	const float maxX = XMVectorGetX(Max);
-	const float maxY = XMVectorGetX(Max);
-	const float maxZ = XMVectorGetX(Max);
+	const float maxY = XMVectorGetY(Max);
+	const float maxZ = XMVectorGetZ(Max);
 
 	constexpr float w = 1.0f;
 	// bottom

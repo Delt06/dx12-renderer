@@ -38,8 +38,6 @@ using namespace DirectX;
 #include <PBR/BrdfIntegration.h>
 #include <PBR/PreFilterEnvironment.h>
 #include <HDR/AutoExposure.h>
-#include <TaaCBuffer.h>
-#include <Taa.h>
 #include <DX12Library/ShaderUtils.h>
 #include <DX12Library/ClearValue.h>
 
@@ -482,7 +480,7 @@ bool DeferredLightingDemo::LoadContent()
         }
 
         {
-            m_Taa = std::make_unique<Taa>(m_CommonRootSignature, *commandList, resultFormat, m_Width, m_Height);
+            m_Taa = std::make_unique<TAA>(m_CommonRootSignature, *commandList, resultFormat, m_Width, m_Height);
         }
     }
 
@@ -1087,7 +1085,7 @@ void DeferredLightingDemo::OnRender(RenderEventArgs& e)
             pipelineCBuffer.m_ScreenTexelSize.x = 1.0f / static_cast<float>(m_Width);
             pipelineCBuffer.m_ScreenTexelSize.y = 1.0f / static_cast<float>(m_Height);
 
-            pipelineCBuffer.m_Taa_JitterOffset = m_TaaEnabled ? m_Taa->ComputeJitterOffset(m_Width, m_Height) : XMFLOAT2(0.0f, 0.0f);
+            pipelineCBuffer.m_Taa_JitterOffset = m_TaaEnabled ? m_Taa->ComputeJitterOffset() : XMFLOAT2(0.0f, 0.0f);
 
             pipelineCBuffer.m_AmbientIntensity = 1.0f;
 

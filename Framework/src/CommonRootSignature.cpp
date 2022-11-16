@@ -4,25 +4,6 @@
 
 namespace
 {
-    namespace RootParameters
-    {
-        enum
-        {
-            // sorted by the change frequency (high to low)
-            ModelCBuffer,
-
-            MaterialCBuffer,
-            MaterialSRVs,
-
-            PipelineCBuffer,
-            PipelineSRVs,
-
-            UAVs,
-
-            NumRootParameters,
-        };
-    }
-
     static constexpr UINT PIPELINE_SRVS_COUNT = 32;
     static constexpr UINT MATERIAL_SRVS_COUNT = 6;
     static constexpr UINT UAVS_COUNT = 6;
@@ -49,6 +30,7 @@ CommonRootSignature::CommonRootSignature(const std::shared_ptr<Resource>& emptyR
     std::vector<CommonRootSignature::RootParameter> rootParameters(RootParameters::NumRootParameters);
 
     // constant buffers
+    rootParameters[RootParameters::Constants].InitAsConstants(4u, 0u, CONSTANTS_REGISTER_SPACE);
     rootParameters[RootParameters::PipelineCBuffer].InitAsConstantBufferView(0u, PIPELINE_REGISTER_SPACE);
     rootParameters[RootParameters::MaterialCBuffer].InitAsConstantBufferView(0u, MATERIAL_REGISTER_SPACE);
     rootParameters[RootParameters::ModelCBuffer].InitAsConstantBufferView(0u, MODEL_REGISTER_SPACE);
@@ -58,7 +40,7 @@ CommonRootSignature::CommonRootSignature(const std::shared_ptr<Resource>& emptyR
     rootParameters[RootParameters::MaterialSRVs].InitAsDescriptorTable(1, &materialSrvRange, D3D12_SHADER_VISIBILITY_ALL);
 
     DescriptorRange pipelineSrvRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, PIPELINE_SRVS_COUNT, 0u, PIPELINE_REGISTER_SPACE);
-    rootParameters[RootParameters::PipelineSRVs].InitAsDescriptorTable(1, &pipelineSrvRange, D3D12_SHADER_VISIBILITY_PIXEL);
+    rootParameters[RootParameters::PipelineSRVs].InitAsDescriptorTable(1, &pipelineSrvRange, D3D12_SHADER_VISIBILITY_ALL);
 
     DescriptorRange uavsRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, UAVS_COUNT, 0u, 0u, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE);
     rootParameters[RootParameters::UAVs].InitAsDescriptorTable(1, &uavsRange, D3D12_SHADER_VISIBILITY_ALL);
@@ -140,6 +122,11 @@ void CommonRootSignature::SetModelConstantBuffer(CommandList& commandList, size_
 void CommonRootSignature::SetComputeConstantBuffer(CommandList& commandList, size_t size, const void* data) const
 {
     commandList.SetComputeDynamicConstantBuffer(RootParameters::MaterialCBuffer, size, data);
+}
+
+void CommonRootSignature::SetGraphicsRootConstants(CommandList& commandList, size_t size, const void* data) const
+{
+    commandList.SetGraphics32BitConstants(RootParameters::Constants, static_cast<uint32_t>(size) / sizeof(uint32_t), data);
 }
 
 void CommonRootSignature::SetPipelineShaderResourceView(CommandList& commandList, UINT index, const ShaderResourceView& srv) const

@@ -1,4 +1,4 @@
-﻿#include "DX12LibPCH.h"
+#include "DX12LibPCH.h"
 #include "ByteAddressBuffer.h"
 #include "Application.h"
 
@@ -14,6 +14,8 @@ ByteAddressBuffer::ByteAddressBuffer(const D3D12_RESOURCE_DESC& resDesc,
 	const std::wstring& name)
 	: Buffer(resDesc, numElements, elementSize, name)
 {
+    m_Srv = Application::Get().AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    m_Uav = Application::Get().AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 }
 
 void ByteAddressBuffer::CreateViews(size_t numElements, size_t elementSize)

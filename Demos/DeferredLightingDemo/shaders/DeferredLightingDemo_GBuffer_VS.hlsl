@@ -29,12 +29,12 @@ VertexShaderOutput main(VertexAttributes IN)
     float4 positionCS = originalPositionCS;
     positionCS.xy += g_Pipeline_Taa_JitterOffset * positionCS.w;
     OUT.PositionCs = positionCS;
-    
+
     OUT.NormalWs = mul((float3x3) g_Model_InverseTransposeModel, IN.Normal);
     OUT.TangentWs = mul((float3x3) g_Model_InverseTransposeModel, IN.TangentOs);
     OUT.BitangentWs = mul((float3x3) g_Model_InverseTransposeModel, IN.BitangentOs);
     OUT.Uv = IN.Uv;
-    
+
     OUT.CurrentPositionCs = originalPositionCS;
     OUT.PrevPositionCs = mul(g_Model_Taa_PreviousModelViewProjectionMatrix, float4(IN.PositionOs, 1.0f));
 

@@ -53,7 +53,7 @@ public:
 
 	D3D12_CPU_DESCRIPTOR_HANDLE GetUnorderedAccessView(const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc = nullptr) const override;
 
-	const ByteAddressBuffer& GetCounterBuffer();
+	ByteAddressBuffer& GetCounterBuffer();
 
 private:
 	size_t m_NumElements;

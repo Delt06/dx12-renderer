@@ -444,6 +444,10 @@ public:
     const RenderTargetFormats& GetLastRenderTargetFormats() const { return m_LastRenderTargetState.GetFormats(); }
     const RenderTargetState& GetLastRenderTargetState() const { return m_LastRenderTargetState; }
 
+    // Copy the contents of a CPU buffer to a GPU buffer (possibly replacing the previous buffer contents).
+    void CopyBuffer(Buffer& buffer, size_t numElements, size_t elementSize, const void* bufferData,
+        D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE);
+
 protected:
 private:
     void TrackObject(const Microsoft::WRL::ComPtr<ID3D12Object>& object);
@@ -455,10 +459,6 @@ private:
     //void GenerateMips_BGR(Texture& texture);
     //// Generate mips for sRGB textures.
     //void GenerateMips_sRGB(Texture& texture);
-
-    // Copy the contents of a CPU buffer to a GPU buffer (possibly replacing the previous buffer contents).
-    void CopyBuffer(Buffer& buffer, size_t numElements, size_t elementSize, const void* bufferData,
-        D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE);
 
     // Binds the current descriptor heaps to the command list.
     void BindDescriptorHeaps();

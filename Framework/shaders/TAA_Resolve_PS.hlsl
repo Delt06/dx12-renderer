@@ -1,10 +1,14 @@
 #include <ShaderLibrary/Common/RootSignature.hlsli>
-#include "ShaderLibrary/Pipeline.hlsli"
 
 struct PixelShaderInput
 {
     float2 UV : TEXCOORD;
 };
+
+ROOT_CONSTANTS_BEGIN
+float2 _ScreenTexelSize;
+float _ModulationFactor;
+ROOT_CONSTANTS_END
 
 Texture2D currentColorBuffer : register(t0);
 Texture2D historyColorBuffer : register(t1);
@@ -17,7 +21,7 @@ float3 SampleColorBuffer(float2 uv)
 
 float3 SampleColorBufferOffset(float2 uv, int2 offset)
 {
-    return currentColorBuffer.Sample(g_Common_PointClampSampler, uv + offset * g_Pipeline_Screen_TexelSize).rgb;
+    return currentColorBuffer.Sample(g_Common_PointClampSampler, uv + offset * _ScreenTexelSize).rgb;
 }
 
 float4 main(PixelShaderInput IN) : SV_TARGET
@@ -39,9 +43,6 @@ float4 main(PixelShaderInput IN) : SV_TARGET
     float3 boxMax = max(currentColor, max(nearColor0, max(nearColor1, max(nearColor2, nearColor3))));
 
     historyColor = clamp(historyColor, boxMin, boxMax);
-
-    float modulationFactor = 0.9f;
-
-    float3 resultColor = lerp(currentColor, historyColor, modulationFactor);
+    float3 resultColor = lerp(currentColor, historyColor, _ModulationFactor);
     return float4(resultColor, 1.0);
 }

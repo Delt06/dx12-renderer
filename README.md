@@ -92,6 +92,25 @@
 - Hold <kbd>LMB</kbd> and move the mouse to orient the camera;
 - Press <kbd>L</kbd> to toggle light animation.
 
+### GrassDemo
+
+- [GrassDemo](./Demos/GrassDemo)
+  - ~45k individual grass blades sent to rendering after culling, 4kk total.
+  - Grass animation in the vertex shader;
+  - Grass chunk frustum culling (CPU);
+  - Per-instance frustum culling (GPU, compute);
+  - Grass instances rendered via `ExecuteIndirect`;
+  - TAA.
+
+![Grass Demo Screenshot](./Screenshots/GrassDemo.gif)
+
+#### Controls
+
+- Use <kbd>WASD</kbd>/Arrow Keys to move the camera;
+- Hold <kbd>LMB</kbd> and move the mouse to orient the camera;
+- Press <kbd>T</kbd> to toggle TAA.
+- Press <kbd>C</kbd> to toggle GPU culling.
+
 ### Animations
 
 - [AnimationsDemo](./Demos/AnimationsDemo)
