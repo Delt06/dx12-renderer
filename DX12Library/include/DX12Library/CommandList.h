@@ -448,6 +448,10 @@ public:
     void CopyBuffer(Buffer& buffer, size_t numElements, size_t elementSize, const void* bufferData,
         D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE);
 
+    void SetShadingRateImage(const Resource& resource);
+    void ResetShadingRateImage();
+    void SetShadingRate(const D3D12_SHADING_RATE& shadingRate, const D3D12_SHADING_RATE_COMBINER* combiners);
+
 protected:
 private:
     void TrackObject(const Microsoft::WRL::ComPtr<ID3D12Object>& object);
@@ -467,6 +471,7 @@ private:
 
     D3D12_COMMAND_LIST_TYPE m_D3d12CommandListType;
     Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> m_D3d12CommandList;
+    Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList5> m_D3d12CommandList5;
     Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_D3d12CommandAllocator;
 
     // For copy queues, it may be necessary to generate mips while loading textures.

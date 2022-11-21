@@ -35,6 +35,8 @@ CommandList::CommandList(D3D12_COMMAND_LIST_TYPE type) : m_D3d12CommandListType(
     ThrowIfFailed(device->CreateCommandList(0, m_D3d12CommandListType, m_D3d12CommandAllocator.Get(),
         nullptr, IID_PPV_ARGS(&m_D3d12CommandList)));
 
+    ThrowIfFailed(m_D3d12CommandList.As(&m_D3d12CommandList5));
+
     m_PUploadBuffer = std::make_unique<UploadBuffer>();
 
     m_PResourceStateTracker = std::make_unique<ResourceStateTracker>();
@@ -217,6 +219,26 @@ void CommandList::CopyBuffer(Buffer& buffer, const size_t numElements, const siz
 
     buffer.SetD3D12Resource(d3d12Resource);
     buffer.CreateViews(numElements, elementSize);
+}
+
+void CommandList::SetShadingRateImage(const Resource& resource)
+{
+    TransitionBarrier(resource, D3D12_RESOURCE_STATE_SHADING_RATE_SOURCE);
+
+    const auto d3d12Resource = resource.GetD3D12Resource();
+    TrackObject(d3d12Resource);
+
+    m_D3d12CommandList5->RSSetShadingRateImage(d3d12Resource.Get());
+}
+
+void CommandList::ResetShadingRateImage()
+{
+    m_D3d12CommandList5->RSSetShadingRateImage(nullptr);
+}
+
+void CommandList::SetShadingRate(const D3D12_SHADING_RATE& shadingRate, const D3D12_SHADING_RATE_COMBINER* combiners)
+{
+    m_D3d12CommandList5->RSSetShadingRate(shadingRate, combiners);
 }
 
 void CommandList::CopyVertexBuffer(VertexBuffer& vertexBuffer, const size_t numVertices, const size_t vertexStride,
