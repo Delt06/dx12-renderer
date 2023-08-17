@@ -19,3 +19,6 @@ packages/*
 /**/cmake-build-*
 /**/.vs
 /**/out
+
+/**/CMakeFiles/
+/**/CMakeCache.txt
