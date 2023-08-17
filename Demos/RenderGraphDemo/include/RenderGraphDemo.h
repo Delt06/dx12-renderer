@@ -18,6 +18,8 @@
 #include <Framework/CommonRootSignature.h>
 #include <Framework/Bloom.h>
 
+#include "RenderGraph.h"
+
 class RenderGraphDemo final : public Game
 {
 public:
@@ -41,6 +43,7 @@ protected:
 private:
     std::shared_ptr<Texture> m_WhiteTexture2d;
 
+    std::unique_ptr<RenderGraph> m_RenderGraph;
     RenderTarget m_RenderTarget;
 
     Camera m_Camera;

@@ -4,6 +4,8 @@ project("RenderGraphDemo")
 
 set(HEADER_FILES
         include/RenderGraphDemo.h
+        include/RenderGraph.h
+        include/RenderPass.h
         )
 
 set(SOURCE_FILES

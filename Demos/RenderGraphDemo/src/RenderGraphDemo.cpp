@@ -100,6 +100,18 @@ namespace Pipeline
     constexpr UINT SSAO_MAP_REGISTER_INDEX = 1;
 }
 
+namespace
+{
+    class MyRenderPass : public RenderPass
+    {
+    public:
+        virtual void Execute(CommandList& commandList) override
+        {
+
+        }
+    };
+}
+
 RenderGraphDemo::RenderGraphDemo(const std::wstring& name, int width, int height, GraphicsSettings graphicsSettings)
     : Base(name, width, height, graphicsSettings.VSync)
     , m_Viewport(CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height)))
@@ -155,6 +167,11 @@ bool RenderGraphDemo::LoadContent()
 
     m_DirectionalLight.m_Color = XMFLOAT4(1, 1, 1, 1);
     m_DirectionalLight.m_DirectionWs = XMFLOAT4(1, 1, 0, 0);
+
+    std::vector<std::unique_ptr<RenderPass>> renderPasses;
+    renderPasses.emplace_back(std::make_unique<MyRenderPass>());
+
+    m_RenderGraph = std::make_unique<RenderGraph>(Application::Get(), std::move(renderPasses));
 
     {
         const UINT msaaSampleCount = 1;
@@ -287,6 +304,9 @@ void RenderGraphDemo::OnRender(RenderEventArgs& e)
     m_RootSignature->Bind(*commandList);
 
     commandQueue->ExecuteCommandList(commandList);
+
+    m_RenderGraph->Execute();
+
     PWindow->Present(*m_RenderTarget.GetTexture(Color0));
 }
 
