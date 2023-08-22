@@ -26,6 +26,15 @@ namespace RenderGraph
         void Execute(const RenderMetadata& renderMetadata);
         void MarkDirty();
 
+        struct RenderTargetInfo
+        {
+            std::shared_ptr<RenderTarget> m_RenderTarget = nullptr;
+            bool m_ReadonlyDepth = false;
+            bool m_ClearColor[8] = { false, false, false, false, false, false, false, false };
+            bool m_ClearDepth = false;
+            bool m_ClearStencil = false;
+        };
+
     private:
         void Build(const RenderMetadata& renderMetadata);
         void PrepareResourceForRenderPass(CommandList& commandList, const RenderPass& renderPass);
@@ -46,7 +55,7 @@ namespace RenderGraph
         const std::vector<BufferDescription> m_BufferDescriptions;
 
         std::vector<std::shared_ptr<Texture>> m_Textures;
-        std::map<const RenderPass*, std::shared_ptr<RenderTarget>> m_RenderTargets;
+        std::map<const RenderPass*, RenderTargetInfo> m_RenderTargets;
         std::map<const Resource*, D3D12_RESOURCE_STATES> m_ResourceStates;
         std::vector<D3D12_RESOURCE_BARRIER> m_PendingBarriers;
 

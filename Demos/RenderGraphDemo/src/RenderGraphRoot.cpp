@@ -186,11 +186,11 @@ namespace
         return texture;
     }
 
-    std::shared_ptr<RenderTarget> CreateRenderTargetOrDefault(const RenderGraph::RenderPass& renderPass, const std::vector<std::shared_ptr<Texture>>& textures)
+    RenderGraph::RenderGraphRoot::RenderTargetInfo CreateRenderTargetOrDefault(const RenderGraph::RenderPass& renderPass, const std::vector<std::shared_ptr<Texture>>& textures)
     {
         using namespace RenderGraph;
 
-        std::shared_ptr<RenderTarget> pRenderTarget = nullptr;
+        RenderGraphRoot::RenderTargetInfo renderTargetInfo = {};
         uint32_t colorTexturesCount = 0;
         uint32_t depthTexturesCount = 0;
 
@@ -200,41 +200,59 @@ namespace
             {
             case RenderPass::OutputType::RenderTarget:
                 {
-                    if (pRenderTarget == nullptr)
+                    if (renderTargetInfo.m_RenderTarget == nullptr)
                     {
-                        pRenderTarget = std::make_shared<RenderTarget>();
+                        renderTargetInfo.m_RenderTarget = std::make_shared<RenderTarget>();
                     }
 
                     const auto& pTexture = textures[output.m_Id];
                     Assert(pTexture != nullptr, "Texture is null.");
 
                     AttachmentPoint attachmentPoint = (AttachmentPoint)((uint32_t)Color0 + colorTexturesCount);
-                    pRenderTarget->AttachTexture(attachmentPoint, pTexture);
+                    renderTargetInfo.m_RenderTarget->AttachTexture(attachmentPoint, pTexture);
+
+                    if (output.m_InitAction == RenderPass::OutputInitAction::Clear)
+                    {
+                        renderTargetInfo.m_ClearColor[Color0 + colorTexturesCount] = true;
+                    }
+
                     colorTexturesCount++;
                     Assert(colorTexturesCount <= 8, "Too many color textures for the same render target");
+
                     break;
                 }
 
             case RenderPass::OutputType::DepthWrite:
             case RenderPass::OutputType::DepthRead:
                 {
-                    if (pRenderTarget == nullptr)
+                    if (renderTargetInfo.m_RenderTarget == nullptr)
                     {
-                        pRenderTarget = std::make_shared<RenderTarget>();
+                        renderTargetInfo.m_RenderTarget = std::make_shared<RenderTarget>();
                     }
 
                     const auto& pTexture = textures[output.m_Id];
                     Assert(pTexture != nullptr, "Texture is null.");
 
-                    pRenderTarget->AttachTexture(DepthStencil, pTexture);
+                    renderTargetInfo.m_RenderTarget->AttachTexture(DepthStencil, pTexture);
                     depthTexturesCount++;
                     Assert(depthTexturesCount == 1, "Too many depth textures for the same render target");
+
+                    if (output.m_Type == RenderPass::OutputType::DepthRead)
+                    {
+                        renderTargetInfo.m_ReadonlyDepth = true;
+                    }
+
+                    if (output.m_InitAction == RenderPass::OutputInitAction::Clear)
+                    {
+                        renderTargetInfo.m_ClearDepth = true;
+                        renderTargetInfo.m_ClearStencil = true;
+                    }
                 }
                 break;
             }
         }
 
-        return pRenderTarget;
+        return renderTargetInfo;
     }
 
     const Resource& GetResource(RenderGraph::ResourceId id, const std::vector<std::shared_ptr<Texture>>& textures)
@@ -363,11 +381,11 @@ void RenderGraph::RenderGraphRoot::Build(const RenderMetadata& renderMetadata)
 
     for (const auto& pRenderPass : m_RenderPassesDescription)
     {
-        const auto& pRenderTarget = CreateRenderTargetOrDefault(*pRenderPass, m_Textures);
+        RenderTargetInfo renderTargetInfo = CreateRenderTargetOrDefault(*pRenderPass, m_Textures);
 
-        if (pRenderTarget != nullptr)
+        if (renderTargetInfo.m_RenderTarget != nullptr)
         {
-            m_RenderTargets.insert(std::pair<RenderPass*, std::shared_ptr<RenderTarget>>{ pRenderPass.get(), pRenderTarget});
+            m_RenderTargets.insert(std::pair<RenderPass*, RenderTargetInfo>{ pRenderPass.get(), renderTargetInfo});
         }
     }
 }
@@ -388,13 +406,15 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
         TransitionBarrier(resource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
     }
 
+    // Render Target barriers
     const auto& renderTargetFindResult = m_RenderTargets.find(&renderPass);
     if (renderTargetFindResult != m_RenderTargets.end())
     {
-        const auto& pRenderTarget = renderTargetFindResult->second;
+        const auto& renderTargetInfo = renderTargetFindResult->second;
+        const auto& pRenderTarget = renderTargetInfo.m_RenderTarget;
         const auto& textures = pRenderTarget->GetTextures();
 
-        // Render Target barriers
+        // Render Target barriers for color attachments
         for (size_t i = 0; i < 8; ++i)
         {
             const auto& pRtTexture = textures[i];
@@ -408,12 +428,9 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
         const auto& pRtDepthStencil = pRenderTarget->GetTexture(DepthStencil);
         if (pRtDepthStencil != nullptr && pRtDepthStencil->IsValid())
         {
-            // TODO: handle ability for depth read state here
-            TransitionBarrier(*pRtDepthStencil, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+            const auto stateAfter = renderTargetInfo.m_ReadonlyDepth ? D3D12_RESOURCE_STATE_DEPTH_READ : D3D12_RESOURCE_STATE_DEPTH_WRITE;
+            TransitionBarrier(*pRtDepthStencil, stateAfter);
         }
-
-        commandList.SetRenderTarget(*pRenderTarget);
-        commandList.SetAutomaticViewportAndScissorRect(*pRenderTarget);
     }
 
     // UAV barriers
@@ -428,6 +445,47 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
     }
 
     FlushBarriers(commandList);
+
+    // Setup the render target
+    if (renderTargetFindResult != m_RenderTargets.end())
+    {
+        const auto& renderTargetInfo = renderTargetFindResult->second;
+        const auto& pRenderTarget = renderTargetInfo.m_RenderTarget;
+        const auto& textures = pRenderTarget->GetTextures();
+
+        commandList.SetRenderTarget(*pRenderTarget);
+        commandList.SetAutomaticViewportAndScissorRect(*pRenderTarget);
+
+        for (size_t i = 0; i < 8; ++i)
+        {
+            const auto& pRtTexture = textures[i];
+            if (pRtTexture != nullptr && pRtTexture->IsValid())
+            {
+                if (renderTargetInfo.m_ClearColor[i])
+                {
+                    commandList.ClearTexture(*pRtTexture, pRtTexture->GetD3D12ClearValue().Color);
+                }
+            }
+        }
+
+        if (renderTargetInfo.m_ClearDepth || renderTargetInfo.m_ClearStencil)
+        {
+            const auto& pRtDepthStencil = pRenderTarget->GetTexture(DepthStencil);
+            if (pRtDepthStencil != nullptr && pRtDepthStencil->IsValid())
+            {
+                D3D12_CLEAR_FLAGS clearFlags{};
+                if (renderTargetInfo.m_ClearDepth)
+                {
+                    clearFlags |= D3D12_CLEAR_FLAG_DEPTH;
+                }
+                if (renderTargetInfo.m_ClearStencil)
+                {
+                    clearFlags |= D3D12_CLEAR_FLAG_STENCIL;
+                }
+                commandList.ClearDepthStencilTexture(*pRtDepthStencil, clearFlags);
+            }
+        }
+    }
 }
 
 void RenderGraph::RenderGraphRoot::SetCurrentResourceState(const Resource& resource, D3D12_RESOURCE_STATES state)

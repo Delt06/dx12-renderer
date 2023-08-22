@@ -113,7 +113,7 @@ namespace
 
             RegisterInput({ ResourceIds::User::ExampleRenderTarget1 });
 
-            RegisterOutput({ ResourceIds::User::ExampleRenderTarget2, RenderPass::OutputType::RenderTarget });
+            RegisterOutput({ ResourceIds::User::ExampleRenderTarget2, RenderPass::OutputType::RenderTarget, RenderPass::OutputInitAction::Clear });
         }
 
         virtual void ExecuteImpl(CommandList& commandList) override

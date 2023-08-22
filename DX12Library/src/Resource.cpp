@@ -110,6 +110,11 @@ void Resource::SetD3D12Resource(ComPtr<ID3D12Resource> d3d12Resource, const D3D1
     SetName(m_ResourceName);
 }
 
+const D3D12_CLEAR_VALUE& Resource::GetD3D12ClearValue() const
+{
+    return *m_d3d12ClearValue;
+}
+
 void Resource::SetName(const std::wstring& name)
 {
     m_ResourceName = name;

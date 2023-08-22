@@ -201,8 +201,11 @@ void CommandList::CopyBuffer(Buffer& buffer, const size_t numElements, const siz
                 IID_PPV_ARGS(&d3d12Resource)));
             d3d12Resource->SetName(buffer.GetName().c_str());
 
-            // Add the resource to the global resource state tracker.
-            ResourceStateTracker::AddGlobalResourceState(d3d12Resource.Get(), D3D12_RESOURCE_STATE_COMMON);
+            if (buffer.AreAutoBarriersEnabled())
+            {
+                // Add the resource to the global resource state tracker.
+                ResourceStateTracker::AddGlobalResourceState(d3d12Resource.Get(), D3D12_RESOURCE_STATE_COMMON);
+            }
         }
         else // use existing
         {

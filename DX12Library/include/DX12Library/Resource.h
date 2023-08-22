@@ -86,6 +86,8 @@ public:
     virtual void SetD3D12Resource(Microsoft::WRL::ComPtr<ID3D12Resource> d3d12Resource,
         const D3D12_CLEAR_VALUE* clearValue = nullptr);
 
+    const D3D12_CLEAR_VALUE& GetD3D12ClearValue() const;
+
     /**
      * Get the SRV for a resource.
      *

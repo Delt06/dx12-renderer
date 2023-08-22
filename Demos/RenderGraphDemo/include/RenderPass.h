@@ -21,17 +21,24 @@ namespace RenderGraph
 
         enum class OutputType
         {
-            None,
+            Invalid,
             RenderTarget,
             DepthRead,
             DepthWrite,
             UnorderedAccess,
         };
 
+        enum OutputInitAction
+        {
+            None,
+            Clear,
+        };
+
         struct Output
         {
             ResourceId m_Id = 0;
-            OutputType m_Type = OutputType::None;
+            OutputType m_Type = OutputType::Invalid;
+            OutputInitAction m_InitAction = OutputInitAction::None;
         };
 
         void Init();
