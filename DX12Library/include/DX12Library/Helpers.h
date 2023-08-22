@@ -5,7 +5,9 @@
 #include <Windows.h> // For HRESULT
 #include <pix3.h>
 
-// From DXSampleHelper.h 
+#include <d3d12.h>
+
+// From DXSampleHelper.h
 // Source: https://github.com/Microsoft/DirectX-Graphics-Samples
 inline void ThrowIfFailed(const HRESULT result)
 {

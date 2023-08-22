@@ -16,10 +16,10 @@ public:
 	explicit ClearValue(DXGI_FORMAT format, const DirectX::XMFLOAT4& color);
 	explicit ClearValue(DXGI_FORMAT format, const DEPTH_STENCIL_VALUE depthStencilValue);
 
-	ClearValue(const ClearValue&) = delete;
+	ClearValue(const ClearValue&);
 	ClearValue& operator=(const ClearValue&) = delete;
 
-	ClearValue(ClearValue&&) = delete;
+	ClearValue(ClearValue&&);
 	ClearValue& operator=(ClearValue&&) = delete;
 
 	[[nodiscard]] const D3D12_CLEAR_VALUE* GetD3D12ClearValue() const;

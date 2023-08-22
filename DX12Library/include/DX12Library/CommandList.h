@@ -131,7 +131,7 @@ public:
      * Copy resources.
      */
     void CopyResource(const Resource& dstRes, const Resource& srcRes);
-    void CopyResource(Microsoft::WRL::ComPtr<ID3D12Resource> dstRes, Microsoft::WRL::ComPtr<ID3D12Resource> srcRes);
+    void CopyResource(Microsoft::WRL::ComPtr<ID3D12Resource> dstRes, Microsoft::WRL::ComPtr<ID3D12Resource> srcRes, bool dstAutoBarriers = true, bool srcAutoBarriers = true);
 
     /**
      * Resolve a multisampled resource into a non-multisampled resource.
@@ -369,6 +369,30 @@ public:
         uint32_t descriptorOffset,
         const Resource& resource,
         D3D12_RESOURCE_STATES stateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+        UINT firstSubresource = 0,
+        UINT numSubresources = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+        const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc = nullptr
+    );
+
+    /**
+     * Set the SRV on the graphics pipeline.
+     */
+    void SetShaderResourceView(
+        uint32_t rootParameterIndex,
+        uint32_t descriptorOffset,
+        const Resource& resource,
+        UINT firstSubresource = 0,
+        UINT numSubresources = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+        const D3D12_SHADER_RESOURCE_VIEW_DESC* srv = nullptr
+    );
+
+    /**
+     * Set the UAV on the graphics pipeline.
+     */
+    void SetUnorderedAccessView(
+        uint32_t rootParameterIndex,
+        uint32_t descriptorOffset,
+        const Resource& resource,
         UINT firstSubresource = 0,
         UINT numSubresources = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
         const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc = nullptr

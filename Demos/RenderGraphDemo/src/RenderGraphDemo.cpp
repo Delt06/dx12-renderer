@@ -35,6 +35,8 @@ using namespace DirectX;
 #undef max
 #endif
 
+#include "ResourceIds.User.h"
+
 namespace
 {
 
@@ -102,10 +104,45 @@ namespace Pipeline
 
 namespace
 {
-    class MyRenderPass : public RenderPass
+    class MyRenderPass1 : public RenderGraph::RenderPass
     {
-    public:
-        virtual void Execute(CommandList& commandList) override
+    protected:
+        virtual void InitImpl() override
+        {
+            RegisterInput({ ResourceIds::User::ExampleRenderTarget1 });
+
+            RegisterOutput({ ResourceIds::User::ExampleRenderTarget2, RenderPass::OutputType::RenderTarget });
+        }
+
+        virtual void ExecuteImpl(CommandList& commandList) override
+        {
+
+        }
+    };
+
+    class MyRenderPass2 : public RenderGraph::RenderPass
+    {
+    protected:
+        virtual void InitImpl() override
+        {
+            RegisterInput({ ResourceIds::User::ExampleRenderTarget2 });
+        }
+
+        virtual void ExecuteImpl(CommandList& commandList) override
+        {
+
+        }
+    };
+
+    class MyRenderPass3 : public RenderGraph::RenderPass
+    {
+    protected:
+        virtual void InitImpl() override
+        {
+            RegisterInput({ ResourceIds::User::ExampleRenderTarget2 });
+        }
+
+        virtual void ExecuteImpl(CommandList& commandList) override
         {
 
         }
@@ -168,10 +205,28 @@ bool RenderGraphDemo::LoadContent()
     m_DirectionalLight.m_Color = XMFLOAT4(1, 1, 1, 1);
     m_DirectionalLight.m_DirectionWs = XMFLOAT4(1, 1, 0, 0);
 
-    std::vector<std::unique_ptr<RenderPass>> renderPasses;
-    renderPasses.emplace_back(std::make_unique<MyRenderPass>());
+    {
+        using namespace RenderGraph;
 
-    m_RenderGraph = std::make_unique<RenderGraph>(Application::Get(), std::move(renderPasses));
+        std::vector<std::unique_ptr<RenderPass>> renderPasses;
+        renderPasses.emplace_back(std::make_unique<MyRenderPass3>());
+        renderPasses.emplace_back(std::make_unique<MyRenderPass2>());
+        renderPasses.emplace_back(std::make_unique<MyRenderPass1>());
+
+        RenderMetadataExpression<uint32_t> renderWidthExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenWidth; };
+        RenderMetadataExpression<uint32_t> renderHeightExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenHeight; };
+
+        std::vector<TextureDescription> textures;
+        textures.emplace_back(::ResourceIds::User::ExampleRenderTarget1, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR);
+        textures.emplace_back(::ResourceIds::User::ExampleRenderTarget2, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR);
+
+        std::vector<BufferDescription> buffers =
+        {
+
+        };
+
+        m_RenderGraph = std::make_unique<RenderGraphRoot>(std::move(renderPasses), std::move(textures), std::move(buffers));
+    }
 
     {
         const UINT msaaSampleCount = 1;
@@ -305,7 +360,13 @@ void RenderGraphDemo::OnRender(RenderEventArgs& e)
 
     commandQueue->ExecuteCommandList(commandList);
 
-    m_RenderGraph->Execute();
+    {
+        RenderGraph::RenderMetadata metadata;
+        metadata.m_ScreenWidth = m_Width;
+        metadata.m_ScreenHeight = m_Height;
+        m_RenderGraph->Execute(metadata);
+    }
+
 
     PWindow->Present(*m_RenderTarget.GetTexture(Color0));
 }
