@@ -467,6 +467,6 @@ void RenderGraph::RenderGraphRoot::FlushBarriers(CommandList& commandList)
     }
 
     const auto& pDxCmd = commandList.GetGraphicsCommandList();
-    pDxCmd->ResourceBarrier(m_PendingBarriers.size(), m_PendingBarriers.data());
+    pDxCmd->ResourceBarrier((UINT) m_PendingBarriers.size(), m_PendingBarriers.data());
     m_PendingBarriers.clear();
 }
