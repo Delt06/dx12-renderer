@@ -39,6 +39,7 @@ namespace RenderGraph
         const std::vector<BufferDescription> m_BufferDescriptions;
 
         std::vector<std::shared_ptr<Texture>> m_Textures;
+        std::map<RenderPass*, std::shared_ptr<RenderTarget>> m_RenderTargets;
 
         bool m_Dirty = true;
     };

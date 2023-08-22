@@ -115,7 +115,7 @@ namespace
         const std::vector<std::unique_ptr<RenderGraph::RenderPass>>& renderPasses,
         const RenderGraph::RenderMetadata& renderMetadata,
         const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice
-        )
+    )
     {
         using namespace RenderGraph;
 
@@ -181,9 +181,73 @@ namespace
         auto texture = std::make_shared<Texture>(dxDesc, depth || renderTarget ? desc.m_ClearValue : ClearValue{},
             textureUsageType,
             ResourceIds::GetResourceName(desc.m_Id)
-        );
+            );
         texture->SetAutoBarriersEnabled(false);
         return texture;
+    }
+
+    std::shared_ptr<RenderTarget> CreateRenderTargetOrDefault(const RenderGraph::RenderPass& renderPass, const std::vector<std::shared_ptr<Texture>>& textures)
+    {
+        using namespace RenderGraph;
+
+        std::shared_ptr<RenderTarget> pRenderTarget = nullptr;
+        uint32_t colorTexturesCount = 0;
+        uint32_t depthTexturesCount = 0;
+
+        for (const auto& output : renderPass.GetOutputs())
+        {
+            switch (output.m_Type)
+            {
+            case RenderPass::OutputType::RenderTarget:
+                {
+                    if (pRenderTarget == nullptr)
+                    {
+                        pRenderTarget = std::make_shared<RenderTarget>();
+                    }
+
+                    const auto& pTexture = textures[output.m_Id];
+                    Assert(pTexture != nullptr, "Texture is null.");
+
+                    AttachmentPoint attachmentPoint = (AttachmentPoint)((uint32_t)Color0 + colorTexturesCount);
+                    pRenderTarget->AttachTexture(attachmentPoint, pTexture);
+                    colorTexturesCount++;
+                    Assert(colorTexturesCount <= 8, "Too many color textures for the same render target");
+                    break;
+                }
+
+            case RenderPass::OutputType::DepthWrite:
+            case RenderPass::OutputType::DepthRead:
+                {
+                    if (pRenderTarget == nullptr)
+                    {
+                        pRenderTarget = std::make_shared<RenderTarget>();
+                    }
+
+                    const auto& pTexture = textures[output.m_Id];
+                    Assert(pTexture != nullptr, "Texture is null.");
+
+                    pRenderTarget->AttachTexture(DepthStencil, pTexture);
+                    depthTexturesCount++;
+                    Assert(depthTexturesCount == 1, "Too many depth textures for the same render target");
+                }
+                break;
+            }
+        }
+
+        return pRenderTarget;
+    }
+
+    const Resource& GetResource(RenderGraph::ResourceId id, const std::vector<std::shared_ptr<Texture>>& textures)
+    {
+        const auto& pTexture = textures[id];
+
+        if (pTexture != nullptr)
+        {
+            return *pTexture;
+        }
+
+        // TODO: add buffers here
+        throw std::exception("Not implemented");
     }
 }
 
@@ -231,9 +295,49 @@ void RenderGraph::RenderGraphRoot::Execute(const RenderMetadata& renderMetadata)
 
     auto pCommandList = m_DirectCommandQueue->GetCommandList();
 
-    for (const auto& renderPass : m_RenderPassesBuilt)
+    for (const auto& pRenderPass : m_RenderPassesBuilt)
     {
-        renderPass->Execute(*pCommandList);
+        for (const auto& input : pRenderPass->GetInputs())
+        {
+            const auto& resource = GetResource(input.m_Id, m_Textures);
+            pCommandList->TransitionBarrier(resource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+        }
+
+        const auto& renderTargetFindResult = m_RenderTargets.find(pRenderPass);
+        if (renderTargetFindResult != m_RenderTargets.end())
+        {
+            const auto& pRenderTarget = renderTargetFindResult->second;
+            const auto& textures = pRenderTarget->GetTextures();
+
+            for (size_t i = 0; i < 8; ++i)
+            {
+                const auto& pRtTexture = textures[i];
+                if (pRtTexture != nullptr)
+                {
+                    pCommandList->TransitionBarrier(*pRtTexture, D3D12_RESOURCE_STATE_RENDER_TARGET);
+                }
+            }
+
+            const auto& pRtDepthStencil = pRenderTarget->GetTexture(DepthStencil);
+            if (pRtDepthStencil != nullptr)
+            {
+                // TODO: handle ability for depth read state here
+                pCommandList->TransitionBarrier(*pRtDepthStencil, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+            }
+
+            pCommandList->SetRenderTarget(*pRenderTarget);
+        }
+
+        for (const auto& output : pRenderPass->GetOutputs())
+        {
+            if (output.m_Type == RenderPass::OutputType::UnorderedAccess)
+            {
+                const auto& resource = GetResource(output.m_Id, m_Textures);
+                pCommandList->UavBarrier(resource);
+            }
+        }
+
+        pRenderPass->Execute(*pCommandList);
     }
 
     m_DirectCommandQueue->ExecuteCommandList(pCommandList);
@@ -249,14 +353,19 @@ void RenderGraph::RenderGraphRoot::Build(const RenderMetadata& renderMetadata)
     const auto& application = Application::Get();
     const auto& pDevice = application.GetDevice();
 
+    // Populate the final render pass list
     m_RenderPassesBuilt.clear();
 
-    // TODO: implement barriers, unused node stripping, resource lifetime, etc...
-    for (const auto& pRenderPass : m_RenderPassesDescription)
+    // TODO: implement unused node stripping, resource lifetime, etc...
+    for (const auto& innerList : m_RenderPassesSorted)
     {
-        m_RenderPassesBuilt.push_back(pRenderPass.get());
+        for (const auto& pRenderPass : innerList)
+        {
+            m_RenderPassesBuilt.push_back(pRenderPass);
+        }
     }
 
+    // Create textures
     m_Textures.clear();
 
     for (const auto& desc : m_TextureDescriptions)
@@ -267,7 +376,22 @@ void RenderGraph::RenderGraphRoot::Build(const RenderMetadata& renderMetadata)
         {
             m_Textures.resize(desc.m_Id + 1);
         }
+
         m_Textures[desc.m_Id] = texture;
     }
 
+    // TODO: add buffers here
+
+    // Create render targets
+    m_RenderTargets.clear();
+
+    for (const auto& pRenderPass : m_RenderPassesDescription)
+    {
+        const auto& pRenderTarget = CreateRenderTargetOrDefault(*pRenderPass, m_Textures);
+
+        if (pRenderTarget != nullptr)
+        {
+            m_RenderTargets.insert(std::pair<RenderPass*, std::shared_ptr<RenderTarget>>{ pRenderPass.get(), pRenderTarget});
+        }
+    }
 }
