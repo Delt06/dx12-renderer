@@ -181,7 +181,7 @@ namespace
         auto texture = std::make_shared<Texture>(dxDesc, depth || renderTarget ? desc.m_ClearValue : ClearValue{},
             textureUsageType,
             ResourceIds::GetResourceName(desc.m_Id)
-            );
+        );
         texture->SetAutoBarriersEnabled(false);
         return texture;
     }
@@ -294,49 +294,11 @@ void RenderGraph::RenderGraphRoot::Execute(const RenderMetadata& renderMetadata)
     }
 
     auto pCommandList = m_DirectCommandQueue->GetCommandList();
+    Assert(m_PendingBarriers.size() == 0, "Pending barriers were left from after the previous frame.");
 
     for (const auto& pRenderPass : m_RenderPassesBuilt)
     {
-        for (const auto& input : pRenderPass->GetInputs())
-        {
-            const auto& resource = GetResource(input.m_Id, m_Textures);
-            pCommandList->TransitionBarrier(resource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-        }
-
-        const auto& renderTargetFindResult = m_RenderTargets.find(pRenderPass);
-        if (renderTargetFindResult != m_RenderTargets.end())
-        {
-            const auto& pRenderTarget = renderTargetFindResult->second;
-            const auto& textures = pRenderTarget->GetTextures();
-
-            for (size_t i = 0; i < 8; ++i)
-            {
-                const auto& pRtTexture = textures[i];
-                if (pRtTexture != nullptr)
-                {
-                    pCommandList->TransitionBarrier(*pRtTexture, D3D12_RESOURCE_STATE_RENDER_TARGET);
-                }
-            }
-
-            const auto& pRtDepthStencil = pRenderTarget->GetTexture(DepthStencil);
-            if (pRtDepthStencil != nullptr)
-            {
-                // TODO: handle ability for depth read state here
-                pCommandList->TransitionBarrier(*pRtDepthStencil, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-            }
-
-            pCommandList->SetRenderTarget(*pRenderTarget);
-        }
-
-        for (const auto& output : pRenderPass->GetOutputs())
-        {
-            if (output.m_Type == RenderPass::OutputType::UnorderedAccess)
-            {
-                const auto& resource = GetResource(output.m_Id, m_Textures);
-                pCommandList->UavBarrier(resource);
-            }
-        }
-
+        PrepareResourceForRenderPass(*pCommandList, *pRenderPass);
         pRenderPass->Execute(*pCommandList);
     }
 
@@ -365,22 +327,29 @@ void RenderGraph::RenderGraphRoot::Build(const RenderMetadata& renderMetadata)
         }
     }
 
-    // Create textures
-    m_Textures.clear();
-
-    for (const auto& desc : m_TextureDescriptions)
+    // Create resources
     {
-        auto texture = CreateTexture(desc, m_RenderPassesDescription, renderMetadata, pDevice);
+        m_ResourceStates.clear();
 
-        if (desc.m_Id >= m_Textures.size())
+        // Create textures
+        m_Textures.clear();
+
+        for (const auto& desc : m_TextureDescriptions)
         {
-            m_Textures.resize(desc.m_Id + 1);
+            auto pTexture = CreateTexture(desc, m_RenderPassesDescription, renderMetadata, pDevice);
+            SetCurrentResourceState(*pTexture, D3D12_RESOURCE_STATE_COMMON);
+
+            if (desc.m_Id >= m_Textures.size())
+            {
+                m_Textures.resize(desc.m_Id + 1);
+            }
+
+            m_Textures[desc.m_Id] = pTexture;
         }
 
-        m_Textures[desc.m_Id] = texture;
+        // TODO: add buffers here
     }
 
-    // TODO: add buffers here
 
     // Create render targets
     m_RenderTargets.clear();
@@ -394,4 +363,110 @@ void RenderGraph::RenderGraphRoot::Build(const RenderMetadata& renderMetadata)
             m_RenderTargets.insert(std::pair<RenderPass*, std::shared_ptr<RenderTarget>>{ pRenderPass.get(), pRenderTarget});
         }
     }
+}
+
+D3D12_RESOURCE_STATES RenderGraph::RenderGraphRoot::GetCurrentResourceState(const Resource &resource) const
+{
+    const auto& result = m_ResourceStates.find(&resource);
+    Assert(result != m_ResourceStates.end(), "Resource does not have a registered state");
+    return result->second;
+}
+
+void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& commandList, const RenderPass& renderPass)
+{
+    // SRV barriers
+    for (const auto& input : renderPass.GetInputs())
+    {
+        const auto& resource = GetResource(input.m_Id, m_Textures);
+        TransitionBarrier(resource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+    }
+
+    const auto& renderTargetFindResult = m_RenderTargets.find(&renderPass);
+    if (renderTargetFindResult != m_RenderTargets.end())
+    {
+        const auto& pRenderTarget = renderTargetFindResult->second;
+        const auto& textures = pRenderTarget->GetTextures();
+
+        // Render Target barriers
+        for (size_t i = 0; i < 8; ++i)
+        {
+            const auto& pRtTexture = textures[i];
+            if (pRtTexture != nullptr && pRtTexture->IsValid())
+            {
+                TransitionBarrier(*pRtTexture, D3D12_RESOURCE_STATE_RENDER_TARGET);
+            }
+        }
+
+        // Depth-Stencil barriers
+        const auto& pRtDepthStencil = pRenderTarget->GetTexture(DepthStencil);
+        if (pRtDepthStencil != nullptr && pRtDepthStencil->IsValid())
+        {
+            // TODO: handle ability for depth read state here
+            TransitionBarrier(*pRtDepthStencil, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+        }
+
+        commandList.SetRenderTarget(*pRenderTarget);
+    }
+
+    // UAV barriers
+    for (const auto& output : renderPass.GetOutputs())
+    {
+        if (output.m_Type == RenderPass::OutputType::UnorderedAccess)
+        {
+            const auto& resource = GetResource(output.m_Id, m_Textures);
+            TransitionBarrier(resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            UavBarrier(resource);
+        }
+    }
+
+    FlushBarriers(commandList);
+}
+
+void RenderGraph::RenderGraphRoot::SetCurrentResourceState(const Resource& resource, D3D12_RESOURCE_STATES state)
+{
+    auto existingEntry = m_ResourceStates.find(&resource);
+    if (existingEntry == m_ResourceStates.end())
+    {
+        m_ResourceStates.insert(std::pair<const Resource*, D3D12_RESOURCE_STATES> {&resource, state});
+    }
+    else
+    {
+        existingEntry->second = state;
+    }
+}
+
+void RenderGraph::RenderGraphRoot::TransitionBarrier(const Resource& resource, D3D12_RESOURCE_STATES stateAfter)
+{
+    const auto stateBefore = GetCurrentResourceState(resource);
+    if (stateBefore == stateAfter)
+    {
+        // no need for a barrier
+        return;
+    }
+
+    const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(resource.GetD3D12Resource().Get(), stateBefore, stateAfter);
+    m_PendingBarriers.push_back(barrier);
+
+    SetCurrentResourceState(resource, stateAfter);
+}
+
+void RenderGraph::RenderGraphRoot::UavBarrier(const Resource& resource)
+{
+    Assert(GetCurrentResourceState(resource) == D3D12_RESOURCE_STATE_UNORDERED_ACCESS, "Resource is supposed to be in UAV state to issue a UAV barrier.");
+
+    // TODO: skip if there was a transition barrier after the previous UAV usage
+    const auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(resource.GetD3D12Resource().Get());
+    m_PendingBarriers.push_back(barrier);
+}
+
+void RenderGraph::RenderGraphRoot::FlushBarriers(CommandList& commandList)
+{
+    if (m_PendingBarriers.size() == 0)
+    {
+        return;
+    }
+
+    const auto& pDxCmd = commandList.GetGraphicsCommandList();
+    pDxCmd->ResourceBarrier(m_PendingBarriers.size(), m_PendingBarriers.data());
+    m_PendingBarriers.clear();
 }
