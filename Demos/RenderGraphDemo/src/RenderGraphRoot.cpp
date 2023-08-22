@@ -294,12 +294,19 @@ void RenderGraph::RenderGraphRoot::Execute(const RenderMetadata& renderMetadata)
     }
 
     auto pCommandList = m_DirectCommandQueue->GetCommandList();
+    auto& cmd = *pCommandList;
     Assert(m_PendingBarriers.size() == 0, "Pending barriers were left from after the previous frame.");
 
-    for (const auto& pRenderPass : m_RenderPassesBuilt)
     {
-        PrepareResourceForRenderPass(*pCommandList, *pRenderPass);
-        pRenderPass->Execute(*pCommandList);
+        PIXScope(cmd, L"Render Graph");
+
+        for (const auto& pRenderPass : m_RenderPassesBuilt)
+        {
+            PIXScope(cmd, pRenderPass->GetPassName().c_str());
+
+            PrepareResourceForRenderPass(cmd, *pRenderPass);
+            pRenderPass->Execute(cmd);
+        }
     }
 
     m_DirectCommandQueue->ExecuteCommandList(pCommandList);
@@ -406,6 +413,7 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
         }
 
         commandList.SetRenderTarget(*pRenderTarget);
+        commandList.SetAutomaticViewportAndScissorRect(*pRenderTarget);
     }
 
     // UAV barriers
@@ -467,6 +475,6 @@ void RenderGraph::RenderGraphRoot::FlushBarriers(CommandList& commandList)
     }
 
     const auto& pDxCmd = commandList.GetGraphicsCommandList();
-    pDxCmd->ResourceBarrier((UINT) m_PendingBarriers.size(), m_PendingBarriers.data());
+    pDxCmd->ResourceBarrier((UINT)m_PendingBarriers.size(), m_PendingBarriers.data());
     m_PendingBarriers.clear();
 }

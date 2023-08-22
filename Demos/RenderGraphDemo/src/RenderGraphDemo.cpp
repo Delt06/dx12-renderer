@@ -109,6 +109,8 @@ namespace
     protected:
         virtual void InitImpl() override
         {
+            SetPassName(L"My Render Pass 1");
+
             RegisterInput({ ResourceIds::User::ExampleRenderTarget1 });
 
             RegisterOutput({ ResourceIds::User::ExampleRenderTarget2, RenderPass::OutputType::RenderTarget });
@@ -125,6 +127,8 @@ namespace
     protected:
         virtual void InitImpl() override
         {
+            SetPassName(L"My Render Pass 2");
+
             RegisterInput({ ResourceIds::User::ExampleRenderTarget2 });
         }
 
@@ -139,6 +143,8 @@ namespace
     protected:
         virtual void InitImpl() override
         {
+            SetPassName(L"My Render Pass 3");
+
             RegisterInput({ ResourceIds::User::ExampleRenderTarget2 });
         }
 
@@ -284,6 +290,9 @@ void RenderGraphDemo::OnResize(ResizeEventArgs& e)
             static_cast<float>(m_Width), static_cast<float>(m_Height));
 
         m_RenderTarget.Resize(m_Width, m_Height);
+
+        if (m_RenderGraph)
+            m_RenderGraph->MarkDirty();
     }
 }
 

@@ -26,3 +26,8 @@ void RenderGraph::RenderPass::RegisterOutput(RenderGraph::RenderPass::Output out
     m_Outputs.push_back(output);
 }
 
+void RenderGraph::RenderPass::SetPassName(const wchar_t* passName)
+{
+    m_PassName = passName;
+}
+
