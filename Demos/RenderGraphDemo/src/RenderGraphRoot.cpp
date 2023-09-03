@@ -234,6 +234,7 @@ void RenderGraph::RenderGraphRoot::Execute(const RenderMetadata& renderMetadata)
 
         RenderContext context = {};
         context.m_ResourcePool = m_ResourcePool;
+        context.m_Metadata = renderMetadata;
 
         for (const auto& pRenderPass : m_RenderPassesBuilt)
         {

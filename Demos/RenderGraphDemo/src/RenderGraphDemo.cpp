@@ -15,6 +15,7 @@
 #include <Framework/GraphicsSettings.h>
 #include <Framework/Model.h>
 #include <Framework/ModelLoader.h>
+#include <Framework/Blit_VS.h>
 
 using namespace Microsoft::WRL;
 
@@ -119,27 +120,49 @@ namespace
 
     class PostProcessingRenderPass : public RenderGraph::RenderPass
     {
+    public:
+        PostProcessingRenderPass(const std::shared_ptr<CommonRootSignature>& pRootSignature) : m_RootSignature(pRootSignature) {}
+
     protected:
         virtual void InitImpl(CommandList& commandList) override
         {
             SetPassName(__CLASS_NAME__);
 
-            RegisterInput({ ResourceIds::User::TempRenderTarget, InputType::CopySource });
+            RegisterInput({ ResourceIds::User::TempRenderTarget, InputType::ShaderResource });
 
-            RegisterOutput({ RenderGraph::ResourceIds::GraphOutput, OutputType::CopyDestination });
+            RegisterOutput({ RenderGraph::ResourceIds::GraphOutput, OutputType::RenderTarget });
+
+            m_BlitMesh = Mesh::CreateBlitTriangle(commandList);
+            auto pShader = std::make_shared<Shader>(m_RootSignature,
+                ShaderBlob(ShaderBytecode_Blit_VS, sizeof(ShaderBytecode_Blit_VS)),
+                ShaderBlob(L"PostProcessing_PS.cso")
+            );
+            m_Material = std::make_shared<Material>(pShader);
+
         }
 
         virtual void ExecuteImpl(const RenderGraph::RenderContext& context, CommandList& commandList) override
         {
-            const auto& tempRt = context.m_ResourcePool->GetResource(ResourceIds::User::TempRenderTarget);
-            const auto& graphOutput = context.m_ResourcePool->GetResource(RenderGraph::ResourceIds::GraphOutput);
+            const auto& pTempRt = context.m_ResourcePool->GetTexture(ResourceIds::User::TempRenderTarget);
 
-            commandList.CopyResource(graphOutput, tempRt);
+            m_Material->SetShaderResourceView("source", ShaderResourceView(pTempRt));
+            auto desc = pTempRt->GetD3D12ResourceDesc();
+            m_Material->SetVariable("TexelSize", XMFLOAT2{ 1.0f / desc.Width, 1.0f / desc.Height });
+            m_Material->SetVariable("Time", static_cast<float>(context.m_Metadata.m_Time));
+            m_Material->Bind(commandList);
+
+            m_BlitMesh->Draw(commandList);
         }
+
+        std::shared_ptr<Mesh> m_BlitMesh;
+        std::shared_ptr<Material> m_Material;
+        std::shared_ptr<CommonRootSignature> m_RootSignature;
     };
 
     class ClearGraphOutput : public RenderGraph::RenderPass
     {
+    public:
+        ClearGraphOutput(const std::shared_ptr<CommonRootSignature>& pRootSignature) : m_RootSignature(pRootSignature) {}
     protected:
         virtual void InitImpl(CommandList& commandList) override
         {
@@ -150,8 +173,10 @@ namespace
 
         virtual void ExecuteImpl(const RenderGraph::RenderContext& context, CommandList& commandList) override
         {
-
+            m_RootSignature->Bind(commandList);
         }
+
+        std::shared_ptr<CommonRootSignature> m_RootSignature;
     };
 
     class DrawQuadRenderPass : public RenderGraph::RenderPass
@@ -168,14 +193,13 @@ namespace
 
             m_Mesh = Mesh::CreateVerticalQuad(commandList, 0.5f, 0.5f);
             m_Shader = std::make_shared<Shader>(m_RootSignature,
-                ShaderBlob(L"DemoShader_VS.cso"),
-                ShaderBlob(L"DemoShader_PS.cso")
+                ShaderBlob(ShaderBytecode_Blit_VS, sizeof(ShaderBytecode_Blit_VS)),
+                ShaderBlob(L"WhiteShader_PS.cso")
             );
         }
 
         virtual void ExecuteImpl(const RenderGraph::RenderContext& context, CommandList& commandList) override
         {
-            m_RootSignature->Bind(commandList);
             m_Shader->Bind(commandList);
 
             m_Mesh->Bind(commandList);
@@ -249,9 +273,9 @@ bool RenderGraphDemo::LoadContent()
         using namespace RenderGraph;
 
         std::vector<std::unique_ptr<RenderPass>> renderPasses;
-        renderPasses.emplace_back(std::make_unique<ClearGraphOutput>());
+        renderPasses.emplace_back(std::make_unique<ClearGraphOutput>(m_RootSignature));
         renderPasses.emplace_back(std::make_unique<DrawQuadRenderPass>(m_RootSignature));
-        renderPasses.emplace_back(std::make_unique<PostProcessingRenderPass>());
+        renderPasses.emplace_back(std::make_unique<PostProcessingRenderPass>(m_RootSignature));
 
         RenderMetadataExpression<uint32_t> renderWidthExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenWidth; };
         RenderMetadataExpression<uint32_t> renderHeightExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenHeight; };
@@ -358,6 +382,7 @@ void RenderGraphDemo::OnRender(RenderEventArgs& e)
         RenderGraph::RenderMetadata metadata;
         metadata.m_ScreenWidth = m_Width;
         metadata.m_ScreenHeight = m_Height;
+        metadata.m_Time = m_Time;
         m_RenderGraph->Execute(metadata);
     }
 

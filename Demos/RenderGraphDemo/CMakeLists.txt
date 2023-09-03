@@ -24,11 +24,11 @@ set(SOURCE_FILES
         )
 
 set(SHADER_FILES_VERTEX
-        shaders/DemoShader_VS.hlsl
         )
 
 set(SHADER_FILES_PIXEL
-        shaders/DemoShader_PS.hlsl
+        shaders/WhiteShader_PS.hlsl
+        shaders/PostProcessing_PS.hlsl
         )
 
 set(SHADER_FILES_COMPUTE

@@ -14,7 +14,7 @@ CommonRootSignature::CommonRootSignature(const std::shared_ptr<Resource>& emptyR
     , m_EmptyUAV(std::make_shared<StructuredBuffer>(
         CD3DX12_RESOURCE_DESC::Buffer(sizeof(uint32_t), D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS),
         1, 1, L"Empty Buffer"
-        ))
+    ))
 {
     auto& app = Application::Get();
     const auto device = app.GetDevice();
@@ -133,52 +133,101 @@ void CommonRootSignature::SetPipelineShaderResourceView(CommandList& commandList
 {
     Assert(index < PIPELINE_SRVS_COUNT, "Pipeline SRV index is out of bounds.");
 
-    commandList.SetShaderResourceView(RootParameters::PipelineSRVs,
-        index,
-        *srv.m_Resource,
-        D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE,
-        srv.m_FirstSubresource, srv.m_NumSubresources,
-        srv.GetDescOrNullptr()
-    );
+    if (srv.m_Resource->AreAutoBarriersEnabled())
+    {
+        commandList.SetShaderResourceView(RootParameters::PipelineSRVs,
+            index,
+            *srv.m_Resource,
+            D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE,
+            srv.m_FirstSubresource, srv.m_NumSubresources,
+            srv.GetDescOrNullptr()
+        );
+    }
+    else
+    {
+        commandList.SetShaderResourceView(RootParameters::PipelineSRVs,
+            index,
+            *srv.m_Resource,
+            srv.m_FirstSubresource, srv.m_NumSubresources,
+            srv.GetDescOrNullptr()
+        );
+    }
 }
 
 void CommonRootSignature::SetMaterialShaderResourceView(CommandList& commandList, UINT index, const ShaderResourceView& srv) const
 {
     Assert(index < MATERIAL_SRVS_COUNT, "Material SRV index is out of bounds.");
 
-    commandList.SetShaderResourceView(RootParameters::MaterialSRVs,
-        index,
-        *srv.m_Resource,
-        D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE,
-        srv.m_FirstSubresource, srv.m_NumSubresources,
-        srv.GetDescOrNullptr()
-    );
+    if (srv.m_Resource->AreAutoBarriersEnabled())
+    {
+        commandList.SetShaderResourceView(RootParameters::MaterialSRVs,
+            index,
+            *srv.m_Resource,
+            D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE,
+            srv.m_FirstSubresource, srv.m_NumSubresources,
+            srv.GetDescOrNullptr()
+        );
+
+    }
+    else
+    {
+        commandList.SetShaderResourceView(RootParameters::MaterialSRVs,
+            index,
+            *srv.m_Resource,
+            srv.m_FirstSubresource, srv.m_NumSubresources,
+            srv.GetDescOrNullptr()
+        );
+    }
 }
 
 void CommonRootSignature::SetComputeShaderResourceView(CommandList& commandList, UINT index, const ShaderResourceView& srv) const
 {
     Assert(index < MATERIAL_SRVS_COUNT, "Compute SRV index is out of bounds.");
 
-    commandList.SetShaderResourceView(RootParameters::MaterialSRVs,
-        index,
-        *srv.m_Resource,
-        D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE,
-        srv.m_FirstSubresource, srv.m_NumSubresources,
-        srv.GetDescOrNullptr()
-    );
+    if (srv.m_Resource->AreAutoBarriersEnabled())
+    {
+        commandList.SetShaderResourceView(RootParameters::MaterialSRVs,
+            index,
+            *srv.m_Resource,
+            D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE,
+            srv.m_FirstSubresource, srv.m_NumSubresources,
+            srv.GetDescOrNullptr()
+        );
+    }
+    else
+    {
+        commandList.SetShaderResourceView(RootParameters::MaterialSRVs,
+            index,
+            *srv.m_Resource,
+            srv.m_FirstSubresource, srv.m_NumSubresources,
+            srv.GetDescOrNullptr()
+        );
+    }
 }
 
 void CommonRootSignature::SetUnorderedAccessView(CommandList& commandList, UINT index, const UnorderedAccessView& uav) const
 {
     Assert(index < UAVS_COUNT, "UAV index is out of bounds.");
 
-    commandList.SetUnorderedAccessView(RootParameters::UAVs,
-        index,
-        *uav.m_Resource,
-        D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-        uav.m_FirstSubresource, uav.m_NumSubresources,
-        uav.GetDescOrNullptr()
-    );
+    if (uav.m_Resource->AreAutoBarriersEnabled())
+    {
+        commandList.SetUnorderedAccessView(RootParameters::UAVs,
+            index,
+            *uav.m_Resource,
+            D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+            uav.m_FirstSubresource, uav.m_NumSubresources,
+            uav.GetDescOrNullptr()
+        );
+    }
+    else
+    {
+        commandList.SetUnorderedAccessView(RootParameters::UAVs,
+            index,
+            *uav.m_Resource,
+            uav.m_FirstSubresource, uav.m_NumSubresources,
+            uav.GetDescOrNullptr()
+        );
+    }
 }
 
 void CommonRootSignature::UnbindMaterialShaderResourceViews(CommandList& commandList)

@@ -806,6 +806,8 @@ void CommandList::SetShaderResourceView(const uint32_t rootParameterIndex, const
     const UINT firstSubresource, const UINT numSubresources,
     const D3D12_SHADER_RESOURCE_VIEW_DESC* srv)
 {
+    Assert(resource.AreAutoBarriersEnabled(), "Auto barriers are disabled.");
+
     if (numSubresources < D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
     {
         for (uint32_t i = 0; i < numSubresources; ++i)
@@ -828,6 +830,8 @@ void CommandList::SetUnorderedAccessView(const uint32_t rootParameterIndex, cons
     const UINT firstSubresource, const UINT numSubresources,
     const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc)
 {
+    Assert(resource.AreAutoBarriersEnabled(), "Auto barriers are disabled.");
+
     if (numSubresources < D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
     {
         for (uint32_t i = 0; i < numSubresources; ++i)
