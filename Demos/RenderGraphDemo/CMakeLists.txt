@@ -3,13 +3,15 @@
 project("RenderGraphDemo")
 
 set(HEADER_FILES
+        include/RenderContext.h
         include/RenderGraphDemo.h
         include/RenderGraphRoot.h
         include/RenderMetadata.h
         include/RenderPass.h
-        include/ResourceIds.User.h
         include/ResourceDescription.h
         include/ResourceId.h
+        include/ResourceIds.User.h
+        include/ResourcePool.h
         )
 
 set(SOURCE_FILES
@@ -18,12 +20,15 @@ set(SOURCE_FILES
         src/RenderGraphRoot.cpp
         src/RenderPass.cpp
         src/ResourceId.cpp
+        src/ResourcePool.cpp
         )
 
 set(SHADER_FILES_VERTEX
+        shaders/DemoShader_VS.hlsl
         )
 
 set(SHADER_FILES_PIXEL
+        shaders/DemoShader_PS.hlsl
         )
 
 set(SHADER_FILES_COMPUTE

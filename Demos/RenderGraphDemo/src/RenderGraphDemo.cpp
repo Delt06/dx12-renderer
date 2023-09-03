@@ -104,56 +104,88 @@ namespace Pipeline
 
 namespace
 {
-    class MyRenderPass1 : public RenderGraph::RenderPass
+    std::wstring GetClassName(const char* fullFuncName)
+    {
+        std::wstring fullFuncNameStr(fullFuncName, fullFuncName + strlen(fullFuncName));
+        size_t pos = fullFuncNameStr.find_last_of(L"::");
+        if (pos == std::string::npos)
+        {
+            return L"";
+        }
+        return fullFuncNameStr.substr(0, pos-1);
+    }
+
+#define __CLASS_NAME__ GetClassName(__FUNCTION__)
+
+    class PostProcessingRenderPass : public RenderGraph::RenderPass
     {
     protected:
-        virtual void InitImpl() override
+        virtual void InitImpl(CommandList& commandList) override
         {
-            SetPassName(L"My Render Pass 1");
+            SetPassName(__CLASS_NAME__);
 
-            RegisterInput({ ResourceIds::User::ExampleRenderTarget1 });
+            RegisterInput({ ResourceIds::User::TempRenderTarget, InputType::CopySource });
 
-            RegisterOutput({ ResourceIds::User::ExampleRenderTarget2, RenderPass::OutputType::RenderTarget, RenderPass::OutputInitAction::Clear });
+            RegisterOutput({ RenderGraph::ResourceIds::GraphOutput, OutputType::CopyDestination });
         }
 
-        virtual void ExecuteImpl(CommandList& commandList) override
+        virtual void ExecuteImpl(const RenderGraph::RenderContext& context, CommandList& commandList) override
+        {
+            const auto& tempRt = context.m_ResourcePool->GetResource(ResourceIds::User::TempRenderTarget);
+            const auto& graphOutput = context.m_ResourcePool->GetResource(RenderGraph::ResourceIds::GraphOutput);
+
+            commandList.CopyResource(graphOutput, tempRt);
+        }
+    };
+
+    class ClearGraphOutput : public RenderGraph::RenderPass
+    {
+    protected:
+        virtual void InitImpl(CommandList& commandList) override
+        {
+            SetPassName(__CLASS_NAME__);
+
+            RegisterOutput({ ResourceIds::User::TempRenderTarget, OutputType::RenderTarget, RenderPass::OutputInitAction::Clear });
+        }
+
+        virtual void ExecuteImpl(const RenderGraph::RenderContext& context, CommandList& commandList) override
         {
 
         }
     };
 
-    class MyRenderPass2 : public RenderGraph::RenderPass
+    class DrawQuadRenderPass : public RenderGraph::RenderPass
     {
+    public:
+        DrawQuadRenderPass(const std::shared_ptr<CommonRootSignature>& pRootSignature) : m_RootSignature(pRootSignature) {}
+
     protected:
-        virtual void InitImpl() override
+        virtual void InitImpl(CommandList& commandList) override
         {
-            SetPassName(L"My Render Pass 2");
+            SetPassName(__CLASS_NAME__);
 
-            RegisterInput({ ResourceIds::User::ExampleRenderTarget2 });
+            RegisterOutput({ ResourceIds::User::TempRenderTarget, OutputType::RenderTarget });
+
+            m_Mesh = Mesh::CreateVerticalQuad(commandList, 0.5f, 0.5f);
+            m_Shader = std::make_shared<Shader>(m_RootSignature,
+                ShaderBlob(L"DemoShader_VS.cso"),
+                ShaderBlob(L"DemoShader_PS.cso")
+            );
         }
 
-        virtual void ExecuteImpl(CommandList& commandList) override
+        virtual void ExecuteImpl(const RenderGraph::RenderContext& context, CommandList& commandList) override
         {
+            m_RootSignature->Bind(commandList);
+            m_Shader->Bind(commandList);
 
-        }
-    };
-
-    class MyRenderPass3 : public RenderGraph::RenderPass
-    {
-    protected:
-        virtual void InitImpl() override
-        {
-            SetPassName(L"My Render Pass 3");
-
-            RegisterInput({ ResourceIds::User::ExampleRenderTarget2 });
-
-            RegisterOutput({ RenderGraph::ResourceIds::GraphOutput, RenderPass::OutputType::RenderTarget, RenderPass::OutputInitAction::Clear });
+            m_Mesh->Bind(commandList);
+            m_Mesh->Draw(commandList);
         }
 
-        virtual void ExecuteImpl(CommandList& commandList) override
-        {
-
-        }
+    private:
+        std::shared_ptr<Mesh> m_Mesh;
+        std::shared_ptr<Shader> m_Shader;
+        std::shared_ptr<CommonRootSignature> m_RootSignature;
     };
 }
 
@@ -217,16 +249,15 @@ bool RenderGraphDemo::LoadContent()
         using namespace RenderGraph;
 
         std::vector<std::unique_ptr<RenderPass>> renderPasses;
-        renderPasses.emplace_back(std::make_unique<MyRenderPass3>());
-        renderPasses.emplace_back(std::make_unique<MyRenderPass2>());
-        renderPasses.emplace_back(std::make_unique<MyRenderPass1>());
+        renderPasses.emplace_back(std::make_unique<ClearGraphOutput>());
+        renderPasses.emplace_back(std::make_unique<DrawQuadRenderPass>(m_RootSignature));
+        renderPasses.emplace_back(std::make_unique<PostProcessingRenderPass>());
 
         RenderMetadataExpression<uint32_t> renderWidthExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenWidth; };
         RenderMetadataExpression<uint32_t> renderHeightExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenHeight; };
 
         std::vector<TextureDescription> textures;
-        textures.emplace_back(::ResourceIds::User::ExampleRenderTarget1, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR);
-        textures.emplace_back(::ResourceIds::User::ExampleRenderTarget2, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR);
+        textures.emplace_back(::ResourceIds::User::TempRenderTarget, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR);
         textures.emplace_back(RenderGraph::ResourceIds::GraphOutput, renderWidthExpression, renderHeightExpression, Window::BUFFER_FORMAT_SRGB, CLEAR_COLOR);
 
         std::vector<BufferDescription> buffers =
@@ -319,16 +350,9 @@ void RenderGraphDemo::OnRender(RenderEventArgs& e)
 {
     Base::OnRender(e);
 
-    const auto commandQueue = Application::Get().GetCommandQueue(D3D12_COMMAND_LIST_TYPE_DIRECT);
-    const auto commandList = commandQueue->GetCommandList();
-
     const XMMATRIX viewMatrix = m_Camera.GetViewMatrix();
     const XMMATRIX projectionMatrix = m_Camera.GetProjectionMatrix();
     const XMMATRIX viewProjectionMatrix = viewMatrix * projectionMatrix;
-
-    m_RootSignature->Bind(*commandList);
-
-    commandQueue->ExecuteCommandList(commandList);
 
     {
         RenderGraph::RenderMetadata metadata;

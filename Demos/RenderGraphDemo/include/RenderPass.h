@@ -7,6 +7,7 @@
 #include <DX12Library/CommandList.h>
 #include <DX12Library/Helpers.h>
 
+#include "RenderContext.h"
 #include "ResourceId.h"
 
 namespace RenderGraph
@@ -14,9 +15,17 @@ namespace RenderGraph
     class RenderPass
     {
     public:
+        enum class InputType
+        {
+            Invalid,
+            ShaderResource,
+            CopySource,
+        };
+
         struct Input
         {
             ResourceId m_Id = 0;
+            InputType m_Type = InputType::Invalid;
         };
 
         enum class OutputType
@@ -26,6 +35,7 @@ namespace RenderGraph
             DepthRead,
             DepthWrite,
             UnorderedAccess,
+            CopyDestination,
         };
 
         enum OutputInitAction
@@ -41,22 +51,23 @@ namespace RenderGraph
             OutputInitAction m_InitAction = OutputInitAction::None;
         };
 
-        void Init();
+        void Init(CommandList& commandList);
 
-        void Execute(CommandList& commandList);
+        void Execute(const RenderContext& context, CommandList& commandList);
 
         const std::vector<Input>& GetInputs() const { return m_Inputs; }
         const std::vector<Output>& GetOutputs() const { return m_Outputs; }
         const std::wstring& GetPassName() const {return m_PassName;}
 
     protected:
-        virtual void InitImpl() = 0;
-        virtual void ExecuteImpl(CommandList& commandList) = 0;
+        virtual void InitImpl(CommandList& commandList) = 0;
+        virtual void ExecuteImpl(const RenderContext& context, CommandList& commandList) = 0;
 
         void RegisterInput(Input input);
         void RegisterOutput(Output output);
 
         void SetPassName(const wchar_t* passName);
+        void SetPassName(const std::wstring& passName);
 
     private:
         std::vector<Input> m_Inputs;

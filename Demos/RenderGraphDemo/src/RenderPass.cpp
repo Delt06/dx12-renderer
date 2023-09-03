@@ -1,17 +1,18 @@
 #include "RenderPass.h"
 
-void RenderGraph::RenderPass::Init()
+void RenderGraph::RenderPass::Init(CommandList& commandList)
 {
-    InitImpl();
+    InitImpl(commandList);
 }
 
-void RenderGraph::RenderPass::Execute(CommandList& commandList)
+void RenderGraph::RenderPass::Execute(const RenderGraph::RenderContext& context, CommandList& commandList)
 {
-    ExecuteImpl(commandList);
+    ExecuteImpl(context, commandList);
 }
 
 void RenderGraph::RenderPass::RegisterInput(RenderGraph::RenderPass::Input input)
 {
+    Assert(input.m_Type != InputType::Invalid, "Input is invalid.");
     Assert(std::find_if(m_Inputs.begin(), m_Inputs.end(), [input](const auto& i) { return i.m_Id == input.m_Id; }) == m_Inputs.end(), "Input with such ID is already registered.");
 
     m_Inputs.push_back(input);
@@ -26,6 +27,11 @@ void RenderGraph::RenderPass::RegisterOutput(RenderGraph::RenderPass::Output out
 }
 
 void RenderGraph::RenderPass::SetPassName(const wchar_t* passName)
+{
+    m_PassName = passName;
+}
+
+void RenderGraph::RenderPass::SetPassName(const std::wstring& passName)
 {
     m_PassName = passName;
 }

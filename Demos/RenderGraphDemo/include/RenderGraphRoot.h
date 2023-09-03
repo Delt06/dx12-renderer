@@ -12,6 +12,7 @@
 #include "RenderPass.h"
 #include "RenderMetadata.h"
 #include "ResourceDescription.h"
+#include "ResourcePool.h"
 
 namespace RenderGraph
 {
@@ -26,7 +27,6 @@ namespace RenderGraph
 
         void Execute(const RenderMetadata& renderMetadata);
         void Present(const std::shared_ptr<Window>& pWindow, RenderGraph::ResourceId resourceId = RenderGraph::ResourceIds::GraphOutput);
-        const std::shared_ptr<Texture>& GetTexture(RenderGraph::ResourceId resourceId) const;
         void MarkDirty();
 
         struct RenderTargetInfo
@@ -58,6 +58,7 @@ namespace RenderGraph
         const std::vector<BufferDescription> m_BufferDescriptions;
 
         std::vector<std::shared_ptr<Texture>> m_Textures;
+        std::shared_ptr<ResourcePool> m_ResourcePool;
         std::map<const RenderPass*, RenderTargetInfo> m_RenderTargets;
         std::map<const Resource*, D3D12_RESOURCE_STATES> m_ResourceStates;
         std::vector<D3D12_RESOURCE_BARRIER> m_PendingBarriers;
