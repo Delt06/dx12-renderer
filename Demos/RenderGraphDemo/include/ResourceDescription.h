@@ -25,7 +25,7 @@ namespace RenderGraph
         ClearValue m_ClearValue;
 
         uint32_t m_ArraySize = 1;
-        uint32_t m_MipLevels = 0;
+        uint32_t m_MipLevels = 1;
         uint32_t m_SampleCount = 1;
 
         TextureDescription(const ResourceId id,

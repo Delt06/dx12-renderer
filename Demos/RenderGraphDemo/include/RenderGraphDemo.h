@@ -44,7 +44,6 @@ private:
     std::shared_ptr<Texture> m_WhiteTexture2d;
 
     std::unique_ptr<RenderGraph::RenderGraphRoot> m_RenderGraph;
-    RenderTarget m_RenderTarget;
 
     Camera m_Camera;
     std::vector<GameObject> m_GameObjects;

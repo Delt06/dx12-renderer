@@ -316,7 +316,7 @@ void RenderGraph::RenderGraphRoot::Execute(const RenderMetadata& renderMetadata)
     Assert(m_PendingBarriers.size() == 0, "Pending barriers were left from after the previous frame.");
 
     {
-        PIXScope(cmd, L"Render Graph");
+        PIXScope(cmd, L"Render Graph: Execute");
 
         for (const auto& pRenderPass : m_RenderPassesBuilt)
         {
@@ -328,6 +328,37 @@ void RenderGraph::RenderGraphRoot::Execute(const RenderMetadata& renderMetadata)
     }
 
     m_DirectCommandQueue->ExecuteCommandList(pCommandList);
+}
+
+void RenderGraph::RenderGraphRoot::Present(const std::shared_ptr<Window>& pWindow, RenderGraph::ResourceId resourceId)
+{
+    const auto& pTexture = GetTexture(resourceId);
+
+    auto pCommandList = m_DirectCommandQueue->GetCommandList();
+
+    {
+        PIXScope(*pCommandList, L"Render Graph: Prepare Present");
+
+        if (pTexture->GetD3D12ResourceDesc().SampleDesc.Count > 1)
+        {
+            TransitionBarrier(*pTexture, D3D12_RESOURCE_STATE_RESOLVE_SOURCE);
+        }
+        else
+        {
+            TransitionBarrier(*pTexture, D3D12_RESOURCE_STATE_COPY_SOURCE);
+        }
+
+        FlushBarriers(*pCommandList);
+    }
+
+    m_DirectCommandQueue->ExecuteCommandList(pCommandList);
+    pWindow->Present(*pTexture);
+}
+
+const std::shared_ptr<Texture>& RenderGraph::RenderGraphRoot::GetTexture(RenderGraph::ResourceId resourceId) const
+{
+    Assert(resourceId < m_Textures.size(), "Resource ID out of range.");
+    return m_Textures[resourceId];
 }
 
 void RenderGraph::RenderGraphRoot::MarkDirty()

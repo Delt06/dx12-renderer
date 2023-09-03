@@ -146,6 +146,8 @@ namespace
             SetPassName(L"My Render Pass 3");
 
             RegisterInput({ ResourceIds::User::ExampleRenderTarget2 });
+
+            RegisterOutput({ RenderGraph::ResourceIds::GraphOutput, RenderPass::OutputType::RenderTarget, RenderPass::OutputInitAction::Clear });
         }
 
         virtual void ExecuteImpl(CommandList& commandList) override
@@ -225,6 +227,7 @@ bool RenderGraphDemo::LoadContent()
         std::vector<TextureDescription> textures;
         textures.emplace_back(::ResourceIds::User::ExampleRenderTarget1, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR);
         textures.emplace_back(::ResourceIds::User::ExampleRenderTarget2, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR);
+        textures.emplace_back(RenderGraph::ResourceIds::GraphOutput, renderWidthExpression, renderHeightExpression, Window::BUFFER_FORMAT_SRGB, CLEAR_COLOR);
 
         std::vector<BufferDescription> buffers =
         {
@@ -232,40 +235,6 @@ bool RenderGraphDemo::LoadContent()
         };
 
         m_RenderGraph = std::make_unique<RenderGraphRoot>(std::move(renderPasses), std::move(textures), std::move(buffers));
-    }
-
-    {
-        const UINT msaaSampleCount = 1;
-        const UINT msaaColorQualityLevel = 0;
-        const UINT msaaDepthQualityLevel = 0;
-
-        auto colorDesc = CD3DX12_RESOURCE_DESC::Tex2D(backBufferFormat,
-            m_Width, m_Height,
-            1, 1,
-            msaaSampleCount, msaaColorQualityLevel,
-            D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET
-        );
-
-        auto colorTexture = std::make_shared<Texture>(colorDesc, &colorClearValue,
-            TextureUsageType::RenderTarget,
-            L"Color Render Target");
-
-        auto depthDesc = CD3DX12_RESOURCE_DESC::Tex2D(depthBufferFormat,
-            m_Width, m_Height,
-            1, 1,
-            msaaSampleCount, msaaDepthQualityLevel,
-            D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL
-        );
-        D3D12_CLEAR_VALUE depthClearValue;
-        depthClearValue.Format = depthDesc.Format;
-        depthClearValue.DepthStencil = { 1.0f, 0 };
-
-        auto depthTexture = std::make_shared<Texture>(depthDesc, &depthClearValue,
-            TextureUsageType::Depth,
-            L"Depth Render Target");
-
-        m_RenderTarget.AttachTexture(Color0, colorTexture);
-        m_RenderTarget.AttachTexture(DepthStencil, depthTexture);
     }
 
     auto fenceValue = commandQueue->ExecuteCommandList(commandList);
@@ -288,8 +257,6 @@ void RenderGraphDemo::OnResize(ResizeEventArgs& e)
 
         m_Viewport = CD3DX12_VIEWPORT(0.0f, 0.0f,
             static_cast<float>(m_Width), static_cast<float>(m_Height));
-
-        m_RenderTarget.Resize(m_Width, m_Height);
 
         if (m_RenderGraph)
             m_RenderGraph->MarkDirty();
@@ -355,12 +322,6 @@ void RenderGraphDemo::OnRender(RenderEventArgs& e)
     const auto commandQueue = Application::Get().GetCommandQueue(D3D12_COMMAND_LIST_TYPE_DIRECT);
     const auto commandList = commandQueue->GetCommandList();
 
-    // Clear the render targets
-    {
-        commandList->ClearTexture(*m_RenderTarget.GetTexture(Color0), CLEAR_COLOR);
-        commandList->ClearDepthStencilTexture(*m_RenderTarget.GetTexture(DepthStencil), D3D12_CLEAR_FLAG_DEPTH);
-    }
-
     const XMMATRIX viewMatrix = m_Camera.GetViewMatrix();
     const XMMATRIX projectionMatrix = m_Camera.GetProjectionMatrix();
     const XMMATRIX viewProjectionMatrix = viewMatrix * projectionMatrix;
@@ -377,7 +338,7 @@ void RenderGraphDemo::OnRender(RenderEventArgs& e)
     }
 
 
-    PWindow->Present(*m_RenderTarget.GetTexture(Color0));
+    m_RenderGraph->Present(PWindow);
 }
 
 void RenderGraphDemo::OnKeyPressed(KeyEventArgs& e)

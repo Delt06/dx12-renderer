@@ -124,7 +124,7 @@ void Window::SetFullscreen(bool fullscreen)
 
 		if (Fullscreen) // Switching to fullscreen.
 		{
-			// Store the current window dimensions so they can be restored 
+			// Store the current window dimensions so they can be restored
 			// when switching out of fullscreen state.
 			GetWindowRect(HWnd, &WindowRect);
 
@@ -316,7 +316,7 @@ ComPtr<IDXGISwapChain4> Window::CreateSwapChain()
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
 	swapChainDesc.Width = ClientWidth;
 	swapChainDesc.Height = ClientHeight;
-	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	swapChainDesc.Format = BUFFER_FORMAT;
 	swapChainDesc.Stereo = FALSE;
 	swapChainDesc.SampleDesc = { 1, 0 };
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;

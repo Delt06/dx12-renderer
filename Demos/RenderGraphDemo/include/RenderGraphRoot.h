@@ -7,6 +7,7 @@
 #include <DX12Library/Application.h>
 #include <DX12Library/CommandQueue.h>
 #include <DX12Library/CommandList.h>
+#include <DX12Library/Window.h>
 
 #include "RenderPass.h"
 #include "RenderMetadata.h"
@@ -24,6 +25,8 @@ namespace RenderGraph
         );
 
         void Execute(const RenderMetadata& renderMetadata);
+        void Present(const std::shared_ptr<Window>& pWindow, RenderGraph::ResourceId resourceId = RenderGraph::ResourceIds::GraphOutput);
+        const std::shared_ptr<Texture>& GetTexture(RenderGraph::ResourceId resourceId) const;
         void MarkDirty();
 
         struct RenderTargetInfo
