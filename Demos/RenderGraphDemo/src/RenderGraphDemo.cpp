@@ -154,21 +154,22 @@ namespace
             m_BlitMesh->Draw(commandList);
         }
 
+    private:
         std::shared_ptr<Mesh> m_BlitMesh;
         std::shared_ptr<Material> m_Material;
         std::shared_ptr<CommonRootSignature> m_RootSignature;
     };
 
-    class ClearGraphOutput : public RenderGraph::RenderPass
+    class SetupRenderPass : public RenderGraph::RenderPass
     {
     public:
-        ClearGraphOutput(const std::shared_ptr<CommonRootSignature>& pRootSignature) : m_RootSignature(pRootSignature) {}
+        SetupRenderPass(const std::shared_ptr<CommonRootSignature>& pRootSignature) : m_RootSignature(pRootSignature) {}
     protected:
         virtual void InitImpl(CommandList& commandList) override
         {
             SetPassName(__CLASS_NAME__);
 
-            RegisterOutput({ ResourceIds::User::TempRenderTarget, OutputType::RenderTarget, OutputInitAction::Clear });
+            RegisterOutput({ ResourceIds::User::TempRenderTarget3, OutputType::RenderTarget, OutputInitAction::Clear });
         }
 
         virtual void ExecuteImpl(const RenderGraph::RenderContext& context, CommandList& commandList) override
@@ -176,7 +177,29 @@ namespace
             m_RootSignature->Bind(commandList);
         }
 
+    private:
         std::shared_ptr<CommonRootSignature> m_RootSignature;
+    };
+
+    class CopyTempRtRenderPass : public RenderGraph::RenderPass
+    {
+    protected:
+        virtual void InitImpl(CommandList& commandList) override
+        {
+            SetPassName(__CLASS_NAME__);
+
+            RegisterInput({ ResourceIds::User::TempRenderTarget3, InputType::CopySource });
+
+            RegisterOutput({ ResourceIds::User::TempRenderTarget, OutputType::CopyDestination });
+            RegisterOutput({ ResourceIds::User::TempRenderTargetReadyToken, OutputType::Token });
+        }
+
+        virtual void ExecuteImpl(const RenderGraph::RenderContext& context, CommandList& commandList) override
+        {
+            const auto& src = context.m_ResourcePool->GetResource(ResourceIds::User::TempRenderTarget3);
+            const auto& dst = context.m_ResourcePool->GetResource(ResourceIds::User::TempRenderTarget);
+            commandList.CopyResource(dst, src);
+        }
     };
 
     class DrawQuadRenderPass : public RenderGraph::RenderPass
@@ -188,6 +211,8 @@ namespace
         virtual void InitImpl(CommandList& commandList) override
         {
             SetPassName(__CLASS_NAME__);
+
+            RegisterInput({ ResourceIds::User::TempRenderTargetReadyToken, InputType::Token });
 
             RegisterOutput({ ResourceIds::User::TempRenderTarget, OutputType::RenderTarget });
 
@@ -287,7 +312,8 @@ bool RenderGraphDemo::LoadContent()
         using namespace RenderGraph;
 
         std::vector<std::unique_ptr<RenderPass>> renderPasses;
-        renderPasses.emplace_back(std::make_unique<ClearGraphOutput>(m_RootSignature));
+        renderPasses.emplace_back(std::make_unique<SetupRenderPass>(m_RootSignature));
+        renderPasses.emplace_back(std::make_unique<CopyTempRtRenderPass>());
         renderPasses.emplace_back(std::make_unique<DrawQuadRenderPass>(m_RootSignature));
         renderPasses.emplace_back(std::make_unique<PostProcessingRenderPass>(m_RootSignature));
         renderPasses.emplace_back(std::make_unique<UselessPassRenderPass>());
@@ -298,6 +324,7 @@ bool RenderGraphDemo::LoadContent()
         std::vector<TextureDescription> textures;
         textures.emplace_back(::ResourceIds::User::TempRenderTarget, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR);
         textures.emplace_back(::ResourceIds::User::TempRenderTarget2, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR);
+        textures.emplace_back(::ResourceIds::User::TempRenderTarget3, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR);
         textures.emplace_back(RenderGraph::ResourceIds::GraphOutput, renderWidthExpression, renderHeightExpression, Window::BUFFER_FORMAT_SRGB, CLEAR_COLOR);
 
         std::vector<BufferDescription> buffers =
@@ -305,7 +332,12 @@ bool RenderGraphDemo::LoadContent()
 
         };
 
-        m_RenderGraph = std::make_unique<RenderGraphRoot>(std::move(renderPasses), std::move(textures), std::move(buffers));
+        std::vector<TokenDescription> tokens =
+        {
+            {::ResourceIds::User::TempRenderTargetReadyToken}
+        };
+
+        m_RenderGraph = std::make_unique<RenderGraphRoot>(std::move(renderPasses), std::move(textures), std::move(buffers), std::move(tokens));
     }
 
     auto fenceValue = commandQueue->ExecuteCommandList(commandList);

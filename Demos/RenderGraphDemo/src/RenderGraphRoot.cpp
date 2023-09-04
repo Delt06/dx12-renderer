@@ -133,23 +133,6 @@ namespace
         return unusedPasses;
     }
 
-    bool ResourceIsDefined(RenderGraph::ResourceId id, const std::vector<RenderGraph::TextureDescription>& textures, const std::vector<RenderGraph::BufferDescription>& buffers)
-    {
-        for (const auto& texture : textures)
-        {
-            if (texture.m_Id == id)
-                return true;
-        }
-
-        for (const auto& buffer : buffers)
-        {
-            if (buffer.m_Id == id)
-                return true;
-        }
-
-        return false;
-    }
-
     RenderGraph::RenderGraphRoot::RenderTargetInfo CreateRenderTargetOrDefault(const RenderGraph::RenderPass& renderPass, const std::vector<std::shared_ptr<Texture>>& textures)
     {
         using namespace RenderGraph;
@@ -223,12 +206,14 @@ namespace
 RenderGraph::RenderGraphRoot::RenderGraphRoot(
     std::vector<std::unique_ptr<RenderPass>>&& renderPasses,
     std::vector<RenderGraph::TextureDescription>&& textures,
-    std::vector<RenderGraph::BufferDescription>&& buffers
+    std::vector<RenderGraph::BufferDescription>&& buffers,
+    std::vector<RenderGraph::TokenDescription>&& tokens
 )
     : m_DirectCommandQueue(Application::Get().GetCommandQueue(D3D12_COMMAND_LIST_TYPE_DIRECT))
     , m_RenderPassesDescription(std::move(renderPasses))
     , m_TextureDescriptions(textures)
     , m_BufferDescriptions(buffers)
+    , m_TokenDescriptions(tokens)
     , m_ResourcePool(std::make_shared<ResourcePool>())
 {
     {
@@ -255,12 +240,12 @@ RenderGraph::RenderGraphRoot::RenderGraphRoot(
         {
             for (const auto& input : pass->GetInputs())
             {
-                Assert(ResourceIsDefined(input.m_Id, m_TextureDescriptions, m_BufferDescriptions), "Input undefined.");
+                Assert(IsResourceDefined(input.m_Id), "Input undefined.");
             }
 
             for (const auto& output : pass->GetOutputs())
             {
-                Assert(ResourceIsDefined(output.m_Id, m_TextureDescriptions, m_BufferDescriptions), "Output undefined.");
+                Assert(IsResourceDefined(output.m_Id), "Output undefined.");
             }
         }
     }
@@ -390,6 +375,11 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
 {
     for (const auto& input : renderPass.GetInputs())
     {
+        if (input.m_Type == RenderPass::InputType::Token)
+        {
+            continue;
+        }
+
         const auto& resource = m_ResourcePool->GetResource(input.m_Id);
 
         // SRV barriers
@@ -434,6 +424,11 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
 
     for (const auto& output : renderPass.GetOutputs())
     {
+        if (output.m_Type == RenderPass::OutputType::Token)
+        {
+            continue;
+        }
+
         const auto& resource = m_ResourcePool->GetResource(output.m_Id);
 
         // Copy Destination barriers
@@ -543,4 +538,27 @@ void RenderGraph::RenderGraphRoot::FlushBarriers(CommandList& commandList)
     const auto& pDxCmd = commandList.GetGraphicsCommandList();
     pDxCmd->ResourceBarrier((UINT)m_PendingBarriers.size(), m_PendingBarriers.data());
     m_PendingBarriers.clear();
+}
+
+bool RenderGraph::RenderGraphRoot::IsResourceDefined(ResourceId id)
+{
+    for (const auto& texture : m_TextureDescriptions)
+    {
+        if (texture.m_Id == id)
+            return true;
+    }
+
+    for (const auto& buffer : m_BufferDescriptions)
+    {
+        if (buffer.m_Id == id)
+            return true;
+    }
+
+    for (const auto& token : m_TokenDescriptions)
+    {
+        if (token.m_Id == id)
+            return true;
+    }
+
+    return false;
 }

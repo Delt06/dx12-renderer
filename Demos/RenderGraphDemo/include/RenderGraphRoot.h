@@ -22,7 +22,8 @@ namespace RenderGraph
         RenderGraphRoot(
             std::vector<std::unique_ptr<RenderPass>>&& renderPasses,
             std::vector<TextureDescription>&& textures,
-            std::vector<BufferDescription>&& buffers
+            std::vector<BufferDescription>&& buffers,
+            std::vector<TokenDescription>&& tokens
         );
 
         void Execute(const RenderMetadata& renderMetadata);
@@ -48,6 +49,8 @@ namespace RenderGraph
         void UavBarrier(const Resource& resource);
         void FlushBarriers(CommandList& commandList);
 
+        bool IsResourceDefined(ResourceId id);
+
         const std::shared_ptr<CommandQueue> m_DirectCommandQueue;
 
         const std::vector<std::unique_ptr<RenderPass>> m_RenderPassesDescription;
@@ -56,8 +59,8 @@ namespace RenderGraph
 
         const std::vector<TextureDescription> m_TextureDescriptions;
         const std::vector<BufferDescription> m_BufferDescriptions;
+        const std::vector<TokenDescription> m_TokenDescriptions;
 
-        std::vector<std::shared_ptr<Texture>> m_Textures;
         std::shared_ptr<ResourcePool> m_ResourcePool;
         std::map<const RenderPass*, RenderTargetInfo> m_RenderTargets;
         std::map<const Resource*, D3D12_RESOURCE_STATES> m_ResourceStates;

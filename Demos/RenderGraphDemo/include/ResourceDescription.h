@@ -59,4 +59,9 @@ namespace RenderGraph
     {
         ResourceId m_Id;
     };
+
+    struct TokenDescription
+    {
+        ResourceId m_Id;
+    };
 }

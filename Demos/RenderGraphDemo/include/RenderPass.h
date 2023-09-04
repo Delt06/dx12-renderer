@@ -18,6 +18,7 @@ namespace RenderGraph
         enum class InputType
         {
             Invalid,
+            Token,
             ShaderResource,
             CopySource,
         };
@@ -31,6 +32,7 @@ namespace RenderGraph
         enum class OutputType
         {
             Invalid,
+            Token,
             RenderTarget,
             DepthRead,
             DepthWrite,
