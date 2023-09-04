@@ -168,7 +168,7 @@ namespace
         {
             SetPassName(__CLASS_NAME__);
 
-            RegisterOutput({ ResourceIds::User::TempRenderTarget, OutputType::RenderTarget, RenderPass::OutputInitAction::Clear });
+            RegisterOutput({ ResourceIds::User::TempRenderTarget, OutputType::RenderTarget, OutputInitAction::Clear });
         }
 
         virtual void ExecuteImpl(const RenderGraph::RenderContext& context, CommandList& commandList) override
@@ -210,6 +210,20 @@ namespace
         std::shared_ptr<Mesh> m_Mesh;
         std::shared_ptr<Shader> m_Shader;
         std::shared_ptr<CommonRootSignature> m_RootSignature;
+    };
+
+    class UselessPassRenderPass : public RenderGraph::RenderPass
+    {
+    protected:
+        virtual void InitImpl(CommandList& commandList) override
+        {
+            SetPassName(__CLASS_NAME__);
+
+            RegisterOutput({ ResourceIds::User::TempRenderTarget2, OutputType::RenderTarget, OutputInitAction::Clear });
+        }
+
+        virtual void ExecuteImpl(const RenderGraph::RenderContext& context, CommandList& commandList) override
+        {}
     };
 }
 
@@ -276,12 +290,14 @@ bool RenderGraphDemo::LoadContent()
         renderPasses.emplace_back(std::make_unique<ClearGraphOutput>(m_RootSignature));
         renderPasses.emplace_back(std::make_unique<DrawQuadRenderPass>(m_RootSignature));
         renderPasses.emplace_back(std::make_unique<PostProcessingRenderPass>(m_RootSignature));
+        renderPasses.emplace_back(std::make_unique<UselessPassRenderPass>());
 
         RenderMetadataExpression<uint32_t> renderWidthExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenWidth; };
         RenderMetadataExpression<uint32_t> renderHeightExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenHeight; };
 
         std::vector<TextureDescription> textures;
         textures.emplace_back(::ResourceIds::User::TempRenderTarget, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR);
+        textures.emplace_back(::ResourceIds::User::TempRenderTarget2, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR);
         textures.emplace_back(RenderGraph::ResourceIds::GraphOutput, renderWidthExpression, renderHeightExpression, Window::BUFFER_FORMAT_SRGB, CLEAR_COLOR);
 
         std::vector<BufferDescription> buffers =

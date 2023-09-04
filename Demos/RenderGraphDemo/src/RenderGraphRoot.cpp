@@ -1,5 +1,8 @@
 #include "RenderGraphRoot.h"
 
+#include <set>
+#include <queue>
+
 #include <d3d12.h>
 #include <d3dx12.h>
 
@@ -82,6 +85,52 @@ namespace
         }
 
         return result;
+    }
+
+    std::set<RenderGraph::RenderPass*> FindUnusedPasses(const std::vector<std::vector<RenderGraph::RenderPass*>>& sortedRenderPasses)
+    {
+        std::set<RenderGraph::ResourceId> usedResources;
+        usedResources.insert(RenderGraph::ResourceIds::GraphOutput);
+
+        std::set<RenderGraph::RenderPass*> unusedPasses;
+
+        // initially, all are marked as unused
+        for (const auto& passList : sortedRenderPasses)
+        {
+            for (const auto& pPass : passList)
+            {
+                unusedPasses.insert(pPass);
+            }
+        }
+
+        for (auto it = sortedRenderPasses.rbegin(); it != sortedRenderPasses.rend(); ++it)
+        {
+            const auto& passList = *it;
+
+            for (const auto& pPass : passList)
+            {
+                const auto& outputs = pPass->GetOutputs();
+
+                // check if any of the outputs is used
+                const auto findResult = std::find_if(
+                    outputs.begin(), outputs.end(),
+                    [&usedResources](const RenderGraph::RenderPass::Output& o) { return usedResources.contains(o.m_Id); }
+                );
+
+                if (findResult != outputs.end())
+                {
+                    // if the pass is used, mark all its inputs is used as well
+                    for (const auto& input : pPass->GetInputs())
+                    {
+                        usedResources.insert(input.m_Id);
+                    }
+
+                    unusedPasses.erase(pPass);
+                }
+            }
+        }
+
+        return unusedPasses;
     }
 
     bool ResourceIsDefined(RenderGraph::ResourceId id, const std::vector<RenderGraph::TextureDescription>& textures, const std::vector<RenderGraph::BufferDescription>& buffers)
@@ -283,15 +332,20 @@ void RenderGraph::RenderGraphRoot::Build(const RenderMetadata& renderMetadata)
     const auto& application = Application::Get();
     const auto& pDevice = application.GetDevice();
 
+    const auto unusedPasses = FindUnusedPasses(m_RenderPassesSorted);
+
     // Populate the final render pass list
     m_RenderPassesBuilt.clear();
 
-    // TODO: implement unused node stripping, resource lifetime, etc...
+    // TODO: implement resource lifetime, etc...
     for (const auto& innerList : m_RenderPassesSorted)
     {
         for (const auto& pRenderPass : innerList)
         {
-            m_RenderPassesBuilt.push_back(pRenderPass);
+            if (!unusedPasses.contains(pRenderPass))
+            {
+                m_RenderPassesBuilt.push_back(pRenderPass);
+            }
         }
     }
 
