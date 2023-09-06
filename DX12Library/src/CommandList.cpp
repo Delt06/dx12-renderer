@@ -992,6 +992,11 @@ void CommandList::ClearRenderTarget(const RenderTarget& renderTarget, const Clea
     ClearRenderTarget(renderTarget, clearColor.GetColor(), clearFlags);
 }
 
+void CommandList::DiscardResource(const Resource& resource)
+{
+    m_D3d12CommandList->DiscardResource(resource.GetD3D12Resource().Get(), nullptr);
+}
+
 void CommandList::Draw(const uint32_t vertexCount, const uint32_t instanceCount, const uint32_t startVertex,
     const uint32_t startInstance)
 {

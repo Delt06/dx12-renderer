@@ -158,11 +158,6 @@ namespace
                     AttachmentPoint attachmentPoint = (AttachmentPoint)((uint32_t)Color0 + colorTexturesCount);
                     renderTargetInfo.m_RenderTarget->AttachTexture(attachmentPoint, pTexture);
 
-                    if (output.m_InitAction == RenderPass::OutputInitAction::Clear)
-                    {
-                        renderTargetInfo.m_ClearColor[Color0 + colorTexturesCount] = true;
-                    }
-
                     colorTexturesCount++;
                     Assert(colorTexturesCount <= 8, "Too many color textures for the same render target");
 
@@ -187,12 +182,6 @@ namespace
                     if (output.m_Type == RenderPass::OutputType::DepthRead)
                     {
                         renderTargetInfo.m_ReadonlyDepth = true;
-                    }
-
-                    if (output.m_InitAction == RenderPass::OutputInitAction::Clear)
-                    {
-                        renderTargetInfo.m_ClearDepth = true;
-                        renderTargetInfo.m_ClearStencil = true;
                     }
                 }
                 break;
@@ -270,12 +259,16 @@ void RenderGraph::RenderGraphRoot::Execute(const RenderMetadata& renderMetadata)
         context.m_ResourcePool = m_ResourcePool;
         context.m_Metadata = renderMetadata;
 
+        uint32_t renderPassIndex = 0;
+
         for (const auto& pRenderPass : m_RenderPassesBuilt)
         {
             PIXScope(cmd, pRenderPass->GetPassName().c_str());
 
-            PrepareResourceForRenderPass(cmd, *pRenderPass);
+            PrepareResourceForRenderPass(cmd, *pRenderPass, renderPassIndex);
             pRenderPass->Execute(context, cmd);
+
+            renderPassIndex++;
         }
     }
 
@@ -322,7 +315,6 @@ void RenderGraph::RenderGraphRoot::Build(const RenderMetadata& renderMetadata)
     // Populate the final render pass list
     m_RenderPassesBuilt.clear();
 
-    // TODO: implement resource lifetime, etc...
     for (const auto& innerList : m_RenderPassesSorted)
     {
         for (const auto& pRenderPass : innerList)
@@ -334,16 +326,30 @@ void RenderGraph::RenderGraphRoot::Build(const RenderMetadata& renderMetadata)
         }
     }
 
-    // Create resources
+    // Register resources
     {
-        m_ResourceStates.clear();
-
         m_ResourcePool->Clear();
 
         for (const auto& desc : m_TextureDescriptions)
         {
-            const auto& pTexture = m_ResourcePool->AddTexture(desc, m_RenderPassesDescription, renderMetadata, pDevice);
-            SetCurrentResourceState(*pTexture, D3D12_RESOURCE_STATE_COMMON);
+            m_ResourcePool->RegisterTexture(desc, m_RenderPassesBuilt, renderMetadata, pDevice);
+        }
+
+        m_ResourcePool->InitHeaps(m_RenderPassesBuilt, pDevice);
+    }
+
+    // Create resources
+    {
+        m_ResourceStates.clear();
+
+        for (const auto& desc : m_TextureDescriptions)
+        {
+            // if the resource is pruned, it won't be registered
+            if (m_ResourcePool->IsRegistered(desc.m_Id))
+            {
+                const auto& pTexture = m_ResourcePool->CreateTexture(desc.m_Id, pDevice);
+                SetCurrentResourceState(*pTexture, D3D12_RESOURCE_STATE_COMMON);
+            }
         }
 
         // TODO: add buffers here
@@ -371,7 +377,7 @@ D3D12_RESOURCE_STATES RenderGraph::RenderGraphRoot::GetCurrentResourceState(cons
     return result->second;
 }
 
-void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& commandList, const RenderPass& renderPass)
+void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& commandList, const RenderPass& renderPass, uint32_t renderPassIndex)
 {
     for (const auto& input : renderPass.GetInputs())
     {
@@ -391,6 +397,22 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
         if (input.m_Type == RenderPass::InputType::CopySource)
         {
             TransitionBarrier(resource, D3D12_RESOURCE_STATE_COPY_SOURCE);
+        }
+    }
+
+    for (const auto& output : renderPass.GetOutputs())
+    {
+        if (output.m_Type == RenderPass::OutputType::Token)
+        {
+            continue;
+        }
+
+        const auto& lifecycle = m_ResourcePool->GetResourceLifecycle(output.m_Id);
+
+        if (lifecycle.m_BeginPassIndex == renderPassIndex)
+        {
+            const auto& resource = m_ResourcePool->GetResource(output.m_Id);
+            commandList.AliasingBarrier(nullptr, resource.GetD3D12Resource());
         }
     }
 
@@ -445,9 +467,46 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
         }
     }
 
-
-
     FlushBarriers(commandList);
+
+    // Process init actions
+    for (const auto& output : renderPass.GetOutputs())
+    {
+        if (output.m_Type == RenderPass::OutputType::Token)
+        {
+            continue;
+        }
+
+        const auto& lifecycle = m_ResourcePool->GetResourceLifecycle(output.m_Id);
+
+        if (lifecycle.m_BeginPassIndex == renderPassIndex)
+        {
+            const auto& description = m_ResourcePool->GetDescription(output.m_Id);
+
+            switch (description.GetInitAction())
+            {
+            case ResourceInitAction::Clear:
+                {
+                    // TODO: add buffer clear
+                    const auto& texture = *m_ResourcePool->GetTexture(output.m_Id);
+                    commandList.ClearTexture(texture, description.GetClearValue());
+                }
+                break;
+            case ResourceInitAction::CopyDestination:
+                // don't do anything here, the copy in the pass should do the job
+                break;
+            case ResourceInitAction::Discard:
+                {
+                    const auto& resource = m_ResourcePool->GetResource(output.m_Id);
+                    commandList.DiscardResource(resource);
+                }
+                break;
+            default:
+                Assert(false, "Unknown resource init action.");
+                break;
+            }
+        }
+    }
 
     // Setup the render target
     if (renderTargetFindResult != m_RenderTargets.end())
@@ -458,36 +517,6 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
 
         commandList.SetRenderTarget(*pRenderTarget);
         commandList.SetAutomaticViewportAndScissorRect(*pRenderTarget);
-
-        for (size_t i = 0; i < 8; ++i)
-        {
-            const auto& pRtTexture = textures[i];
-            if (pRtTexture != nullptr && pRtTexture->IsValid())
-            {
-                if (renderTargetInfo.m_ClearColor[i])
-                {
-                    commandList.ClearTexture(*pRtTexture, pRtTexture->GetD3D12ClearValue().Color);
-                }
-            }
-        }
-
-        if (renderTargetInfo.m_ClearDepth || renderTargetInfo.m_ClearStencil)
-        {
-            const auto& pRtDepthStencil = pRenderTarget->GetTexture(DepthStencil);
-            if (pRtDepthStencil != nullptr && pRtDepthStencil->IsValid())
-            {
-                D3D12_CLEAR_FLAGS clearFlags{};
-                if (renderTargetInfo.m_ClearDepth)
-                {
-                    clearFlags |= D3D12_CLEAR_FLAG_DEPTH;
-                }
-                if (renderTargetInfo.m_ClearStencil)
-                {
-                    clearFlags |= D3D12_CLEAR_FLAG_STENCIL;
-                }
-                commandList.ClearDepthStencilTexture(*pRtDepthStencil, clearFlags);
-            }
-        }
     }
 }
 

@@ -1,7 +1,5 @@
 #pragma once
 
-// ReSharper disable CppRedundantQualifier
-
 /*
  *  Copyright(c) 2018 Jeremiah van Oosten
  *
@@ -43,9 +41,19 @@ class Resource
 {
 public:
     explicit Resource(const std::wstring& name = L"");
+
+    // commited resource
     explicit Resource(const D3D12_RESOURCE_DESC& resourceDesc,
         const D3D12_CLEAR_VALUE* clearValue = nullptr,
         const std::wstring& name = L"");
+
+    // placed resource
+    explicit Resource(const D3D12_RESOURCE_DESC& resourceDesc,
+        const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap,
+        UINT64 heapOffset = 0,
+        const D3D12_CLEAR_VALUE* clearValue = nullptr,
+        const std::wstring& name = L"");
+
     explicit Resource(Microsoft::WRL::ComPtr<ID3D12Resource> resource, const std::wstring& name = L"");
 
     Resource(const Resource& copy);

@@ -12,6 +12,7 @@ set(HEADER_FILES
         include/ResourceId.h
         include/ResourceIds.User.h
         include/ResourcePool.h
+        include/TransientResourceAllocator.h
         )
 
 set(SOURCE_FILES
@@ -21,6 +22,7 @@ set(SOURCE_FILES
         src/RenderPass.cpp
         src/ResourceId.cpp
         src/ResourcePool.cpp
+        src/TransientResourceAllocator.cpp
         )
 
 set(SHADER_FILES_VERTEX

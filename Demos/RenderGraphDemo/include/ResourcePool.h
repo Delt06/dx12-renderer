@@ -2,11 +2,13 @@
 
 #include <memory>
 #include <vector>
+#include <map>
 
 #include <d3d12.h>
 #include <wrl.h>
 
 #include "ResourceId.h"
+#include "TransientResourceAllocator.h"
 
 class Texture;
 class Resource;
@@ -15,6 +17,7 @@ namespace RenderGraph
 {
     class RenderPass;
     struct TextureDescription;
+    struct BufferDescription;
     struct RenderMetadata;
 
     class ResourcePool
@@ -24,14 +27,26 @@ namespace RenderGraph
         const std::shared_ptr<Texture>& GetTexture(ResourceId resourceId) const;
         const std::vector<std::shared_ptr<Texture>>& GetAllTextures() const { return m_Textures; }
 
+        const TransientResourceAllocator::ResourceLifecycle& GetResourceLifecycle(ResourceId resourceId);
+
+        bool IsRegistered(ResourceId resourceId) const;
+        const ResourceDescription& GetDescription(ResourceId resourceId) const;
+
         void Clear();
-        const std::shared_ptr<Texture>& AddTexture(
+        void InitHeaps(const std::vector<RenderPass*>& renderPasses, const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice);
+        void RegisterTexture(
             const TextureDescription& desc,
-            const std::vector<std::unique_ptr<RenderPass>>& renderPasses,
+            const std::vector<RenderPass*>& renderPasses,
             const RenderMetadata& renderMetadata,
             const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice);
+        const std::shared_ptr<Texture>& CreateTexture(ResourceId resourceId, const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice);
 
     private:
         std::vector<std::shared_ptr<Texture>> m_Textures;
+        std::map<ResourceId, ResourceDescription> m_ResourceDescriptions;
+        std::vector<TransientResourceAllocator::HeapInfo> m_HeapInfos;
+
+        // pair: heap index, lifecycle index
+        std::map<ResourceId, std::pair<uint32_t, uint32_t>> m_ResourceHeapIndices;
     };
 }

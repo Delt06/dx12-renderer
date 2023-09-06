@@ -17,7 +17,7 @@ public:
 	explicit ClearValue(DXGI_FORMAT format, const DEPTH_STENCIL_VALUE depthStencilValue);
 
 	ClearValue(const ClearValue&);
-	ClearValue& operator=(const ClearValue&) = delete;
+	ClearValue& operator=(const ClearValue& other);
 
 	ClearValue(ClearValue&&);
 	ClearValue& operator=(ClearValue&&) = delete;

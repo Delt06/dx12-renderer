@@ -40,17 +40,10 @@ namespace RenderGraph
             CopyDestination,
         };
 
-        enum OutputInitAction
-        {
-            None,
-            Clear,
-        };
-
         struct Output
         {
             ResourceId m_Id = 0;
             OutputType m_Type = OutputType::Invalid;
-            OutputInitAction m_InitAction = OutputInitAction::None;
         };
 
         void Init(CommandList& commandList);

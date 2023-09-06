@@ -34,14 +34,11 @@ namespace RenderGraph
         {
             std::shared_ptr<RenderTarget> m_RenderTarget = nullptr;
             bool m_ReadonlyDepth = false;
-            bool m_ClearColor[8] = { false, false, false, false, false, false, false, false };
-            bool m_ClearDepth = false;
-            bool m_ClearStencil = false;
         };
 
     private:
         void Build(const RenderMetadata& renderMetadata);
-        void PrepareResourceForRenderPass(CommandList& commandList, const RenderPass& renderPass);
+        void PrepareResourceForRenderPass(CommandList& commandList, const RenderPass& renderPass, uint32_t renderPassIndex);
 
         D3D12_RESOURCE_STATES GetCurrentResourceState(const Resource& resource) const;
         void SetCurrentResourceState(const Resource& resource, D3D12_RESOURCE_STATES state);

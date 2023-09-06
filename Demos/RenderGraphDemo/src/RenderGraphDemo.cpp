@@ -169,7 +169,7 @@ namespace
         {
             SetPassName(__CLASS_NAME__);
 
-            RegisterOutput({ ResourceIds::User::TempRenderTarget3, OutputType::RenderTarget, OutputInitAction::Clear });
+            RegisterOutput({ ResourceIds::User::TempRenderTarget3, OutputType::RenderTarget });
         }
 
         virtual void ExecuteImpl(const RenderGraph::RenderContext& context, CommandList& commandList) override
@@ -244,7 +244,7 @@ namespace
         {
             SetPassName(__CLASS_NAME__);
 
-            RegisterOutput({ ResourceIds::User::TempRenderTarget2, OutputType::RenderTarget, OutputInitAction::Clear });
+            RegisterOutput({ ResourceIds::User::TempRenderTarget2, OutputType::RenderTarget });
         }
 
         virtual void ExecuteImpl(const RenderGraph::RenderContext& context, CommandList& commandList) override
@@ -322,10 +322,10 @@ bool RenderGraphDemo::LoadContent()
         RenderMetadataExpression<uint32_t> renderHeightExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenHeight; };
 
         std::vector<TextureDescription> textures;
-        textures.emplace_back(::ResourceIds::User::TempRenderTarget, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR);
-        textures.emplace_back(::ResourceIds::User::TempRenderTarget2, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR);
-        textures.emplace_back(::ResourceIds::User::TempRenderTarget3, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR);
-        textures.emplace_back(RenderGraph::ResourceIds::GraphOutput, renderWidthExpression, renderHeightExpression, Window::BUFFER_FORMAT_SRGB, CLEAR_COLOR);
+        textures.emplace_back(::ResourceIds::User::TempRenderTarget, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR, ResourceInitAction::CopyDestination);
+        textures.emplace_back(::ResourceIds::User::TempRenderTarget2, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR, ResourceInitAction::Clear);
+        textures.emplace_back(::ResourceIds::User::TempRenderTarget3, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR, ResourceInitAction::Clear);
+        textures.emplace_back(RenderGraph::ResourceIds::GraphOutput, renderWidthExpression, renderHeightExpression, Window::BUFFER_FORMAT_SRGB, CLEAR_COLOR, ResourceInitAction::Discard);
 
         std::vector<BufferDescription> buffers =
         {

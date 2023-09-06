@@ -65,6 +65,27 @@ ClearValue::ClearValue(const ClearValue& other)
     }
 }
 
+ClearValue& ClearValue::operator=(const ClearValue& other)
+{
+    memcpy(m_Color, other.m_Color, sizeof(COLOR));
+    m_DepthStencil = other.m_DepthStencil;
+
+    if (other.m_D3D12ClearValue != nullptr)
+    {
+        m_D3D12ClearValue = std::unique_ptr<D3D12_CLEAR_VALUE>(new D3D12_CLEAR_VALUE);
+        m_D3D12ClearValue->Format = other.m_D3D12ClearValue->Format;
+        m_D3D12ClearValue->DepthStencil = other.m_D3D12ClearValue->DepthStencil;
+
+        memcpy(m_D3D12ClearValue->Color, other.m_D3D12ClearValue->Color, sizeof(COLOR));
+    }
+    else
+    {
+        m_D3D12ClearValue = nullptr;
+    }
+
+    return *this;
+}
+
 
 ClearValue::ClearValue(ClearValue&& other)
 {
