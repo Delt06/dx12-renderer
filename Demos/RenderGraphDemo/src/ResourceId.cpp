@@ -2,7 +2,7 @@
 
 #include <DX12Library/Helpers.h>
 
-const RenderGraph::ResourceId RenderGraph::ResourceIds::GraphOutput = RenderGraph::ResourceIds::GetResourceId(L"BuiltIn-GraphOutput");
+const RenderGraph::ResourceId RenderGraph::ResourceIds::GraphOutput = RenderGraph::ResourceIds::GetResourceId(L"RenderGraph-BuiltIn-GraphOutput");
 
 RenderGraph::ResourceId RenderGraph::ResourceIds::GetResourceId(const wchar_t* name)
 {

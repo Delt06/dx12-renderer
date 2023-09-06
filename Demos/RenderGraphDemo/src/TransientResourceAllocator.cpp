@@ -131,13 +131,17 @@ std::vector<TransientResourceAllocator::HeapInfo> TransientResourceAllocator::Cr
     }
     while (compacting);
 
-    for (auto& heapInfo : heaps)
+    for (uint32_t i = 0; i < heaps.size(); ++i)
     {
+        auto& heapInfo = heaps[i];
         const auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
         D3D12_RESOURCE_ALLOCATION_INFO allocationInfo = { heapInfo.m_Size, heapInfo.m_Alignment };
         const auto heapDesc = CD3DX12_HEAP_DESC(allocationInfo, D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_NONE);
 
         ThrowIfFailed(pDevice->CreateHeap(&heapDesc, IID_PPV_ARGS(&heapInfo.m_Heap)));
+
+        const auto name = L"RenderGraph-TransientResourceHeap-" + std::to_wstring(i);
+        heapInfo.m_Heap->SetName(name.c_str());
     }
 
     return heaps;
