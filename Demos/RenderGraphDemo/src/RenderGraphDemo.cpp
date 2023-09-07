@@ -156,6 +156,25 @@ namespace
         std::shared_ptr<ComputeShader> m_ComputeShader;
     };
 
+    class ColorSplitBufferCountResetPass : public RenderGraph::RenderPass
+    {
+    protected:
+        virtual void InitImpl(CommandList& commandList) override
+        {
+            SetPassName(__CLASS_NAME__);
+
+            RegisterInput({ ResourceIds::User::SetupFinishedToken, InputType::Token });
+
+            RegisterOutput({ ResourceIds::User::ColorSplitBuffer, OutputType::CopyDestination });
+        }
+
+        virtual void ExecuteImpl(const RenderGraph::RenderContext& context, CommandList& commandList) override
+        {
+            const auto& pBuffer = context.m_ResourcePool->GetBuffer(ResourceIds::User::ColorSplitBuffer);
+            commandList.CopyByteAddressBuffer<uint32_t>(pBuffer->GetCounterBuffer(), 0u);
+        }
+    };
+
     class PostProcessingRenderPass : public RenderGraph::RenderPass
     {
     public:
@@ -358,6 +377,7 @@ bool RenderGraphDemo::LoadContent()
 
         std::vector<std::unique_ptr<RenderPass>> renderPasses;
         renderPasses.emplace_back(std::make_unique<SetupRenderPass>(m_RootSignature));
+        renderPasses.emplace_back(std::make_unique<ColorSplitBufferCountResetPass>());
         renderPasses.emplace_back(std::make_unique<ColorSplitBufferComputePass>(m_RootSignature));
         renderPasses.emplace_back(std::make_unique<CopyTempRtRenderPass>());
         renderPasses.emplace_back(std::make_unique<DrawQuadRenderPass>(m_RootSignature));
@@ -384,7 +404,7 @@ bool RenderGraphDemo::LoadContent()
 
         std::vector<BufferDescription> buffers =
         {
-            BufferDescription{ ::ResourceIds::User::ColorSplitBuffer, [](const RenderMetadata& metadata) { return 32LU; }, sizeof(ColorSplitEntry), ResourceInitAction::Clear },
+            BufferDescription{ ::ResourceIds::User::ColorSplitBuffer, [](const RenderMetadata& metadata) { return 32LU; }, sizeof(ColorSplitEntry), ResourceInitAction::CopyDestination },
         };
 
         std::vector<TokenDescription> tokens =

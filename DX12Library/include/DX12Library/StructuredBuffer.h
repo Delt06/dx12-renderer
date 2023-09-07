@@ -41,6 +41,8 @@
 class StructuredBuffer final : public Buffer
 {
 public:
+    const static inline D3D12_RESOURCE_DESC COUNTER_DESC = CD3DX12_RESOURCE_DESC::Buffer(4, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+
 	explicit StructuredBuffer(const std::wstring& name = L"");
 	explicit StructuredBuffer(const D3D12_RESOURCE_DESC resourceDesc,
 		size_t numElements, size_t elementSize,
@@ -64,6 +66,12 @@ public:
 
 	ByteAddressBuffer& GetCounterBuffer();
 	const std::shared_ptr<ByteAddressBuffer>& GetCounterBufferPtr() const;
+
+    virtual void ForEachResourceRecursive(const std::function<void(const Resource&)>& action) const override
+    {
+        action(*this);
+        m_CounterBuffer->ForEachResourceRecursive(action);
+    }
 
 private:
 	size_t m_NumElements;

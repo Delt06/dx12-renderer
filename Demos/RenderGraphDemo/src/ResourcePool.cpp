@@ -26,6 +26,12 @@ namespace
         return pDevice->GetResourceAllocationInfo(0, 1, &desc);
     }
 
+    D3D12_RESOURCE_ALLOCATION_INFO GetStructuredBufferResourceAllocationInfo(const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice, const D3D12_RESOURCE_DESC& desc, const D3D12_RESOURCE_DESC& counterDesc)
+    {
+        D3D12_RESOURCE_DESC descs[2] = { counterDesc, desc };
+        return pDevice->GetResourceAllocationInfo(0, 2, descs);
+    }
+
     std::shared_ptr<Texture> CreateTextureImpl(
         const RenderGraph::ResourceDescription& desc,
         const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap,
@@ -55,15 +61,17 @@ namespace
     )
     {
         constexpr UINT64 heapOffset = 0u;
-        auto texture = std::make_shared<StructuredBuffer>(
+        auto pBuffer = std::make_shared<StructuredBuffer>(
             desc.m_DxDesc,
             pHeap,
             heapOffset,
             desc.m_ElementsCount, desc.m_BufferDescription.m_Stride,
             RenderGraph::ResourceIds::GetResourceName(desc.m_BufferDescription.m_Id)
         );
-        texture->SetAutoBarriersEnabled(false);
-        return texture;
+        pBuffer->SetAutoBarriersEnabled(false);
+        pBuffer->GetCounterBuffer().SetAutoBarriersEnabled(false);
+        // TODO: add subresources for the Resource class, override it for the structured buffer
+        return pBuffer;
     }
 }
 
@@ -230,7 +238,7 @@ void RenderGraph::ResourcePool::RegisterTexture(const RenderGraph::TextureDescri
     m_ResourceDescriptions[desc.m_Id] = description;
 }
 
-void RenderGraph::ResourcePool::RegisterBuffer(const BufferDescription& desc, const std::vector<RenderPass*>& renderPasses, const RenderMetadata & renderMetadata, const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice)
+void RenderGraph::ResourcePool::RegisterBuffer(const BufferDescription& desc, const std::vector<RenderPass*>& renderPasses, const RenderMetadata& renderMetadata, const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice)
 {
     D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
     {
@@ -275,7 +283,7 @@ void RenderGraph::ResourcePool::RegisterBuffer(const BufferDescription& desc, co
     description.m_ElementsCount = elementsCount;
     description.m_ResourceType = ResourceType::Buffer;
 
-    const auto allocationInfo = GetResourceAllocationInfo(pDevice, dxDesc);
+    const auto allocationInfo = GetStructuredBufferResourceAllocationInfo(pDevice, dxDesc, StructuredBuffer::COUNTER_DESC);
     description.m_TotalSize = allocationInfo.SizeInBytes;
     description.m_Alignment = allocationInfo.Alignment;
 

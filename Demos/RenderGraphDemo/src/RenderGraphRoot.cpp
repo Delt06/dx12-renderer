@@ -1,5 +1,6 @@
 #include "RenderGraphRoot.h"
 
+#include <functional>
 #include <set>
 #include <queue>
 
@@ -364,7 +365,10 @@ void RenderGraph::RenderGraphRoot::Build(const RenderMetadata& renderMetadata)
             if (m_ResourcePool->IsRegistered(desc.m_Id))
             {
                 const auto& pBuffer = m_ResourcePool->CreateBuffer(desc.m_Id, pDevice);
-                SetCurrentResourceState(*pBuffer, D3D12_RESOURCE_STATE_COMMON);
+                pBuffer->ForEachResourceRecursive([this](const auto& r)
+                    {
+                        SetCurrentResourceState(r, D3D12_RESOURCE_STATE_COMMON);
+                    });
             }
         }
     }
@@ -404,12 +408,18 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
         // SRV barriers
         if (input.m_Type == RenderPass::InputType::ShaderResource)
         {
-            TransitionBarrier(resource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+            resource.ForEachResourceRecursive([this](const auto& r)
+                {
+                    TransitionBarrier(r, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+                });
         }
 
         if (input.m_Type == RenderPass::InputType::CopySource)
         {
-            TransitionBarrier(resource, D3D12_RESOURCE_STATE_COPY_SOURCE);
+            resource.ForEachResourceRecursive([this](const auto& r)
+                {
+                    TransitionBarrier(r, D3D12_RESOURCE_STATE_COPY_SOURCE);
+                });
         }
     }
 
@@ -425,7 +435,10 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
         if (lifecycle.m_BeginPassIndex == renderPassIndex)
         {
             const auto& resource = m_ResourcePool->GetResource(output.m_Id);
-            commandList.AliasingBarrier(nullptr, resource.GetD3D12Resource());
+            resource.ForEachResourceRecursive([&commandList](const auto& r)
+                {
+                    commandList.AliasingBarrier(nullptr, r.GetD3D12Resource());
+                });
         }
     }
 
@@ -469,14 +482,20 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
         // Copy Destination barriers
         if (output.m_Type == RenderPass::OutputType::CopyDestination)
         {
-            TransitionBarrier(resource, D3D12_RESOURCE_STATE_COPY_DEST);
+            resource.ForEachResourceRecursive([this](const auto& r)
+                {
+                    TransitionBarrier(r, D3D12_RESOURCE_STATE_COPY_DEST);
+                });
         }
 
         // UAV barriers
         if (output.m_Type == RenderPass::OutputType::UnorderedAccess)
         {
-            TransitionBarrier(resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            UavBarrier(resource);
+            resource.ForEachResourceRecursive([this](const auto& r)
+                {
+                    TransitionBarrier(r, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                    UavBarrier(r);
+                });
         }
     }
 
@@ -500,21 +519,9 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
             {
             case ResourceInitAction::Clear:
                 {
-                    if (description.m_ResourceType == ResourceType::Texture)
-                    {
-                        const auto& texture = *m_ResourcePool->GetTexture(output.m_Id);
-                        commandList.ClearTexture(texture, description.GetClearValue());
-                    }
-                    else if (description.m_ResourceType == ResourceType::Buffer)
-                    {
-                        auto& buffer = *m_ResourcePool->GetBuffer(output.m_Id);
-
-                        commandList.CopyByteAddressBuffer<uint32_t>(
-                            buffer.GetCounterBuffer(),
-                            0U
-                        );
-
-                    }
+                    Assert(description.m_ResourceType == ResourceType::Texture, "Only textures support the clear init action.");
+                    const auto& texture = *m_ResourcePool->GetTexture(output.m_Id);
+                    commandList.ClearTexture(texture, description.GetClearValue());
                 }
                 break;
             case ResourceInitAction::CopyDestination:

@@ -44,6 +44,12 @@ public:
         size_t numElements, size_t elementSize,
         const std::wstring& name = L"");
 
+    ByteAddressBuffer(const D3D12_RESOURCE_DESC& resDesc,
+        const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap,
+        UINT64 heapOffset,
+        size_t numElements, size_t elementSize,
+        const std::wstring& name = L"");
+
     size_t GetBufferSize() const
     {
         return m_BufferSize;

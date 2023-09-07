@@ -34,8 +34,10 @@
 #include <d3d12.h>
 #include <wrl.h>
 
+#include <functional>
 #include <string>
 #include <memory>
+#include <vector>
 
 class Resource
 {
@@ -134,6 +136,12 @@ public:
     bool CheckFormatSupport(D3D12_FORMAT_SUPPORT2 formatSupport) const;
     bool AreAutoBarriersEnabled() const { return m_AutoBarriersEnabled; }
     void SetAutoBarriersEnabled(bool enable) { m_AutoBarriersEnabled = enable; }
+
+
+    virtual void ForEachResourceRecursive(const std::function<void(const Resource&)>& action) const
+    {
+        action(*this);
+    }
 
 protected:
     // The underlying D3D12 resource.

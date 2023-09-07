@@ -18,6 +18,13 @@ ByteAddressBuffer::ByteAddressBuffer(const D3D12_RESOURCE_DESC& resDesc,
     m_Uav = Application::Get().AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 }
 
+ByteAddressBuffer::ByteAddressBuffer(const D3D12_RESOURCE_DESC & resDesc, const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap, UINT64 heapOffset, size_t numElements, size_t elementSize, const std::wstring & name)
+    : Buffer(resDesc, pHeap, heapOffset, numElements, elementSize, name)
+{
+    m_Srv = Application::Get().AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    m_Uav = Application::Get().AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+}
+
 void ByteAddressBuffer::CreateViews(size_t numElements, size_t elementSize)
 {
 	auto device = Application::Get().GetDevice();
