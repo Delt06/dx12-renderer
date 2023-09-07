@@ -3,14 +3,14 @@ cmake_minimum_required(VERSION 3.8.0)
 project("RenderGraph")
 
 set(HEADER_FILES
-        include/RenderContext.h
-        include/RenderGraphRoot.h
-        include/RenderMetadata.h
-        include/RenderPass.h
-        include/ResourceDescription.h
-        include/ResourceId.h
-        include/ResourcePool.h
-        include/TransientResourceAllocator.h
+        include/RenderGraph/RenderContext.h
+        include/RenderGraph/RenderGraphRoot.h
+        include/RenderGraph/RenderMetadata.h
+        include/RenderGraph/RenderPass.h
+        include/RenderGraph/ResourceDescription.h
+        include/RenderGraph/ResourceId.h
+        include/RenderGraph/ResourcePool.h
+        include/RenderGraph/TransientResourceAllocator.h
         )
 
 set(SOURCE_FILES

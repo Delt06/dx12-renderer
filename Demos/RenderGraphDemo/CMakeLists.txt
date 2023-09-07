@@ -4,12 +4,14 @@ project("RenderGraphDemo")
 
 set(HEADER_FILES
         include/RenderGraphDemo.h
+        include/RenderGraph.User.h
         include/ResourceIds.User.h
         )
 
 set(SOURCE_FILES
         src/main.cpp
         src/RenderGraphDemo.cpp
+        src/RenderGraph.User.cpp
         )
 
 set(SHADER_FILES_VERTEX

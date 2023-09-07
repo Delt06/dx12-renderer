@@ -117,7 +117,7 @@ namespace
                 // check if any of the outputs is used
                 const auto findResult = std::find_if(
                     outputs.begin(), outputs.end(),
-                    [&usedResources](const RenderGraph::RenderPass::Output& o) { return usedResources.contains(o.m_Id); }
+                    [&usedResources](const RenderGraph::Output& o) { return usedResources.contains(o.m_Id); }
                 );
 
                 if (findResult != outputs.end())
@@ -148,7 +148,7 @@ namespace
         {
             switch (output.m_Type)
             {
-            case RenderPass::OutputType::RenderTarget:
+            case OutputType::RenderTarget:
                 {
                     if (renderTargetInfo.m_RenderTarget == nullptr)
                     {
@@ -167,8 +167,8 @@ namespace
                     break;
                 }
 
-            case RenderPass::OutputType::DepthWrite:
-            case RenderPass::OutputType::DepthRead:
+            case OutputType::DepthWrite:
+            case OutputType::DepthRead:
                 {
                     if (renderTargetInfo.m_RenderTarget == nullptr)
                     {
@@ -182,7 +182,7 @@ namespace
                     depthTexturesCount++;
                     Assert(depthTexturesCount == 1, "Too many depth textures for the same render target");
 
-                    if (output.m_Type == RenderPass::OutputType::DepthRead)
+                    if (output.m_Type == OutputType::DepthRead)
                     {
                         renderTargetInfo.m_ReadonlyDepth = true;
                     }
@@ -398,7 +398,7 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
 {
     for (const auto& input : renderPass.GetInputs())
     {
-        if (input.m_Type == RenderPass::InputType::Token)
+        if (input.m_Type == InputType::Token)
         {
             continue;
         }
@@ -406,7 +406,7 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
         const auto& resource = m_ResourcePool->GetResource(input.m_Id);
 
         // SRV barriers
-        if (input.m_Type == RenderPass::InputType::ShaderResource)
+        if (input.m_Type == InputType::ShaderResource)
         {
             resource.ForEachResourceRecursive([this](const auto& r)
                 {
@@ -414,7 +414,7 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
                 });
         }
 
-        if (input.m_Type == RenderPass::InputType::CopySource)
+        if (input.m_Type == InputType::CopySource)
         {
             resource.ForEachResourceRecursive([this](const auto& r)
                 {
@@ -425,7 +425,7 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
 
     for (const auto& output : renderPass.GetOutputs())
     {
-        if (output.m_Type == RenderPass::OutputType::Token)
+        if (output.m_Type == OutputType::Token)
         {
             continue;
         }
@@ -472,7 +472,7 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
 
     for (const auto& output : renderPass.GetOutputs())
     {
-        if (output.m_Type == RenderPass::OutputType::Token)
+        if (output.m_Type == OutputType::Token)
         {
             continue;
         }
@@ -480,7 +480,7 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
         const auto& resource = m_ResourcePool->GetResource(output.m_Id);
 
         // Copy Destination barriers
-        if (output.m_Type == RenderPass::OutputType::CopyDestination)
+        if (output.m_Type == OutputType::CopyDestination)
         {
             resource.ForEachResourceRecursive([this](const auto& r)
                 {
@@ -489,7 +489,7 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
         }
 
         // UAV barriers
-        if (output.m_Type == RenderPass::OutputType::UnorderedAccess)
+        if (output.m_Type == OutputType::UnorderedAccess)
         {
             resource.ForEachResourceRecursive([this](const auto& r)
                 {
@@ -504,7 +504,7 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
     // Process init actions
     for (const auto& output : renderPass.GetOutputs())
     {
-        if (output.m_Type == RenderPass::OutputType::Token)
+        if (output.m_Type == OutputType::Token)
         {
             continue;
         }

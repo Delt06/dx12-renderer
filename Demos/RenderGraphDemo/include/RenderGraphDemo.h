@@ -18,7 +18,7 @@
 #include <Framework/CommonRootSignature.h>
 #include <Framework/Bloom.h>
 
-#include "RenderGraphRoot.h"
+#include <RenderGraph/RenderGraphRoot.h>
 
 class RenderGraphDemo final : public Game
 {

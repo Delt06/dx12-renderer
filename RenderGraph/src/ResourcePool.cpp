@@ -177,17 +177,17 @@ void RenderGraph::ResourcePool::RegisterTexture(const RenderGraph::TextureDescri
                 {
                     switch (output.m_Type)
                     {
-                    case RenderPass::OutputType::RenderTarget:
+                    case OutputType::RenderTarget:
                         renderTarget = true;
                         break;
-                    case RenderPass::OutputType::DepthRead:
-                    case RenderPass::OutputType::DepthWrite:
+                    case OutputType::DepthRead:
+                    case OutputType::DepthWrite:
                         depth = true;
                         break;
-                    case RenderPass::OutputType::UnorderedAccess:
+                    case OutputType::UnorderedAccess:
                         unorderedAccess = true;
                         break;
-                    case RenderPass::OutputType::CopyDestination:
+                    case OutputType::CopyDestination:
                         // still valid but do not have a related flag
                         break;
                     default:
@@ -252,10 +252,10 @@ void RenderGraph::ResourcePool::RegisterBuffer(const BufferDescription& desc, co
                 {
                     switch (output.m_Type)
                     {
-                    case RenderPass::OutputType::UnorderedAccess:
+                    case OutputType::UnorderedAccess:
                         unorderedAccess = true;
                         break;
-                    case RenderPass::OutputType::CopyDestination:
+                    case OutputType::CopyDestination:
                         // still valid but do not have a related flag
                         break;
                     default:
