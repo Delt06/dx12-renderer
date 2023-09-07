@@ -17,11 +17,10 @@ void AppendEntry(float2 uvOffset, float3 colorMask)
     _ColorSplitBuffer.Append(entry);
 }
 
-const static float3 MASKS[3][3] =
+const static float3 MASKS[2][3] =
 {
     {float3(1, 0, 0), float3(0, 1, 0), float3(0, 0, 1)},
     {float3(0.5f, 0.5f, 0), float3(0, 0.25f, 0.5f), float3(0.5f, 0.25f, 0.5f)},
-    {float3(0.3333f, 0.5f, 0), float3(0.3333f, 0.5f, 0.0f), float3(0.3333f, 0, 1.0f)},
 };
 
 [numthreads(THREAD_BLOCK_SIZE, 1, 1)]
@@ -33,7 +32,7 @@ void main(in uint3 dispatchID : SV_DispatchThreadID)
         return;
     }
 
-    uint64_t setIndex = (_FrameIndex / 128) % 3;
+    uint64_t setIndex = (_FrameIndex / 128) % 2;
 
     switch(index)
     {
