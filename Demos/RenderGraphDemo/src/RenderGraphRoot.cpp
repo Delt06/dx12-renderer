@@ -7,6 +7,8 @@
 #include <d3dx12.h>
 
 #include <DX12Library/Helpers.h>
+#include <DX12Library/StructuredBuffer.h>
+#include <DX12Library/Texture.h>
 
 #include "RenderContext.h"
 
@@ -335,6 +337,11 @@ void RenderGraph::RenderGraphRoot::Build(const RenderMetadata& renderMetadata)
             m_ResourcePool->RegisterTexture(desc, m_RenderPassesBuilt, renderMetadata, pDevice);
         }
 
+        for (const auto& desc : m_BufferDescriptions)
+        {
+            m_ResourcePool->RegisterBuffer(desc, m_RenderPassesBuilt, renderMetadata, pDevice);
+        }
+
         m_ResourcePool->InitHeaps(m_RenderPassesBuilt, pDevice);
     }
 
@@ -342,9 +349,9 @@ void RenderGraph::RenderGraphRoot::Build(const RenderMetadata& renderMetadata)
     {
         m_ResourceStates.clear();
 
+        // if the resource is pruned, it won't be registered
         for (const auto& desc : m_TextureDescriptions)
         {
-            // if the resource is pruned, it won't be registered
             if (m_ResourcePool->IsRegistered(desc.m_Id))
             {
                 const auto& pTexture = m_ResourcePool->CreateTexture(desc.m_Id, pDevice);
@@ -352,9 +359,15 @@ void RenderGraph::RenderGraphRoot::Build(const RenderMetadata& renderMetadata)
             }
         }
 
-        // TODO: add buffers here
+        for (const auto& desc : m_BufferDescriptions)
+        {
+            if (m_ResourcePool->IsRegistered(desc.m_Id))
+            {
+                const auto& pBuffer = m_ResourcePool->CreateBuffer(desc.m_Id, pDevice);
+                SetCurrentResourceState(*pBuffer, D3D12_RESOURCE_STATE_COMMON);
+            }
+        }
     }
-
 
     // Create render targets
     m_RenderTargets.clear();
@@ -487,9 +500,21 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
             {
             case ResourceInitAction::Clear:
                 {
-                    // TODO: add buffer clear
-                    const auto& texture = *m_ResourcePool->GetTexture(output.m_Id);
-                    commandList.ClearTexture(texture, description.GetClearValue());
+                    if (description.m_ResourceType == ResourceType::Texture)
+                    {
+                        const auto& texture = *m_ResourcePool->GetTexture(output.m_Id);
+                        commandList.ClearTexture(texture, description.GetClearValue());
+                    }
+                    else if (description.m_ResourceType == ResourceType::Buffer)
+                    {
+                        auto& buffer = *m_ResourcePool->GetBuffer(output.m_Id);
+
+                        commandList.CopyByteAddressBuffer<uint32_t>(
+                            buffer.GetCounterBuffer(),
+                            0U
+                        );
+
+                    }
                 }
                 break;
             case ResourceInitAction::CopyDestination:

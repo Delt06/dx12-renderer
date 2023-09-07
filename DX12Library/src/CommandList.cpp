@@ -223,8 +223,11 @@ void CommandList::CopyBuffer(Buffer& buffer, const size_t numElements, const siz
         subresourceData.RowPitch = static_cast<LONG_PTR>(bufferSize);
         subresourceData.SlicePitch = subresourceData.RowPitch;
 
-        m_PResourceStateTracker->TransitionResource(d3d12Resource.Get(), D3D12_RESOURCE_STATE_COPY_DEST);
-        FlushResourceBarriers();
+        if (buffer.AreAutoBarriersEnabled())
+        {
+            m_PResourceStateTracker->TransitionResource(d3d12Resource.Get(), D3D12_RESOURCE_STATE_COPY_DEST);
+            FlushResourceBarriers();
+        }
 
         UpdateSubresources(m_D3d12CommandList.Get(), d3d12Resource.Get(),
             uploadResource.Get(), 0, 0, 1, &subresourceData);

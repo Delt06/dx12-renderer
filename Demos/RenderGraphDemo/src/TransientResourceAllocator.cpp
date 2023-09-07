@@ -63,7 +63,7 @@ std::vector<TransientResourceAllocator::HeapInfo> TransientResourceAllocator::Cr
         if (findResult != resourceDescriptions.end())
         {
             HeapInfo heapInfo;
-            heapInfo.m_Size = findResult->second.m_Size;
+            heapInfo.m_Size = findResult->second.m_TotalSize;
             heapInfo.m_Alignment = findResult->second.m_Alignment;
             heapInfo.m_ResourceLifecycles.push_back(lifecycle);
 

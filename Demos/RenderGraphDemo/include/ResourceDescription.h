@@ -79,6 +79,27 @@ namespace RenderGraph
     struct BufferDescription
     {
         ResourceId m_Id;
+        RenderMetadataExpression<size_t> m_SizeExpression;
+        size_t m_Stride;
+        ResourceInitAction m_InitAction;
+
+        BufferDescription()
+            : m_Id(0)
+            , m_SizeExpression(nullptr)
+            , m_Stride(0)
+            , m_InitAction(ResourceInitAction::Clear)
+        {
+
+        }
+
+        BufferDescription(const ResourceId id, const RenderMetadataExpression<size_t>& sizeExpression, const size_t stride, const ResourceInitAction initAction)
+            : m_Id(id)
+            , m_SizeExpression(sizeExpression)
+            , m_Stride(stride)
+            , m_InitAction(initAction)
+        {
+
+        }
     };
 
     struct TokenDescription
@@ -97,7 +118,8 @@ namespace RenderGraph
     {
         ResourceId m_Id;
         D3D12_RESOURCE_DESC m_DxDesc;
-        uint64_t m_Size;
+        uint64_t m_TotalSize;
+        uint64_t m_ElementsCount;
         uint64_t m_Alignment;
         ResourceType m_ResourceType;
 
@@ -110,25 +132,27 @@ namespace RenderGraph
 
         ResourceInitAction GetInitAction() const
         {
-            switch(m_ResourceType)
+            switch (m_ResourceType)
             {
-                case ResourceType::Texture:
-                    return m_TextureDescription.m_InitAction;
-                default:
-                    Assert(false);
-                    break;
+            case ResourceType::Texture:
+                return m_TextureDescription.m_InitAction;
+            case ResourceType::Buffer:
+                return m_BufferDescription.m_InitAction;
+            default:
+                Assert(false);
+                return ResourceInitAction::Clear;
             }
         }
 
         const ClearValue& GetClearValue() const
         {
-            switch(m_ResourceType)
+            switch (m_ResourceType)
             {
-                case ResourceType::Texture:
-                    return m_TextureDescription.m_ClearValue;
-                default:
-                    Assert(false);
-                    break;
+            case ResourceType::Texture:
+                return m_TextureDescription.m_ClearValue;
+            default:
+                Assert(false);
+                return m_TextureDescription.m_ClearValue;
             }
         }
     };

@@ -31,7 +31,10 @@
   */
 
 #include "Buffer.h"
+
+#include <memory>
 #include <string>
+
 #include "DescriptorAllocation.h"
 #include "ByteAddressBuffer.h"
 
@@ -42,6 +45,12 @@ public:
 	explicit StructuredBuffer(const D3D12_RESOURCE_DESC resourceDesc,
 		size_t numElements, size_t elementSize,
 		const std::wstring& name = L"");
+
+    explicit StructuredBuffer(const D3D12_RESOURCE_DESC& resourceDesc,
+        const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap,
+        UINT64 heapOffset,
+        size_t numElements, size_t elementSize,
+        const std::wstring& name = L"");
 
 	size_t GetNumElements() const;
 
@@ -54,6 +63,7 @@ public:
 	D3D12_CPU_DESCRIPTOR_HANDLE GetUnorderedAccessView(const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc = nullptr) const override;
 
 	ByteAddressBuffer& GetCounterBuffer();
+	const std::shared_ptr<ByteAddressBuffer>& GetCounterBufferPtr() const;
 
 private:
 	size_t m_NumElements;
@@ -62,6 +72,6 @@ private:
 	DescriptorAllocation m_Srv;
 	DescriptorAllocation m_Uav;
 
-	ByteAddressBuffer m_CounterBuffer;
+	std::shared_ptr<ByteAddressBuffer> m_CounterBuffer;
 };
 

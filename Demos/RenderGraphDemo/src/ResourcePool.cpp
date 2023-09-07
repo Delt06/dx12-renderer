@@ -1,6 +1,7 @@
 #include "ResourcePool.h"
 
 #include <DX12Library/Helpers.h>
+#include <DX12Library/StructuredBuffer.h>
 #include <DX12Library/Texture.h>
 
 #include "RenderMetadata.h"
@@ -46,10 +47,30 @@ namespace
         texture->SetAutoBarriersEnabled(false);
         return texture;
     }
+
+    std::shared_ptr<StructuredBuffer> CreateBufferImpl(
+        const RenderGraph::ResourceDescription& desc,
+        const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap,
+        const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice
+    )
+    {
+        constexpr UINT64 heapOffset = 0u;
+        auto texture = std::make_shared<StructuredBuffer>(
+            desc.m_DxDesc,
+            pHeap,
+            heapOffset,
+            desc.m_ElementsCount, desc.m_BufferDescription.m_Stride,
+            RenderGraph::ResourceIds::GetResourceName(desc.m_BufferDescription.m_Id)
+        );
+        texture->SetAutoBarriersEnabled(false);
+        return texture;
+    }
 }
 
 const Resource& RenderGraph::ResourcePool::GetResource(RenderGraph::ResourceId resourceId) const
 {
+    Assert(IsRegistered(resourceId), "Resource is not registered.");
+
     if (resourceId < m_Textures.size())
     {
         const auto& pTexture = m_Textures[resourceId];
@@ -60,14 +81,31 @@ const Resource& RenderGraph::ResourcePool::GetResource(RenderGraph::ResourceId r
         }
     }
 
-    // TODO: add buffers here
+    if (resourceId < m_Buffers.size())
+    {
+        const auto& pBuffer = m_Buffers[resourceId];
+
+        if (pBuffer != nullptr)
+        {
+            return *pBuffer;
+        }
+    }
+
     throw std::exception("Not implemented");
 }
 
 const std::shared_ptr<Texture>& RenderGraph::ResourcePool::GetTexture(RenderGraph::ResourceId resourceId) const
 {
+    Assert(IsRegistered(resourceId), "Resource is not registered.");
     Assert(resourceId < m_Textures.size(), "Resource ID out of range.");
     return m_Textures[resourceId];
+}
+
+const std::shared_ptr<StructuredBuffer>& RenderGraph::ResourcePool::GetBuffer(ResourceId resourceId) const
+{
+    Assert(IsRegistered(resourceId), "Resource is not registered.");
+    Assert(resourceId < m_Buffers.size(), "Resource ID out of range.");
+    return m_Buffers[resourceId];
 }
 
 const RenderGraph::TransientResourceAllocator::ResourceLifecycle& RenderGraph::ResourcePool::GetResourceLifecycle(RenderGraph::ResourceId resourceId)
@@ -94,7 +132,7 @@ void RenderGraph::ResourcePool::Clear()
     m_ResourceHeapIndices.clear();
 
     m_Textures.clear();
-    // TODO: clear buffers
+    m_Buffers.clear();
 }
 
 void RenderGraph::ResourcePool::InitHeaps(const std::vector<RenderPass*>& renderPasses, const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice)
@@ -183,9 +221,62 @@ void RenderGraph::ResourcePool::RegisterTexture(const RenderGraph::TextureDescri
     description.m_TextureDescription = desc;
     description.m_DxDesc = dxDesc;
     description.m_ResourceType = ResourceType::Texture;
+    description.m_TextureUsageType = textureUsageType;
 
     const auto allocationInfo = GetResourceAllocationInfo(pDevice, dxDesc);
-    description.m_Size = allocationInfo.SizeInBytes;
+    description.m_TotalSize = allocationInfo.SizeInBytes;
+    description.m_Alignment = allocationInfo.Alignment;
+
+    m_ResourceDescriptions[desc.m_Id] = description;
+}
+
+void RenderGraph::ResourcePool::RegisterBuffer(const BufferDescription& desc, const std::vector<RenderPass*>& renderPasses, const RenderMetadata & renderMetadata, const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice)
+{
+    D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
+    {
+        bool unorderedAccess = false;
+
+        for (const auto& pRenderPass : renderPasses)
+        {
+            for (const auto& output : pRenderPass->GetOutputs())
+            {
+                if (desc.m_Id == output.m_Id)
+                {
+                    switch (output.m_Type)
+                    {
+                    case RenderPass::OutputType::UnorderedAccess:
+                        unorderedAccess = true;
+                        break;
+                    case RenderPass::OutputType::CopyDestination:
+                        // still valid but do not have a related flag
+                        break;
+                    default:
+                        Assert(false, "Invalid output type.");
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (unorderedAccess)
+        {
+            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        }
+    }
+
+    const auto elementsCount = desc.m_SizeExpression(renderMetadata);
+    const auto totalSize = elementsCount* desc.m_Stride;
+    auto dxDesc = CD3DX12_RESOURCE_DESC::Buffer(totalSize, resourceFlags);
+
+    ResourceDescription description = {};
+    description.m_Id = desc.m_Id;
+    description.m_BufferDescription = desc;
+    description.m_DxDesc = dxDesc;
+    description.m_ElementsCount = elementsCount;
+    description.m_ResourceType = ResourceType::Buffer;
+
+    const auto allocationInfo = GetResourceAllocationInfo(pDevice, dxDesc);
+    description.m_TotalSize = allocationInfo.SizeInBytes;
     description.m_Alignment = allocationInfo.Alignment;
 
     m_ResourceDescriptions[desc.m_Id] = description;
@@ -206,4 +297,21 @@ const std::shared_ptr<Texture>& RenderGraph::ResourcePool::CreateTexture(Resourc
     }
 
     return m_Textures[resourceId] = pTexture;
+}
+
+const std::shared_ptr<StructuredBuffer>& RenderGraph::ResourcePool::CreateBuffer(ResourceId resourceId, const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice)
+{
+    Assert(IsRegistered(resourceId), "The resource is not registered.");
+
+    const auto& resourceMetadata = m_ResourceDescriptions[resourceId];
+    const auto heapIndex = m_ResourceHeapIndices[resourceId].first;
+    const auto& pHeap = m_HeapInfos[heapIndex].m_Heap;
+    const auto pBuffer = CreateBufferImpl(resourceMetadata, pHeap, pDevice);
+
+    if (resourceId >= m_Buffers.size())
+    {
+        m_Buffers.resize(resourceId + 1);
+    }
+
+    return m_Buffers[resourceId] = pBuffer;
 }

@@ -13,6 +13,12 @@ Buffer::Buffer(const D3D12_RESOURCE_DESC& resDesc,
     : Resource(resDesc, nullptr, name)
 {}
 
+Buffer::Buffer(const D3D12_RESOURCE_DESC & resDesc, const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap, UINT64 heapOffset, size_t numElements, size_t elementSize, const std::wstring & name)
+    : Resource(resDesc, pHeap, heapOffset, nullptr, name)
+{
+
+}
+
 const Microsoft::WRL::ComPtr<ID3D12Resource>& Buffer::GetUploadResource(size_t size) const
 {
     if (m_UploadResource != nullptr && m_UploadResourceDesc.Width >= size)

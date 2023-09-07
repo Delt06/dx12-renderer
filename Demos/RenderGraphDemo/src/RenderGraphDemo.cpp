@@ -12,6 +12,7 @@
 
 #include <wrl.h>
 
+#include <Framework/ComputeShader.h>
 #include <Framework/GraphicsSettings.h>
 #include <Framework/Model.h>
 #include <Framework/ModelLoader.h>
@@ -118,6 +119,43 @@ namespace
 
 #define __CLASS_NAME__ GetClassName(__FUNCTION__)
 
+    class ColorSplitBufferComputePass : public RenderGraph::RenderPass
+    {
+    public:
+        ColorSplitBufferComputePass(const std::shared_ptr<CommonRootSignature>& pRootSignature) : m_RootSignature(pRootSignature) {}
+
+    protected:
+        virtual void InitImpl(CommandList& commandList) override
+        {
+            SetPassName(__CLASS_NAME__);
+
+            RegisterInput({ ResourceIds::User::SetupFinishedToken, InputType::Token });
+
+            RegisterOutput({ ResourceIds::User::ColorSplitBuffer, OutputType::UnorderedAccess });
+
+            m_ComputeShader = std::make_shared<ComputeShader>(m_RootSignature,
+                ShaderBlob(L"ColorSplitBuffer_CS.cso")
+            );
+        }
+
+        virtual void ExecuteImpl(const RenderGraph::RenderContext& context, CommandList& commandList) override
+        {
+            m_ComputeShader->Bind(commandList);
+
+            const auto& pBuffer = context.m_ResourcePool->GetBuffer(ResourceIds::User::ColorSplitBuffer);
+            m_RootSignature->SetUnorderedAccessView(commandList, 0,
+                UnorderedAccessView(pBuffer)
+            );
+            m_RootSignature->SetComputeConstantBuffer<uint64_t>(commandList, context.m_Metadata.m_FrameIndex);
+
+            commandList.Dispatch(1, 1, 1);
+        }
+
+    private:
+        std::shared_ptr<CommonRootSignature> m_RootSignature;
+        std::shared_ptr<ComputeShader> m_ComputeShader;
+    };
+
     class PostProcessingRenderPass : public RenderGraph::RenderPass
     {
     public:
@@ -129,6 +167,7 @@ namespace
             SetPassName(__CLASS_NAME__);
 
             RegisterInput({ ResourceIds::User::TempRenderTarget, InputType::ShaderResource });
+            RegisterInput({ ResourceIds::User::ColorSplitBuffer, InputType::ShaderResource });
 
             RegisterOutput({ RenderGraph::ResourceIds::GraphOutput, OutputType::RenderTarget });
 
@@ -144,11 +183,16 @@ namespace
         virtual void ExecuteImpl(const RenderGraph::RenderContext& context, CommandList& commandList) override
         {
             const auto& pTempRt = context.m_ResourcePool->GetTexture(ResourceIds::User::TempRenderTarget);
+            const auto& pColorSplitBuffer = context.m_ResourcePool->GetBuffer(ResourceIds::User::ColorSplitBuffer);
+            const auto& ppColorSplitBufferCounter = pColorSplitBuffer->GetCounterBufferPtr();
 
-            m_Material->SetShaderResourceView("source", ShaderResourceView(pTempRt));
+            m_Material->SetShaderResourceView("_Source", ShaderResourceView(pTempRt));
+            m_Material->SetShaderResourceView("_ColorSplitBuffer", ShaderResourceView(pColorSplitBuffer));
+            m_Material->SetShaderResourceView("_ColorSplitBufferCounter", ShaderResourceView(ppColorSplitBufferCounter));
+
             auto desc = pTempRt->GetD3D12ResourceDesc();
-            m_Material->SetVariable("TexelSize", XMFLOAT2{ 1.0f / desc.Width, 1.0f / desc.Height });
-            m_Material->SetVariable("Time", static_cast<float>(context.m_Metadata.m_Time));
+            m_Material->SetVariable("_TexelSize", XMFLOAT2{ 1.0f / desc.Width, 1.0f / desc.Height });
+            m_Material->SetVariable("_Time", static_cast<float>(context.m_Metadata.m_Time));
             m_Material->Bind(commandList);
 
             m_BlitMesh->Draw(commandList);
@@ -170,6 +214,7 @@ namespace
             SetPassName(__CLASS_NAME__);
 
             RegisterOutput({ ResourceIds::User::TempRenderTarget3, OutputType::RenderTarget });
+            RegisterOutput({ ResourceIds::User::SetupFinishedToken, OutputType::Token });
         }
 
         virtual void ExecuteImpl(const RenderGraph::RenderContext& context, CommandList& commandList) override
@@ -313,6 +358,7 @@ bool RenderGraphDemo::LoadContent()
 
         std::vector<std::unique_ptr<RenderPass>> renderPasses;
         renderPasses.emplace_back(std::make_unique<SetupRenderPass>(m_RootSignature));
+        renderPasses.emplace_back(std::make_unique<ColorSplitBufferComputePass>(m_RootSignature));
         renderPasses.emplace_back(std::make_unique<CopyTempRtRenderPass>());
         renderPasses.emplace_back(std::make_unique<DrawQuadRenderPass>(m_RootSignature));
         renderPasses.emplace_back(std::make_unique<PostProcessingRenderPass>(m_RootSignature));
@@ -321,20 +367,30 @@ bool RenderGraphDemo::LoadContent()
         RenderMetadataExpression<uint32_t> renderWidthExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenWidth; };
         RenderMetadataExpression<uint32_t> renderHeightExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenHeight; };
 
-        std::vector<TextureDescription> textures;
-        textures.emplace_back(::ResourceIds::User::TempRenderTarget, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR, ResourceInitAction::CopyDestination);
-        textures.emplace_back(::ResourceIds::User::TempRenderTarget2, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR, ResourceInitAction::Clear);
-        textures.emplace_back(::ResourceIds::User::TempRenderTarget3, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR, ResourceInitAction::Clear);
-        textures.emplace_back(RenderGraph::ResourceIds::GraphOutput, renderWidthExpression, renderHeightExpression, Window::BUFFER_FORMAT_SRGB, CLEAR_COLOR, ResourceInitAction::Discard);
+        std::vector<TextureDescription> textures = {
+            {::ResourceIds::User::TempRenderTarget, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR, ResourceInitAction::CopyDestination},
+            {::ResourceIds::User::TempRenderTarget2, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR, ResourceInitAction::Clear},
+            {::ResourceIds::User::TempRenderTarget3, renderWidthExpression, renderHeightExpression, backBufferFormat, CLEAR_COLOR, ResourceInitAction::Clear},
+            {RenderGraph::ResourceIds::GraphOutput, renderWidthExpression, renderHeightExpression, Window::BUFFER_FORMAT_SRGB, CLEAR_COLOR, ResourceInitAction::Discard},
+        };
+
+        struct ColorSplitEntry
+        {
+            XMFLOAT2 m_UvOffset;
+            float _Padding1[2];
+            XMFLOAT3 m_ChannelMask;
+            float _Padding2[1];
+        };
 
         std::vector<BufferDescription> buffers =
         {
-
+            BufferDescription{ ::ResourceIds::User::ColorSplitBuffer, [](const RenderMetadata& metadata) { return 32LU; }, sizeof(ColorSplitEntry), ResourceInitAction::Clear },
         };
 
         std::vector<TokenDescription> tokens =
         {
-            {::ResourceIds::User::TempRenderTargetReadyToken}
+            {::ResourceIds::User::SetupFinishedToken},
+            {::ResourceIds::User::TempRenderTargetReadyToken},
         };
 
         m_RenderGraph = std::make_unique<RenderGraphRoot>(std::move(renderPasses), std::move(textures), std::move(buffers), std::move(tokens));
@@ -422,6 +478,8 @@ void RenderGraphDemo::OnRender(RenderEventArgs& e)
 {
     Base::OnRender(e);
 
+    static uint64_t frameIndex = 0;
+
     const XMMATRIX viewMatrix = m_Camera.GetViewMatrix();
     const XMMATRIX projectionMatrix = m_Camera.GetProjectionMatrix();
     const XMMATRIX viewProjectionMatrix = viewMatrix * projectionMatrix;
@@ -431,11 +489,13 @@ void RenderGraphDemo::OnRender(RenderEventArgs& e)
         metadata.m_ScreenWidth = m_Width;
         metadata.m_ScreenHeight = m_Height;
         metadata.m_Time = m_Time;
+        metadata.m_FrameIndex = frameIndex;
         m_RenderGraph->Execute(metadata);
     }
 
 
     m_RenderGraph->Present(PWindow);
+    frameIndex++;
 }
 
 void RenderGraphDemo::OnKeyPressed(KeyEventArgs& e)

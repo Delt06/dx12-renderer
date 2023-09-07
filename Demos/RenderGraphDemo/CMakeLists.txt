@@ -34,6 +34,7 @@ set(SHADER_FILES_PIXEL
         )
 
 set(SHADER_FILES_COMPUTE
+        shaders/ColorSplitBuffer_CS.hlsl
         )
 
 set(TARGET_NAME RenderGraphDemo)

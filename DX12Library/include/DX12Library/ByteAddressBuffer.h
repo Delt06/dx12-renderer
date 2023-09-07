@@ -39,44 +39,44 @@
 class ByteAddressBuffer : public Buffer
 {
 public:
-	ByteAddressBuffer(const std::wstring& name = L"");
-	ByteAddressBuffer(const D3D12_RESOURCE_DESC& resDesc,
-		size_t numElements, size_t elementSize,
-		const std::wstring& name = L"");
+    ByteAddressBuffer(const std::wstring& name = L"");
+    ByteAddressBuffer(const D3D12_RESOURCE_DESC& resDesc,
+        size_t numElements, size_t elementSize,
+        const std::wstring& name = L"");
 
-	size_t GetBufferSize() const
-	{
-		return m_BufferSize;
-	}
+    size_t GetBufferSize() const
+    {
+        return m_BufferSize;
+    }
 
-	/**
-	 * Create the views for the buffer resource.
-	 * Used by the CommandList when setting the buffer contents.
-	 */
-	void CreateViews(size_t numElements, size_t elementSize) override;
+    /**
+     * Create the views for the buffer resource.
+     * Used by the CommandList when setting the buffer contents.
+     */
+    void CreateViews(size_t numElements, size_t elementSize) override;
 
-	/**
-	 * Get the SRV for a resource.
-	 */
-	D3D12_CPU_DESCRIPTOR_HANDLE
-		GetShaderResourceView(const D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc = nullptr) const override
-	{
-		return m_Srv.GetDescriptorHandle();
-	}
+    /**
+     * Get the SRV for a resource.
+     */
+    D3D12_CPU_DESCRIPTOR_HANDLE
+        GetShaderResourceView(const D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc = nullptr) const override
+    {
+        return m_Srv.GetDescriptorHandle();
+    }
 
-	/**
-	 * Get the UAV for a (sub)resource.
-	 */
-	D3D12_CPU_DESCRIPTOR_HANDLE
-		GetUnorderedAccessView(const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc = nullptr) const override
-	{
-		// Buffers only have a single subresource.
-		return m_Uav.GetDescriptorHandle();
-	}
+    /**
+     * Get the UAV for a (sub)resource.
+     */
+    D3D12_CPU_DESCRIPTOR_HANDLE
+        GetUnorderedAccessView(const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc = nullptr) const override
+    {
+        // Buffers only have a single subresource.
+        return m_Uav.GetDescriptorHandle();
+    }
 
 private:
-	size_t m_BufferSize = 0;
+    size_t m_BufferSize = 0;
 
-	DescriptorAllocation m_Srv;
-	DescriptorAllocation m_Uav;
+    DescriptorAllocation m_Srv;
+    DescriptorAllocation m_Uav;
 };
