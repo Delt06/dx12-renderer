@@ -122,7 +122,7 @@ namespace
 
                 if (findResult != outputs.end())
                 {
-                    // if the pass is used, mark all its inputs is used as well
+                    // if the pass is used, mark all its inputs as used as well
                     for (const auto& input : pPass->GetInputs())
                     {
                         usedResources.insert(input.m_Id);
