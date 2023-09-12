@@ -6,6 +6,8 @@
 /**/x64/*
 /**/x86/*
 /**/Debug/*
+/**/Release/*
+/**/bin/*
 
 *.pdb
 *.cso
