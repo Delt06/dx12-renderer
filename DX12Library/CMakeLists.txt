@@ -39,7 +39,7 @@ set(HEADER_FILES
         include/DX12Library/VertexBuffer.h
         include/DX12Library/Window.h
         include/DX12Library/ClearValue.h 
-        "include/DX12Library/RenderTargetFormats.h"
+        include/DX12Library/RenderTargetFormats.h
         include/DX12Library/RenderTargetState.h
         include/DX12Library/DXGIExtensions.h
         )

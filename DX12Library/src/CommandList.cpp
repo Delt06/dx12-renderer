@@ -35,6 +35,8 @@ CommandList::CommandList(D3D12_COMMAND_LIST_TYPE type) : m_D3d12CommandListType(
     ThrowIfFailed(device->CreateCommandList(0, m_D3d12CommandListType, m_D3d12CommandAllocator.Get(),
         nullptr, IID_PPV_ARGS(&m_D3d12CommandList)));
 
+    ThrowIfFailed(m_D3d12CommandList.As(&m_D3d12CommandList5));
+
     m_PUploadBuffer = std::make_unique<UploadBuffer>();
 
     m_PResourceStateTracker = std::make_unique<ResourceStateTracker>();
@@ -122,13 +124,20 @@ void CommandList::CommitStagedDescriptors()
 
 void CommandList::CopyResource(const Resource& dstRes, const Resource& srcRes)
 {
-    CopyResource(dstRes.GetD3D12Resource(), srcRes.GetD3D12Resource());
+    CopyResource(dstRes.GetD3D12Resource(), srcRes.GetD3D12Resource(), dstRes.AreAutoBarriersEnabled(), srcRes.AreAutoBarriersEnabled());
 }
 
-void CommandList::CopyResource(const ComPtr<ID3D12Resource> dstRes, const ComPtr<ID3D12Resource> srcRes)
+void CommandList::CopyResource(const ComPtr<ID3D12Resource> dstRes, const ComPtr<ID3D12Resource> srcRes, bool dstAutoBarriers, bool srcAutoBarriers)
 {
-    TransitionBarrier(dstRes, D3D12_RESOURCE_STATE_COPY_DEST);
-    TransitionBarrier(srcRes, D3D12_RESOURCE_STATE_COPY_SOURCE);
+    if (dstAutoBarriers)
+    {
+        TransitionBarrier(dstRes, D3D12_RESOURCE_STATE_COPY_DEST);
+    }
+
+    if (srcAutoBarriers)
+    {
+        TransitionBarrier(srcRes, D3D12_RESOURCE_STATE_COPY_SOURCE);
+    }
 
     FlushResourceBarriers();
 
@@ -141,8 +150,15 @@ void CommandList::CopyResource(const ComPtr<ID3D12Resource> dstRes, const ComPtr
 void CommandList::ResolveSubresource(const Resource& dstRes, const Resource& srcRes, const uint32_t dstSubresource,
     const uint32_t srcSubresource)
 {
-    TransitionBarrier(dstRes, D3D12_RESOURCE_STATE_RESOLVE_DEST, dstSubresource);
-    TransitionBarrier(srcRes, D3D12_RESOURCE_STATE_RESOLVE_SOURCE, srcSubresource);
+    if (dstRes.AreAutoBarriersEnabled())
+    {
+        TransitionBarrier(dstRes, D3D12_RESOURCE_STATE_RESOLVE_DEST, dstSubresource);
+    }
+
+    if (srcRes.AreAutoBarriersEnabled())
+    {
+        TransitionBarrier(srcRes, D3D12_RESOURCE_STATE_RESOLVE_SOURCE, srcSubresource);
+    }
 
     FlushResourceBarriers();
 
@@ -185,8 +201,11 @@ void CommandList::CopyBuffer(Buffer& buffer, const size_t numElements, const siz
                 IID_PPV_ARGS(&d3d12Resource)));
             d3d12Resource->SetName(buffer.GetName().c_str());
 
-            // Add the resource to the global resource state tracker.
-            ResourceStateTracker::AddGlobalResourceState(d3d12Resource.Get(), D3D12_RESOURCE_STATE_COMMON);
+            if (buffer.AreAutoBarriersEnabled())
+            {
+                // Add the resource to the global resource state tracker.
+                ResourceStateTracker::AddGlobalResourceState(d3d12Resource.Get(), D3D12_RESOURCE_STATE_COMMON);
+            }
         }
         else // use existing
         {
@@ -204,8 +223,11 @@ void CommandList::CopyBuffer(Buffer& buffer, const size_t numElements, const siz
         subresourceData.RowPitch = static_cast<LONG_PTR>(bufferSize);
         subresourceData.SlicePitch = subresourceData.RowPitch;
 
-        m_PResourceStateTracker->TransitionResource(d3d12Resource.Get(), D3D12_RESOURCE_STATE_COPY_DEST);
-        FlushResourceBarriers();
+        if (buffer.AreAutoBarriersEnabled())
+        {
+            m_PResourceStateTracker->TransitionResource(d3d12Resource.Get(), D3D12_RESOURCE_STATE_COPY_DEST);
+            FlushResourceBarriers();
+        }
 
         UpdateSubresources(m_D3d12CommandList.Get(), d3d12Resource.Get(),
             uploadResource.Get(), 0, 0, 1, &subresourceData);
@@ -217,6 +239,26 @@ void CommandList::CopyBuffer(Buffer& buffer, const size_t numElements, const siz
 
     buffer.SetD3D12Resource(d3d12Resource);
     buffer.CreateViews(numElements, elementSize);
+}
+
+void CommandList::SetShadingRateImage(const Resource& resource)
+{
+    TransitionBarrier(resource, D3D12_RESOURCE_STATE_SHADING_RATE_SOURCE);
+
+    const auto d3d12Resource = resource.GetD3D12Resource();
+    TrackObject(d3d12Resource);
+
+    m_D3d12CommandList5->RSSetShadingRateImage(d3d12Resource.Get());
+}
+
+void CommandList::ResetShadingRateImage()
+{
+    m_D3d12CommandList5->RSSetShadingRateImage(nullptr);
+}
+
+void CommandList::SetShadingRate(const D3D12_SHADING_RATE& shadingRate, const D3D12_SHADING_RATE_COMBINER* combiners)
+{
+    m_D3d12CommandList5->RSSetShadingRate(shadingRate, combiners);
 }
 
 void CommandList::CopyVertexBuffer(VertexBuffer& vertexBuffer, const size_t numVertices, const size_t vertexStride,
@@ -400,7 +442,11 @@ bool CommandList::LoadTextureFromFile(Texture& texture, const std::wstring& file
 
 void CommandList::ClearTexture(const Texture& texture, const float clearColor[4])
 {
-    TransitionBarrier(texture, D3D12_RESOURCE_STATE_RENDER_TARGET);
+    if (texture.AreAutoBarriersEnabled())
+    {
+        TransitionBarrier(texture, D3D12_RESOURCE_STATE_RENDER_TARGET);
+    }
+
     m_D3d12CommandList->ClearRenderTargetView(texture.GetRenderTargetView(), clearColor, 0, nullptr);
 
     TrackResource(texture);
@@ -414,7 +460,11 @@ void CommandList::ClearTexture(const Texture& texture, const ClearValue& clearVa
 void CommandList::ClearDepthStencilTexture(const Texture& texture, const D3D12_CLEAR_FLAGS clearFlags,
     const float depth, const uint8_t stencil)
 {
-    TransitionBarrier(texture, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+    if (texture.AreAutoBarriersEnabled())
+    {
+        TransitionBarrier(texture, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+    }
+
     m_D3d12CommandList->ClearDepthStencilView(texture.GetDepthStencilView(), clearFlags, depth, stencil, 0, nullptr);
 
     TrackResource(texture);
@@ -564,7 +614,11 @@ void CommandList::CopyTextureSubresource(const Texture& texture, const uint32_t 
         return;
     }
 
-    TransitionBarrier(texture, D3D12_RESOURCE_STATE_COPY_DEST);
+    if (texture.AreAutoBarriersEnabled())
+    {
+        TransitionBarrier(texture, D3D12_RESOURCE_STATE_COPY_DEST);
+    }
+
     FlushResourceBarriers();
 
     const UINT64 requiredSize = GetRequiredIntermediateSize(destinationResource.Get(), firstSubresource,
@@ -628,7 +682,10 @@ void CommandList::SetCompute32BitConstants(const uint32_t rootParameterIndex, co
 
 void CommandList::SetVertexBuffer(const uint32_t slot, const VertexBuffer& vertexBuffer)
 {
-    TransitionBarrier(vertexBuffer, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+    if (vertexBuffer.AreAutoBarriersEnabled())
+    {
+        TransitionBarrier(vertexBuffer, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+    }
 
     const auto vertexBufferView = vertexBuffer.GetVertexBufferView();
 
@@ -639,7 +696,10 @@ void CommandList::SetVertexBuffer(const uint32_t slot, const VertexBuffer& verte
 
 void CommandList::SetIndexBuffer(const IndexBuffer& indexBuffer)
 {
-    TransitionBarrier(indexBuffer, D3D12_RESOURCE_STATE_INDEX_BUFFER);
+    if (indexBuffer.AreAutoBarriersEnabled())
+    {
+        TransitionBarrier(indexBuffer, D3D12_RESOURCE_STATE_INDEX_BUFFER);
+    }
 
     const auto indexBufferView = indexBuffer.GetIndexBufferView();
 
@@ -749,6 +809,8 @@ void CommandList::SetShaderResourceView(const uint32_t rootParameterIndex, const
     const UINT firstSubresource, const UINT numSubresources,
     const D3D12_SHADER_RESOURCE_VIEW_DESC* srv)
 {
+    Assert(resource.AreAutoBarriersEnabled(), "Auto barriers are disabled.");
+
     if (numSubresources < D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
     {
         for (uint32_t i = 0; i < numSubresources; ++i)
@@ -771,6 +833,8 @@ void CommandList::SetUnorderedAccessView(const uint32_t rootParameterIndex, cons
     const UINT firstSubresource, const UINT numSubresources,
     const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc)
 {
+    Assert(resource.AreAutoBarriersEnabled(), "Auto barriers are disabled.");
+
     if (numSubresources < D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
     {
         for (uint32_t i = 0; i < numSubresources; ++i)
@@ -782,6 +846,61 @@ void CommandList::SetUnorderedAccessView(const uint32_t rootParameterIndex, cons
     {
         TransitionBarrier(resource, stateAfter);
     }
+
+    const auto uav = resource.GetUnorderedAccessView(uavDesc);
+    m_DynamicDescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(
+        rootParameterIndex, descriptorOffset, 1, uav);
+    TrackResource(resource);
+}
+
+void CommandList::SetShaderResourceView(const uint32_t rootParameterIndex, const uint32_t descriptorOffset,
+    const Resource& resource,
+    const UINT firstSubresource, const UINT numSubresources,
+    const D3D12_SHADER_RESOURCE_VIEW_DESC* srv)
+{
+    if (resource.AreAutoBarriersEnabled())
+    {
+        constexpr auto stateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE |
+            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+        if (numSubresources < D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
+        {
+            for (uint32_t i = 0; i < numSubresources; ++i)
+            {
+                TransitionBarrier(resource, stateAfter, firstSubresource + i);
+            }
+        }
+        else
+        {
+            TransitionBarrier(resource, stateAfter);
+        }
+    }
+
+    m_DynamicDescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(
+        rootParameterIndex, descriptorOffset, 1, resource.GetShaderResourceView(srv));
+    TrackResource(resource);
+}
+
+void CommandList::SetUnorderedAccessView(const uint32_t rootParameterIndex, const uint32_t descriptorOffset,
+    const Resource& resource,
+    const UINT firstSubresource, const UINT numSubresources,
+    const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc)
+{
+    if (resource.AreAutoBarriersEnabled())
+    {
+        constexpr auto stateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+        if (numSubresources < D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
+        {
+            for (uint32_t i = 0; i < numSubresources; ++i)
+            {
+                TransitionBarrier(resource, stateAfter, firstSubresource + i);
+            }
+        }
+        else
+        {
+            TransitionBarrier(resource, stateAfter);
+        }
+    }
+
 
     const auto uav = resource.GetUnorderedAccessView(uavDesc);
     m_DynamicDescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->StageDescriptors(
@@ -810,7 +929,11 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, UINT texArra
         if (texture->IsValid())
         {
             const UINT subresource = isArrayItem ? texture->GetRenderTargetSubresourceIndex(texArrayIndex, mipLevel) : D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-            TransitionBarrier(*texture, D3D12_RESOURCE_STATE_RENDER_TARGET, subresource);
+            if (texture->AreAutoBarriersEnabled())
+            {
+                TransitionBarrier(*texture, D3D12_RESOURCE_STATE_RENDER_TARGET, subresource);
+            }
+
             renderTargetDescriptors.push_back(isArrayItem
                 ? texture->GetRenderTargetViewArray(texArrayIndex, mipLevel)
                 : texture->GetRenderTargetView());
@@ -825,7 +948,12 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, UINT texArra
     if (useDepth && depthTexture->GetD3D12Resource())
     {
         const UINT subresource = isArrayItem ? depthTexture->GetDepthStencilSubresourceIndex(texArrayIndex) : D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-        TransitionBarrier(*depthTexture, readonlyDepth ? D3D12_RESOURCE_STATE_DEPTH_READ : D3D12_RESOURCE_STATE_DEPTH_WRITE, subresource);
+
+        if (depthTexture->AreAutoBarriersEnabled())
+        {
+            TransitionBarrier(*depthTexture, readonlyDepth ? D3D12_RESOURCE_STATE_DEPTH_READ : D3D12_RESOURCE_STATE_DEPTH_WRITE, subresource);
+        }
+
         depthStencilDescriptor = isArrayItem
             ? depthTexture->GetDepthStencilViewArray(texArrayIndex)
             : depthTexture->GetDepthStencilView();
@@ -865,6 +993,11 @@ void CommandList::ClearRenderTarget(const RenderTarget& renderTarget, const floa
 void CommandList::ClearRenderTarget(const RenderTarget& renderTarget, const ClearValue& clearColor, D3D12_CLEAR_FLAGS clearFlags)
 {
     ClearRenderTarget(renderTarget, clearColor.GetColor(), clearFlags);
+}
+
+void CommandList::DiscardResource(const Resource& resource)
+{
+    m_D3d12CommandList->DiscardResource(resource.GetD3D12Resource().Get(), nullptr);
 }
 
 void CommandList::Draw(const uint32_t vertexCount, const uint32_t instanceCount, const uint32_t startVertex,
@@ -1068,7 +1201,11 @@ void CommandList::SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, ID3D12D
 void CommandList::SetComputeRootUnorderedAccessView(UINT rootParameterIndex, const Resource& resource)
 {
     auto d3d12Resource = resource.GetD3D12Resource();
-    TransitionBarrier(resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    if (resource.AreAutoBarriersEnabled())
+    {
+        TransitionBarrier(resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    }
+
     m_D3d12CommandList->SetComputeRootUnorderedAccessView(rootParameterIndex, d3d12Resource->GetGPUVirtualAddress());
     TrackObject(d3d12Resource);
 }

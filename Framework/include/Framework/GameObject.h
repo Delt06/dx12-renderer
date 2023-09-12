@@ -18,6 +18,7 @@ public:
 	void Draw(CommandList& commandList) const;
 
 	[[nodiscard]] const DirectX::XMMATRIX& GetWorldMatrix() const;
+	[[nodiscard]] DirectX::XMMATRIX& GetWorldMatrix();
 	[[nodiscard]] std::shared_ptr<const Model> GetModel() const;
 	[[nodiscard]] const Aabb& GetAabb() const;
 

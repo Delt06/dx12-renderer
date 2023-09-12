@@ -143,7 +143,9 @@ std::vector<ShaderUtils::ShaderResourceViewMetadata> ShaderUtils::GetShaderResou
 
         switch (inputBindDesc.Type)
         {
+        case D3D_SIT_BYTEADDRESS:
         case D3D_SIT_TEXTURE:
+        case D3D_SIT_STRUCTURED:
             {
                 ShaderResourceViewMetadata resourceMetadata;
                 resourceMetadata.Name = inputBindDesc.Name;

@@ -1,11 +1,14 @@
-﻿#pragma once
+#pragma once
 
 #define WIN32_LEAN_AND_MEAN
 #include <exception>
+#include <string>
 #include <Windows.h> // For HRESULT
 #include <pix3.h>
 
-// From DXSampleHelper.h 
+#include <d3d12.h>
+
+// From DXSampleHelper.h
 // Source: https://github.com/Microsoft/DirectX-Graphics-Samples
 inline void ThrowIfFailed(const HRESULT result)
 {
@@ -24,7 +27,7 @@ inline void ThrowIfNegative(const int value)
 	}
 }
 
-inline void Assert(const bool condition, const char* message)
+inline void Assert(const bool condition, const char* message = nullptr)
 {
 	if (!condition)
 	{

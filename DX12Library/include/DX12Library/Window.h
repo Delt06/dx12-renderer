@@ -52,6 +52,8 @@ class Window : public std::enable_shared_from_this<Window>
 public:
 	// Number of swapchain back buffers.
 	static constexpr UINT BUFFER_COUNT = 3;
+    static constexpr DXGI_FORMAT BUFFER_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM;
+    static constexpr DXGI_FORMAT BUFFER_FORMAT_SRGB = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 
 	/**
 	* Get a handle to this window's instance.

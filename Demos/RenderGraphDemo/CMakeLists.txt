@@ -1,0 +1,36 @@
+﻿cmake_minimum_required(VERSION 3.8.0)
+
+project("RenderGraphDemo")
+
+set(HEADER_FILES
+        include/RenderGraphDemo.h
+        include/RenderGraph.User.h
+        include/ResourceIds.User.h
+        )
+
+set(SOURCE_FILES
+        src/main.cpp
+        src/RenderGraphDemo.cpp
+        src/RenderGraph.User.cpp
+        )
+
+set(SHADER_FILES_VERTEX
+        )
+
+set(SHADER_FILES_PIXEL
+        shaders/WhiteShader_PS.hlsl
+        shaders/PostProcessing_PS.hlsl
+        )
+
+set(SHADER_FILES_COMPUTE
+        shaders/ColorSplitBuffer_CS.hlsl
+        )
+
+set(TARGET_NAME RenderGraphDemo)
+include(${CMAKE_SOURCE_DIR}/CMakeIncludes/ProjectBase.cmake)
+include(${CMAKE_SOURCE_DIR}/CMakeIncludes/DemoBase.cmake)
+
+target_link_libraries(${TARGET_NAME}
+        PUBLIC Framework
+        PUBLIC RenderGraph
+        )

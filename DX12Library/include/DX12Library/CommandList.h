@@ -131,7 +131,7 @@ public:
      * Copy resources.
      */
     void CopyResource(const Resource& dstRes, const Resource& srcRes);
-    void CopyResource(Microsoft::WRL::ComPtr<ID3D12Resource> dstRes, Microsoft::WRL::ComPtr<ID3D12Resource> srcRes);
+    void CopyResource(Microsoft::WRL::ComPtr<ID3D12Resource> dstRes, Microsoft::WRL::ComPtr<ID3D12Resource> srcRes, bool dstAutoBarriers = true, bool srcAutoBarriers = true);
 
     /**
      * Resolve a multisampled resource into a non-multisampled resource.
@@ -374,6 +374,30 @@ public:
         const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc = nullptr
     );
 
+    /**
+     * Set the SRV on the graphics pipeline.
+     */
+    void SetShaderResourceView(
+        uint32_t rootParameterIndex,
+        uint32_t descriptorOffset,
+        const Resource& resource,
+        UINT firstSubresource = 0,
+        UINT numSubresources = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+        const D3D12_SHADER_RESOURCE_VIEW_DESC* srv = nullptr
+    );
+
+    /**
+     * Set the UAV on the graphics pipeline.
+     */
+    void SetUnorderedAccessView(
+        uint32_t rootParameterIndex,
+        uint32_t descriptorOffset,
+        const Resource& resource,
+        UINT firstSubresource = 0,
+        UINT numSubresources = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+        const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc = nullptr
+    );
+
     void SetStencilRef(UINT8 stencilRef);
 
     /**
@@ -383,6 +407,8 @@ public:
 
     void ClearRenderTarget(const RenderTarget& renderTarget, const float* clearColor, const D3D12_CLEAR_FLAGS clearFlags);
     void ClearRenderTarget(const RenderTarget& renderTarget, const ClearValue& clearValue, const D3D12_CLEAR_FLAGS clearFlags);
+
+    void DiscardResource(const Resource& resource);
 
     /**
      * Draw geometry.
@@ -448,6 +474,10 @@ public:
     void CopyBuffer(Buffer& buffer, size_t numElements, size_t elementSize, const void* bufferData,
         D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE);
 
+    void SetShadingRateImage(const Resource& resource);
+    void ResetShadingRateImage();
+    void SetShadingRate(const D3D12_SHADING_RATE& shadingRate, const D3D12_SHADING_RATE_COMBINER* combiners);
+
 protected:
 private:
     void TrackObject(const Microsoft::WRL::ComPtr<ID3D12Object>& object);
@@ -467,6 +497,7 @@ private:
 
     D3D12_COMMAND_LIST_TYPE m_D3d12CommandListType;
     Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> m_D3d12CommandList;
+    Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList5> m_D3d12CommandList5;
     Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_D3d12CommandAllocator;
 
     // For copy queues, it may be necessary to generate mips while loading textures.

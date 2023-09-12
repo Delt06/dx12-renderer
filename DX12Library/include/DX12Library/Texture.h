@@ -1,7 +1,5 @@
 #pragma once
 
-// ReSharper disable CppRedundantQualifier
-
 /*
  *  Copyright(c) 2018 Jeremiah van Oosten
  *
@@ -49,121 +47,138 @@
 class Texture : public Resource
 {
 public:
-	explicit Texture(TextureUsageType textureUsage = TextureUsageType::Albedo,
-		const std::wstring& name = L"");
-	explicit Texture(const D3D12_RESOURCE_DESC& resourceDesc,
-		const D3D12_CLEAR_VALUE* clearValue = nullptr,
-		TextureUsageType textureUsage = TextureUsageType::Albedo,
-		const std::wstring& name = L"");
-	explicit Texture(const D3D12_RESOURCE_DESC& resourceDesc,
-		const ClearValue& clearValue = {},
-		TextureUsageType textureUsage = TextureUsageType::Albedo,
-		const std::wstring& name = L"");
-	explicit Texture(Microsoft::WRL::ComPtr<ID3D12Resource> resource,
-		TextureUsageType textureUsage = TextureUsageType::Albedo,
-		const std::wstring& name = L"");
+    explicit Texture(TextureUsageType textureUsage = TextureUsageType::Albedo,
+        const std::wstring& name = L"");
 
-	Texture(const Texture& copy);
-	Texture(Texture&& copy);
+    // commited resource
+    explicit Texture(const D3D12_RESOURCE_DESC& resourceDesc,
+        const D3D12_CLEAR_VALUE* clearValue = nullptr,
+        TextureUsageType textureUsage = TextureUsageType::Albedo,
+        const std::wstring& name = L"");
+    explicit Texture(const D3D12_RESOURCE_DESC& resourceDesc,
+        const ClearValue& clearValue = {},
+        TextureUsageType textureUsage = TextureUsageType::Albedo,
+        const std::wstring& name = L"");
 
-	Texture& operator=(const Texture& other);
-	Texture& operator=(Texture&& other);
+    // placed resource
+    explicit Texture(const D3D12_RESOURCE_DESC& resourceDesc,
+        const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap,
+        UINT64 heapOffset = 0,
+        const D3D12_CLEAR_VALUE* clearValue = nullptr,
+        TextureUsageType textureUsage = TextureUsageType::Albedo,
+        const std::wstring& name = L"");
+    explicit Texture(const D3D12_RESOURCE_DESC& resourceDesc,
+        const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap,
+        UINT64 heapOffset = 0,
+        const ClearValue& clearValue = {},
+        TextureUsageType textureUsage = TextureUsageType::Albedo,
+        const std::wstring& name = L"");
 
-	~Texture() override;
+    explicit Texture(Microsoft::WRL::ComPtr<ID3D12Resource> resource,
+        TextureUsageType textureUsage = TextureUsageType::Albedo,
+        const std::wstring& name = L"");
 
-	TextureUsageType GetTextureUsage() const
-	{
-		return m_TextureUsage;
-	}
+    Texture(const Texture& copy);
+    Texture(Texture&& copy);
 
-	void SetTextureUsage(TextureUsageType textureUsage)
-	{
-		m_TextureUsage = textureUsage;
-	}
+    Texture& operator=(const Texture& other);
+    Texture& operator=(Texture&& other);
 
-	/**
-	 * Resize the texture.
-	 */
-	void Resize(uint32_t width, uint32_t height, uint32_t depthOrArraySize = 1);
+    ~Texture() override;
 
-	/**
-	 * Create SRV and UAVs for the resource.
-	 */
-	virtual void CreateViews();
+    TextureUsageType GetTextureUsage() const
+    {
+        return m_TextureUsage;
+    }
 
-	/**
-	* Get the SRV for a resource.
-	*/
-	D3D12_CPU_DESCRIPTOR_HANDLE GetShaderResourceView(
-		const D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc = nullptr) const override;
+    void SetTextureUsage(TextureUsageType textureUsage)
+    {
+        m_TextureUsage = textureUsage;
+    }
 
-	/**
-	* Get the UAV for a (sub)resource.
-	*/
-	D3D12_CPU_DESCRIPTOR_HANDLE GetUnorderedAccessView(
-		const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc = nullptr) const override;
+    /**
+     * Resize the texture.
+     */
+    void Resize(uint32_t width, uint32_t height, uint32_t depthOrArraySize = 1);
 
-	/**
-	 * Get the RTV for the texture.
-	 */
-	virtual D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetView() const;
-	virtual D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetViewArray(uint32_t index, uint32_t mipLevel = 0) const;
+    /**
+     * Create SRV and UAVs for the resource.
+     */
+    virtual void CreateViews();
 
-	/**
-	 * Get the DSV for the texture.
-	 */
-	virtual D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilView() const;
-	virtual D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilViewArray(uint32_t index) const;
+    /**
+    * Get the SRV for a resource.
+    */
+    D3D12_CPU_DESCRIPTOR_HANDLE GetShaderResourceView(
+        const D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc = nullptr) const override;
 
-	bool CheckSrvSupport() const
-	{
-		return CheckFormatSupport(D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE);
-	}
+    /**
+    * Get the UAV for a (sub)resource.
+    */
+    D3D12_CPU_DESCRIPTOR_HANDLE GetUnorderedAccessView(
+        const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc = nullptr) const override;
 
-	bool CheckRtvSupport() const
-	{
-		return CheckFormatSupport(D3D12_FORMAT_SUPPORT1_RENDER_TARGET);
-	}
+    /**
+     * Get the RTV for the texture.
+     */
+    virtual D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetView() const;
+    virtual D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetViewArray(uint32_t index, uint32_t mipLevel = 0) const;
 
-	bool CheckUavSupport() const
-	{
-		return CheckFormatSupport(D3D12_FORMAT_SUPPORT1_TYPED_UNORDERED_ACCESS_VIEW) &&
-			CheckFormatSupport(D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) &&
-			CheckFormatSupport(D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE);
-	}
+    /**
+     * Get the DSV for the texture.
+     */
+    virtual D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilView() const;
+    virtual D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilViewArray(uint32_t index) const;
 
-	bool CheckDsvSupport() const
-	{
-		return CheckFormatSupport(D3D12_FORMAT_SUPPORT1_DEPTH_STENCIL);
-	}
+    bool CheckSrvSupport() const
+    {
+        return CheckFormatSupport(D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE);
+    }
 
-	static bool IsUavCompatibleFormat(DXGI_FORMAT format);
-	static bool IsSRgbFormat(DXGI_FORMAT format);
-	static bool IsBgrFormat(DXGI_FORMAT format);
-	static bool IsDepthFormat(DXGI_FORMAT format);
+    bool CheckRtvSupport() const
+    {
+        return CheckFormatSupport(D3D12_FORMAT_SUPPORT1_RENDER_TARGET);
+    }
 
-	// Return a typeless format from the given format.
-	static DXGI_FORMAT GetTypelessFormat(DXGI_FORMAT format);
-	// Return an sRGB format in the same format family.
-	static DXGI_FORMAT GetSRgbFormat(DXGI_FORMAT format);
-	static DXGI_FORMAT GetUavCompatibleFormat(DXGI_FORMAT format);
+    bool CheckUavSupport() const
+    {
+        return CheckFormatSupport(D3D12_FORMAT_SUPPORT1_TYPED_UNORDERED_ACCESS_VIEW) &&
+            CheckFormatSupport(D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) &&
+            CheckFormatSupport(D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE);
+    }
 
-	uint32_t GetRenderTargetSubresourceIndex(UINT16 arrayIndex, UINT16 mipLevel) const;
-	uint32_t GetDepthStencilSubresourceIndex(UINT16 arrayIndex) const;
+    bool CheckDsvSupport() const
+    {
+        return CheckFormatSupport(D3D12_FORMAT_SUPPORT1_DEPTH_STENCIL);
+    }
+
+    static bool IsUavCompatibleFormat(DXGI_FORMAT format);
+    static bool IsSRgbFormat(DXGI_FORMAT format);
+    static bool IsBgrFormat(DXGI_FORMAT format);
+    static bool IsDepthFormat(DXGI_FORMAT format);
+
+    // Return a typeless format from the given format.
+    static DXGI_FORMAT GetTypelessFormat(DXGI_FORMAT format);
+    // Return an sRGB format in the same format family.
+    static DXGI_FORMAT GetSRgbFormat(DXGI_FORMAT format);
+    static DXGI_FORMAT GetUavCompatibleFormat(DXGI_FORMAT format);
+
+    uint32_t GetRenderTargetSubresourceIndex(UINT16 arrayIndex, UINT16 mipLevel) const;
+    uint32_t GetDepthStencilSubresourceIndex(UINT16 arrayIndex) const;
 protected:
 private:
 
-	DescriptorAllocation CreateShaderResourceView(const D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc) const;
-	DescriptorAllocation CreateUnorderedAccessView(const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc) const;
+    DescriptorAllocation CreateShaderResourceView(const D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc) const;
+    DescriptorAllocation CreateUnorderedAccessView(const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc) const;
 
-	mutable std::unordered_map<size_t, DescriptorAllocation> m_ShaderResourceViews;
-	mutable std::unordered_map<size_t, DescriptorAllocation> m_UnorderedAccessViews;
+    mutable std::unordered_map<size_t, DescriptorAllocation> m_ShaderResourceViews;
+    mutable std::unordered_map<size_t, DescriptorAllocation> m_UnorderedAccessViews;
 
-	mutable std::mutex m_ShaderResourceViewsMutex;
-	mutable std::mutex m_UnorderedAccessViewsMutex;
+    mutable std::mutex m_ShaderResourceViewsMutex;
+    mutable std::mutex m_UnorderedAccessViewsMutex;
 
-	DescriptorAllocation m_RenderTargetView;
-	DescriptorAllocation m_DepthStencilView;
+    DescriptorAllocation m_RenderTargetView;
+    DescriptorAllocation m_DepthStencilView;
 
-	TextureUsageType m_TextureUsage;
+    TextureUsageType m_TextureUsage;
 };

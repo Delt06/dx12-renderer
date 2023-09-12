@@ -36,6 +36,32 @@ Resource::Resource(const D3D12_RESOURCE_DESC& resourceDesc, const D3D12_CLEAR_VA
     SetName(name);
 }
 
+Resource::Resource(const D3D12_RESOURCE_DESC& resourceDesc, const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap, UINT64 heapOffset, const D3D12_CLEAR_VALUE * clearValue, const std::wstring & name)
+{
+    if (clearValue)
+    {
+        m_d3d12ClearValue = std::make_unique<D3D12_CLEAR_VALUE>(*clearValue);
+    }
+
+    auto device = Application::Get().GetDevice();
+
+    const auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+    ThrowIfFailed(device->CreatePlacedResource(
+        pHeap.Get(),
+        heapOffset,
+        &resourceDesc,
+        D3D12_RESOURCE_STATE_COMMON,
+        m_d3d12ClearValue.get(),
+        IID_PPV_ARGS(&m_d3d12Resource)
+    ));
+
+    ResourceStateTracker::AddGlobalResourceState(m_d3d12Resource.Get(), D3D12_RESOURCE_STATE_COMMON);
+
+    CheckFeatureSupport();
+    SetName(name);
+
+}
+
 Resource::Resource(ComPtr<ID3D12Resource> resource, const std::wstring& name)
     : m_d3d12Resource(resource)
     , m_FormatSupport({})
@@ -108,6 +134,11 @@ void Resource::SetD3D12Resource(ComPtr<ID3D12Resource> d3d12Resource, const D3D1
     }
     CheckFeatureSupport();
     SetName(m_ResourceName);
+}
+
+const D3D12_CLEAR_VALUE& Resource::GetD3D12ClearValue() const
+{
+    return *m_d3d12ClearValue;
 }
 
 void Resource::SetName(const std::wstring& name)

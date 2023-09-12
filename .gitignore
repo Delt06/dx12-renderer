@@ -9,8 +9,10 @@
 
 *.pdb
 
+*.vcxproj
 *.vcxproj.filters
 *.vcxproj.user
+*.sln
 
 *.sln.DotSettings.user
 
@@ -19,3 +21,7 @@ packages/*
 /**/cmake-build-*
 /**/.vs
 /**/out
+
+/**/CMakeFiles/
+/**/CMakeCache.txt
+/**/cmake_install.cmake
