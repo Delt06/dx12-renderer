@@ -8,6 +8,9 @@
 /**/Debug/*
 
 *.pdb
+*.cso
+
+/**/shaders/**/*.h
 
 *.vcxproj
 *.vcxproj.filters

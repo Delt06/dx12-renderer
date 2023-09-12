@@ -22,6 +22,7 @@ add_subdirectory(Demos/LightingDemo)
 add_subdirectory(Demos/ToonDemo)
 add_subdirectory(Demos/GrassDemo)
 add_subdirectory(Demos/RenderGraphDemo)
+add_subdirectory(Demos/MeshletsDemo)
 
 # Set the startup project.
 set_directory_properties(PROPERTIES
