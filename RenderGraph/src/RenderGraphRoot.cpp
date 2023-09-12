@@ -520,8 +520,18 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
             case ResourceInitAction::Clear:
                 {
                     Assert(description.m_ResourceType == ResourceType::Texture, "Only textures support the clear init action.");
-                    const auto& texture = *m_ResourcePool->GetTexture(output.m_Id);
-                    commandList.ClearTexture(texture, description.GetClearValue());
+
+                    if (output.m_Type == OutputType::RenderTarget)
+                    {
+                        const auto& texture = *m_ResourcePool->GetTexture(output.m_Id);
+                        commandList.ClearTexture(texture, description.GetClearValue());
+                    }
+                    else if (output.m_Type == OutputType::DepthRead || output.m_Type == OutputType::DepthWrite)
+                    {
+                        const auto& texture = *m_ResourcePool->GetTexture(output.m_Id);
+                        auto dsClearValue = description.GetClearValue().GetD3D12ClearValue()->DepthStencil;
+                        commandList.ClearDepthStencilTexture(texture, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, dsClearValue.Depth, dsClearValue.Stencil);
+                    }
                 }
                 break;
             case ResourceInitAction::CopyDestination:

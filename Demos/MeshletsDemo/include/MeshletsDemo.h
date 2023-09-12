@@ -31,6 +31,10 @@ public:
     bool LoadContent() override;
     void UnloadContent() override;
 
+    Camera m_Camera;
+    std::vector<GameObject> m_GameObjects;
+    DirectionalLight m_DirectionalLight;
+
 protected:
     void OnUpdate(UpdateEventArgs& e) override;
     void OnRender(RenderEventArgs& e) override;
@@ -44,10 +48,6 @@ private:
     std::shared_ptr<Texture> m_WhiteTexture2d;
 
     std::unique_ptr<RenderGraph::RenderGraphRoot> m_RenderGraph;
-
-    Camera m_Camera;
-    std::vector<GameObject> m_GameObjects;
-    DirectionalLight m_DirectionalLight;
 
     std::shared_ptr<CommonRootSignature> m_RootSignature;
 

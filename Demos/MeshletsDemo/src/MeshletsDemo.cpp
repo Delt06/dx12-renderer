@@ -16,6 +16,7 @@
 #include <Framework/GraphicsSettings.h>
 #include <Framework/Model.h>
 #include <Framework/ModelLoader.h>
+#include <Framework/Shader.h>
 
 using namespace Microsoft::WRL;
 
@@ -84,28 +85,6 @@ namespace
     }
 }
 
-namespace Pipeline
-{
-    constexpr UINT SHADOW_MAP_REGISTER_INDEX = 0;
-    constexpr UINT SSAO_MAP_REGISTER_INDEX = 1;
-}
-
-namespace
-{
-    std::wstring GetClassName(const char* fullFuncName)
-    {
-        std::wstring fullFuncNameStr(fullFuncName, fullFuncName + strlen(fullFuncName));
-        size_t pos = fullFuncNameStr.find_last_of(L"::");
-        if (pos == std::string::npos)
-        {
-            return L"";
-        }
-        return fullFuncNameStr.substr(0, pos-1);
-    }
-
-#define __CLASS_NAME__ GetClassName(__FUNCTION__)
-}
-
 MeshletsDemo::MeshletsDemo(const std::wstring& name, int width, int height, GraphicsSettings graphicsSettings)
     : Base(name, width, height, graphicsSettings.VSync)
     , m_Viewport(CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height)))
@@ -149,7 +128,24 @@ bool MeshletsDemo::LoadContent()
     m_DirectionalLight.m_Color = XMFLOAT4(1, 1, 1, 1);
     m_DirectionalLight.m_DirectionWs = XMFLOAT4(1, 1, 0, 0);
 
-    m_RenderGraph = RenderGraph::User::Create(m_RootSignature, *commandList);
+    auto pShader = std::make_shared<Shader>(m_RootSignature, ShaderBlob(L"Meshlet_VS.cso"), ShaderBlob(L"Meshlet_PS.cso"));
+    auto pMaterial = std::make_shared<Material>(pShader);
+
+    {
+        ModelLoader modelLoader;
+
+        {
+            auto model = modelLoader.Load(*commandList, "Assets/Models/teapot/teapot.obj", true);
+
+            XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+            XMMATRIX rotationMatrix = XMMatrixIdentity();
+            XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
+            XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+            m_GameObjects.push_back(GameObject(worldMatrix, model, pMaterial));
+        }
+    }
+
+    m_RenderGraph = RenderGraph::User::Create(*this, m_RootSignature, *commandList);
 
     auto fenceValue = commandQueue->ExecuteCommandList(commandList);
     commandQueue->WaitForFenceValue(fenceValue);
