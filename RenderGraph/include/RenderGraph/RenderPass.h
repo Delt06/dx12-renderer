@@ -64,6 +64,8 @@ namespace RenderGraph
         const std::vector<Output>& GetOutputs() const { return m_Outputs; }
         const std::wstring& GetPassName() const { return m_PassName; }
 
+        virtual ~RenderPass() = default;
+
     protected:
         virtual void InitImpl(CommandList& commandList) = 0;
         virtual void ExecuteImpl(const RenderContext& context, CommandList& commandList) = 0;

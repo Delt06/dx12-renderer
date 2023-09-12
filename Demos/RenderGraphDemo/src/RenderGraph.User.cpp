@@ -17,7 +17,7 @@ namespace
 }
 
 std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
-    const std::shared_ptr<CommonRootSignature>& rootSignature,
+    const std::shared_ptr<CommonRootSignature>& pRootSignature,
     CommandList& commandList
 )
 {
@@ -34,9 +34,9 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
             { ::ResourceIds::User::TempRenderTarget3, OutputType::RenderTarget },
             { ::ResourceIds::User::SetupFinishedToken, OutputType::Token }
         },
-        [rootSignature](const auto& metadata, auto& commandList)
+        [pRootSignature](const auto& metadata, auto& commandList)
         {
-            rootSignature->Bind(commandList);
+            pRootSignature->Bind(commandList);
         }
     ));
     renderPasses.emplace_back(RenderPass::Create(
@@ -56,7 +56,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
     ));
 
     {
-        auto pColorSplitBufferShader = std::make_shared<ComputeShader>(rootSignature,
+        auto pColorSplitBufferShader = std::make_shared<ComputeShader>(pRootSignature,
             ShaderBlob(L"ColorSplitBuffer_CS.cso")
         );
         renderPasses.emplace_back(RenderPass::Create(
@@ -67,15 +67,15 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
             {
                 { ::ResourceIds::User::ColorSplitBuffer, OutputType::UnorderedAccess },
             },
-            [rootSignature, pColorSplitBufferShader](const auto& context, auto& commandList)
+            [pRootSignature, pColorSplitBufferShader](const auto& context, auto& commandList)
             {
                 pColorSplitBufferShader->Bind(commandList);
 
                 const auto& pBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::ColorSplitBuffer);
-                rootSignature->SetUnorderedAccessView(commandList, 0,
+                pRootSignature->SetUnorderedAccessView(commandList, 0,
                     UnorderedAccessView(pBuffer)
                 );
-                rootSignature->SetComputeConstantBuffer<uint64_t>(commandList, context.m_Metadata.m_FrameIndex);
+                pRootSignature->SetComputeConstantBuffer<uint64_t>(commandList, context.m_Metadata.m_FrameIndex);
 
                 commandList.Dispatch(1, 1, 1);
             }
@@ -102,7 +102,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
     {
 
         auto pMesh = Mesh::CreateVerticalQuad(commandList, 0.5f, 0.5f);
-        auto pShader = std::make_shared<Shader>(rootSignature,
+        auto pShader = std::make_shared<Shader>(pRootSignature,
             ShaderBlob(ShaderBytecode_Blit_VS, sizeof(ShaderBytecode_Blit_VS)),
             ShaderBlob(L"WhiteShader_PS.cso")
         );
@@ -139,7 +139,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
 
     {
         auto pBlitMesh = Mesh::CreateBlitTriangle(commandList);
-        auto pShader = std::make_shared<Shader>(rootSignature,
+        auto pShader = std::make_shared<Shader>(pRootSignature,
             ShaderBlob(ShaderBytecode_Blit_VS, sizeof(ShaderBytecode_Blit_VS)),
             ShaderBlob(L"PostProcessing_PS.cso")
         );

@@ -22,6 +22,11 @@ namespace RenderGraph
             }
         }
 
+        virtual ~LambdaRenderPass() override
+        {
+            m_ExecuteFunc = nullptr;
+        }
+
     protected:
         virtual void InitImpl(CommandList& commandList) override
         {
