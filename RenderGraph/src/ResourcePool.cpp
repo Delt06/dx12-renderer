@@ -34,8 +34,7 @@ namespace
 
     std::shared_ptr<Texture> CreateTextureImpl(
         const RenderGraph::ResourceDescription& desc,
-        const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap,
-        const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice
+        const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap
     )
     {
         const bool useClearValue =
@@ -56,8 +55,7 @@ namespace
 
     std::shared_ptr<StructuredBuffer> CreateBufferImpl(
         const RenderGraph::ResourceDescription& desc,
-        const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap,
-        const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice
+        const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap
     )
     {
         constexpr UINT64 heapOffset = 0u;
@@ -75,6 +73,30 @@ namespace
     }
 }
 
+void RenderGraph::ResourcePool::BeginFrame(CommandList& commandList)
+{
+    ForEachResource([&commandList, this](const ResourceDescription& desc)
+    {
+        GetResource(desc.m_Id).ForEachResourceRecursive([&commandList](const Resource& resource)
+        {
+            commandList.TrackResource(resource);
+        });
+        return true;
+    });
+
+    while (!m_DeferredDeletionQueue.empty())
+    {
+        if (auto [_, resourceFrameIndex] = m_DeferredDeletionQueue.front();
+            Application::GetFrameCount() > resourceFrameIndex + Window::BUFFER_COUNT)
+        {
+            m_DeferredDeletionQueue.pop();
+        }
+        else
+        {
+            break;
+        }
+    }
+}
 const Resource& RenderGraph::ResourcePool::GetResource(ResourceId resourceId) const
 {
     Assert(IsRegistered(resourceId), "Resource is not registered.");
@@ -146,6 +168,17 @@ const RenderGraph::ResourceDescription& RenderGraph::ResourcePool::GetDescriptio
 
 void RenderGraph::ResourcePool::Clear()
 {
+    const auto frameCount = Application::GetFrameCount();
+
+    ForEachResource([this, frameCount](const ResourceDescription& desc)
+    {
+        GetResource(desc.m_Id).ForEachResourceRecursive([this, frameCount](const Resource& resource)
+        {
+            m_DeferredDeletionQueue.push(std::make_pair(resource.GetD3D12Resource(), frameCount));
+        });
+        return true;
+    });
+
     m_ResourceDescriptions.clear();
     m_HeapInfos.clear();
     m_ResourceHeapIndices.clear();
@@ -301,14 +334,14 @@ void RenderGraph::ResourcePool::RegisterBuffer(const BufferDescription& desc, co
     m_ResourceDescriptions[desc.m_Id] = description;
 }
 
-const std::shared_ptr<Texture>& RenderGraph::ResourcePool::CreateTexture(ResourceId resourceId, const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice)
+const std::shared_ptr<Texture>& RenderGraph::ResourcePool::CreateTexture(const ResourceId resourceId)
 {
     Assert(IsRegistered(resourceId), "The resource is not registered.");
 
     const auto& resourceMetadata = m_ResourceDescriptions[resourceId];
     const auto heapIndex = m_ResourceHeapIndices[resourceId].first;
     const auto& pHeap = m_HeapInfos[heapIndex].m_Heap;
-    const auto pTexture = CreateTextureImpl(resourceMetadata, pHeap, pDevice);
+    const auto pTexture = CreateTextureImpl(resourceMetadata, pHeap);
 
     if (resourceId >= m_Textures.size())
     {
@@ -318,14 +351,14 @@ const std::shared_ptr<Texture>& RenderGraph::ResourcePool::CreateTexture(Resourc
     return m_Textures[resourceId] = pTexture;
 }
 
-const std::shared_ptr<StructuredBuffer>& RenderGraph::ResourcePool::CreateBuffer(ResourceId resourceId, const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice)
+const std::shared_ptr<StructuredBuffer>& RenderGraph::ResourcePool::CreateBuffer(const ResourceId resourceId)
 {
     Assert(IsRegistered(resourceId), "The resource is not registered.");
 
     const auto& resourceMetadata = m_ResourceDescriptions[resourceId];
     const auto heapIndex = m_ResourceHeapIndices[resourceId].first;
     const auto& pHeap = m_HeapInfos[heapIndex].m_Heap;
-    const auto pBuffer = CreateBufferImpl(resourceMetadata, pHeap, pDevice);
+    const auto pBuffer = CreateBufferImpl(resourceMetadata, pHeap);
 
     if (resourceId >= m_Buffers.size())
     {

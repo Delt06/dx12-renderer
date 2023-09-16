@@ -119,7 +119,7 @@ struct MeshPrototype
     SkinningVertexCollectionType m_SkinningVertexAttributes;
     Armature m_Armature;
 
-    MeshPrototype(VertexCollectionType&& vertices, IndexCollectionType&& indices, bool rhCoords = false, bool generateTangents = false);
+    MeshPrototype(VertexCollectionType&& vertices, IndexCollectionType&& indices, bool rhCoords = true, bool generateTangents = false);
 };
 
 class Mesh final
@@ -151,7 +151,7 @@ public:
     static std::shared_ptr<Mesh> CreateMesh(CommandList& commandList, const MeshPrototype& prototype);
 
     Mesh(const Mesh& copy) = delete;
-    virtual ~Mesh();
+    ~Mesh();
     Mesh();
     const Aabb& GetAabb() const;
 

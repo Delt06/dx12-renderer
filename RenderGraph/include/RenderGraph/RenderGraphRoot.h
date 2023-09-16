@@ -27,7 +27,7 @@ namespace RenderGraph
         );
 
         void Execute(const RenderMetadata& renderMetadata);
-        void Present(const std::shared_ptr<Window>& pWindow, RenderGraph::ResourceId resourceId = RenderGraph::ResourceIds::GraphOutput);
+        void Present(const std::shared_ptr<Window>& pWindow, ResourceId resourceId = ResourceIds::GraphOutput);
         void MarkDirty();
 
         struct RenderTargetInfo
@@ -45,19 +45,20 @@ namespace RenderGraph
         void SetCurrentResourceState(const Resource& resource, D3D12_RESOURCE_STATES state);
         void TransitionBarrier(const Resource& resource, D3D12_RESOURCE_STATES stateAfter);
         void UavBarrier(const Resource& resource);
+        void AliasingBarrier(const Resource& resourceAfter);
         void FlushBarriers(CommandList& commandList);
 
         bool IsResourceDefined(ResourceId id);
 
-        const std::shared_ptr<CommandQueue> m_DirectCommandQueue;
+        std::shared_ptr<CommandQueue> m_DirectCommandQueue;
 
         const std::vector<std::unique_ptr<RenderPass>> m_RenderPassesDescription;
         std::vector<std::vector<RenderPass*>> m_RenderPassesSorted;
         std::vector<RenderPass*> m_RenderPassesBuilt;
 
-        const std::vector<TextureDescription> m_TextureDescriptions;
-        const std::vector<BufferDescription> m_BufferDescriptions;
-        const std::vector<TokenDescription> m_TokenDescriptions;
+        std::vector<TextureDescription> m_TextureDescriptions;
+        std::vector<BufferDescription> m_BufferDescriptions;
+        std::vector<TokenDescription> m_TokenDescriptions;
 
         std::shared_ptr<ResourcePool> m_ResourcePool;
         std::map<const RenderPass*, RenderTargetInfo> m_RenderTargets;

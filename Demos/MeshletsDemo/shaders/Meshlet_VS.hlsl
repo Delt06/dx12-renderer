@@ -3,19 +3,15 @@
 
 #include "Meshlet_VertexShaderOutput.hlsli"
 
-struct VertexAttributes
-{
-    float3 PositionOS : POSITION;
-    float3 NormalOS : NORMAL;
-};
-
-VertexShaderOutput main(const VertexAttributes IN)
+VertexShaderOutput main(const CommonVertexAttributes IN
+    // , uint vertexId : SV_VertexID
+)
 {
     VertexShaderOutput OUT;
 
-    OUT.NormalWS = mul((float3x3) g_Model_InverseTransposeModel, IN.NormalOS);
+    OUT.NormalWS = mul((float3x3) g_Model_InverseTransposeModel, IN.normal);
 
-    const float4 positionWS = mul(g_Model_Model, float4(IN.PositionOS, 1.0f));
+    const float4 positionWS = mul(g_Model_Model, float4(IN.position, 1.0f));
     OUT.PositionCS = mul(g_Pipeline_ViewProjection, positionWS);
 
     return OUT;

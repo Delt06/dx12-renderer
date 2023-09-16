@@ -183,34 +183,31 @@ void CommandList::CopyBuffer(Buffer& buffer, const size_t numElements, const siz
         // This will result in a NULL resource (which may be desired to define a default null resource).
         throw std::exception();
     }
-    else
+    const auto desc = buffer.GetD3D12ResourceDesc();
+
+    // see if need to create a new resource
+    if (buffer.GetD3D12Resource() == nullptr || desc.Width < bufferSize || desc.Flags != flags)
     {
-        const auto desc = buffer.GetD3D12ResourceDesc();
+        const auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+        const auto resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize, flags);
+        ThrowIfFailed(device->CreateCommittedResource(
+            &heapProperties,
+            D3D12_HEAP_FLAG_NONE,
+            &resourceDesc,
+            D3D12_RESOURCE_STATE_COMMON,
+            nullptr,
+            IID_PPV_ARGS(&d3d12Resource)));
+        d3d12Resource->SetName(buffer.GetName().c_str());
 
-        // see if need to create a new resource
-        if (buffer.GetD3D12Resource() == nullptr || desc.Width < bufferSize || desc.Flags != flags)
+        if (buffer.AreAutoBarriersEnabled())
         {
-            const auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-            const auto resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize, flags);
-            ThrowIfFailed(device->CreateCommittedResource(
-                &heapProperties,
-                D3D12_HEAP_FLAG_NONE,
-                &resourceDesc,
-                D3D12_RESOURCE_STATE_COMMON,
-                nullptr,
-                IID_PPV_ARGS(&d3d12Resource)));
-            d3d12Resource->SetName(buffer.GetName().c_str());
-
-            if (buffer.AreAutoBarriersEnabled())
-            {
-                // Add the resource to the global resource state tracker.
-                ResourceStateTracker::AddGlobalResourceState(d3d12Resource.Get(), D3D12_RESOURCE_STATE_COMMON);
-            }
+            // Add the resource to the global resource state tracker.
+            ResourceStateTracker::AddGlobalResourceState(d3d12Resource.Get(), D3D12_RESOURCE_STATE_COMMON);
         }
-        else // use existing
-        {
-            d3d12Resource = buffer.GetD3D12Resource();
-        }
+    }
+    else // use existing
+    {
+        d3d12Resource = buffer.GetD3D12Resource();
     }
 
     if (bufferData != nullptr)
@@ -259,6 +256,11 @@ void CommandList::ResetShadingRateImage()
 void CommandList::SetShadingRate(const D3D12_SHADING_RATE& shadingRate, const D3D12_SHADING_RATE_COMBINER* combiners)
 {
     m_D3d12CommandList5->RSSetShadingRate(shadingRate, combiners);
+}
+
+UploadBuffer::Allocation CommandList::AllocateInUploadBuffer(const size_t bufferSize, const size_t alignment)
+{
+    return m_PUploadBuffer->Allocate(bufferSize, alignment);
 }
 
 void CommandList::CopyVertexBuffer(VertexBuffer& vertexBuffer, const size_t numVertices, const size_t vertexStride,
@@ -477,7 +479,7 @@ void CommandList::GenerateMips(Texture& texture)
         if (!m_ComputeCommandList)
         {
             m_ComputeCommandList = Application::Get().GetCommandQueue(D3D12_COMMAND_LIST_TYPE_COMPUTE)->
-                GetCommandList();
+            GetCommandList();
         }
         m_ComputeCommandList->GenerateMips(texture);
         return;
@@ -642,8 +644,8 @@ void CommandList::CopyTextureSubresource(const Texture& texture, const uint32_t 
         destinationResource.Get(),
         intermediateResource.Get(),
         0u,
-        static_cast<UINT>(firstSubresource),
-        static_cast<UINT>(numSubresources),
+        firstSubresource,
+        numSubresources,
         subresourceData
     );
 
@@ -726,7 +728,7 @@ void CommandList::SetViewport(const D3D12_VIEWPORT& viewport)
 void CommandList::SetViewports(const std::vector<D3D12_VIEWPORT>& viewports)
 {
     assert(viewports.size() < D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE);
-    m_D3d12CommandList->RSSetViewports(static_cast<UINT>(viewports.size()),
+    m_D3d12CommandList->RSSetViewports(viewports.size(),
         viewports.data());
 }
 
@@ -738,11 +740,11 @@ void CommandList::SetScissorRect(const D3D12_RECT& scissorRect)
 void CommandList::SetScissorRects(const std::vector<D3D12_RECT>& scissorRects)
 {
     assert(scissorRects.size() < D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE);
-    m_D3d12CommandList->RSSetScissorRects(static_cast<UINT>(scissorRects.size()),
+    m_D3d12CommandList->RSSetScissorRects(scissorRects.size(),
         scissorRects.data());
 }
 
-void CommandList::SetPipelineState(const Microsoft::WRL::ComPtr<ID3D12PipelineState>& pipelineState)
+void CommandList::SetPipelineState(const ComPtr<ID3D12PipelineState>& pipelineState)
 {
     m_D3d12CommandList->SetPipelineState(pipelineState.Get());
 
@@ -861,7 +863,7 @@ void CommandList::SetShaderResourceView(const uint32_t rootParameterIndex, const
     if (resource.AreAutoBarriersEnabled())
     {
         constexpr auto stateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE |
-            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+        D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
         if (numSubresources < D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
         {
             for (uint32_t i = 0; i < numSubresources; ++i)
@@ -935,8 +937,8 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, UINT texArra
             }
 
             renderTargetDescriptors.push_back(isArrayItem
-                ? texture->GetRenderTargetViewArray(texArrayIndex, mipLevel)
-                : texture->GetRenderTargetView());
+                                                  ? texture->GetRenderTargetViewArray(texArrayIndex, mipLevel)
+                                                  : texture->GetRenderTargetView());
 
             TrackResource(*texture);
         }
@@ -955,15 +957,15 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, UINT texArra
         }
 
         depthStencilDescriptor = isArrayItem
-            ? depthTexture->GetDepthStencilViewArray(texArrayIndex)
-            : depthTexture->GetDepthStencilView();
+                                     ? depthTexture->GetDepthStencilViewArray(texArrayIndex)
+                                     : depthTexture->GetDepthStencilView();
 
         TrackResource(*depthTexture);
     }
 
     const D3D12_CPU_DESCRIPTOR_HANDLE* pDsv = depthStencilDescriptor.ptr != 0 ? &depthStencilDescriptor : nullptr;
 
-    m_D3d12CommandList->OMSetRenderTargets(static_cast<UINT>(renderTargetDescriptors.size()),
+    m_D3d12CommandList->OMSetRenderTargets(renderTargetDescriptors.size(),
         renderTargetDescriptors.data(), FALSE, pDsv);
 
     m_LastRenderTargetState = RenderTargetState(renderTarget);
@@ -1080,7 +1082,7 @@ void CommandList::Reset()
     m_ComputeCommandList = nullptr;
 }
 
-void CommandList::TrackObject(const Microsoft::WRL::ComPtr<ID3D12Object>& object)
+void CommandList::TrackObject(const ComPtr<ID3D12Object>& object)
 {
     m_TrackedObjects.push_back(object);
 }

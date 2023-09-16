@@ -101,8 +101,29 @@ bool MeshletsDemo::LoadContent()
     {
 
         {
-            const ModelLoader modelLoader;
-            const auto model = modelLoader.Load(*commandList, "Assets/Models/teapot/teapot.obj", true);
+            constexpr ModelLoader modelLoader;
+            const std::vector<MeshPrototype> meshPrototypes = modelLoader.LoadAsMeshPrototypes("Assets/Models/teapot/teapot.obj", true);
+
+            std::vector<MeshPrototype> updatedMeshPrototypes;
+            {
+                std::vector<MeshletBuilder::MeshletSet> meshletSets;
+
+                for (const auto& meshPrototype : meshPrototypes)
+                {
+                    meshletSets.emplace_back(MeshletBuilder::BuildMeshlets(meshPrototype));
+                }
+
+                updatedMeshPrototypes.reserve(meshletSets.size());
+
+                for (size_t i = 0; i < meshletSets.size(); ++i)
+                {
+                    updatedMeshPrototypes.emplace_back(meshletSets[i].m_MeshPrototype);
+                }
+
+                m_MeshletSets.emplace_back(std::move(meshletSets));
+            }
+
+            const auto model = modelLoader.Load(*commandList, updatedMeshPrototypes);
 
             const XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
             const XMMATRIX rotationMatrix = XMMatrixIdentity();

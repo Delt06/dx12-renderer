@@ -13,11 +13,12 @@ class Animation;
 class ModelLoader
 {
 public:
-	std::vector<MeshPrototype> LoadAsMeshPrototypes(const std::string& path, bool flipNormals = false) const;
-	std::shared_ptr<Model> Load(CommandList& commandList, const std::string& path, bool flipNormals = false) const;
-	std::shared_ptr<Model> LoadExisting(std::shared_ptr<Mesh> mesh) const;
+    std::vector<MeshPrototype> LoadAsMeshPrototypes(const std::string& path, bool flipNormals = false) const;
+    std::shared_ptr<Model> Load(CommandList& commandList, const std::string& path, bool flipNormals = false) const;
+    std::shared_ptr<Model> Load(CommandList& commandList, const std::vector<MeshPrototype>& meshPrototypes) const;
+    std::shared_ptr<Model> LoadExisting(std::shared_ptr<Mesh> mesh) const;
 
-	std::shared_ptr<Animation> LoadAnimation(const std::string& path, const std::string& animationName) const;
+    std::shared_ptr<Animation> LoadAnimation(const std::string& path, const std::string& animationName) const;
 
-	std::shared_ptr<Texture> LoadTexture(CommandList& commandList, const std::wstring& path, TextureUsageType usage = TextureUsageType::Albedo) const;
+    std::shared_ptr<Texture> LoadTexture(CommandList& commandList, const std::wstring& path, TextureUsageType usage = TextureUsageType::Albedo) const;
 };

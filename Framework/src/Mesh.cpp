@@ -141,14 +141,24 @@ MeshPrototype::MeshPrototype(VertexCollectionType&& vertices, IndexCollectionTyp
     : m_Vertices(std::move(vertices))
     , m_Indices(std::move(indices))
 {
-    if (vertices.size() >= USHRT_MAX)
+    if (m_Vertices.size() == 0)
+    {
+        throw std::exception("Empty vertex buffer.");
+    }
+
+    if (m_Indices.size() == 0)
+    {
+        throw std::exception("Empty index buffer.");
+    }
+
+    if (m_Vertices.size() >= USHRT_MAX)
     {
         throw std::exception("Too many vertices for 16-bit index buffer");
     }
 
     if (!rhCoords)
     {
-        ReverseWinding(indices, vertices);
+        ReverseWinding(m_Indices, m_Vertices);
     }
 
     if (generateTangents)
@@ -513,9 +523,9 @@ std::shared_ptr<Mesh> Mesh::CreateVerticalQuad(CommandList& commandList, float w
     return CreateMesh(commandList, vertices, indices, rhCoords);
 }
 
-std::shared_ptr<Mesh> Mesh::CreateSpotlightPyramid(CommandList& commandList, float size, float depth, bool rhCoords)
+std::shared_ptr<Mesh> Mesh::CreateSpotlightPyramid(CommandList& commandList, const float width, const float depth, const bool rhCoords)
 {
-    const float halfSize = size * 0.5f;
+    const float halfSize = width * 0.5f;
     VertexCollectionType vertices =
     {
         {

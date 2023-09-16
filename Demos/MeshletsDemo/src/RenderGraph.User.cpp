@@ -12,6 +12,7 @@
 #include <Framework/Shader.h>
 
 #include "MeshletsDemo.h"
+#include "Framework/Model.h"
 
 using namespace DirectX;
 
@@ -21,6 +22,10 @@ namespace ResourceIds
     {
     public:
         static inline const RenderGraph::ResourceId DepthBuffer = RenderGraph::ResourceIds::GetResourceId(L"DepthBuffer");
+
+        static inline const RenderGraph::ResourceId CommonVertexBuffer = RenderGraph::ResourceIds::GetResourceId(L"CommonVertexBuffer");
+        static inline const RenderGraph::ResourceId CommonIndexBuffer = RenderGraph::ResourceIds::GetResourceId(L"CommonIndexBuffer");
+        static inline const RenderGraph::ResourceId MeshletsBuffer = RenderGraph::ResourceIds::GetResourceId(L"MeshletsBuffer");
 
         static inline const RenderGraph::ResourceId SetupFinishedToken = RenderGraph::ResourceIds::GetResourceId(L"SetupFinishedToken");
     };
@@ -56,6 +61,7 @@ namespace CBuffer
     {
         XMMATRIX g_Model_Model;
         XMMATRIX g_Model_InverseTransposeModel;
+        uint32_t g_Model_Index;
 
         void Compute(const XMMATRIX& model)
         {
@@ -112,9 +118,48 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
     ));
 
     renderPasses.emplace_back(RenderPass::Create(
-        L"Draw Geometries",
+        L"Prepare Common Buffers",
         {
             { ::ResourceIds::User::SetupFinishedToken, InputType::Token }
+        },
+        {
+            { ::ResourceIds::User::CommonVertexBuffer, OutputType::CopyDestination },
+            { ::ResourceIds::User::CommonIndexBuffer, OutputType::CopyDestination },
+            { ::ResourceIds::User::MeshletsBuffer, OutputType::CopyDestination },
+        },
+        [&demo](const RenderContext& context, CommandList& commandList)
+        {
+            if (demo.m_GameObjects.size() == 0)
+            {
+                return;
+            }
+
+            {
+                const auto& pCommonVertexBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::CommonVertexBuffer);
+                const auto& pCommonIndexBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::CommonIndexBuffer);
+
+                const MeshPrototype& meshPrototype = demo.m_MeshletSets[0][0].m_MeshPrototype;
+
+                commandList.CopyStructuredBuffer(*pCommonVertexBuffer, meshPrototype.m_Vertices);
+                commandList.CopyStructuredBuffer(*pCommonIndexBuffer, meshPrototype.m_Indices);
+            }
+
+            {
+                const auto& pMeshletsBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::MeshletsBuffer);
+
+                const MeshletBuilder::MeshletSet& meshletSet = demo.m_MeshletSets[0][0];
+
+                commandList.CopyStructuredBuffer(*pMeshletsBuffer, meshletSet.m_Meshlets);
+            }
+        }
+    ));
+
+    renderPasses.emplace_back(RenderPass::Create(
+        L"Draw Geometries",
+        {
+            { ::ResourceIds::User::CommonVertexBuffer, InputType::ShaderResource },
+            { ::ResourceIds::User::CommonIndexBuffer, InputType::ShaderResource },
+            { ::ResourceIds::User::MeshletsBuffer, InputType::ShaderResource },
         },
         {
             { ResourceIds::GraphOutput, OutputType::RenderTarget },
@@ -122,29 +167,71 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
         },
         [&demo, pRootSignature](const RenderContext& context, CommandList& commandList)
         {
-            for (const auto& go : demo.m_GameObjects)
+            if (demo.m_GameObjects.size() == 0)
             {
-                CBuffer::Model modelCBuffer{};
-                modelCBuffer.Compute(go.GetWorldMatrix());
-                pRootSignature->SetModelConstantBuffer(commandList, modelCBuffer);
-
-                go.Draw(commandList);
+                return;
             }
+
+            const auto& pCommonVertexBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::CommonVertexBuffer);
+            const auto& pCommonIndexBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::CommonIndexBuffer);
+
+            pRootSignature->SetPipelineShaderResourceView(commandList, 0, ShaderResourceView(pCommonVertexBuffer));
+            pRootSignature->SetPipelineShaderResourceView(commandList, 1, ShaderResourceView(pCommonIndexBuffer));
+
+            const auto& pMeshletsBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::MeshletsBuffer);
+
+            pRootSignature->SetPipelineShaderResourceView(commandList, 2, ShaderResourceView(pMeshletsBuffer));
+
+
+            for (uint32_t goIndex = 0; auto& go : demo.m_GameObjects)
+            {
+                const auto& pMaterial = go.GetMaterial();
+
+                pMaterial->Bind(commandList);
+
+                for (uint32_t meshIndex = 0; auto& pMesh : go.GetModel()->GetMeshes())
+                {
+                    const MeshletBuilder::MeshletSet& meshletSet = demo.m_MeshletSets[goIndex][meshIndex];
+                    go.GetModel()->GetMeshes()[meshIndex]->Bind(commandList);
+
+                    for (uint32_t meshletIndex = 0; const Meshlet& meshlet : meshletSet.m_Meshlets)
+                    {
+                        CBuffer::Model modelCBuffer{};
+                        modelCBuffer.Compute(go.GetWorldMatrix());
+                        modelCBuffer.g_Model_Index = meshletIndex;
+                        pRootSignature->SetModelConstantBuffer(commandList, modelCBuffer);
+
+                        commandList.DrawIndexed(meshlet.m_TriangleCount, 1, meshlet.m_TriangleOffset, meshlet.m_VertexOffset);
+                        meshletIndex++;
+                    }
+
+                    meshIndex++;
+                }
+
+                pMaterial->Unbind(commandList);
+                ++goIndex;
+            }
+
+            const auto& go = demo.m_GameObjects[0];
+
+
         }
     ));
 
-    RenderMetadataExpression renderWidthExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenWidth; };
-    RenderMetadataExpression renderHeightExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenHeight; };
+    const RenderMetadataExpression renderWidthExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenWidth; };
+    const RenderMetadataExpression renderHeightExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenHeight; };
 
 
-    std::vector<TextureDescription> textures = {
-        { ::ResourceIds::User::DepthBuffer, renderWidthExpression, renderHeightExpression, DEPTH_BUFFER_FORMAT, { 1.0f, 0u }, Clear },
-        { ResourceIds::GraphOutput, renderWidthExpression, renderHeightExpression, Window::BUFFER_FORMAT_SRGB, CLEAR_COLOR, Clear },
+    std::vector textures = {
+        TextureDescription{ ::ResourceIds::User::DepthBuffer, renderWidthExpression, renderHeightExpression, DEPTH_BUFFER_FORMAT, { 1.0f, 0u }, Clear },
+        TextureDescription{ ResourceIds::GraphOutput, renderWidthExpression, renderHeightExpression, Window::BUFFER_FORMAT_SRGB, CLEAR_COLOR, Clear },
     };
 
-    std::vector<BufferDescription> buffers =
+    std::vector buffers =
     {
-        //BufferDescription( ::ResourceIds::User::ColorSplitBuffer, [](const RenderMetadata& metadata) { return 32LU; }, sizeof(ColorSplitEntry), ResourceInitAction::CopyDestination ),
+        BufferDescription{ ::ResourceIds::User::CommonVertexBuffer, [](const auto&) { return 1000; }, sizeof(VertexAttributes), CopyDestination },
+        BufferDescription{ ::ResourceIds::User::CommonIndexBuffer, [](const auto&) { return 1000; }, sizeof(uint16_t), CopyDestination },
+        BufferDescription{ ::ResourceIds::User::MeshletsBuffer, [](const auto&) { return 1000; }, sizeof(Meshlet), CopyDestination },
     };
 
     std::vector<TokenDescription> tokens =

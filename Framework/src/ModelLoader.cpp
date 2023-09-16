@@ -223,7 +223,11 @@ std::vector<MeshPrototype> ModelLoader::LoadAsMeshPrototypes(const std::string& 
 std::shared_ptr<Model> ModelLoader::Load(CommandList& commandList, const std::string& path, bool flipNormals) const
 {
     const auto meshPrototypes = LoadAsMeshPrototypes(path, flipNormals);
+    return Load(commandList, meshPrototypes);
+}
 
+std::shared_ptr<Model> ModelLoader::Load(CommandList& commandList, const std::vector<MeshPrototype>& meshPrototypes) const
+{
     std::vector<std::shared_ptr<Mesh>> outputMeshes;
 
     for (const auto& meshPrototype : meshPrototypes)

@@ -22,13 +22,13 @@
  *  IN THE SOFTWARE.
  */
 
- /**
-  *  @file StructuredBuffer.h
-  *  @date October 24, 2018
-  *  @author Jeremiah van Oosten
-  *
-  *  @brief Structured buffer resource.
-  */
+/**
+ *  @file StructuredBuffer.h
+ *  @date October 24, 2018
+ *  @author Jeremiah van Oosten
+ *
+ *  @brief Structured buffer resource.
+ */
 
 #include "Buffer.h"
 
@@ -43,10 +43,10 @@ class StructuredBuffer final : public Buffer
 public:
     const static inline D3D12_RESOURCE_DESC COUNTER_DESC = CD3DX12_RESOURCE_DESC::Buffer(4, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 
-	explicit StructuredBuffer(const std::wstring& name = L"");
-	explicit StructuredBuffer(const D3D12_RESOURCE_DESC resourceDesc,
-		size_t numElements, size_t elementSize,
-		const std::wstring& name = L"");
+    explicit StructuredBuffer(const std::wstring& name = L"");
+    explicit StructuredBuffer(const D3D12_RESOURCE_DESC& resourceDesc,
+        size_t numElements, size_t elementSize,
+        const std::wstring& name = L"");
 
     explicit StructuredBuffer(const D3D12_RESOURCE_DESC& resourceDesc,
         const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap,
@@ -54,32 +54,31 @@ public:
         size_t numElements, size_t elementSize,
         const std::wstring& name = L"");
 
-	size_t GetNumElements() const;
+    size_t GetNumElements() const;
 
-	size_t GetElementSize() const;
+    size_t GetElementSize() const;
 
-	void CreateViews(size_t numElements, size_t elementSize) override;
+    void CreateViews(size_t numElements, size_t elementSize) override;
 
-	D3D12_CPU_DESCRIPTOR_HANDLE GetShaderResourceView(const D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc = nullptr) const override;
+    D3D12_CPU_DESCRIPTOR_HANDLE GetShaderResourceView(const D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc = nullptr) const override;
 
-	D3D12_CPU_DESCRIPTOR_HANDLE GetUnorderedAccessView(const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc = nullptr) const override;
+    D3D12_CPU_DESCRIPTOR_HANDLE GetUnorderedAccessView(const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc = nullptr) const override;
 
-	ByteAddressBuffer& GetCounterBuffer();
-	const std::shared_ptr<ByteAddressBuffer>& GetCounterBufferPtr() const;
+    ByteAddressBuffer& GetCounterBuffer();
+    const std::shared_ptr<ByteAddressBuffer>& GetCounterBufferPtr() const;
 
-    virtual void ForEachResourceRecursive(const std::function<void(const Resource&)>& action) const override
+    void ForEachResourceRecursive(const std::function<void(const Resource&)>& action) const override
     {
         action(*this);
         m_CounterBuffer->ForEachResourceRecursive(action);
     }
 
 private:
-	size_t m_NumElements;
-	size_t m_ElementSize;
+    size_t m_NumElements;
+    size_t m_ElementSize;
 
-	DescriptorAllocation m_Srv;
-	DescriptorAllocation m_Uav;
+    DescriptorAllocation m_Srv;
+    DescriptorAllocation m_Uav;
 
-	std::shared_ptr<ByteAddressBuffer> m_CounterBuffer;
+    std::shared_ptr<ByteAddressBuffer> m_CounterBuffer;
 };
-

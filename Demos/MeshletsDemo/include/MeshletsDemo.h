@@ -20,6 +20,9 @@
 
 #include <RenderGraph/RenderGraphRoot.h>
 
+#include "Meshlet.h"
+#include "MeshletBuilder.h"
+
 class MeshletsDemo final : public Game
 {
 public:
@@ -33,6 +36,7 @@ public:
 
     Camera m_Camera;
     std::vector<GameObject> m_GameObjects;
+    std::vector<std::vector<MeshletBuilder::MeshletSet>> m_MeshletSets;
     DirectionalLight m_DirectionalLight;
 
 protected:

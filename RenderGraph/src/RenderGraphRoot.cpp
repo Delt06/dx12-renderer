@@ -245,7 +245,6 @@ RenderGraph::RenderGraphRoot::RenderGraphRoot(
 
 void RenderGraph::RenderGraphRoot::Execute(const RenderMetadata& renderMetadata)
 {
-
     CheckPotentiallyDirtyResources(renderMetadata);
 
     if (m_Dirty)
@@ -266,6 +265,7 @@ void RenderGraph::RenderGraphRoot::Execute(const RenderMetadata& renderMetadata)
         context.m_Metadata = renderMetadata;
 
         uint32_t renderPassIndex = 0;
+        m_ResourcePool->BeginFrame(cmd);
 
         for (const auto& pRenderPass : m_RenderPassesBuilt)
         {
@@ -285,7 +285,7 @@ void RenderGraph::RenderGraphRoot::Present(const std::shared_ptr<Window>& pWindo
 {
     const auto& pTexture = m_ResourcePool->GetTexture(resourceId);
 
-    auto pCommandList = m_DirectCommandQueue->GetCommandList();
+    const auto pCommandList = m_DirectCommandQueue->GetCommandList();
 
     {
         PIXScope(*pCommandList, L"Render Graph: Prepare Present");
@@ -342,9 +342,8 @@ void RenderGraph::RenderGraphRoot::CheckPotentiallyDirtyResources(const RenderMe
 
         case ResourceType::Buffer:
             {
-                const auto& pBuffer = m_ResourcePool->GetTexture(resourceDescription.m_Id);
-                const auto d3d12Desc = pBuffer->GetD3D12ResourceDesc();
-                if (resourceDescription.m_BufferDescription.m_SizeExpression(renderMetadata) != d3d12Desc.Width)
+                const auto& pBuffer = m_ResourcePool->GetBuffer(resourceDescription.m_Id);
+                if (resourceDescription.m_BufferDescription.m_SizeExpression(renderMetadata) != pBuffer->GetNumElements())
                 {
                     m_Dirty = true;
                     return false;
@@ -409,7 +408,7 @@ void RenderGraph::RenderGraphRoot::Build(const RenderMetadata& renderMetadata)
         {
             if (m_ResourcePool->IsRegistered(desc.m_Id))
             {
-                const auto& pTexture = m_ResourcePool->CreateTexture(desc.m_Id, pDevice);
+                const auto& pTexture = m_ResourcePool->CreateTexture(desc.m_Id);
                 SetCurrentResourceState(*pTexture, D3D12_RESOURCE_STATE_COMMON);
             }
         }
@@ -418,7 +417,7 @@ void RenderGraph::RenderGraphRoot::Build(const RenderMetadata& renderMetadata)
         {
             if (m_ResourcePool->IsRegistered(desc.m_Id))
             {
-                const auto& pBuffer = m_ResourcePool->CreateBuffer(desc.m_Id, pDevice);
+                const auto& pBuffer = m_ResourcePool->CreateBuffer(desc.m_Id);
                 pBuffer->ForEachResourceRecursive([this](const auto& r)
                 {
                     SetCurrentResourceState(r, D3D12_RESOURCE_STATE_COMMON);
@@ -489,9 +488,9 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
         if (lifecycle.m_BeginPassIndex == renderPassIndex)
         {
             const auto& resource = m_ResourcePool->GetResource(output.m_Id);
-            resource.ForEachResourceRecursive([&commandList](const auto& r)
+            resource.ForEachResourceRecursive([this](const auto& r)
             {
-                commandList.AliasingBarrier(nullptr, r.GetD3D12Resource());
+                AliasingBarrier(r);
             });
         }
     }
@@ -650,6 +649,12 @@ void RenderGraph::RenderGraphRoot::UavBarrier(const Resource& resource)
 
     // TODO: skip if there was a transition barrier after the previous UAV usage
     const auto barrier = CD3DX12_RESOURCE_BARRIER::UAV(resource.GetD3D12Resource().Get());
+    m_PendingBarriers.push_back(barrier);
+}
+
+void RenderGraph::RenderGraphRoot::AliasingBarrier(const Resource& resourceAfter)
+{
+    const auto barrier = CD3DX12_RESOURCE_BARRIER::Aliasing(nullptr, resourceAfter.GetD3D12Resource().Get());
     m_PendingBarriers.push_back(barrier);
 }
 

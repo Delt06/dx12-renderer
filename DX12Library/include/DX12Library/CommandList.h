@@ -23,15 +23,15 @@
  *  IN THE SOFTWARE.
  */
 
- /**
-  *  @file CommandList.h
-  *  @date October 22, 2018
-  *  @author Jeremiah van Oosten
-  *
-  *  @brief CommandList class encapsulates a ID3D12GraphicsCommandList2 interface.
-  *  The CommandList class provides additional functionality that makes working with
-  *  DirectX 12 applications easier.
-  */
+/**
+ *  @file CommandList.h
+ *  @date October 22, 2018
+ *  @author Jeremiah van Oosten
+ *
+ *  @brief CommandList class encapsulates a ID3D12GraphicsCommandList2 interface.
+ *  The CommandList class provides additional functionality that makes working with
+ *  DirectX 12 applications easier.
+ */
 
 #include <cassert>
 
@@ -48,6 +48,7 @@
 #include "GenerateMipsPso.h"
 #include "ClearValue.h"
 #include "RenderTargetState.h"
+#include "UploadBuffer.h"
 
 class Buffer;
 class ByteAddressBuffer;
@@ -222,12 +223,12 @@ public:
     /**
      * Generate a cubemap texture from a panoramic (equirectangular) texture.
      */
-     //void PanoToCubemap(Texture& cubemap, const Texture& pano);
+    //void PanoToCubemap(Texture& cubemap, const Texture& pano);
 
-     /**
-      * Copy subresource data to a texture.
-      */
-    void CopyTextureSubresource(const Texture& texture, const uint32_t firstSubresource, const uint32_t numSubresources,
+    /**
+     * Copy subresource data to a texture.
+     */
+    void CopyTextureSubresource(const Texture& texture, uint32_t firstSubresource, uint32_t numSubresources,
         D3D12_SUBRESOURCE_DATA* subresourceData);
 
     /**
@@ -284,36 +285,36 @@ public:
     /**
      * Set dynamic vertex buffer data to the rendering pipeline.
      */
-     //void SetDynamicVertexBuffer(uint32_t slot, size_t numVertices, size_t vertexSize, const void* vertexBufferData);
+    //void SetDynamicVertexBuffer(uint32_t slot, size_t numVertices, size_t vertexSize, const void* vertexBufferData);
 
-     /*template <typename T>
-     void SetDynamicVertexBuffer(uint32_t slot, const std::vector<T>& vertexBufferData)
-     {
-         SetDynamicVertexBuffer(slot, vertexBufferData.size(), sizeof(T), vertexBufferData.data());
-     }*/
+    /*template <typename T>
+    void SetDynamicVertexBuffer(uint32_t slot, const std::vector<T>& vertexBufferData)
+    {
+        SetDynamicVertexBuffer(slot, vertexBufferData.size(), sizeof(T), vertexBufferData.data());
+    }*/
 
-     /**
-      * Bind the index buffer to the rendering pipeline.
-      */
+    /**
+     * Bind the index buffer to the rendering pipeline.
+     */
     void SetIndexBuffer(const IndexBuffer& indexBuffer);
 
     /**
      * Bind dynamic index buffer data to the rendering pipeline.
      */
-     /*void SetDynamicIndexBuffer(size_t numIndicies, DXGI_FORMAT indexFormat, const void* indexBufferData);
+    /*void SetDynamicIndexBuffer(size_t numIndicies, DXGI_FORMAT indexFormat, const void* indexBufferData);
 
-     template <typename T>
-     void SetDynamicIndexBuffer(const std::vector<T>& indexBufferData)
-     {
-         static_assert(sizeof(T) == 2 || sizeof(T) == 4);
+    template <typename T>
+    void SetDynamicIndexBuffer(const std::vector<T>& indexBufferData)
+    {
+        static_assert(sizeof(T) == 2 || sizeof(T) == 4);
 
-         DXGI_FORMAT indexFormat = (sizeof(T) == 2) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
-         SetDynamicIndexBuffer(indexBufferData.size(), indexFormat, indexBufferData.data());
-     }*/
+        DXGI_FORMAT indexFormat = (sizeof(T) == 2) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
+        SetDynamicIndexBuffer(indexBufferData.size(), indexFormat, indexBufferData.data());
+    }*/
 
-     /**
-      * Set dynamic structured buffer contents.
-      */
+    /**
+     * Set dynamic structured buffer contents.
+     */
     void SetGraphicsDynamicStructuredBuffer(uint32_t slot, size_t numElements, size_t elementSize,
         const void* bufferData) const;
 
@@ -405,8 +406,8 @@ public:
      */
     void SetRenderTarget(const RenderTarget& renderTarget, UINT texArrayIndex = -1, UINT mipLevel = 0, bool useDepth = true, bool readonlyDepth = false);
 
-    void ClearRenderTarget(const RenderTarget& renderTarget, const float* clearColor, const D3D12_CLEAR_FLAGS clearFlags);
-    void ClearRenderTarget(const RenderTarget& renderTarget, const ClearValue& clearValue, const D3D12_CLEAR_FLAGS clearFlags);
+    void ClearRenderTarget(const RenderTarget& renderTarget, const float* clearColor, D3D12_CLEAR_FLAGS clearFlags);
+    void ClearRenderTarget(const RenderTarget& renderTarget, const ClearValue& clearValue, D3D12_CLEAR_FLAGS clearFlags);
 
     void DiscardResource(const Resource& resource);
 
@@ -426,16 +427,16 @@ public:
      * Methods defined below are only intended to be used by internal classes. *
      ***************************************************************************/
 
-     /**
-      * Close the command list.
-      * Used by the command queue.
-      *
-      * @param pendingCommandList The command list that is used to execute pending
-      * resource barriers (if any) for this command list.
-      *
-      * @return true if there are any pending resource barriers that need to be
-      * processed.
-      */
+    /**
+     * Close the command list.
+     * Used by the command queue.
+     *
+     * @param pendingCommandList The command list that is used to execute pending
+     * resource barriers (if any) for this command list.
+     *
+     * @return true if there are any pending resource barriers that need to be
+     * processed.
+     */
     bool Close(CommandList& pendingCommandList);
     // Just close the command list. This is useful for pending command lists.
     void Close();
@@ -478,11 +479,12 @@ public:
     void ResetShadingRateImage();
     void SetShadingRate(const D3D12_SHADING_RATE& shadingRate, const D3D12_SHADING_RATE_COMBINER* combiners);
 
-protected:
-private:
+    UploadBuffer::Allocation AllocateInUploadBuffer(size_t bufferSize, size_t alignment);
+
     void TrackObject(const Microsoft::WRL::ComPtr<ID3D12Object>& object);
     void TrackResource(const Resource& res);
 
+private:
     // Generate mips for UAV compatible textures.
     void GenerateMipsUav(Texture& texture, DXGI_FORMAT format);
     //// Generate mips for BGR textures.
