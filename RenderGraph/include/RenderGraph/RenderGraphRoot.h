@@ -37,6 +37,7 @@ namespace RenderGraph
         };
 
     private:
+        void CheckPotentiallyDirtyResources(const RenderMetadata& renderMetadata);
         void Build(const RenderMetadata& renderMetadata);
         void PrepareResourceForRenderPass(CommandList& commandList, const RenderPass& renderPass, uint32_t renderPassIndex);
 

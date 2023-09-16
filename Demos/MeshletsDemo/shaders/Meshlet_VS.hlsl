@@ -15,7 +15,7 @@ VertexShaderOutput main(const VertexAttributes IN)
 
     OUT.NormalWS = mul((float3x3) g_Model_InverseTransposeModel, IN.NormalOS);
 
-    float4 positionWS = mul(g_Model_Model, float4(IN.PositionOS, 1.0f));
+    const float4 positionWS = mul(g_Model_Model, float4(IN.PositionOS, 1.0f));
     OUT.PositionCS = mul(g_Pipeline_ViewProjection, positionWS);
 
     return OUT;

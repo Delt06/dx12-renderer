@@ -25,7 +25,7 @@ class MeshletsDemo final : public Game
 public:
     using Base = Game;
 
-    MeshletsDemo(const std::wstring& name, int width, int height, GraphicsSettings graphicsSettings);
+    MeshletsDemo(const std::wstring& name, int width, int height, const GraphicsSettings& graphicsSettings);
     ~MeshletsDemo() override;
 
     bool LoadContent() override;

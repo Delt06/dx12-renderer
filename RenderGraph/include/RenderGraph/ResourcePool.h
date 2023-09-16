@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <vector>
 #include <map>
@@ -29,6 +30,8 @@ namespace RenderGraph
         const std::shared_ptr<StructuredBuffer>& GetBuffer(ResourceId resourceId) const;
         const std::vector<std::shared_ptr<Texture>>& GetAllTextures() const { return m_Textures; }
         const std::vector<std::shared_ptr<StructuredBuffer>>& GetAllBuffers() const { return m_Buffers; }
+
+        void ForEachResource(const std::function<bool(const ResourceDescription&)>& func);
 
         const TransientResourceAllocator::ResourceLifecycle& GetResourceLifecycle(ResourceId resourceId);
 

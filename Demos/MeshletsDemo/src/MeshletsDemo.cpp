@@ -49,43 +49,10 @@ namespace
         return val < min ? min : val > max ? max : val;
     }
 
-    template <typename T>
-    constexpr const T& Remap(const T& low1, const T& high1, const T& low2, const T& high2, const T& value)
-    {
-        return low2 + (value - low1) * (high2 - low2) / (high1 - low1);
-    }
-
-    template <typename T>
-    constexpr T Smoothstep(const T& edge0, const T& edge1, const T& x)
-    {
-        auto t = Clamp<T>((x - edge0) / (edge1 - edge0), 0, 1);
-        return t * t * (3 - 2 * t);
-    }
-
     bool allowFullscreenToggle = true;
-
-    // Builds a look-at (world) matrix from a point, up and direction vectors.
-    XMMATRIX XM_CALLCONV LookAtMatrix(FXMVECTOR position, FXMVECTOR direction, FXMVECTOR up)
-    {
-        assert(!XMVector3Equal(direction, XMVectorZero()));
-        assert(!XMVector3IsInfinite(direction));
-        assert(!XMVector3Equal(up, XMVectorZero()));
-        assert(!XMVector3IsInfinite(up));
-
-        XMVECTOR R2 = XMVector3Normalize(direction);
-
-        XMVECTOR R0 = XMVector3Cross(up, R2);
-        R0 = XMVector3Normalize(R0);
-
-        XMVECTOR R1 = XMVector3Cross(R2, R0);
-
-        XMMATRIX M(R0, R1, R2, position);
-
-        return M;
-    }
 }
 
-MeshletsDemo::MeshletsDemo(const std::wstring& name, int width, int height, GraphicsSettings graphicsSettings)
+MeshletsDemo::MeshletsDemo(const std::wstring& name, const int width, const int height, const GraphicsSettings& graphicsSettings)
     : Base(name, width, height, graphicsSettings.VSync)
     , m_Viewport(CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height)))
     , m_ScissorRect(CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX))
@@ -132,9 +99,9 @@ bool MeshletsDemo::LoadContent()
     const auto pMaterial = std::make_shared<Material>(pShader);
 
     {
-        constexpr ModelLoader modelLoader;
 
         {
+            const ModelLoader modelLoader;
             const auto model = modelLoader.Load(*commandList, "Assets/Models/teapot/teapot.obj", true);
 
             const XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
@@ -221,8 +188,6 @@ void MeshletsDemo::OnUpdate(UpdateEventArgs& e)
     auto lightDirectionWs = XMLoadFloat4(&m_DirectionalLight.m_DirectionWs);
     lightDirectionWs = XMVector3Normalize(lightDirectionWs);
     XMStoreFloat4(&m_DirectionalLight.m_DirectionWs, lightDirectionWs);
-
-    auto dt = static_cast<float>(e.ElapsedTime);
 }
 
 void MeshletsDemo::OnRender(RenderEventArgs& e)
@@ -230,10 +195,6 @@ void MeshletsDemo::OnRender(RenderEventArgs& e)
     Base::OnRender(e);
 
     static uint64_t frameIndex = 0;
-
-    const XMMATRIX viewMatrix = m_Camera.GetViewMatrix();
-    const XMMATRIX projectionMatrix = m_Camera.GetProjectionMatrix();
-    const XMMATRIX viewProjectionMatrix = viewMatrix * projectionMatrix;
 
     {
         RenderGraph::RenderMetadata metadata;
@@ -253,6 +214,8 @@ void MeshletsDemo::OnKeyPressed(KeyEventArgs& e)
 {
     Base::OnKeyPressed(e);
 
+    // ReSharper disable once CppDefaultCaseNotHandledInSwitchStatement
+    // ReSharper disable once CppIncompleteSwitchStatement
     switch (e.Key)
     {
     case KeyCode::Escape:
@@ -312,6 +275,8 @@ void MeshletsDemo::OnKeyReleased(KeyEventArgs& e)
 {
     Base::OnKeyReleased(e);
 
+    // ReSharper disable once CppDefaultCaseNotHandledInSwitchStatement
+    // ReSharper disable once CppIncompleteSwitchStatement
     switch (e.Key)
     {
     case KeyCode::Enter:
@@ -356,11 +321,11 @@ void MeshletsDemo::OnMouseMoved(MouseMotionEventArgs& e)
     if (e.LeftButton)
     {
         constexpr float mouseSpeed = 0.1f;
-        m_CameraController.m_Pitch -= e.RelY * mouseSpeed;
+        m_CameraController.m_Pitch -= static_cast<float>(e.RelY) * mouseSpeed;
 
         m_CameraController.m_Pitch = Clamp(m_CameraController.m_Pitch, -90.0f, 90.0f);
 
-        m_CameraController.m_Yaw -= e.RelX * mouseSpeed;
+        m_CameraController.m_Yaw -= static_cast<float>(e.RelX) * mouseSpeed;
     }
 }
 
