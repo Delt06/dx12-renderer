@@ -49,13 +49,13 @@ namespace
         return val < min ? min : val > max ? max : val;
     }
 
-    template<typename T>
+    template <typename T>
     constexpr const T& Remap(const T& low1, const T& high1, const T& low2, const T& high2, const T& value)
     {
         return low2 + (value - low1) * (high2 - low2) / (high1 - low1);
     }
 
-    template<typename T>
+    template <typename T>
     constexpr T Smoothstep(const T& edge0, const T& edge1, const T& x)
     {
         auto t = Clamp<T>((x - edge0) / (edge1 - edge0), 0, 1);
@@ -129,25 +129,25 @@ bool MeshletsDemo::LoadContent()
     m_DirectionalLight.m_DirectionWs = XMFLOAT4(1, 1, 0, 0);
 
     auto pShader = std::make_shared<Shader>(m_RootSignature, ShaderBlob(L"Meshlet_VS.cso"), ShaderBlob(L"Meshlet_PS.cso"));
-    auto pMaterial = std::make_shared<Material>(pShader);
+    const auto pMaterial = std::make_shared<Material>(pShader);
 
     {
-        ModelLoader modelLoader;
+        constexpr ModelLoader modelLoader;
 
         {
-            auto model = modelLoader.Load(*commandList, "Assets/Models/teapot/teapot.obj", true);
+            const auto model = modelLoader.Load(*commandList, "Assets/Models/teapot/teapot.obj", true);
 
-            XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
-            XMMATRIX rotationMatrix = XMMatrixIdentity();
-            XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
-            XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+            const XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+            const XMMATRIX rotationMatrix = XMMatrixIdentity();
+            const XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
+            const XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
             m_GameObjects.push_back(GameObject(worldMatrix, model, pMaterial));
         }
     }
 
     m_RenderGraph = RenderGraph::User::Create(*this, m_RootSignature, *commandList);
 
-    auto fenceValue = commandQueue->ExecuteCommandList(commandList);
+    const auto fenceValue = commandQueue->ExecuteCommandList(commandList);
     commandQueue->WaitForFenceValue(fenceValue);
 
     return true;
@@ -191,7 +191,7 @@ void MeshletsDemo::OnUpdate(UpdateEventArgs& e)
 
     if (totalTime > 1.0)
     {
-        double fps = frameCount / totalTime;
+        const double fps = static_cast<double>(frameCount) / totalTime;
 
         char buffer[512];
         sprintf_s(buffer, "FPS: %f\n", fps);
@@ -202,25 +202,25 @@ void MeshletsDemo::OnUpdate(UpdateEventArgs& e)
     }
 
     // Update the camera.
-    float speedMultiplier = (m_CameraController.m_Shift ? 16.0f : 4.0f);
+    const float speedMultiplier = (m_CameraController.m_Shift ? 16.0f : 4.0f);
 
-    XMVECTOR cameraTranslate = XMVectorSet(m_CameraController.m_Right - m_CameraController.m_Left, 0.0f,
+    const XMVECTOR cameraTranslate =
+    XMVectorSet(m_CameraController.m_Right - m_CameraController.m_Left, 0.0f,
         m_CameraController.m_Forward - m_CameraController.m_Backward,
-        1.0f) * speedMultiplier
-        * static_cast<float>(e.ElapsedTime);
-    XMVECTOR cameraPan = XMVectorSet(0.0f, m_CameraController.m_Up - m_CameraController.m_Down, 0.0f, 1.0f) *
-        speedMultiplier *
-        static_cast<float>(e.ElapsedTime);
+        1.0f) * speedMultiplier * static_cast<float>(e.ElapsedTime);
+    const XMVECTOR cameraPan = XMVectorSet(0.0f, m_CameraController.m_Up - m_CameraController.m_Down, 0.0f, 1.0f) *
+    speedMultiplier *
+    static_cast<float>(e.ElapsedTime);
     m_Camera.Translate(cameraTranslate, Space::Local);
     m_Camera.Translate(cameraPan, Space::Local);
 
-    XMVECTOR cameraRotation = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(m_CameraController.m_Pitch),
+    const XMVECTOR cameraRotation = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(m_CameraController.m_Pitch),
         XMConvertToRadians(m_CameraController.m_Yaw), 0.0f);
     m_Camera.SetRotation(cameraRotation);
 
-    auto lightDirectionWS = DirectX::XMLoadFloat4(&m_DirectionalLight.m_DirectionWs);
-    lightDirectionWS = DirectX::XMVector3Normalize(lightDirectionWS);
-    DirectX::XMStoreFloat4(&m_DirectionalLight.m_DirectionWs, lightDirectionWS);
+    auto lightDirectionWs = XMLoadFloat4(&m_DirectionalLight.m_DirectionWs);
+    lightDirectionWs = XMVector3Normalize(lightDirectionWs);
+    XMStoreFloat4(&m_DirectionalLight.m_DirectionWs, lightDirectionWs);
 
     auto dt = static_cast<float>(e.ElapsedTime);
 }
@@ -261,13 +261,13 @@ void MeshletsDemo::OnKeyPressed(KeyEventArgs& e)
     case KeyCode::Enter:
         if (e.Alt)
         {
-    case KeyCode::F11:
-        if (allowFullscreenToggle)
-        {
-            PWindow->ToggleFullscreen();
-            allowFullscreenToggle = false;
-        }
-        break;
+        case KeyCode::F11:
+            if (allowFullscreenToggle)
+            {
+                PWindow->ToggleFullscreen();
+                allowFullscreenToggle = false;
+            }
+            break;
         }
     case KeyCode::V:
         PWindow->ToggleVSync();
@@ -317,8 +317,8 @@ void MeshletsDemo::OnKeyReleased(KeyEventArgs& e)
     case KeyCode::Enter:
         if (e.Alt)
         {
-    case KeyCode::F11:
-        allowFullscreenToggle = true;
+        case KeyCode::F11:
+            allowFullscreenToggle = true;
         }
         break;
     case KeyCode::Up:
@@ -353,10 +353,9 @@ void MeshletsDemo::OnMouseMoved(MouseMotionEventArgs& e)
 {
     Base::OnMouseMoved(e);
 
-    const float mouseSpeed = 0.1f;
-
     if (e.LeftButton)
     {
+        constexpr float mouseSpeed = 0.1f;
         m_CameraController.m_Pitch -= e.RelY * mouseSpeed;
 
         m_CameraController.m_Pitch = Clamp(m_CameraController.m_Pitch, -90.0f, 90.0f);

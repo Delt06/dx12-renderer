@@ -57,7 +57,7 @@ namespace CBuffer
         XMMATRIX g_Model_Model;
         XMMATRIX g_Model_InverseTransposeModel;
 
-        void Compute(const DirectX::XMMATRIX& model)
+        void Compute(const XMMATRIX& model)
         {
             g_Model_Model = model;
             g_Model_InverseTransposeModel = XMMatrixTranspose(XMMatrixInverse(nullptr, model));
@@ -122,7 +122,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
         },
         [&demo, pRootSignature](const RenderContext& context, CommandList& commandList)
         {
-            for (const auto &go : demo.m_GameObjects)
+            for (const auto& go : demo.m_GameObjects)
             {
                 CBuffer::Model modelCBuffer{};
                 modelCBuffer.Compute(go.GetWorldMatrix());
@@ -133,16 +133,13 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
         }
     ));
 
-    RenderMetadataExpression<uint32_t> renderWidthExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenWidth; };
-    RenderMetadataExpression<uint32_t> renderHeightExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenHeight; };
+    RenderMetadataExpression renderWidthExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenWidth; };
+    RenderMetadataExpression renderHeightExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenHeight; };
 
-    ClearValue::DEPTH_STENCIL_VALUE depthClearValue;
-    depthClearValue.Depth = 1.0f;
-    depthClearValue.Stencil = 0;
 
     std::vector<TextureDescription> textures = {
-        TextureDescription(::ResourceIds::User::DepthBuffer, renderWidthExpression, renderHeightExpression, DEPTH_BUFFER_FORMAT, {1.0f, 0u}, ResourceInitAction::Clear),
-        TextureDescription(RenderGraph::ResourceIds::GraphOutput, renderWidthExpression, renderHeightExpression, Window::BUFFER_FORMAT_SRGB, CLEAR_COLOR, ResourceInitAction::Clear),
+        { ::ResourceIds::User::DepthBuffer, renderWidthExpression, renderHeightExpression, DEPTH_BUFFER_FORMAT, { 1.0f, 0u }, Clear },
+        { ResourceIds::GraphOutput, renderWidthExpression, renderHeightExpression, Window::BUFFER_FORMAT_SRGB, CLEAR_COLOR, Clear },
     };
 
     std::vector<BufferDescription> buffers =
@@ -152,7 +149,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
 
     std::vector<TokenDescription> tokens =
     {
-        TokenDescription(::ResourceIds::User::SetupFinishedToken),
+        { ::ResourceIds::User::SetupFinishedToken },
     };
 
     return std::make_unique<RenderGraphRoot>(std::move(renderPasses), std::move(textures), std::move(buffers), std::move(tokens));
