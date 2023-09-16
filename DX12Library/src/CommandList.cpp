@@ -379,11 +379,11 @@ bool CommandList::LoadTextureFromFile(Texture& texture, const std::wstring& file
             break;
         case DirectX::TEX_DIMENSION_TEXTURE2D:
             textureDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-                metadata.format, metadata.width, metadata.height, static_cast<UINT16>(metadata.arraySize));
+                metadata.format, metadata.width, static_cast<UINT>(metadata.height), static_cast<UINT16>(metadata.arraySize));
             break;
         case DirectX::TEX_DIMENSION_TEXTURE3D:
             textureDesc = CD3DX12_RESOURCE_DESC::Tex3D(
-                metadata.format, metadata.width, metadata.height, metadata.depth);
+                metadata.format, metadata.width, static_cast<UINT>(metadata.height), static_cast<UINT16>(metadata.depth));
             break;
         default:
             throw std::exception("Invalid texture dimension.");
