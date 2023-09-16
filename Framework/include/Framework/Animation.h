@@ -37,7 +37,7 @@ public:
 
 	using BoneMask = std::set<size_t>;
 
-	std::vector<BoneTransform> GetBonesTranforms(Mesh& mesh, double time) const;
+	std::vector<BoneTransform> GetBonesTransforms(Mesh& mesh, double time) const;
 
 	static void Apply(Mesh& mesh, const std::vector<BoneTransform>& transforms);
 

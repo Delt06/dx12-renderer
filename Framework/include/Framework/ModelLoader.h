@@ -7,11 +7,13 @@
 #include <memory>
 
 class Mesh;
+struct MeshPrototype;
 class Animation;
 
 class ModelLoader
 {
 public:
+	std::vector<MeshPrototype> LoadAsMeshPrototypes(const std::string& path, bool flipNormals = false) const;
 	std::shared_ptr<Model> Load(CommandList& commandList, const std::string& path, bool flipNormals = false) const;
 	std::shared_ptr<Model> LoadExisting(std::shared_ptr<Mesh> mesh) const;
 

@@ -4,6 +4,7 @@ project("Framework")
 
 set(HEADER_FILES
         "include/Framework/Aabb.h"
+        "include/Framework/Armature.h"
         
         "include/Framework/Bone.h"
         "include/Framework/BoundingSphere.h"
@@ -37,6 +38,7 @@ set(HEADER_FILES
 
 set(SOURCE_FILES
         "src/Aabb.cpp"
+        "src/Armature.cpp"
         
         "src/Bone.cpp"
         "src/BoundingSphere.cpp"

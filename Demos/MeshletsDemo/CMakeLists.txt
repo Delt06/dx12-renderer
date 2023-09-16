@@ -4,6 +4,7 @@ project("MeshletsDemo")
 
 set(HEADER_FILES
         include/MeshletsDemo.h
+        include/MeshletBuilder.h
         include/RenderGraph.User.h
         )
 
