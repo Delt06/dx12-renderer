@@ -72,3 +72,35 @@ cpp_space_around_assignment_operator = insert
 cpp_space_pointer_reference_alignment = ignore
 cpp_space_around_ternary_operator = insert
 cpp_wrap_preserve_blocks = one_liners
+
+[*]
+
+# ReSharper properties
+resharper_align_multiline_calls_chain = false
+resharper_align_multiline_ctor_init = false
+resharper_blank_lines_around_class_definition = 0
+resharper_blank_lines_around_function_definition = 0
+resharper_break_template_declaration = do_not_change
+resharper_continuous_line_indent = none
+resharper_cpp_align_multiline_argument = false
+resharper_cpp_align_multiline_parameter = false
+resharper_cpp_empty_block_style = together
+resharper_cpp_indent_statement_pars = outside
+resharper_cpp_keep_blank_lines_in_code = 100
+resharper_cpp_keep_blank_lines_in_declarations = 100
+resharper_cpp_max_line_length = 301
+resharper_cpp_remove_blank_lines_near_braces_in_code = false
+resharper_cpp_remove_blank_lines_near_braces_in_declarations = false
+resharper_cpp_space_after_cast = true
+resharper_cpp_space_after_colon_in_case = false
+resharper_cpp_wrap_ternary_expr_style = wrap_if_long
+resharper_disable_space_changes_before_trailing_comment = true
+resharper_expression_braces = outside_and_inside
+resharper_indent_comment = false
+resharper_indent_preprocessor_directives = do_not_change
+resharper_indent_wrapped_function_names = true
+resharper_simple_case_statement_style = line_break
+resharper_space_within_initializer_braces = true
+resharper_toplevel_function_declaration_return_type_style = on_single_line
+resharper_toplevel_function_definition_return_type_style = on_single_line
+resharper_wrap_enumeration_style = chop_always
