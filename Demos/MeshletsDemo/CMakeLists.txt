@@ -3,13 +3,15 @@
 project("MeshletsDemo")
 
 set(HEADER_FILES
-        include/MeshletsDemo.h
+        include/Meshlet.h
         include/MeshletBuilder.h
+        include/MeshletsDemo.h
         include/RenderGraph.User.h
         )
 
 set(SOURCE_FILES
         src/main.cpp
+        src/MeshletBuilder.cpp
         src/MeshletsDemo.cpp
         src/RenderGraph.User.cpp
         )
