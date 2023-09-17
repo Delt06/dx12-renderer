@@ -3,11 +3,11 @@
 
 struct CommonVertexAttributes
 {
-    float3 position : POSITION;
-    float3 normal : NORMAL;
-    float2 uv : TEXCOORD0;
-    float3 tangent : TANGENT;
-    float3 bitangent : BINORMAL;
+    float4 position : POSITION;
+    float4 normal : NORMAL;
+    float4 uv : TEXCOORD0;
+    float4 tangent : TANGENT;
+    float4 bitangent : BINORMAL;
 };
 
 #endif

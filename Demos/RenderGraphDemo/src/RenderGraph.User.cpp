@@ -50,7 +50,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
     },
         [](const auto& context, auto& commandList)
         {
-            const auto& pBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::ColorSplitBuffer);
+            const auto& pBuffer = context.m_ResourcePool->GetStructuredBuffer(::ResourceIds::User::ColorSplitBuffer);
             commandList.CopyByteAddressBuffer<uint32_t>(pBuffer->GetCounterBuffer(), 0u);
         }
     ));
@@ -156,7 +156,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
             [pBlitMesh, pMaterial](const auto& context, auto& commandList)
             {
                 const auto& pTempRt = context.m_ResourcePool->GetTexture(::ResourceIds::User::TempRenderTarget);
-                const auto& pColorSplitBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::ColorSplitBuffer);
+                const auto& pColorSplitBuffer = context.m_ResourcePool->GetStructuredBuffer(::ResourceIds::User::ColorSplitBuffer);
                 const auto& ppColorSplitBufferCounter = pColorSplitBuffer->GetCounterBufferPtr();
 
                 pMaterial->SetShaderResourceView("_Source", ShaderResourceView(pTempRt));

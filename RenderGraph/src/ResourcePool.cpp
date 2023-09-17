@@ -1,5 +1,7 @@
 #include "ResourcePool.h"
 
+#include <DX12Library/Buffer.h>
+#include <DX12Library/ByteAddressBuffer.h>
 #include <DX12Library/Helpers.h>
 #include <DX12Library/StructuredBuffer.h>
 #include <DX12Library/Texture.h>
@@ -53,22 +55,39 @@ namespace
         return texture;
     }
 
-    std::shared_ptr<StructuredBuffer> CreateBufferImpl(
+    std::shared_ptr<Buffer> CreateBufferImpl(
         const RenderGraph::ResourceDescription& desc,
         const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap
     )
     {
         constexpr UINT64 heapOffset = 0u;
-        auto pBuffer = std::make_shared<StructuredBuffer>(
-            desc.m_DxDesc,
-            pHeap,
-            heapOffset,
-            desc.m_ElementsCount, desc.m_BufferDescription.m_Stride,
-            RenderGraph::ResourceIds::GetResourceName(desc.m_BufferDescription.m_Id)
-        );
+        std::shared_ptr<Buffer> pBuffer;
+        if (desc.m_BufferDescription.m_Stride == 1)
+        {
+            pBuffer = std::make_shared<ByteAddressBuffer>(
+                desc.m_DxDesc,
+                pHeap,
+                heapOffset,
+                desc.m_ElementsCount, desc.m_BufferDescription.m_Stride,
+                RenderGraph::ResourceIds::GetResourceName(desc.m_BufferDescription.m_Id)
+            );
+        }
+        else
+        {
+            const auto pStructuredBuffer = std::make_shared<StructuredBuffer>(
+                desc.m_DxDesc,
+                pHeap,
+                heapOffset,
+                desc.m_ElementsCount, desc.m_BufferDescription.m_Stride,
+                RenderGraph::ResourceIds::GetResourceName(desc.m_BufferDescription.m_Id)
+            );
+            // TODO: add subresources for the Resource class, override it for the structured buffer
+            pStructuredBuffer->GetCounterBuffer().SetAutoBarriersEnabled(false);
+            pBuffer = pStructuredBuffer;
+        }
+
         pBuffer->SetAutoBarriersEnabled(false);
-        pBuffer->GetCounterBuffer().SetAutoBarriersEnabled(false);
-        // TODO: add subresources for the Resource class, override it for the structured buffer
+
         return pBuffer;
     }
 }
@@ -131,11 +150,27 @@ const std::shared_ptr<Texture>& RenderGraph::ResourcePool::GetTexture(ResourceId
     return m_Textures[resourceId];
 }
 
-const std::shared_ptr<StructuredBuffer>& RenderGraph::ResourcePool::GetBuffer(ResourceId resourceId) const
+const std::shared_ptr<Buffer>& RenderGraph::ResourcePool::GetBuffer(ResourceId resourceId) const
 {
     Assert(IsRegistered(resourceId), "Resource is not registered.");
     Assert(resourceId < m_Buffers.size(), "Resource ID out of range.");
     return m_Buffers[resourceId];
+}
+
+std::shared_ptr<StructuredBuffer> RenderGraph::ResourcePool::GetStructuredBuffer(const ResourceId resourceId) const
+{
+    const auto& pBuffer = GetBuffer(resourceId);
+    const auto pStructuredBuffer = std::dynamic_pointer_cast<StructuredBuffer>(pBuffer);
+    Assert(pStructuredBuffer != nullptr, "Invalid cast");
+    return pStructuredBuffer;
+}
+
+std::shared_ptr<ByteAddressBuffer> RenderGraph::ResourcePool::GetByteAddressBuffer(ResourceId resourceId) const
+{
+    const auto& pBuffer = GetBuffer(resourceId);
+    const auto pByteAddressBuffer = std::dynamic_pointer_cast<ByteAddressBuffer>(pBuffer);
+    Assert(pByteAddressBuffer != nullptr, "Invalid cast");
+    return pByteAddressBuffer;
 }
 
 void RenderGraph::ResourcePool::ForEachResource(const std::function<bool(const ResourceDescription&)>& func)
@@ -284,7 +319,36 @@ void RenderGraph::ResourcePool::RegisterTexture(const TextureDescription& desc, 
 
 void RenderGraph::ResourcePool::RegisterBuffer(const BufferDescription& desc, const std::vector<RenderPass*>& renderPasses, const RenderMetadata& renderMetadata, const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice)
 {
-    constexpr D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
+
+    bool unorderedAccess = false;
+
+    for (const auto& pRenderPass : renderPasses)
+    {
+        for (const auto& output : pRenderPass->GetOutputs())
+        {
+            if (desc.m_Id == output.m_Id)
+            {
+                switch (output.m_Type)
+                {
+                case OutputType::UnorderedAccess:
+                    unorderedAccess = true;
+                    break;
+                case OutputType::CopyDestination:
+                    // still valid but do not have a related flag
+                    break;
+                default:
+                    Assert(false, "Invalid output type.");
+                    break;
+                }
+            }
+        }
+    }
+
+    if (unorderedAccess)
+    {
+        resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    }
 
     const auto elementsCount = desc.m_SizeExpression(renderMetadata);
     const auto totalSize = elementsCount * desc.m_Stride;
@@ -321,7 +385,7 @@ const std::shared_ptr<Texture>& RenderGraph::ResourcePool::CreateTexture(const R
     return m_Textures[resourceId] = pTexture;
 }
 
-const std::shared_ptr<StructuredBuffer>& RenderGraph::ResourcePool::CreateBuffer(const ResourceId resourceId)
+const std::shared_ptr<Buffer>& RenderGraph::ResourcePool::CreateBuffer(const ResourceId resourceId)
 {
     Assert(IsRegistered(resourceId), "The resource is not registered.");
 
