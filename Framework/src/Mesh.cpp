@@ -11,6 +11,21 @@ using namespace Microsoft::WRL;
 
 namespace
 {
+    XMFLOAT3 AsFloat3(XMFLOAT4 values)
+    {
+        return { values.x, values.y, values.z };
+    }
+
+    XMFLOAT2 AsFloat2(XMFLOAT4 values)
+    {
+        return { values.x, values.y };
+    }
+
+    XMFLOAT4 AsFloat4(XMFLOAT3 values)
+    {
+        return { values.x, values.y, values.z, 0.0f };
+    }
+
     void GenerateTangents(VertexCollectionType& vertices, const IndexCollectionType& indices)
     {
         const size_t nVerts = vertices.size();
@@ -23,9 +38,9 @@ namespace
         for (size_t j = 0; j < nVerts; ++j)
         {
             const auto& vertexAttributes = vertices[j];
-            pos[j] = vertexAttributes.Position;
-            normals[j] = vertexAttributes.Normal;
-            texcoords[j] = vertexAttributes.Uv;
+            pos[j] = AsFloat3(vertexAttributes.Position);
+            normals[j] = AsFloat3(vertexAttributes.Normal);
+            texcoords[j] = AsFloat2(vertexAttributes.Uv);
         }
         const auto tangents = std::make_unique<XMFLOAT3[]>(nVerts);
         const auto bitangents = std::make_unique<XMFLOAT3[]>(nVerts);
@@ -37,8 +52,8 @@ namespace
         for (size_t j = 0; j < nVerts; ++j)
         {
             auto& vertexAttributes = vertices[j];
-            vertexAttributes.Tangent = tangents[j];
-            vertexAttributes.Bitangent = bitangents[j];
+            vertexAttributes.Tangent = AsFloat4(tangents[j]);
+            vertexAttributes.Bitangent = AsFloat4(bitangents[j]);
         }
     }
 
@@ -175,7 +190,7 @@ void Mesh::Draw(CommandList& commandList, const uint32_t instanceCount) const
 
 void Mesh::Bind(CommandList& commandList) const
 {
-    commandList.SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    commandList.SetPrimitiveTopology(PRIMITIVE_TOPOLOGY);
     commandList.SetVertexBuffer(VertexAttributes::VERTEX_BUFFER_SLOT_INDEX, m_VertexBuffer);
 
     if (m_SkinningVertexBuffer.GetNumVertices() > 0)
@@ -630,7 +645,7 @@ void Mesh::CalculateAabb(const VertexCollectionType& vertices)
 
     for (auto& vertex : vertices)
     {
-        const XMVECTOR position = XMLoadFloat3(&vertex.Position);
+        const XMVECTOR position = XMLoadFloat4(&vertex.Position);
         m_Aabb.Encapsulate(position);
     }
 }

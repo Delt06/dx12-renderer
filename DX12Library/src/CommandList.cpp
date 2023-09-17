@@ -188,6 +188,8 @@ void CommandList::CopyBuffer(Buffer& buffer, const size_t numElements, const siz
     // see if need to create a new resource
     if (buffer.GetD3D12Resource() == nullptr || desc.Width < bufferSize || desc.Flags != flags)
     {
+        Assert(buffer.AreAutoBarriersEnabled(), "Should not recreate a non-automatic resource.");
+
         const auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
         const auto resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize, flags);
         ThrowIfFailed(device->CreateCommittedResource(

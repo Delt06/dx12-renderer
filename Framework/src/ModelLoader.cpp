@@ -26,6 +26,16 @@ namespace
         return { vector.x, vector.y, vector.z };
     }
 
+    XMFLOAT4 ToXMFloat4Position(aiVector3D vector)
+    {
+        return { vector.x, vector.y, vector.z, 1.0f };
+    }
+
+    XMFLOAT4 ToXMFloat4Vector(aiVector3D vector)
+    {
+        return { vector.x, vector.y, vector.z, 0.0f };
+    }
+
     XMFLOAT2 ToXMFloat2(aiVector3D vector)
     {
         return { vector.x, vector.y };
@@ -104,24 +114,24 @@ std::vector<MeshPrototype> ModelLoader::LoadAsMeshPrototypes(const std::string& 
 
             if (mesh->HasPositions())
             {
-                vertexAttributes.Position = ToXMFloat3(mesh->mVertices[vertexIndex]);
+                vertexAttributes.Position = ToXMFloat4Position(mesh->mVertices[vertexIndex]);
             }
 
             if (mesh->HasNormals())
             {
-                vertexAttributes.Normal = ToXMFloat3(mesh->mNormals[vertexIndex] * (flipNormals ? -1.0f : 1.0f));
+                vertexAttributes.Normal = ToXMFloat4Vector(mesh->mNormals[vertexIndex] * (flipNormals ? -1.0f : 1.0f));
             }
 
             constexpr unsigned int uvIndex = 0;
             if (mesh->HasTextureCoords(uvIndex))
             {
-                vertexAttributes.Uv = ToXMFloat2(mesh->mTextureCoords[uvIndex][vertexIndex]);
+                vertexAttributes.Uv = ToXMFloat4Vector(mesh->mTextureCoords[uvIndex][vertexIndex]);
             }
 
             if (mesh->HasTangentsAndBitangents())
             {
-                vertexAttributes.Tangent = ToXMFloat3(mesh->mTangents[vertexIndex]);
-                vertexAttributes.Bitangent = ToXMFloat3(mesh->mBitangents[vertexIndex]);
+                vertexAttributes.Tangent = ToXMFloat4Vector(mesh->mTangents[vertexIndex]);
+                vertexAttributes.Bitangent = ToXMFloat4Vector(mesh->mBitangents[vertexIndex]);
             }
 
             outputVertices.push_back(vertexAttributes);

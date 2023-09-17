@@ -284,41 +284,11 @@ void RenderGraph::ResourcePool::RegisterTexture(const TextureDescription& desc, 
 
 void RenderGraph::ResourcePool::RegisterBuffer(const BufferDescription& desc, const std::vector<RenderPass*>& renderPasses, const RenderMetadata& renderMetadata, const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice)
 {
-    D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
-    {
-        bool unorderedAccess = false;
-
-        for (const auto& pRenderPass : renderPasses)
-        {
-            for (const auto& output : pRenderPass->GetOutputs())
-            {
-                if (desc.m_Id == output.m_Id)
-                {
-                    switch (output.m_Type)
-                    {
-                    case OutputType::UnorderedAccess:
-                        unorderedAccess = true;
-                        break;
-                    case OutputType::CopyDestination:
-                        // still valid but do not have a related flag
-                        break;
-                    default:
-                        Assert(false, "Invalid output type.");
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (unorderedAccess)
-        {
-            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-        }
-    }
+    constexpr D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
     const auto elementsCount = desc.m_SizeExpression(renderMetadata);
     const auto totalSize = elementsCount * desc.m_Stride;
-    auto dxDesc = CD3DX12_RESOURCE_DESC::Buffer(totalSize, resourceFlags);
+    const auto dxDesc = CD3DX12_RESOURCE_DESC::Buffer(totalSize, resourceFlags);
 
     ResourceDescription description = {};
     description.m_Id = desc.m_Id;

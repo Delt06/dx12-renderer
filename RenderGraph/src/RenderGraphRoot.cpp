@@ -343,7 +343,8 @@ void RenderGraph::RenderGraphRoot::CheckPotentiallyDirtyResources(const RenderMe
         case ResourceType::Buffer:
             {
                 const auto& pBuffer = m_ResourcePool->GetBuffer(resourceDescription.m_Id);
-                if (resourceDescription.m_BufferDescription.m_SizeExpression(renderMetadata) != pBuffer->GetNumElements())
+                const auto d3d12Desc = pBuffer->GetD3D12ResourceDesc();
+                if (resourceDescription.m_BufferDescription.m_SizeExpression(renderMetadata) != d3d12Desc.Width / pBuffer->GetElementSize())
                 {
                     m_Dirty = true;
                     return false;

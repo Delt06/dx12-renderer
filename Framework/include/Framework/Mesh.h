@@ -60,37 +60,53 @@ struct VertexAttributes
 
     VertexAttributes(const DirectX::XMFLOAT3& position, const DirectX::XMFLOAT3& normal,
         const DirectX::XMFLOAT2& textureCoordinate)
-        : Position(position),
-        Normal(normal),
-        Uv(textureCoordinate)
+        : Position(ExtendPosition(position))
+        , Normal(ExtendVector(normal))
+        , Uv(Extend(textureCoordinate))
     { }
 
     VertexAttributes(const DirectX::XMFLOAT3& position, const DirectX::XMFLOAT3& normal,
         const DirectX::XMFLOAT2& textureCoordinate, const DirectX::XMFLOAT3& tangent,
         const DirectX::XMFLOAT3& bitangent)
-        : Position(position),
-        Normal(normal),
-        Uv(textureCoordinate),
-        Tangent(tangent),
-        Bitangent(bitangent)
+        : Position(ExtendPosition(position))
+        , Normal(ExtendVector(normal))
+        , Uv(Extend(textureCoordinate))
+        , Tangent(ExtendVector(tangent))
+        , Bitangent(ExtendVector(bitangent))
     { }
 
     VertexAttributes(DirectX::FXMVECTOR position, DirectX::FXMVECTOR normal, DirectX::FXMVECTOR textureCoordinate)
     {
-        XMStoreFloat3(&this->Position, position);
-        XMStoreFloat3(&this->Normal, normal);
-        XMStoreFloat2(&this->Uv, textureCoordinate);
+        XMStoreFloat4(&this->Position, position);
+        XMStoreFloat4(&this->Normal, normal);
+        XMStoreFloat4(&this->Uv, textureCoordinate);
     }
 
-    DirectX::XMFLOAT3 Position;
-    DirectX::XMFLOAT3 Normal{};
-    DirectX::XMFLOAT2 Uv{};
-    DirectX::XMFLOAT3 Tangent{};
-    DirectX::XMFLOAT3 Bitangent{};
+    DirectX::XMFLOAT4 Position;
+    DirectX::XMFLOAT4 Normal{};
+    DirectX::XMFLOAT4 Uv{};
+    DirectX::XMFLOAT4 Tangent{};
+    DirectX::XMFLOAT4 Bitangent{};
 
     static constexpr uint32_t VERTEX_BUFFER_SLOT_INDEX = 0;
     static constexpr int INPUT_ELEMENT_COUNT = 5;
     static const D3D12_INPUT_ELEMENT_DESC INPUT_ELEMENTS[INPUT_ELEMENT_COUNT];
+
+private:
+    static DirectX::XMFLOAT4 Extend(const DirectX::XMFLOAT2& value)
+    {
+        return {value.x, value.y, 0.0f, 0.0f};
+    }
+
+    static DirectX::XMFLOAT4 ExtendPosition(const DirectX::XMFLOAT3& value)
+    {
+        return {value.x, value.y, value.z, 1.0f};
+    }
+
+    static DirectX::XMFLOAT4 ExtendVector(const DirectX::XMFLOAT3& value)
+    {
+        return {value.x, value.y, value.z, 0.0f};
+    }
 };
 
 struct SkinningVertexAttributes
@@ -125,6 +141,8 @@ struct MeshPrototype
 class Mesh final
 {
 public:
+    static constexpr D3D_PRIMITIVE_TOPOLOGY PRIMITIVE_TOPOLOGY = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
     void Draw(CommandList& commandList, uint32_t instanceCount = 1) const;
     void Bind(CommandList& commandList) const;
 
