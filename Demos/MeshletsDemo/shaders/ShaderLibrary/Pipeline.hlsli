@@ -6,7 +6,6 @@
 #include <ShaderLibrary/Shadows.hlsli>
 
 #include "CommonVertexAttributes.hlsli"
-#include "Meshlets.hlsli"
 
 struct DirectionalLight
 {

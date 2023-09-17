@@ -1,4 +1,5 @@
-#include "ShaderLibrary/Model.hlsli"
+#include "ShaderLibrary/Meshlets.hlsli"
+
 #include "ShaderLibrary/Pipeline.hlsli"
 
 #include "Meshlet_VertexShaderOutput.hlsli"
@@ -27,13 +28,15 @@ VertexShaderOutput main(
 {
     VertexShaderOutput OUT;
 
-    const Meshlet meshlet = _MeshletsBuffer[g_Model_Index];
+    const Meshlet meshlet = _MeshletsBuffer[g_Meshlet_Index];
     const uint index = LoadIndex(meshlet, id);
     const CommonVertexAttributes IN = _CommonVertexBuffer[meshlet.vertexOffset + index];
 
-    OUT.NormalWS = mul((float3x3) g_Model_InverseTransposeModel, IN.normal.xyz);
+    Transform transform = _TransformsBuffer[meshlet.transformIndex];
 
-    const float4 positionWS = mul(g_Model_Model, float4(IN.position.xyz, 1.0f));
+    OUT.NormalWS = mul((float3x3) transform.inverseTransposeWorldMatrix, IN.normal.xyz);
+
+    const float4 positionWS = mul(transform.worldMatrix, float4(IN.position.xyz, 1.0f));
     OUT.PositionCS = mul(g_Pipeline_ViewProjection, positionWS);
 
     return OUT;

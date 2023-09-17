@@ -20,6 +20,8 @@ struct Meshlet
 {
     MeshletBounds m_Bounds;
 
+    uint32_t m_TransformIndex;
+
     uint32_t m_VertexOffset;
     uint32_t m_IndexOffset;
 

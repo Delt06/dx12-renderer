@@ -7,6 +7,7 @@ set(HEADER_FILES
         include/MeshletBuilder.h
         include/MeshletsDemo.h
         include/RenderGraph.User.h
+        include/Transform.h
         )
 
 set(SOURCE_FILES

@@ -22,6 +22,7 @@
 
 #include "Meshlet.h"
 #include "MeshletBuilder.h"
+#include "Transform.h"
 
 class MeshletsDemo final : public Game
 {
@@ -36,6 +37,7 @@ public:
 
     Camera m_Camera;
     std::vector<GameObject> m_GameObjects;
+    std::vector<Transform> m_TransformsBuffer;
     MeshletBuilder::MeshletSet m_MeshletsBuffer;
     DirectionalLight m_DirectionalLight;
 

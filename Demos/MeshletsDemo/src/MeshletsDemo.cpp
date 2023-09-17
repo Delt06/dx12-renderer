@@ -129,9 +129,16 @@ bool MeshletsDemo::LoadContent()
                         updatedMeshPrototypes.emplace_back(meshletSets[i].m_MeshPrototype);
                     }
 
-                    for (const auto& meshletSet : meshletSets)
+                    for (auto& meshletSet : meshletSets)
                     {
+                        const size_t oldCount = m_MeshletsBuffer.m_Meshlets.size();
                         m_MeshletsBuffer.Add(meshletSet);
+
+                        for (size_t meshletIndex = oldCount; meshletIndex < m_MeshletsBuffer.m_Meshlets.size(); ++meshletIndex)
+                        {
+                            auto& meshlet = m_MeshletsBuffer.m_Meshlets[meshletIndex];
+                            meshlet.m_TransformIndex = static_cast<uint32_t>(m_TransformsBuffer.size());
+                        }
                     }
                 }
 
@@ -151,6 +158,10 @@ bool MeshletsDemo::LoadContent()
                 const XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
                 const XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
                 m_GameObjects.push_back(GameObject(worldMatrix, model, pMaterial));
+
+                Transform transform;
+                transform.Compute(worldMatrix);
+                m_TransformsBuffer.emplace_back(transform);
             }
         }
     }

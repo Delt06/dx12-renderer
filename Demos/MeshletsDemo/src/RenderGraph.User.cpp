@@ -27,6 +27,7 @@ namespace ResourceIds
         static inline const RenderGraph::ResourceId CommonVertexBuffer = RenderGraph::ResourceIds::GetResourceId(L"CommonVertexBuffer");
         static inline const RenderGraph::ResourceId CommonIndexBuffer = RenderGraph::ResourceIds::GetResourceId(L"CommonIndexBuffer");
         static inline const RenderGraph::ResourceId MeshletsBuffer = RenderGraph::ResourceIds::GetResourceId(L"MeshletsBuffer");
+        static inline const RenderGraph::ResourceId TransformsBuffer = RenderGraph::ResourceIds::GetResourceId(L"TransformsBuffer");
 
         static inline const RenderGraph::ResourceId SetupFinishedToken = RenderGraph::ResourceIds::GetResourceId(L"SetupFinishedToken");
     };
@@ -58,17 +59,9 @@ namespace CBuffer
         DirectionalLight g_Pipeline_DirectionalLight;
     };
 
-    struct Model
+    struct MeshletRootConstants
     {
-        XMMATRIX g_Model_Model;
-        XMMATRIX g_Model_InverseTransposeModel;
-        uint32_t g_Model_Index;
-
-        void Compute(const XMMATRIX& model)
-        {
-            g_Model_Model = model;
-            g_Model_InverseTransposeModel = XMMatrixTranspose(XMMatrixInverse(nullptr, model));
-        }
+        uint32_t g_Meshlet_Index;
     };
 }
 
@@ -81,7 +74,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
     using namespace RenderGraph;
     using namespace DirectX;
 
-    const auto pShaderUploadBuffer = std::make_shared<SharedUploadBuffer>();
+    const auto pSharedUploadBuffer = std::make_shared<SharedUploadBuffer>();
 
     std::vector<std::unique_ptr<RenderPass>> renderPasses;
     renderPasses.emplace_back(RenderPass::Create(
@@ -92,7 +85,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
         {
             { ::ResourceIds::User::SetupFinishedToken, OutputType::Token }
         },
-        [&demo, pRootSignature, pShaderUploadBuffer](const RenderContext& context, CommandList& commandList)
+        [&demo, pRootSignature, pSharedUploadBuffer](const RenderContext& context, CommandList& commandList)
         {
             const auto& camera = demo.m_Camera;
             const XMMATRIX viewMatrix = camera.GetViewMatrix();
@@ -118,7 +111,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
             pRootSignature->Bind(commandList);
             pRootSignature->SetPipelineConstantBuffer(commandList, pipelineCBuffer);
 
-            pShaderUploadBuffer->BeginFrame();
+            pSharedUploadBuffer->BeginFrame();
         }
     ));
 
@@ -131,31 +124,24 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
             { ::ResourceIds::User::CommonVertexBuffer, OutputType::CopyDestination },
             { ::ResourceIds::User::CommonIndexBuffer, OutputType::CopyDestination },
             { ::ResourceIds::User::MeshletsBuffer, OutputType::CopyDestination },
+            { ::ResourceIds::User::TransformsBuffer, OutputType::CopyDestination },
         },
-        [&demo, pShaderUploadBuffer](const RenderContext& context, CommandList& commandList)
+        [&demo, pSharedUploadBuffer](const RenderContext& context, CommandList& commandList)
         {
-            if (demo.m_GameObjects.size() == 0)
-            {
-                return;
-            }
+            const auto& pCommonVertexBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::CommonVertexBuffer);
+            const auto& pCommonIndexBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::CommonIndexBuffer);
+            const auto& pMeshletsBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::MeshletsBuffer);
+            const auto& pTransformsBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::TransformsBuffer);
 
-            {
-                const auto& pCommonVertexBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::CommonVertexBuffer);
-                const auto& pCommonIndexBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::CommonIndexBuffer);
+            const auto& meshletSet = demo.m_MeshletsBuffer;
 
-                const MeshPrototype& meshPrototype = demo.m_MeshletsBuffer.m_MeshPrototype;
+            const auto& meshPrototype = meshletSet.m_MeshPrototype;
+            pSharedUploadBuffer->Upload(commandList, *pCommonVertexBuffer, meshPrototype.m_Vertices);
+            pSharedUploadBuffer->Upload(commandList, *pCommonIndexBuffer, meshPrototype.m_Indices);
 
-                pShaderUploadBuffer->Upload(commandList, *pCommonVertexBuffer, meshPrototype.m_Vertices);
-                pShaderUploadBuffer->Upload(commandList, *pCommonIndexBuffer, meshPrototype.m_Indices);
-            }
+            pSharedUploadBuffer->Upload(commandList, *pMeshletsBuffer, meshletSet.m_Meshlets);
 
-            {
-                const auto& pMeshletsBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::MeshletsBuffer);
-
-                const MeshletBuilder::MeshletSet& meshletSet = demo.m_MeshletsBuffer;
-
-                pShaderUploadBuffer->Upload(commandList, *pMeshletsBuffer, meshletSet.m_Meshlets);
-            }
+            pSharedUploadBuffer->Upload(commandList, *pTransformsBuffer, demo.m_TransformsBuffer);
         }
     ));
 
@@ -165,6 +151,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
             { ::ResourceIds::User::CommonVertexBuffer, InputType::ShaderResource },
             { ::ResourceIds::User::CommonIndexBuffer, InputType::ShaderResource },
             { ::ResourceIds::User::MeshletsBuffer, InputType::ShaderResource },
+            { ::ResourceIds::User::TransformsBuffer, InputType::ShaderResource },
         },
         {
             { ResourceIds::GraphOutput, OutputType::RenderTarget },
@@ -179,13 +166,13 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
 
             const auto& pCommonVertexBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::CommonVertexBuffer);
             const auto& pCommonIndexBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::CommonIndexBuffer);
+            const auto& pMeshletsBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::MeshletsBuffer);
+            const auto& pTransformsBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::TransformsBuffer);
 
             pRootSignature->SetPipelineShaderResourceView(commandList, 0, ShaderResourceView(pCommonVertexBuffer));
             pRootSignature->SetPipelineShaderResourceView(commandList, 1, ShaderResourceView(pCommonIndexBuffer));
-
-            const auto& pMeshletsBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::MeshletsBuffer);
-
             pRootSignature->SetPipelineShaderResourceView(commandList, 2, ShaderResourceView(pMeshletsBuffer));
+            pRootSignature->SetPipelineShaderResourceView(commandList, 3, ShaderResourceView(pTransformsBuffer));
 
             commandList.SetPrimitiveTopology(Mesh::PRIMITIVE_TOPOLOGY);
 
@@ -195,16 +182,14 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
 
                 pMaterial->Bind(commandList);
 
-                CBuffer::Model modelCBuffer{};
-                modelCBuffer.Compute(go.GetWorldMatrix());
-
                 for (auto& pMesh : go.GetModel()->GetMeshes())
                 {
                     for (uint32_t localMeshletIndex = 0; localMeshletIndex < pMesh->m_MeshletsCount; ++localMeshletIndex)
                     {
                         const uint32_t absoluteMeshletIndex = pMesh->m_MeshletsOffset + localMeshletIndex;
-                        modelCBuffer.g_Model_Index = absoluteMeshletIndex;
-                        pRootSignature->SetModelConstantBuffer(commandList, modelCBuffer);
+                        CBuffer::MeshletRootConstants constants{};
+                        constants.g_Meshlet_Index = absoluteMeshletIndex;
+                        pRootSignature->SetGraphicsRootConstants(commandList, constants);
 
                         commandList.Draw(demo.m_MeshletsBuffer.m_Meshlets[absoluteMeshletIndex].m_IndexCount);
                     }
@@ -229,6 +214,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
         BufferDescription{ ::ResourceIds::User::CommonVertexBuffer, [&demo](const auto&) { return demo.m_MeshletsBuffer.m_MeshPrototype.m_Vertices.size(); }, sizeof(VertexAttributes), CopyDestination },
         BufferDescription{ ::ResourceIds::User::CommonIndexBuffer, [&demo](const auto&) { return demo.m_MeshletsBuffer.m_MeshPrototype.m_Indices.size() * sizeof(uint16_t); }, 1, CopyDestination },
         BufferDescription{ ::ResourceIds::User::MeshletsBuffer, [&demo](const auto&) { return demo.m_MeshletsBuffer.m_Meshlets.size(); }, sizeof(Meshlet), CopyDestination },
+        BufferDescription{ ::ResourceIds::User::TransformsBuffer, [&demo](const auto&) { return demo.m_TransformsBuffer.size(); }, sizeof(Transform), CopyDestination },
     };
 
     std::vector<TokenDescription> tokens =
