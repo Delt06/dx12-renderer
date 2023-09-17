@@ -101,14 +101,16 @@ bool MeshletsDemo::LoadContent()
     {
 
         {
-            constexpr ModelLoader modelLoader;
+            // ReSharper disable once CppVariableCanBeMadeConstexpr
+            const ModelLoader modelLoader;
 
             uint32_t vertexBufferOffset = 0;
             uint32_t indexBufferOffset = 0;
             uint32_t meshletOffset = 0;
 
+            const auto loadGameObject = [&](const std::string& path, const XMMATRIX& worldMatrix)
             {
-                const std::vector<MeshPrototype> meshPrototypes = modelLoader.LoadAsMeshPrototypes("Assets/Models/teapot/teapot.obj", true);
+                const std::vector<MeshPrototype> meshPrototypes = modelLoader.LoadAsMeshPrototypes(path, true);
 
                 std::vector<MeshPrototype> updatedMeshPrototypes;
                 std::vector<MeshletBuilder::MeshletSet> meshletSets;
@@ -153,15 +155,28 @@ bool MeshletsDemo::LoadContent()
                     meshletOffset += pMesh->m_MeshletsCount;
                 }
 
-                const XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
-                const XMMATRIX rotationMatrix = XMMatrixIdentity();
-                const XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
-                const XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
                 m_GameObjects.push_back(GameObject(worldMatrix, model, pMaterial));
 
                 Transform transform;
                 transform.Compute(worldMatrix);
                 m_TransformsBuffer.emplace_back(transform);
+            };
+
+            {
+                const XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+                const XMMATRIX rotationMatrix = XMMatrixIdentity();
+                const XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
+                const XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+                loadGameObject("Assets/Models/teapot/teapot.obj", worldMatrix);
+            }
+
+            {
+                const XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 35.0f);
+                const XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(
+                    XMConvertToRadians(90), XMConvertToRadians(-45), XMConvertToRadians(0));
+                const XMMATRIX scaleMatrix = XMMatrixScaling(0.5f, 0.5f, 0.5f);
+                const XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+                loadGameObject("Assets/Models/tv/TV.fbx", worldMatrix);
             }
         }
     }
