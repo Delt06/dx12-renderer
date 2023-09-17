@@ -418,6 +418,15 @@ public:
     void DrawIndexed(uint32_t indexCount, uint32_t instanceCount = 1, uint32_t startIndex = 0, int32_t baseVertex = 0,
         uint32_t startInstance = 0);
 
+    void DrawIndirect(
+        const Microsoft::WRL::ComPtr<ID3D12CommandSignature>& pCommandSignature,
+        uint32_t maxCommandCount,
+        const Microsoft::WRL::ComPtr<ID3D12Resource>& pArgumentBuffer,
+        uint64_t argumentBufferOffset,
+        const Microsoft::WRL::ComPtr<ID3D12Resource>& pCountBuffer,
+        uint64_t countBufferOffset = 0
+    );
+
     /**
      * Dispatch a compute shader.
      */

@@ -21,11 +21,13 @@ public:
         Upload(commandList, destination, data.data(), data.size() * sizeof(T), sizeof(T), destinationOffset);
     }
 
+    void Upload(CommandList& commandList, const Resource& destination, const void* pData, uint64_t sizeInBytes, uint64_t alignment, uint64_t destinationOffset = 0U);
+
 private:
     static constexpr auto BUFFER_COUNT = Window::BUFFER_COUNT;
     static constexpr uint64_t CAPACITY_ALIGNMENT = 102400;
 
-    void Upload(CommandList& commandList, const Resource& destination, const void* pData, uint64_t sizeInBytes, uint64_t alignment, uint64_t destinationOffset);
+
 
     struct BufferInfo
     {

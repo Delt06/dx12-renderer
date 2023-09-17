@@ -4,9 +4,9 @@
 
 namespace
 {
-    static constexpr UINT PIPELINE_SRVS_COUNT = 32;
-    static constexpr UINT MATERIAL_SRVS_COUNT = 6;
-    static constexpr UINT UAVS_COUNT = 6;
+    constexpr UINT PIPELINE_SRVS_COUNT = 32;
+    constexpr UINT MATERIAL_SRVS_COUNT = 6;
+    constexpr UINT UAVS_COUNT = 6;
 }
 
 CommonRootSignature::CommonRootSignature(const std::shared_ptr<Resource>& emptyResource)
@@ -27,7 +27,7 @@ CommonRootSignature::CommonRootSignature(const std::shared_ptr<Resource>& emptyR
     }
 
     D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-    std::vector<CommonRootSignature::RootParameter> rootParameters(RootParameters::NumRootParameters);
+    std::vector<RootParameter> rootParameters(RootParameters::NumRootParameters);
 
     // constant buffers
     rootParameters[RootParameters::Constants].InitAsConstants(4u, 0u, CONSTANTS_REGISTER_SPACE);
@@ -54,14 +54,14 @@ CommonRootSignature::CommonRootSignature(const std::shared_ptr<Resource>& emptyR
         StaticSampler(2, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
         StaticSampler(3, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
         StaticSampler(4, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-                                        D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 0, 16,
-                                        D3D12_COMPARISON_FUNC_LESS_EQUAL)
+            D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 0, 16,
+            D3D12_COMPARISON_FUNC_LESS_EQUAL)
     };
 
     CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
     rootSignatureDescription.Init_1_1(
-        static_cast<UINT>(rootParameters.size()), rootParameters.data(),
-        static_cast<UINT>(_countof(staticSamples)), staticSamples,
+        rootParameters.size(), rootParameters.data(),
+        _countof(staticSamples), staticSamples,
         rootSignatureFlags);
 
     this->SetRootSignatureDesc(rootSignatureDescription.Desc_1_1, featureData.HighestVersion);
@@ -127,6 +127,10 @@ void CommonRootSignature::SetComputeConstantBuffer(CommandList& commandList, siz
 void CommonRootSignature::SetGraphicsRootConstants(CommandList& commandList, size_t size, const void* data) const
 {
     commandList.SetGraphics32BitConstants(RootParameters::Constants, static_cast<uint32_t>(size) / sizeof(uint32_t), data);
+}
+void CommonRootSignature::SetComputeRootConstants(CommandList& commandList, size_t size, const void* data) const
+{
+    commandList.SetCompute32BitConstants(RootParameters::Constants, static_cast<uint32_t>(size) / sizeof(uint32_t), data);
 }
 
 void CommonRootSignature::SetPipelineShaderResourceView(CommandList& commandList, UINT index, const ShaderResourceView& srv) const

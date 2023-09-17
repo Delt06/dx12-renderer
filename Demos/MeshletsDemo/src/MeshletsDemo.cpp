@@ -96,7 +96,7 @@ bool MeshletsDemo::LoadContent()
     m_DirectionalLight.m_DirectionWs = XMFLOAT4(1, 1, 0, 0);
 
     auto pShader = std::make_shared<Shader>(m_RootSignature, ShaderBlob(L"Meshlet_VS.cso"), ShaderBlob(L"Meshlet_PS.cso"));
-    const auto pMaterial = std::make_shared<Material>(pShader);
+    m_MeshletDrawMaterial = std::make_shared<Material>(pShader);
 
     {
 
@@ -155,7 +155,7 @@ bool MeshletsDemo::LoadContent()
                     meshletOffset += pMesh->m_MeshletsCount;
                 }
 
-                m_GameObjects.push_back(GameObject(worldMatrix, model, pMaterial));
+                m_GameObjects.push_back(GameObject(worldMatrix, model, m_MeshletDrawMaterial));
 
                 Transform transform;
                 transform.Compute(worldMatrix);

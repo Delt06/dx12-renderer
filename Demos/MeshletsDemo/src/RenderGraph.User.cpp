@@ -9,11 +9,12 @@
 #include <Framework/ComputeShader.h>
 #include <Framework/Material.h>
 #include <Framework/Mesh.h>
+#include "Framework/Model.h"
 #include <Framework/Shader.h>
 #include <Framework/SharedUploadBuffer.h>
 
+#include "MeshletDrawIndirect.h"
 #include "MeshletsDemo.h"
-#include "Framework/Model.h"
 
 using namespace DirectX;
 
@@ -28,6 +29,7 @@ namespace ResourceIds
         static inline const RenderGraph::ResourceId CommonIndexBuffer = RenderGraph::ResourceIds::GetResourceId(L"CommonIndexBuffer");
         static inline const RenderGraph::ResourceId MeshletsBuffer = RenderGraph::ResourceIds::GetResourceId(L"MeshletsBuffer");
         static inline const RenderGraph::ResourceId TransformsBuffer = RenderGraph::ResourceIds::GetResourceId(L"TransformsBuffer");
+        static inline const RenderGraph::ResourceId MeshletDrawCommands = RenderGraph::ResourceIds::GetResourceId(L"MeshletDrawCommands");
 
         static inline const RenderGraph::ResourceId SetupFinishedToken = RenderGraph::ResourceIds::GetResourceId(L"SetupFinishedToken");
     };
@@ -75,6 +77,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
     using namespace DirectX;
 
     const auto pSharedUploadBuffer = std::make_shared<SharedUploadBuffer>();
+    const auto pMeshletDrawIncorrect = std::make_shared<MeshletDrawIndirect>(pRootSignature, demo.m_MeshletDrawMaterial);
 
     std::vector<std::unique_ptr<RenderPass>> renderPasses;
     renderPasses.emplace_back(RenderPass::Create(
@@ -116,7 +119,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
     ));
 
     renderPasses.emplace_back(RenderPass::Create(
-        L"Prepare Common Buffers",
+        L"Prepare Buffers",
         {
             { ::ResourceIds::User::SetupFinishedToken, InputType::Token }
         },
@@ -146,57 +149,92 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
     ));
 
     renderPasses.emplace_back(RenderPass::Create(
-        L"Draw Geometries",
+        L"Prepare Meshlet Culling",
+        {
+
+        },
+        {
+            { ::ResourceIds::User::MeshletDrawCommands, OutputType::CopyDestination }
+        },
+        [pSharedUploadBuffer]
+        (const RenderContext& context, CommandList& commandList)
+        {
+            const auto& pMeshletDrawCommands = context.m_ResourcePool->GetStructuredBuffer(::ResourceIds::User::MeshletDrawCommands);
+
+            constexpr uint32_t clearValue = 0;
+            pSharedUploadBuffer->Upload(commandList, pMeshletDrawCommands->GetCounterBuffer(), &clearValue, sizeof(uint32_t), sizeof(uint32_t));
+        }
+    ));
+
+    renderPasses.emplace_back(RenderPass::Create(
+        L"Cull Meshlets",
+        {
+            { ::ResourceIds::User::MeshletsBuffer, InputType::ShaderResource },
+            { ::ResourceIds::User::TransformsBuffer, InputType::ShaderResource },
+        },
+        {
+            { ::ResourceIds::User::MeshletDrawCommands, OutputType::UnorderedAccess }
+        },
+        [&demo, pRootSignature,
+            pCullingShader = std::make_shared<ComputeShader>(pRootSignature, ShaderBlob(L"MeshletCulling_CS.cso"))]
+        (const RenderContext& context, CommandList& commandList)
+        {
+            const auto& pMeshletsBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::MeshletsBuffer);
+            const auto& pTransformsBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::TransformsBuffer);
+            const auto& pMeshletDrawCommands = context.m_ResourcePool->GetBuffer(::ResourceIds::User::MeshletDrawCommands);
+
+            pRootSignature->SetPipelineShaderResourceView(commandList, 2, ShaderResourceView(pMeshletsBuffer));
+            pRootSignature->SetPipelineShaderResourceView(commandList, 3, ShaderResourceView(pTransformsBuffer));
+            pRootSignature->SetUnorderedAccessView(commandList, 0, UnorderedAccessView(pMeshletDrawCommands));
+
+            const uint32_t meshletsCount = demo.m_MeshletsBuffer.m_Meshlets.size();
+
+            const struct
+            {
+                uint32_t m_TotalCount;
+            } constants
+            {
+                meshletsCount
+            };
+
+            pRootSignature->SetComputeRootConstants(commandList, constants);
+
+            constexpr uint32_t threadBlockSize = 32;
+
+            pCullingShader->Bind(commandList);
+            commandList.Dispatch(Math::AlignUp(meshletsCount, threadBlockSize) / threadBlockSize, 1, 1);
+        }
+    ));
+
+    renderPasses.emplace_back(RenderPass::Create(
+        L"Draw Meshlets",
         {
             { ::ResourceIds::User::CommonVertexBuffer, InputType::ShaderResource },
             { ::ResourceIds::User::CommonIndexBuffer, InputType::ShaderResource },
             { ::ResourceIds::User::MeshletsBuffer, InputType::ShaderResource },
             { ::ResourceIds::User::TransformsBuffer, InputType::ShaderResource },
+            { ::ResourceIds::User::MeshletDrawCommands, InputType::IndirectArgument },
         },
         {
             { ResourceIds::GraphOutput, OutputType::RenderTarget },
             { ::ResourceIds::User::DepthBuffer, OutputType::DepthWrite }
         },
-        [&demo, pRootSignature](const RenderContext& context, CommandList& commandList)
+        [&demo, pRootSignature, pMeshletDrawIncorrect](const RenderContext& context, CommandList& commandList)
         {
-            if (demo.m_GameObjects.size() == 0)
-            {
-                return;
-            }
-
             const auto& pCommonVertexBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::CommonVertexBuffer);
             const auto& pCommonIndexBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::CommonIndexBuffer);
             const auto& pMeshletsBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::MeshletsBuffer);
             const auto& pTransformsBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::TransformsBuffer);
+            const auto& pMeshletDrawCommands = context.m_ResourcePool->GetStructuredBuffer(::ResourceIds::User::MeshletDrawCommands);
 
             pRootSignature->SetPipelineShaderResourceView(commandList, 0, ShaderResourceView(pCommonVertexBuffer));
             pRootSignature->SetPipelineShaderResourceView(commandList, 1, ShaderResourceView(pCommonIndexBuffer));
             pRootSignature->SetPipelineShaderResourceView(commandList, 2, ShaderResourceView(pMeshletsBuffer));
             pRootSignature->SetPipelineShaderResourceView(commandList, 3, ShaderResourceView(pTransformsBuffer));
 
-            commandList.SetPrimitiveTopology(Mesh::PRIMITIVE_TOPOLOGY);
-
-            for (auto& go : demo.m_GameObjects)
-            {
-                const auto& pMaterial = go.GetMaterial();
-
-                pMaterial->Bind(commandList);
-
-                for (auto& pMesh : go.GetModel()->GetMeshes())
-                {
-                    for (uint32_t localMeshletIndex = 0; localMeshletIndex < pMesh->m_MeshletsCount; ++localMeshletIndex)
-                    {
-                        const uint32_t absoluteMeshletIndex = pMesh->m_MeshletsOffset + localMeshletIndex;
-                        CBuffer::MeshletRootConstants constants{};
-                        constants.g_Meshlet_Index = absoluteMeshletIndex;
-                        pRootSignature->SetGraphicsRootConstants(commandList, constants);
-
-                        commandList.Draw(demo.m_MeshletsBuffer.m_Meshlets[absoluteMeshletIndex].m_IndexCount);
-                    }
-                }
-
-                pMaterial->Unbind(commandList);
-            }
+            pMeshletDrawIncorrect->DrawIndirect(commandList,
+                demo.m_MeshletsBuffer.m_Meshlets.size(),
+                *pMeshletDrawCommands);
         }
     ));
 
@@ -215,6 +253,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
         BufferDescription{ ::ResourceIds::User::CommonIndexBuffer, [&demo](const auto&) { return demo.m_MeshletsBuffer.m_MeshPrototype.m_Indices.size() * sizeof(uint16_t); }, 1, CopyDestination },
         BufferDescription{ ::ResourceIds::User::MeshletsBuffer, [&demo](const auto&) { return demo.m_MeshletsBuffer.m_Meshlets.size(); }, sizeof(Meshlet), CopyDestination },
         BufferDescription{ ::ResourceIds::User::TransformsBuffer, [&demo](const auto&) { return demo.m_TransformsBuffer.size(); }, sizeof(Transform), CopyDestination },
+        BufferDescription{ ::ResourceIds::User::MeshletDrawCommands, [&demo](const auto&) { return demo.m_MeshletsBuffer.m_Meshlets.size(); }, sizeof(MeshletDrawIndirectCommand), CopyDestination },
     };
 
     std::vector<TokenDescription> tokens =

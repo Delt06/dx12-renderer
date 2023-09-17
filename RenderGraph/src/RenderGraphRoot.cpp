@@ -344,7 +344,7 @@ void RenderGraph::RenderGraphRoot::CheckPotentiallyDirtyResources(const RenderMe
             {
                 const auto& pBuffer = m_ResourcePool->GetBuffer(resourceDescription.m_Id);
                 const auto d3d12Desc = pBuffer->GetD3D12ResourceDesc();
-                if (resourceDescription.m_BufferDescription.m_SizeExpression(renderMetadata)  * resourceDescription.m_BufferDescription.m_Stride != d3d12Desc.Width)
+                if (resourceDescription.m_BufferDescription.m_SizeExpression(renderMetadata) * resourceDescription.m_BufferDescription.m_Stride != d3d12Desc.Width)
                 {
                     m_Dirty = true;
                     return false;
@@ -462,7 +462,7 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
         // SRV barriers
         if (input.m_Type == InputType::ShaderResource)
         {
-            resource.ForEachResourceRecursive([this](const auto& r)
+            resource.ForEachResourceRecursive([this](const Resource& r)
             {
                 TransitionBarrier(r, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
             });
@@ -470,9 +470,17 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
 
         if (input.m_Type == InputType::CopySource)
         {
-            resource.ForEachResourceRecursive([this](const auto& r)
+            resource.ForEachResourceRecursive([this](const Resource& r)
             {
                 TransitionBarrier(r, D3D12_RESOURCE_STATE_COPY_SOURCE);
+            });
+        }
+
+        if (input.m_Type == InputType::IndirectArgument)
+        {
+            resource.ForEachResourceRecursive([this](const Resource& r)
+            {
+                TransitionBarrier(r, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
             });
         }
     }

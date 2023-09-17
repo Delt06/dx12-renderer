@@ -19,6 +19,7 @@ namespace RenderGraph
         Token,
         ShaderResource,
         CopySource,
+        IndirectArgument,
     };
 
     struct Input

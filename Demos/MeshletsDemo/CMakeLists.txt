@@ -5,6 +5,7 @@ project("MeshletsDemo")
 set(HEADER_FILES
         include/Meshlet.h
         include/MeshletBuilder.h
+        include/MeshletDrawIndirect.h
         include/MeshletsDemo.h
         include/RenderGraph.User.h
         include/Transform.h
@@ -13,6 +14,7 @@ set(HEADER_FILES
 set(SOURCE_FILES
         src/main.cpp
         src/MeshletBuilder.cpp
+        src/MeshletDrawIndirect.cpp
         src/MeshletsDemo.cpp
         src/RenderGraph.User.cpp
         )
@@ -26,6 +28,7 @@ set(SHADER_FILES_PIXEL
         )
 
 set(SHADER_FILES_COMPUTE
+        shaders/MeshletCulling_CS.hlsl
         )
 
 set(TARGET_NAME MeshletsDemo)

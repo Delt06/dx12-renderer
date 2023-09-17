@@ -1030,6 +1030,22 @@ void CommandList::DrawIndexed(const uint32_t indexCount, const uint32_t instance
 
     m_D3d12CommandList->DrawIndexedInstanced(indexCount, instanceCount, startIndex, baseVertex, startInstance);
 }
+void CommandList::DrawIndirect(
+    const ComPtr<ID3D12CommandSignature>& pCommandSignature,
+    const uint32_t maxCommandCount,
+    const ComPtr<ID3D12Resource>& pArgumentBuffer, const uint64_t argumentBufferOffset,
+    const ComPtr<ID3D12Resource>& pCountBuffer, const uint64_t countBufferOffset
+)
+{
+    FlushResourceBarriers();
+
+    for (const auto& dynamicDescriptorHeap : m_DynamicDescriptorHeaps)
+    {
+        dynamicDescriptorHeap->CommitStagedDescriptorsForDraw(*this);
+    }
+
+    m_D3d12CommandList->ExecuteIndirect(pCommandSignature.Get(), maxCommandCount, pArgumentBuffer.Get(), argumentBufferOffset, pCountBuffer.Get(), countBufferOffset);
+}
 
 void CommandList::Dispatch(const uint32_t numGroupsX, const uint32_t numGroupsY, const uint32_t numGroupsZ)
 {
