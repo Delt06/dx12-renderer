@@ -22,10 +22,10 @@ struct Meshlet
     MeshletBounds bounds;
 
     uint vertexOffset;
-    uint triangleOffset;
+    uint indexOffset;
 
     uint vertexCount;
-    uint triangleCount;
+    uint indexCount;
 };
 
 StructuredBuffer<CommonVertexAttributes> _CommonVertexBuffer : register(t0, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE);

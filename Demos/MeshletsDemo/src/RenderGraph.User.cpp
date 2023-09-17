@@ -206,7 +206,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
                         modelCBuffer.g_Model_Index = meshletIndex;
                         pRootSignature->SetModelConstantBuffer(commandList, modelCBuffer);
 
-                        commandList.Draw(meshlet.m_TriangleCount);
+                        commandList.Draw(meshlet.m_IndexCount);
                         meshletIndex++;
                     }
 

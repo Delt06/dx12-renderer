@@ -64,8 +64,8 @@ MeshletBuilder::MeshletSet MeshletBuilder::BuildMeshlets(const MeshPrototype& me
 
             meshlet.m_VertexOffset = meshoptMeshlet.vertex_offset;
             meshlet.m_VertexCount = meshoptMeshlet.vertex_count;
-            meshlet.m_TriangleOffset = meshoptMeshlet.triangle_offset;
-            meshlet.m_TriangleCount = meshoptMeshlet.triangle_count;
+            meshlet.m_IndexOffset = meshoptMeshlet.triangle_offset;
+            meshlet.m_IndexCount = meshoptMeshlet.triangle_count * 3;
         }
 
         meshlets[i] = meshlet;

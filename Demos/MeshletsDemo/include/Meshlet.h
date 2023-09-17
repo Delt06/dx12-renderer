@@ -21,8 +21,8 @@ struct Meshlet
     MeshletBounds m_Bounds;
 
     uint32_t m_VertexOffset;
-    uint32_t m_TriangleOffset;
+    uint32_t m_IndexOffset;
 
     uint32_t m_VertexCount;
-    uint32_t m_TriangleCount;
+    uint32_t m_IndexCount;
 };

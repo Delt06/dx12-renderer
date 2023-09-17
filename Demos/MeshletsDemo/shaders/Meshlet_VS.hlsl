@@ -13,10 +13,12 @@ uint AlignDown(uint value, const uint alignment, out uint outRemainder)
 uint LoadIndex(const in Meshlet meshlet, uint vertexId)
 {
     uint remainder;
-    const uint address = AlignDown((meshlet.triangleOffset + vertexId) * 2, 4, remainder);
+    const uint address = AlignDown((meshlet.indexOffset + vertexId) * 2, 4, remainder);
     const uint index = _CommonIndexBuffer.Load<uint>(address);
     // the remainder is either 0 or 2
-    return remainder == 0 ? index & 0xFFFF : ((index & 0xFFFF0000) >> 16);
+    const uint shift = remainder * 8;
+    const uint mask = 0xFFFF << shift;
+    return (index & mask) >> shift;
 }
 
 VertexShaderOutput main(
