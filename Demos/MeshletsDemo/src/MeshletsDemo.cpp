@@ -95,7 +95,9 @@ bool MeshletsDemo::LoadContent()
     m_DirectionalLight.m_Color = XMFLOAT4(1, 1, 1, 1);
     m_DirectionalLight.m_DirectionWs = XMFLOAT4(1, 1, 0, 0);
 
-    auto pShader = std::make_shared<Shader>(m_RootSignature, ShaderBlob(L"Meshlet_VS.cso"), ShaderBlob(L"Meshlet_PS.cso"));
+    auto pShader = std::make_shared<Shader>(m_RootSignature,
+        ShaderBlob(L"Meshlet_VS.cso"), ShaderBlob(L"Meshlet_PS.cso")
+    );
     m_MeshletDrawMaterial = std::make_shared<Material>(pShader);
 
     {
@@ -257,6 +259,11 @@ void MeshletsDemo::OnUpdate(UpdateEventArgs& e)
     auto lightDirectionWs = XMLoadFloat4(&m_DirectionalLight.m_DirectionWs);
     lightDirectionWs = XMVector3Normalize(lightDirectionWs);
     XMStoreFloat4(&m_DirectionalLight.m_DirectionWs, lightDirectionWs);
+
+    if (!m_FreezeCulling)
+    {
+        XMStoreFloat3(&m_CullingCameraPosition, m_Camera.GetTranslation());
+    }
 }
 
 void MeshletsDemo::OnRender(RenderEventArgs& e)
@@ -333,6 +340,10 @@ void MeshletsDemo::OnKeyPressed(KeyEventArgs& e)
         break;
     case KeyCode::E:
         m_CameraController.m_Up = 1.0f;
+        break;
+    case KeyCode::C:
+        m_FreezeCulling = !m_FreezeCulling;
+        OutputDebugStringA(m_FreezeCulling ? "Freeze Culling: On\n" : "Freeze Culling: Off\n");
         break;
     case KeyCode::ShiftKey:
         m_CameraController.m_Shift = true;

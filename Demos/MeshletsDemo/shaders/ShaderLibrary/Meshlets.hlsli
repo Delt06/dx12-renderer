@@ -41,9 +41,11 @@ ByteAddressBuffer _CommonIndexBuffer : register(t1, COMMON_ROOT_SIGNATURE_PIPELI
 StructuredBuffer<Meshlet> _MeshletsBuffer : register(t2, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE);
 StructuredBuffer<Transform> _TransformsBuffer : register(t3, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE);
 
-cbuffer MeshletPushConstants : register(b0, COMMON_ROOT_SIGNATURE_CONSTANTS_SPACE)
-{
+ROOT_CONSTANTS_BEGIN
     uint g_Meshlet_Index;
-};
+    uint g_Meshlet_Flags;
+ROOT_CONSTANTS_END
+
+const static uint MESHLET_FLAGS_PASSED_CULLING = 1 << 0;
 
 #endif

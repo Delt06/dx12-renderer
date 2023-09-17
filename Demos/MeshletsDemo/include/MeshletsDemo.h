@@ -41,6 +41,7 @@ public:
     MeshletBuilder::MeshletSet m_MeshletsBuffer;
     std::shared_ptr<Material> m_MeshletDrawMaterial;
     DirectionalLight m_DirectionalLight;
+    DirectX::XMFLOAT3 m_CullingCameraPosition;
 
 protected:
     void OnUpdate(UpdateEventArgs& e) override;
@@ -74,6 +75,7 @@ private:
     };
 
     CameraData* m_PAlignedCameraData;
+    bool m_FreezeCulling = false;
 
     struct
     {

@@ -14,8 +14,8 @@
 struct MeshletDrawIndirectCommand
 {
     uint32_t m_MeshletIndex;
+    uint32_t m_Flags;
     D3D12_DRAW_ARGUMENTS m_DrawArguments;
-    uint32_t m_Pad;
 };
 
 class MeshletDrawIndirect

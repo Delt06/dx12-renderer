@@ -189,15 +189,18 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
 
             const uint32_t meshletsCount = demo.m_MeshletsBuffer.m_Meshlets.size();
 
-            const struct
             {
-                uint32_t m_TotalCount;
-            } constants
-            {
-                meshletsCount
-            };
+                struct
+                {
+                    XMFLOAT3 m_CameraPosition;
+                    uint32_t m_TotalCount;
+                } constants;
 
-            pRootSignature->SetComputeRootConstants(commandList, constants);
+                constants.m_CameraPosition = demo.m_CullingCameraPosition;
+                constants.m_TotalCount = meshletsCount;
+
+                pRootSignature->SetComputeConstantBuffer(commandList, constants);
+            }
 
             constexpr uint32_t threadBlockSize = 32;
 
