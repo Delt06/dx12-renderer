@@ -18,7 +18,7 @@ MeshletBuilder::MeshletSet MeshletBuilder::BuildMeshlets(const MeshPrototype& me
 {
     constexpr size_t maxVertices = 64;
     constexpr size_t maxTriangles = 124;
-    constexpr float coneWeight = 0.0f;
+    constexpr float coneWeight = 0.25f;
 
     const size_t maxMeshlets = meshopt_buildMeshletsBound(meshPrototype.m_Indices.size(), maxVertices, maxTriangles);
     std::vector<meshopt_Meshlet> meshoptMeshlets(maxMeshlets);

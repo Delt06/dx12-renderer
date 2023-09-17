@@ -30,10 +30,12 @@ bool ConeCulling(const in Meshlet meshlet)
     const Transform transform = _TransformsBuffer[meshlet.transformIndex];
 
     const float3 coneApex = mul(transform.worldMatrix, float4(meshlet.bounds.coneApex, 1.0f)).xyz;
-    const float3 coneAxis = mul(transform.worldMatrix, float4(meshlet.bounds.coneAxis, 0.0f)).xyz;
+    const float3 coneAxis = mul((float3x3) transform.inverseTransposeWorldMatrix, meshlet.bounds.coneAxis);
 
-    const float dotResult = dot(normalize(coneApex - _CameraPosition), coneAxis);
-    return dotResult <= meshlet.bounds.coneCutoff;
+    const float dotResult = dot(normalize(coneApex - _CameraPosition), normalize(coneAxis));
+    // using !>= handles the case when the meshlet's coneAxis is (0, 0, 0)
+    // dotResult stores NaN in this case
+    return !(dotResult >= meshlet.bounds.coneCutoff);
 }
 
 bool Culling(const in Meshlet meshlet)
@@ -60,7 +62,13 @@ void main(in uint3 dispatchId : SV_DispatchThreadID)
         indirectCommand.drawArguments.InstanceCount = 1;
         indirectCommand.drawArguments.StartVertexLocation = 0;
         indirectCommand.drawArguments.StartInstanceLocation = 0;
-        indirectCommand.flags = Culling(meshlet) ? MESHLET_FLAGS_PASSED_CULLING : 0;
+        indirectCommand.flags = 0;
+
+        if (ConeCulling(meshlet))
+        {
+            indirectCommand.flags |= MESHLET_FLAGS_PASSED_CONE_CULLING;
+        }
+
         _IndirectCommands.Append(indirectCommand);
     }
 }

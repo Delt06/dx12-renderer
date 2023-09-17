@@ -46,6 +46,6 @@ ROOT_CONSTANTS_BEGIN
     uint g_Meshlet_Flags;
 ROOT_CONSTANTS_END
 
-const static uint MESHLET_FLAGS_PASSED_CULLING = 1 << 0;
+const static uint MESHLET_FLAGS_PASSED_CONE_CULLING = 1 << 0;
 
 #endif

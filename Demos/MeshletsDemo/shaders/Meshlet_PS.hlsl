@@ -18,7 +18,7 @@ const static float3 MESHLET_COLORS[MESHLET_COLORS_COUNT] =
 float4 main(const VertexShaderOutput IN): SV_TARGET
 {
     #ifdef DEBUG_FLAGS
-    if ((g_Meshlet_Flags & MESHLET_FLAGS_PASSED_CULLING) == 0)
+    if ((g_Meshlet_Flags & MESHLET_FLAGS_PASSED_CONE_CULLING) == 0)
     {
         return float4(1, 0, 0, 0);
     }
