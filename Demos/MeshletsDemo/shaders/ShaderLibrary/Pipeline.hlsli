@@ -39,7 +39,4 @@ ScreenParameters GetScreenParameters()
     return result;
 }
 
-
-
-
 #endif

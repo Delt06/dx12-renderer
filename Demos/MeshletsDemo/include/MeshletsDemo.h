@@ -36,7 +36,7 @@ public:
 
     Camera m_Camera;
     std::vector<GameObject> m_GameObjects;
-    std::vector<std::vector<MeshletBuilder::MeshletSet>> m_MeshletSets;
+    MeshletBuilder::MeshletSet m_MeshletsBuffer;
     DirectionalLight m_DirectionalLight;
 
 protected:

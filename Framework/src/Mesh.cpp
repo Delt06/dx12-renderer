@@ -182,6 +182,22 @@ MeshPrototype::MeshPrototype(VertexCollectionType&& vertices, IndexCollectionTyp
     }
 }
 
+namespace
+{
+    template <typename T>
+    void AddToVector(std::vector<T>& destination, const std::vector<T>& source)
+    {
+        destination.insert(destination.end(), source.begin(), source.end());
+    }
+}
+
+void MeshPrototype::AddVertexAttributes(const MeshPrototype& otherPrototype)
+{
+    AddToVector(m_Vertices, otherPrototype.m_Vertices);
+    AddToVector(m_Indices, otherPrototype.m_Indices);
+    AddToVector(m_SkinningVertexAttributes, otherPrototype.m_SkinningVertexAttributes);
+}
+
 void Mesh::Draw(CommandList& commandList, const uint32_t instanceCount) const
 {
     Bind(commandList);

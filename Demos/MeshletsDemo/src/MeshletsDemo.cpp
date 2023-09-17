@@ -102,34 +102,56 @@ bool MeshletsDemo::LoadContent()
 
         {
             constexpr ModelLoader modelLoader;
-            const std::vector<MeshPrototype> meshPrototypes = modelLoader.LoadAsMeshPrototypes("Assets/Models/teapot/teapot.obj", true);
 
-            std::vector<MeshPrototype> updatedMeshPrototypes;
+            uint32_t vertexBufferOffset = 0;
+            uint32_t indexBufferOffset = 0;
+            uint32_t meshletOffset = 0;
+
             {
+                const std::vector<MeshPrototype> meshPrototypes = modelLoader.LoadAsMeshPrototypes("Assets/Models/teapot/teapot.obj", true);
+
+                std::vector<MeshPrototype> updatedMeshPrototypes;
                 std::vector<MeshletBuilder::MeshletSet> meshletSets;
-
-                for (const auto& meshPrototype : meshPrototypes)
                 {
-                    meshletSets.emplace_back(MeshletBuilder::BuildMeshlets(meshPrototype));
+                    for (const auto& meshPrototype : meshPrototypes)
+                    {
+                        meshletSets.emplace_back(MeshletBuilder::BuildMeshlets(meshPrototype, vertexBufferOffset, indexBufferOffset));
+
+                        const auto& lastSet = meshletSets.back();
+                        vertexBufferOffset += static_cast<uint32_t>(lastSet.m_MeshPrototype.m_Vertices.size());
+                        indexBufferOffset += static_cast<uint32_t>(lastSet.m_MeshPrototype.m_Indices.size());
+                    }
+
+                    updatedMeshPrototypes.reserve(meshletSets.size());
+
+                    for (size_t i = 0; i < meshletSets.size(); ++i)
+                    {
+                        updatedMeshPrototypes.emplace_back(meshletSets[i].m_MeshPrototype);
+                    }
+
+                    for (const auto& meshletSet : meshletSets)
+                    {
+                        m_MeshletsBuffer.Add(meshletSet);
+                    }
                 }
 
-                updatedMeshPrototypes.reserve(meshletSets.size());
+                const auto model = modelLoader.Load(*commandList, updatedMeshPrototypes);
 
-                for (size_t i = 0; i < meshletSets.size(); ++i)
+                for (uint32_t i = 0; i < model->GetMeshes().size(); ++i)
                 {
-                    updatedMeshPrototypes.emplace_back(meshletSets[i].m_MeshPrototype);
+                    const auto& pMesh = model->GetMeshes()[i];
+                    pMesh->m_MeshletsOffset = meshletOffset;
+                    pMesh->m_MeshletsCount = static_cast<uint32_t>(meshletSets[i].m_Meshlets.size());
+
+                    meshletOffset += pMesh->m_MeshletsCount;
                 }
 
-                m_MeshletSets.emplace_back(std::move(meshletSets));
+                const XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+                const XMMATRIX rotationMatrix = XMMatrixIdentity();
+                const XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
+                const XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+                m_GameObjects.push_back(GameObject(worldMatrix, model, pMaterial));
             }
-
-            const auto model = modelLoader.Load(*commandList, updatedMeshPrototypes);
-
-            const XMMATRIX translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
-            const XMMATRIX rotationMatrix = XMMatrixIdentity();
-            const XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
-            const XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-            m_GameObjects.push_back(GameObject(worldMatrix, model, pMaterial));
         }
     }
 

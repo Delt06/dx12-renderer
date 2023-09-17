@@ -143,7 +143,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
                 const auto& pCommonVertexBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::CommonVertexBuffer);
                 const auto& pCommonIndexBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::CommonIndexBuffer);
 
-                const MeshPrototype& meshPrototype = demo.m_MeshletSets[0][0].m_MeshPrototype;
+                const MeshPrototype& meshPrototype = demo.m_MeshletsBuffer.m_MeshPrototype;
 
                 pShaderUploadBuffer->Upload(commandList, *pCommonVertexBuffer, meshPrototype.m_Vertices);
                 pShaderUploadBuffer->Upload(commandList, *pCommonIndexBuffer, meshPrototype.m_Indices);
@@ -152,7 +152,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
             {
                 const auto& pMeshletsBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::MeshletsBuffer);
 
-                const MeshletBuilder::MeshletSet& meshletSet = demo.m_MeshletSets[0][0];
+                const MeshletBuilder::MeshletSet& meshletSet = demo.m_MeshletsBuffer;
 
                 pShaderUploadBuffer->Upload(commandList, *pMeshletsBuffer, meshletSet.m_Meshlets);
             }
@@ -189,34 +189,28 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
 
             commandList.SetPrimitiveTopology(Mesh::PRIMITIVE_TOPOLOGY);
 
-            for (uint32_t goIndex = 0; auto& go : demo.m_GameObjects)
+            for (auto& go : demo.m_GameObjects)
             {
                 const auto& pMaterial = go.GetMaterial();
 
                 pMaterial->Bind(commandList);
 
-                for (uint32_t meshIndex = 0; auto& pMesh : go.GetModel()->GetMeshes())
-                {
-                    const MeshletBuilder::MeshletSet& meshletSet = demo.m_MeshletSets[goIndex][meshIndex];
+                CBuffer::Model modelCBuffer{};
+                modelCBuffer.Compute(go.GetWorldMatrix());
 
-                    for (uint32_t meshletIndex = 0; const Meshlet& meshlet : meshletSet.m_Meshlets)
+                for (auto& pMesh : go.GetModel()->GetMeshes())
+                {
+                    for (uint32_t localMeshletIndex = 0; localMeshletIndex < pMesh->m_MeshletsCount; ++localMeshletIndex)
                     {
-                        CBuffer::Model modelCBuffer{};
-                        modelCBuffer.Compute(go.GetWorldMatrix());
-                        modelCBuffer.g_Model_Index = meshletIndex;
+                        const uint32_t absoluteMeshletIndex = pMesh->m_MeshletsOffset + localMeshletIndex;
+                        modelCBuffer.g_Model_Index = absoluteMeshletIndex;
                         pRootSignature->SetModelConstantBuffer(commandList, modelCBuffer);
 
-                        commandList.Draw(meshlet.m_IndexCount);
-                        meshletIndex++;
+                        commandList.Draw(demo.m_MeshletsBuffer.m_Meshlets[absoluteMeshletIndex].m_IndexCount);
                     }
-
-                    ++meshIndex;
-                    break; // TODO: REMOVE
                 }
 
                 pMaterial->Unbind(commandList);
-                ++goIndex;
-                break; // TODO: REMOVE
             }
         }
     ));
@@ -232,9 +226,9 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
 
     std::vector buffers =
     {
-        BufferDescription{ ::ResourceIds::User::CommonVertexBuffer, [](const auto&) { return 10000; }, sizeof(VertexAttributes), CopyDestination },
-        BufferDescription{ ::ResourceIds::User::CommonIndexBuffer, [](const auto&) { return 100000 * sizeof(uint16_t); }, 1, CopyDestination },
-        BufferDescription{ ::ResourceIds::User::MeshletsBuffer, [](const auto&) { return 1000; }, sizeof(Meshlet), CopyDestination },
+        BufferDescription{ ::ResourceIds::User::CommonVertexBuffer, [&demo](const auto&) { return demo.m_MeshletsBuffer.m_MeshPrototype.m_Vertices.size(); }, sizeof(VertexAttributes), CopyDestination },
+        BufferDescription{ ::ResourceIds::User::CommonIndexBuffer, [&demo](const auto&) { return demo.m_MeshletsBuffer.m_MeshPrototype.m_Indices.size() * sizeof(uint16_t); }, 1, CopyDestination },
+        BufferDescription{ ::ResourceIds::User::MeshletsBuffer, [&demo](const auto&) { return demo.m_MeshletsBuffer.m_Meshlets.size(); }, sizeof(Meshlet), CopyDestination },
     };
 
     std::vector<TokenDescription> tokens =

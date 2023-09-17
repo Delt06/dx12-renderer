@@ -95,17 +95,17 @@ struct VertexAttributes
 private:
     static DirectX::XMFLOAT4 Extend(const DirectX::XMFLOAT2& value)
     {
-        return {value.x, value.y, 0.0f, 0.0f};
+        return { value.x, value.y, 0.0f, 0.0f };
     }
 
     static DirectX::XMFLOAT4 ExtendPosition(const DirectX::XMFLOAT3& value)
     {
-        return {value.x, value.y, value.z, 1.0f};
+        return { value.x, value.y, value.z, 1.0f };
     }
 
     static DirectX::XMFLOAT4 ExtendVector(const DirectX::XMFLOAT3& value)
     {
-        return {value.x, value.y, value.z, 0.0f};
+        return { value.x, value.y, value.z, 0.0f };
     }
 };
 
@@ -135,7 +135,10 @@ struct MeshPrototype
     SkinningVertexCollectionType m_SkinningVertexAttributes;
     Armature m_Armature;
 
+    MeshPrototype() = default;
     MeshPrototype(VertexCollectionType&& vertices, IndexCollectionType&& indices, bool rhCoords = true, bool generateTangents = false);
+
+    void AddVertexAttributes(const MeshPrototype& otherPrototype);
 };
 
 class Mesh final
@@ -178,6 +181,9 @@ public:
     const Armature& GetArmature() const;
     Armature& GetArmature();
 
+    uint32_t m_MeshletsOffset = 0;
+    uint32_t m_MeshletsCount = 0;
+
 private:
     void Initialize(CommandList& commandList, VertexCollectionType& vertices, IndexCollectionType& indices,
         bool rhCoords);
@@ -188,6 +194,8 @@ private:
     IndexBuffer m_IndexBuffer;
     VertexBuffer m_SkinningVertexBuffer;
     Armature m_Armature;
+
+
 
     Aabb m_Aabb{};
     UINT m_IndexCount;

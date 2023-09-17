@@ -14,7 +14,7 @@ namespace
     }
 }
 
-MeshletBuilder::MeshletSet MeshletBuilder::BuildMeshlets(const MeshPrototype& meshPrototype)
+MeshletBuilder::MeshletSet MeshletBuilder::BuildMeshlets(const MeshPrototype& meshPrototype, uint32_t baseVertexOffset, uint32_t baseIndexOffset)
 {
     constexpr size_t maxVertices = 64;
     constexpr size_t maxTriangles = 124;
@@ -62,9 +62,9 @@ MeshletBuilder::MeshletSet MeshletBuilder::BuildMeshlets(const MeshPrototype& me
 
         {
 
-            meshlet.m_VertexOffset = meshoptMeshlet.vertex_offset;
+            meshlet.m_VertexOffset = baseVertexOffset + meshoptMeshlet.vertex_offset;
             meshlet.m_VertexCount = meshoptMeshlet.vertex_count;
-            meshlet.m_IndexOffset = meshoptMeshlet.triangle_offset;
+            meshlet.m_IndexOffset = baseIndexOffset + meshoptMeshlet.triangle_offset;
             meshlet.m_IndexCount = meshoptMeshlet.triangle_count * 3;
         }
 
