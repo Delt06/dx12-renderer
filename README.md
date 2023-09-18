@@ -152,6 +152,10 @@ Packages (e.g., installed via `vcpkg`):
 - https://bruop.github.io/tonemapping/
 - https://learnopengl.com/Advanced-Lighting/SSAO
 - https://sugulee.wordpress.com/2021/06/21/temporal-anti-aliasingtaa-tutorial/
+- https://logins.github.io/graphics/2021/05/31/RenderGraphs.html
+- https://blog.traverseresearch.nl/render-graph-101-f42646255636
+- https://themaister.net/blog/2017/08/15/render-graphs-and-vulkan-a-deep-dive/
+- https://github.com/zeux/niagara
 
 ### Libraries and Tools
 
@@ -160,6 +164,7 @@ Packages (e.g., installed via `vcpkg`):
 - https://github.com/assimp/assimp
 - https://github.com/Microsoft/DirectXTex/wiki/Texconv
 - https://matheowis.github.io/HDRI-to-CubeMap/
+- https://github.com/zeux/meshoptimizer
 
 ### Assets
 
