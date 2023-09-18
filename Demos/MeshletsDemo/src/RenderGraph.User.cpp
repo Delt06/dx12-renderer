@@ -194,9 +194,11 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
                 {
                     XMFLOAT3 m_CameraPosition;
                     uint32_t m_TotalCount;
+                    Camera::Frustum m_Frustum;
                 } constants;
 
-                constants.m_CameraPosition = demo.m_CullingCameraPosition;
+                XMStoreFloat3(&constants.m_CameraPosition, demo.m_CullingCameraPosition);
+                constants.m_Frustum = demo.m_Camera.GetFrustum(demo.m_CullingCameraPosition, demo.m_CullingCameraRotation);
                 constants.m_TotalCount = meshletsCount;
 
                 pRootSignature->SetComputeConstantBuffer(commandList, constants);

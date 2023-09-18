@@ -153,11 +153,22 @@ void Camera::Rotate(FXMVECTOR qRotation)
 
 Camera::Frustum Camera::GetFrustum() const
 {
-    Frustum frustum;
+    const XMMATRIX toWorld = GetInverseViewMatrix();
+    return GetFrustum(toWorld);
+}
 
+Camera::Frustum Camera::GetFrustum(const XMVECTOR& overridePosition, const XMVECTOR& qOverrideRotation) const
+{
+    const XMMATRIX rotationMatrix = XMMatrixRotationQuaternion(qOverrideRotation);
+    const XMMATRIX translationMatrix = XMMatrixTranslationFromVector(overridePosition);
+    const auto toWorld = rotationMatrix * translationMatrix;
+    return GetFrustum(toWorld);
+}
+
+Camera::Frustum Camera::GetFrustum(const XMMATRIX& toWorld) const
+{
     // http://davidlively.com/programming/graphics/frustum-calculation-and-culling-hopefully-demystified/
-
-    const auto toWorld = GetInverseViewMatrix();
+    Frustum frustum;
 
     frustum.m_Planes[Frustum::NearPlane] = FrustumPlane(XMVectorSet(0, 0, 1, 0), XMVectorSet(0, 0, ZNear, 1), toWorld);
     frustum.m_Planes[Frustum::FarPlane] = FrustumPlane(XMVectorSet(0, 0, -1, 0), XMVectorSet(0, 0, ZFar, 1), toWorld);
@@ -221,24 +232,22 @@ void Camera::UpdateInverseProjectionMatrix() const
     InverseProjectionDirty = false;
 }
 
-Camera::FrustumPlane::FrustumPlane(DirectX::XMVECTOR normal, DirectX::XMVECTOR point)
+Camera::FrustumPlane::FrustumPlane(XMVECTOR normal, XMVECTOR point)
 {
-    normal = DirectX::XMVector3Normalize(normal);
-    DirectX::XMStoreFloat3(&m_Normal, normal);
-    DirectX::XMStoreFloat(&m_Distance, DirectX::XMVector3Dot(normal, point));
+    normal = XMVector3Normalize(normal);
+    XMStoreFloat3(&m_Normal, normal);
+    XMStoreFloat(&m_Distance, XMVector3Dot(normal, point));
 }
 
-Camera::FrustumPlane::FrustumPlane(DirectX::XMVECTOR normal, DirectX::XMVECTOR point, DirectX::XMMATRIX view)
+Camera::FrustumPlane::FrustumPlane(XMVECTOR normal, XMVECTOR point, XMMATRIX view)
 {
-    normal = DirectX::XMVector3Normalize(DirectX::XMVector4Transform(normal, view));
-    point = DirectX::XMVector4Transform(point, view);
-    DirectX::XMStoreFloat3(&m_Normal, normal);
-    DirectX::XMStoreFloat(&m_Distance, DirectX::XMVector3Dot(normal, point));
+    normal = XMVector3Normalize(XMVector4Transform(normal, view));
+    point = XMVector4Transform(point, view);
+    XMStoreFloat3(&m_Normal, normal);
+    XMStoreFloat(&m_Distance, XMVector3Dot(normal, point));
 }
 
 Camera::FrustumPlane::FrustumPlane()
     : m_Normal{}
     , m_Distance(0)
-{
-
-}
+{}

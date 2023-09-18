@@ -262,7 +262,8 @@ void MeshletsDemo::OnUpdate(UpdateEventArgs& e)
 
     if (!m_FreezeCulling)
     {
-        XMStoreFloat3(&m_CullingCameraPosition, m_Camera.GetTranslation());
+        m_CullingCameraPosition = m_Camera.GetTranslation();
+        m_CullingCameraRotation = m_Camera.GetRotation();
     }
 }
 

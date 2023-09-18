@@ -20,7 +20,14 @@ float4 main(const VertexShaderOutput IN): SV_TARGET
     #ifdef DEBUG_FLAGS
     if ((g_Meshlet_Flags & MESHLET_FLAGS_PASSED_CONE_CULLING) == 0)
     {
-        return float4(1, 0, 0, 0);
+        return float4(1, 0, 0, 1);
+    }
+    #endif
+
+    #ifdef DEBUG_FLAGS
+    if ((g_Meshlet_Flags & MESHLET_FLAGS_PASSED_FRUSTUM_CULLING) == 0)
+    {
+        return float4(0, 1, 0, 1);
     }
     #endif
 
@@ -28,5 +35,5 @@ float4 main(const VertexShaderOutput IN): SV_TARGET
     const float diffuse = dot(g_Pipeline_DirectionalLight.DirectionWs.xyz, normalWs) * 0.5 + 0.5;
     const float3 albedo = MESHLET_COLORS[g_Meshlet_Index % MESHLET_COLORS_COUNT] * 0.5f;
     const float3 ambient = float3(0, 0.1f, 0.35f);
-    return float4((ambient + diffuse) * albedo , 1);
+    return float4((ambient + diffuse) * albedo, 1);
 }

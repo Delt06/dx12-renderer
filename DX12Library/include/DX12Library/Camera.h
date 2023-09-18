@@ -22,26 +22,25 @@
  *  IN THE SOFTWARE.
  */
 
- /**
-  *  @file Camera.h
-  *  @date October 24, 2018
-  *  @author Jeremiah van Oosten
-  *
-  *  @brief DirectX 12 Camera class.
-  */
+/**
+ *  @file Camera.h
+ *  @date October 24, 2018
+ *  @author Jeremiah van Oosten
+ *
+ *  @brief DirectX 12 Camera class.
+ */
 
 #include <DirectXMath.h>
 
 enum class Space
 {
-	Local,
-	World,
+    Local,
+    World,
 };
 
 class Camera
 {
 public:
-
     struct FrustumPlane
     {
         DirectX::XMFLOAT3 m_Normal;
@@ -69,77 +68,80 @@ public:
         FrustumPlane m_Planes[PLANES_COUNT];
     };
 
-	Camera();
-	virtual ~Camera();
+    Camera();
+    virtual ~Camera();
 
-	void XM_CALLCONV SetLookAt(DirectX::FXMVECTOR eye, DirectX::FXMVECTOR target, DirectX::FXMVECTOR up);
-	DirectX::XMMATRIX GetViewMatrix() const;
-	DirectX::XMMATRIX GetInverseViewMatrix() const;
+    void XM_CALLCONV SetLookAt(DirectX::FXMVECTOR eye, DirectX::FXMVECTOR target, DirectX::FXMVECTOR up);
+    DirectX::XMMATRIX GetViewMatrix() const;
+    DirectX::XMMATRIX GetInverseViewMatrix() const;
 
-	/**
-	 * Set the camera to a perspective projection matrix.
-	 * @param vFov The vertical field of view in degrees.
-	 * @param aspectRatio The aspect ratio of the screen.
-	 * @param zNear The distance to the near clipping plane.
-	 * @param zFar The distance to the far clipping plane.
-	 */
-	void SetProjection(float vFov, float aspectRatio, float zNear, float zFar);
-	DirectX::XMMATRIX GetProjectionMatrix() const;
-	DirectX::XMMATRIX GetInverseProjectionMatrix() const;
+    /**
+     * Set the camera to a perspective projection matrix.
+     * @param vFov The vertical field of view in degrees.
+     * @param aspectRatio The aspect ratio of the screen.
+     * @param zNear The distance to the near clipping plane.
+     * @param zFar The distance to the far clipping plane.
+     */
+    void SetProjection(float vFov, float aspectRatio, float zNear, float zFar);
+    DirectX::XMMATRIX GetProjectionMatrix() const;
+    DirectX::XMMATRIX GetInverseProjectionMatrix() const;
 
-	/**
-	 * \brief Set the FoV.
-	 * \param vFov vertical FoV (degrees)
-	 */
-	void SetFov(float vFov);
+    /**
+     * \brief Set the FoV.
+     * \param vFov vertical FoV (degrees)
+     */
+    void SetFov(float vFov);
 
 
-	/**
-	 * \brief Get the FoV.
-	 * \param vFov vertical FoV (degrees)
-	 */
-	float GetFov() const;
+    /**
+     * \brief Get the FoV.
+     * \param vFov vertical FoV (degrees)
+     */
+    float GetFov() const;
 
-	void XM_CALLCONV SetTranslation(DirectX::FXMVECTOR translation);
-	DirectX::XMVECTOR GetTranslation() const;
+    void XM_CALLCONV SetTranslation(DirectX::FXMVECTOR translation);
+    DirectX::XMVECTOR GetTranslation() const;
 
-	void XM_CALLCONV SetRotation(DirectX::FXMVECTOR qRotation);
-	DirectX::XMVECTOR GetRotation() const;
+    void XM_CALLCONV SetRotation(DirectX::FXMVECTOR qRotation);
+    DirectX::XMVECTOR GetRotation() const;
 
-	void XM_CALLCONV Translate(DirectX::FXMVECTOR translation, Space space = Space::Local);
-	void Rotate(DirectX::FXMVECTOR qRotation);
+    void XM_CALLCONV Translate(DirectX::FXMVECTOR translation, Space space = Space::Local);
+    void Rotate(DirectX::FXMVECTOR qRotation);
 
     Frustum GetFrustum() const;
+    Frustum GetFrustum(const DirectX::XMVECTOR& overridePosition, const DirectX::XMVECTOR& qOverrideRotation) const;
 
 protected:
-	virtual void UpdateViewMatrix() const;
-	virtual void UpdateInverseViewMatrix() const;
-	virtual void UpdateProjectionMatrix() const;
-	virtual void UpdateInverseProjectionMatrix() const;
+    Frustum GetFrustum(const DirectX::XMMATRIX& toWorld) const;
 
-	static constexpr size_t ALIGNMENT = 16;
+    virtual void UpdateViewMatrix() const;
+    virtual void UpdateInverseViewMatrix() const;
+    virtual void UpdateProjectionMatrix() const;
+    virtual void UpdateInverseProjectionMatrix() const;
 
-	// This data must be aligned otherwise the SSE intrinsics fail
-	// and throw exceptions.
-	__declspec(align(ALIGNMENT)) struct AlignedData
-	{
-		// World-space position of the camera.
-		DirectX::XMVECTOR Translation;
-		// World-space rotation of the camera.
-		// THIS IS A QUATERNION!!!!
-		DirectX::XMVECTOR QRotation;
+    static constexpr size_t ALIGNMENT = 16;
 
-		DirectX::XMMATRIX ViewMatrix, InverseViewMatrix;
-		DirectX::XMMATRIX ProjectionMatrix, InverseProjectionMatrix;
-	};
+    // This data must be aligned otherwise the SSE intrinsics fail
+    // and throw exceptions.
+    __declspec(align(ALIGNMENT)) struct AlignedData
+    {
+        // World-space position of the camera.
+        DirectX::XMVECTOR Translation;
+        // World-space rotation of the camera.
+        // THIS IS A QUATERNION!!!!
+        DirectX::XMVECTOR QRotation;
 
-	AlignedData* PData;
+        DirectX::XMMATRIX ViewMatrix, InverseViewMatrix;
+        DirectX::XMMATRIX ProjectionMatrix, InverseProjectionMatrix;
+    };
 
-	float VFov;
-	float AspectRatio;
-	float ZNear;
-	float ZFar;
+    AlignedData* PData;
 
-	mutable bool ViewDirty, InverseViewDirty;
-	mutable bool ProjectionDirty, InverseProjectionDirty;
+    float VFov;
+    float AspectRatio;
+    float ZNear;
+    float ZFar;
+
+    mutable bool ViewDirty, InverseViewDirty;
+    mutable bool ProjectionDirty, InverseProjectionDirty;
 };

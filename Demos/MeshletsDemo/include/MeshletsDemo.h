@@ -41,7 +41,8 @@ public:
     MeshletBuilder::MeshletSet m_MeshletsBuffer;
     std::shared_ptr<Material> m_MeshletDrawMaterial;
     DirectionalLight m_DirectionalLight;
-    DirectX::XMFLOAT3 m_CullingCameraPosition;
+    DirectX::XMVECTOR m_CullingCameraPosition;
+    DirectX::XMVECTOR m_CullingCameraRotation;
 
 protected:
     void OnUpdate(UpdateEventArgs& e) override;
