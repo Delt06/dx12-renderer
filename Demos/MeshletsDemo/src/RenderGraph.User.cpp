@@ -37,7 +37,7 @@ namespace ResourceIds
 
 namespace
 {
-    constexpr FLOAT CLEAR_COLOR[] = { 138.0f / 255.0f, 82.0f / 255.0f, 52.0f / 255.0f, 1.0f };
+    constexpr FLOAT CLEAR_COLOR[] = { 53.0f / 255.0f, 82.0f / 255.0f, 138.0f / 255.0f, 1.0f };
     constexpr DXGI_FORMAT BACK_BUFFER_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
     constexpr DXGI_FORMAT DEPTH_BUFFER_FORMAT = DXGI_FORMAT_D32_FLOAT;
 }
@@ -240,6 +240,41 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
             pMeshletDrawIncorrect->DrawIndirect(commandList,
                 demo.m_MeshletsBuffer.m_Meshlets.size(),
                 *pMeshletDrawCommands);
+        }
+    ));
+
+    renderPasses.emplace_back(RenderPass::Create(
+        L"Draw Occluders",
+        {
+            { ::ResourceIds::User::CommonVertexBuffer, InputType::ShaderResource },
+            { ::ResourceIds::User::CommonIndexBuffer, InputType::ShaderResource },
+            { ::ResourceIds::User::MeshletsBuffer, InputType::ShaderResource },
+            { ::ResourceIds::User::TransformsBuffer, InputType::ShaderResource },
+            { ::ResourceIds::User::MeshletDrawCommands, InputType::IndirectArgument },
+        },
+        {
+            { ResourceIds::GraphOutput, OutputType::RenderTarget },
+            { ::ResourceIds::User::DepthBuffer, OutputType::DepthWrite }
+        },
+        [&demo, pRootSignature](const RenderContext&, CommandList& commandList)
+        {
+            for (auto& go : demo.m_OccluderGameObjects)
+            {
+                const auto& pMaterial = go.GetMaterial();
+                pMaterial->Bind(commandList);
+
+                struct
+                {
+                    XMMATRIX m_WorldMatrix;
+                    XMMATRIX m_InverseTransposeWorldMatrix;
+                } cbuffer;
+                cbuffer.m_WorldMatrix = go.GetWorldMatrix();
+                cbuffer.m_InverseTransposeWorldMatrix = XMMatrixTranspose(XMMatrixInverse(nullptr, cbuffer.m_WorldMatrix));
+                pRootSignature->SetMaterialConstantBuffer(commandList, sizeof(cbuffer), &cbuffer);
+
+                go.GetModel()->Draw(commandList);
+                pMaterial->Unbind(commandList);
+            }
         }
     ));
 

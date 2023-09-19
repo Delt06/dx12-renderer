@@ -82,12 +82,12 @@ bool MeshletsDemo::LoadContent()
 {
     const auto device = Application::Get().GetDevice();
     const auto commandQueue = Application::Get().GetCommandQueue();
-    const auto commandList = commandQueue->GetCommandList();
+    const auto pCmd = commandQueue->GetCommandList();
 
     // Generate default texture
     {
         m_WhiteTexture2d = std::make_shared<Texture>();
-        commandList->LoadTextureFromFile(*m_WhiteTexture2d, L"Assets/Textures/white.png");
+        pCmd->LoadTextureFromFile(*m_WhiteTexture2d, L"Assets/Textures/white.png");
     }
 
     m_RootSignature = std::make_shared<CommonRootSignature>(m_WhiteTexture2d);
@@ -110,7 +110,7 @@ bool MeshletsDemo::LoadContent()
             uint32_t indexBufferOffset = 0;
             uint32_t meshletOffset = 0;
 
-            const auto loadGameObject = [&](const std::string& path, const XMMATRIX& worldMatrix)
+            const auto loadMeshletGameObject = [&](const std::string& path, const XMMATRIX& worldMatrix)
             {
                 const std::vector<MeshPrototype> meshPrototypes = modelLoader.LoadAsMeshPrototypes(path, true);
 
@@ -146,7 +146,7 @@ bool MeshletsDemo::LoadContent()
                     }
                 }
 
-                const auto model = modelLoader.Load(*commandList, updatedMeshPrototypes);
+                const auto model = modelLoader.Load(*pCmd, updatedMeshPrototypes);
 
                 for (uint32_t i = 0; i < model->GetMeshes().size(); ++i)
                 {
@@ -157,7 +157,7 @@ bool MeshletsDemo::LoadContent()
                     meshletOffset += pMesh->m_MeshletsCount;
                 }
 
-                m_GameObjects.push_back(GameObject(worldMatrix, model, m_MeshletDrawMaterial));
+                m_MeshletGameObjects.push_back(GameObject(worldMatrix, model, m_MeshletDrawMaterial));
 
                 Transform transform;
                 transform.Compute(worldMatrix);
@@ -169,7 +169,7 @@ bool MeshletsDemo::LoadContent()
                 const XMMATRIX rotationMatrix = XMMatrixIdentity();
                 const XMMATRIX scaleMatrix = XMMatrixScaling(0.1f, 0.1f, 0.1f);
                 const XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-                loadGameObject("Assets/Models/teapot/teapot.obj", worldMatrix);
+                loadMeshletGameObject("Assets/Models/teapot/teapot.obj", worldMatrix);
             }
 
             {
@@ -178,14 +178,43 @@ bool MeshletsDemo::LoadContent()
                     XMConvertToRadians(90), XMConvertToRadians(-45), XMConvertToRadians(0));
                 const XMMATRIX scaleMatrix = XMMatrixScaling(0.5f, 0.5f, 0.5f);
                 const XMMATRIX worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-                loadGameObject("Assets/Models/tv/TV.fbx", worldMatrix);
+                loadMeshletGameObject("Assets/Models/tv/TV.fbx", worldMatrix);
+            }
+
+            {
+                const auto pMesh = Mesh::CreateCube(*pCmd);
+                const auto pCubeModel = modelLoader.LoadExisting(pMesh);
+                const auto pOccluderShader = std::make_shared<Shader>(m_RootSignature,
+                    ShaderBlob(L"Occluder_VS.cso"), ShaderBlob(L"Occluder_PS.cso"),
+                    [](PipelineStateBuilder& psb)
+                    {
+                        psb.WithDisabledDepthWrite();
+                        psb.WithAlphaBlend();
+                    });
+                const auto pOccluderMaterial = std::make_shared<Material>(pOccluderShader);
+
+                m_OccluderGameObjects.emplace_back(
+                    XMMatrixScaling(10.0f, 20.0f, 10.0f) * XMMatrixTranslation(0, 10.0f, 10.0f),
+                    pCubeModel, pOccluderMaterial
+                );
+
+                m_OccluderGameObjects.emplace_back(
+                    XMMatrixScaling(10.0f, 20.0f, 10.0f) * XMMatrixRotationY(45.0f) * XMMatrixTranslation(-10.0f, 10.0f, 20.0f),
+                    pCubeModel, pOccluderMaterial
+                );
+
+                const auto pPlaneModel = modelLoader.LoadExisting(Mesh::CreatePlane(*pCmd, 200, 200));
+                m_OccluderGameObjects.emplace_back(
+                    XMMatrixIdentity(),
+                    pPlaneModel, pOccluderMaterial
+                );
             }
         }
     }
 
-    m_RenderGraph = RenderGraph::User::Create(*this, m_RootSignature, *commandList);
+    m_RenderGraph = RenderGraph::User::Create(*this, m_RootSignature, *pCmd);
 
-    const auto fenceValue = commandQueue->ExecuteCommandList(commandList);
+    const auto fenceValue = commandQueue->ExecuteCommandList(pCmd);
     commandQueue->WaitForFenceValue(fenceValue);
 
     return true;

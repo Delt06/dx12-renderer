@@ -3,12 +3,12 @@
 #include <Framework/Model.h>
 #include <Framework/Material.h>
 
-GameObject::GameObject(const DirectX::XMMATRIX worldMatrix, const std::shared_ptr<Model> model, std::shared_ptr<Material> material)
+GameObject::GameObject(const DirectX::XMMATRIX& worldMatrix, const std::shared_ptr<Model>& pModel, const std::shared_ptr<Material>& pMaterial)
     : m_WorldMatrix(worldMatrix)
     , m_PreviousWorldMatrix(worldMatrix)
     , m_Aabb{}
-    , m_Model(model)
-    , m_Material(material)
+    , m_Model(pModel)
+    , m_Material(pMaterial)
 {
     RecalculateAabb();
 }

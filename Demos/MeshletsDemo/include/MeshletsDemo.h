@@ -36,13 +36,15 @@ public:
     void UnloadContent() override;
 
     Camera m_Camera;
-    std::vector<GameObject> m_GameObjects;
+    std::vector<GameObject> m_MeshletGameObjects;
     std::vector<Transform> m_TransformsBuffer;
     MeshletBuilder::MeshletSet m_MeshletsBuffer;
     std::shared_ptr<Material> m_MeshletDrawMaterial;
     DirectionalLight m_DirectionalLight;
     DirectX::XMVECTOR m_CullingCameraPosition;
     DirectX::XMVECTOR m_CullingCameraRotation;
+
+    std::vector<GameObject> m_OccluderGameObjects;
 
 protected:
     void OnUpdate(UpdateEventArgs& e) override;

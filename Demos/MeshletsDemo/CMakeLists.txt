@@ -21,10 +21,12 @@ set(SOURCE_FILES
 
 set(SHADER_FILES_VERTEX
         shaders/Meshlet_VS.hlsl
+        shaders/Occluder_VS.hlsl
         )
 
 set(SHADER_FILES_PIXEL
         shaders/Meshlet_PS.hlsl
+        shaders/Occluder_PS.hlsl
         )
 
 set(SHADER_FILES_COMPUTE

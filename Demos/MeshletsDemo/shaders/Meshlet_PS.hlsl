@@ -32,7 +32,7 @@ float4 main(const VertexShaderOutput IN): SV_TARGET
     #endif
 
     const float3 normalWs = normalize(IN.NormalWS);
-    const float diffuse = dot(g_Pipeline_DirectionalLight.DirectionWs.xyz, normalWs) * 0.5 + 0.5;
+    const float diffuse = saturate(dot(g_Pipeline_DirectionalLight.DirectionWs.xyz, normalWs)) * 0.5 + 0.5;
     const float3 albedo = MESHLET_COLORS[g_Meshlet_Index % MESHLET_COLORS_COUNT] * 0.5f;
     const float3 ambient = float3(0, 0.1f, 0.35f);
     return float4((ambient + diffuse) * albedo, 1);
