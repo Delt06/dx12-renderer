@@ -171,7 +171,6 @@ void CommonRootSignature::SetMaterialShaderResourceView(CommandList& commandList
             srv.m_FirstSubresource, srv.m_NumSubresources,
             srv.GetDescOrNullptr()
         );
-
     }
     else
     {

@@ -13,7 +13,7 @@
 
 namespace RenderGraph
 {
-    template<typename T>
+    template <typename T>
     using RenderMetadataExpression = std::function<T(const RenderMetadata&)>;
 
     enum ResourceInitAction
@@ -41,11 +41,8 @@ namespace RenderGraph
             , m_WidthExpression(nullptr)
             , m_HeightExpression(nullptr)
             , m_Format(DXGI_FORMAT_UNKNOWN)
-            , m_ClearValue()
-            , m_InitAction(ResourceInitAction::Clear)
-        {
-
-        }
+            , m_InitAction(Clear)
+        { }
 
         TextureDescription(const ResourceId id,
             const RenderMetadataExpression<uint32_t>& widthExpression, const RenderMetadataExpression<uint32_t>& heightExpression,
@@ -57,9 +54,7 @@ namespace RenderGraph
             , m_Format(format)
             , m_ClearValue(format, clearColor)
             , m_InitAction(initAction)
-        {
-
-        }
+        { }
 
         TextureDescription(const ResourceId id,
             const RenderMetadataExpression<uint32_t>& widthExpression, const RenderMetadataExpression<uint32_t>& heightExpression,
@@ -71,9 +66,7 @@ namespace RenderGraph
             , m_Format(format)
             , m_ClearValue(format, clearDepthStencilValue)
             , m_InitAction(initAction)
-        {
-
-        }
+        { }
     };
 
     struct BufferDescription
@@ -87,19 +80,15 @@ namespace RenderGraph
             : m_Id(0)
             , m_SizeExpression(nullptr)
             , m_Stride(0)
-            , m_InitAction(ResourceInitAction::Clear)
-        {
-
-        }
+            , m_InitAction(Clear)
+        { }
 
         BufferDescription(const ResourceId id, const RenderMetadataExpression<size_t>& sizeExpression, const size_t stride, const ResourceInitAction initAction)
             : m_Id(id)
             , m_SizeExpression(sizeExpression)
             , m_Stride(stride)
             , m_InitAction(initAction)
-        {
-
-        }
+        { }
     };
 
     struct TokenDescription
@@ -140,7 +129,7 @@ namespace RenderGraph
                 return m_BufferDescription.m_InitAction;
             default:
                 Assert(false);
-                return ResourceInitAction::Clear;
+                return Clear;
             }
         }
 

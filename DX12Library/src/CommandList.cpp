@@ -959,7 +959,7 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, UINT texArra
         }
 
         depthStencilDescriptor = isArrayItem
-                                     ? depthTexture->GetDepthStencilViewArray(texArrayIndex)
+                                     ? depthTexture->GetDepthStencilViewArray(texArrayIndex, mipLevel)
                                      : depthTexture->GetDepthStencilView();
 
         TrackResource(*depthTexture);
@@ -1230,7 +1230,7 @@ void CommandList::SetComputeRootUnorderedAccessView(UINT rootParameterIndex, con
     TrackObject(d3d12Resource);
 }
 
-void CommandList::SetAutomaticViewportAndScissorRect(const RenderTarget& renderTarget)
+void CommandList::SetAutomaticViewportAndScissorRect(const RenderTarget& renderTarget, const UINT mipLevel)
 {
     const auto& color0Texture = renderTarget.GetTexture(Color0);
     const auto& depthTexture = renderTarget.GetTexture(DepthStencil);
@@ -1239,8 +1239,13 @@ void CommandList::SetAutomaticViewportAndScissorRect(const RenderTarget& renderT
         throw std::exception("Both Color0 and DepthStencil attachment are invalid. Cannot compute viewport.");
     }
 
-    auto destinationDesc = color0Texture->IsValid() ? color0Texture->GetD3D12ResourceDesc() : depthTexture->GetD3D12ResourceDesc();
-    auto viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(destinationDesc.Width), static_cast<float>(destinationDesc.Height));
+    const auto destinationDesc = color0Texture->IsValid() ? color0Texture->GetD3D12ResourceDesc() : depthTexture->GetD3D12ResourceDesc();
+    if (mipLevel >= destinationDesc.MipLevels)
+    {
+        throw std::exception("Mip level out of range.");
+    }
+
+    const auto viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(destinationDesc.Width >> mipLevel), static_cast<float>(destinationDesc.Height >> mipLevel));
 
     SetViewport(viewport);
     SetInfiniteScrissorRect();

@@ -25,7 +25,9 @@ set(SHADER_FILES_VERTEX
         )
 
 set(SHADER_FILES_PIXEL
+        shaders/HDB_Downsample_PS.hlsl
         shaders/Meshlet_PS.hlsl
+        shaders/Occluder_DepthOnly_PS.hlsl
         shaders/Occluder_PS.hlsl
         )
 

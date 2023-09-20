@@ -147,6 +147,7 @@ const std::shared_ptr<Texture>& RenderGraph::ResourcePool::GetTexture(ResourceId
 {
     Assert(IsRegistered(resourceId), "Resource is not registered.");
     Assert(resourceId < m_Textures.size(), "Resource ID out of range.");
+    Assert(m_ResourceDescriptions.at(resourceId).m_ResourceType == ResourceType::Texture, "Invalid resource type.");
     return m_Textures[resourceId];
 }
 
@@ -154,6 +155,7 @@ const std::shared_ptr<Buffer>& RenderGraph::ResourcePool::GetBuffer(ResourceId r
 {
     Assert(IsRegistered(resourceId), "Resource is not registered.");
     Assert(resourceId < m_Buffers.size(), "Resource ID out of range.");
+    Assert(m_ResourceDescriptions.at(resourceId).m_ResourceType == ResourceType::Buffer, "Invalid resource type.");
     return m_Buffers[resourceId];
 }
 
@@ -297,8 +299,12 @@ void RenderGraph::ResourcePool::RegisterTexture(const TextureDescription& desc, 
     }
 
     UINT msaaQualityLevels = desc.m_SampleCount == 0 ? 0 : GetMsaaQualityLevels(pDevice, desc.m_Format, desc.m_SampleCount) - 1;
+
+    const auto width = desc.m_WidthExpression(renderMetadata);
+    const auto height = desc.m_HeightExpression(renderMetadata);
+
     auto dxDesc = CD3DX12_RESOURCE_DESC::Tex2D(desc.m_Format,
-        desc.m_WidthExpression(renderMetadata), desc.m_HeightExpression(renderMetadata),
+        width, height,
         desc.m_ArraySize, desc.m_MipLevels,
         desc.m_SampleCount, msaaQualityLevels,
         resourceFlags);

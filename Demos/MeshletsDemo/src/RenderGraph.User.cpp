@@ -23,15 +23,20 @@ namespace ResourceIds
     class User
     {
     public:
+        // Textures
         static inline const RenderGraph::ResourceId DepthBuffer = RenderGraph::ResourceIds::GetResourceId(L"DepthBuffer");
+        static inline const RenderGraph::ResourceId HierarchicalDepthBuffer = RenderGraph::ResourceIds::GetResourceId(L"HierarchicalDepthBuffer");
 
+        // Buffers
         static inline const RenderGraph::ResourceId CommonVertexBuffer = RenderGraph::ResourceIds::GetResourceId(L"CommonVertexBuffer");
         static inline const RenderGraph::ResourceId CommonIndexBuffer = RenderGraph::ResourceIds::GetResourceId(L"CommonIndexBuffer");
         static inline const RenderGraph::ResourceId MeshletsBuffer = RenderGraph::ResourceIds::GetResourceId(L"MeshletsBuffer");
         static inline const RenderGraph::ResourceId TransformsBuffer = RenderGraph::ResourceIds::GetResourceId(L"TransformsBuffer");
         static inline const RenderGraph::ResourceId MeshletDrawCommands = RenderGraph::ResourceIds::GetResourceId(L"MeshletDrawCommands");
 
+        // Tokens
         static inline const RenderGraph::ResourceId SetupFinishedToken = RenderGraph::ResourceIds::GetResourceId(L"SetupFinishedToken");
+        static inline const RenderGraph::ResourceId OpaqueFinishedToken = RenderGraph::ResourceIds::GetResourceId(L"OpaqueFinishedToken");
     };
 }
 
@@ -40,6 +45,7 @@ namespace
     constexpr FLOAT CLEAR_COLOR[] = { 53.0f / 255.0f, 82.0f / 255.0f, 138.0f / 255.0f, 1.0f };
     constexpr DXGI_FORMAT BACK_BUFFER_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
     constexpr DXGI_FORMAT DEPTH_BUFFER_FORMAT = DXGI_FORMAT_D32_FLOAT;
+    constexpr uint32_t HdbResolution = 256;
 }
 
 namespace CBuffer
@@ -148,6 +154,106 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
         }
     ));
 
+
+    struct OccluderCBuffer
+    {
+        XMMATRIX m_WorldMatrix;
+        XMMATRIX m_InverseTransposeWorldMatrix;
+
+        explicit OccluderCBuffer(const XMMATRIX& worldMatrix)
+            : m_WorldMatrix(worldMatrix)
+            , m_InverseTransposeWorldMatrix(XMMatrixTranspose(XMMatrixInverse(nullptr, worldMatrix)))
+        { }
+    };
+
+    renderPasses.emplace_back(RenderPass::Create(
+        L"Render HDB: first mip",
+        {
+            { ::ResourceIds::User::SetupFinishedToken, InputType::Token }
+        },
+        {
+            { ::ResourceIds::User::HierarchicalDepthBuffer, OutputType::DepthWrite },
+        },
+        [&demo, pRootSignature,
+            pOccluderShader=std::make_shared<Shader>(pRootSignature, ShaderBlob(L"Occluder_VS.cso"), ShaderBlob(L"Occluder_DepthOnly_PS.cso"))]
+        (const RenderContext& context, CommandList& commandList)
+        {
+            for (auto& go : demo.m_OccluderGameObjects)
+            {
+                pOccluderShader->Bind(commandList);
+
+                const auto cbuffer = OccluderCBuffer(go.GetWorldMatrix());
+                pRootSignature->SetMaterialConstantBuffer(commandList, sizeof(cbuffer), &cbuffer);
+
+                go.GetModel()->Draw(commandList);
+                pOccluderShader->Unbind(commandList);
+            }
+        }
+    ));
+
+    const auto pBlitMesh = Mesh::CreateBlitTriangle(commandList);
+
+    renderPasses.emplace_back(RenderPass::Create(
+        L"Render HDB: remaining mips",
+        {
+            { ::ResourceIds::User::SetupFinishedToken, InputType::Token }
+        },
+        {
+            { ::ResourceIds::User::HierarchicalDepthBuffer, OutputType::DepthWrite },
+        },
+        [
+            pBlitMesh, pRootSignature,
+            pDownsampleHDB=std::make_shared<Shader>(pRootSignature,
+                ShaderBlob(ShaderBytecode_Blit_VS, sizeof(ShaderBytecode_Blit_VS)), ShaderBlob(L"HDB_Downsample_PS.cso"),
+                [](PipelineStateBuilder& psb)
+                {
+                    auto desc = CD3DX12_DEPTH_STENCIL_DESC(CD3DX12_DEFAULT{});
+                    desc.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+                    psb.WithDepthStencil(desc);
+                }
+            )
+        ]
+        (const RenderContext& context, CommandList& commandList)
+        {
+            const auto& pHdb = context.m_ResourcePool->GetTexture(::ResourceIds::User::HierarchicalDepthBuffer);
+
+            const auto resourceDesc = pHdb->GetD3D12ResourceDesc();
+            commandList.FlushResourceBarriers();
+            pBlitMesh->Bind(commandList);
+            pDownsampleHDB->Bind(commandList);
+            const auto pD3dCommandList = commandList.GetGraphicsCommandList();
+
+            uint16_t lastMipLevel = resourceDesc.MipLevels - 1;
+            for (uint16_t sourceMip = 0; sourceMip < lastMipLevel; ++sourceMip)
+            {
+                {
+                    const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(pHdb->GetD3D12Resource().Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, sourceMip);
+                    pD3dCommandList->ResourceBarrier(1, &barrier);
+                }
+
+                const auto destinationMip = sourceMip + 1;
+                commandList.SetRenderTarget(
+                    *context.m_RenderTargetInfo.m_RenderTarget,
+                    0, destinationMip
+                );
+                commandList.SetAutomaticViewportAndScissorRect(*context.m_RenderTargetInfo.m_RenderTarget, destinationMip);
+
+                auto sourceSrvDesc = D3D12_SHADER_RESOURCE_VIEW_DESC(DXGI_FORMAT_R32_FLOAT, D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING);
+                sourceSrvDesc.Texture2D.MipLevels = 1;
+                sourceSrvDesc.Texture2D.MostDetailedMip = sourceMip;
+                sourceSrvDesc.Texture2D.PlaneSlice = 0;
+                sourceSrvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+                pRootSignature->SetMaterialShaderResourceView(commandList, 0, ShaderResourceView(pHdb, sourceMip, 1, sourceSrvDesc));
+                pBlitMesh->Draw(commandList);
+
+                {
+                    const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(pHdb->GetD3D12Resource().Get(), D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE, sourceMip);
+                    pD3dCommandList->ResourceBarrier(1, &barrier);
+                }
+            }
+        }
+    ));
+
     renderPasses.emplace_back(RenderPass::Create(
         L"Prepare Meshlet Culling",
         {
@@ -171,6 +277,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
         {
             { ::ResourceIds::User::MeshletsBuffer, InputType::ShaderResource },
             { ::ResourceIds::User::TransformsBuffer, InputType::ShaderResource },
+            { ::ResourceIds::User::HierarchicalDepthBuffer, InputType::ShaderResource },
         },
         {
             { ::ResourceIds::User::MeshletDrawCommands, OutputType::UnorderedAccess }
@@ -182,9 +289,22 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
             const auto& pMeshletsBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::MeshletsBuffer);
             const auto& pTransformsBuffer = context.m_ResourcePool->GetBuffer(::ResourceIds::User::TransformsBuffer);
             const auto& pMeshletDrawCommands = context.m_ResourcePool->GetBuffer(::ResourceIds::User::MeshletDrawCommands);
+            const auto& pHdb = context.m_ResourcePool->GetTexture(::ResourceIds::User::HierarchicalDepthBuffer);
 
             pRootSignature->SetPipelineShaderResourceView(commandList, 2, ShaderResourceView(pMeshletsBuffer));
             pRootSignature->SetPipelineShaderResourceView(commandList, 3, ShaderResourceView(pTransformsBuffer));
+
+            const auto hdbDesc = pHdb->GetD3D12ResourceDesc();
+            {
+
+                auto hdbSrcDesc = D3D12_SHADER_RESOURCE_VIEW_DESC(DXGI_FORMAT_R32_FLOAT, D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING);
+                hdbSrcDesc.Texture2D.MipLevels = hdbDesc.MipLevels;
+                hdbSrcDesc.Texture2D.MostDetailedMip = 0;
+                hdbSrcDesc.Texture2D.PlaneSlice = 0;
+                hdbSrcDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+                pRootSignature->SetComputeShaderResourceView(commandList, 0, ShaderResourceView(pHdb, 0, -1, hdbSrcDesc));
+            }
+
             pRootSignature->SetUnorderedAccessView(commandList, 0, UnorderedAccessView(pMeshletDrawCommands));
 
             const uint32_t meshletsCount = demo.m_MeshletsBuffer.m_Meshlets.size();
@@ -195,11 +315,17 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
                     XMFLOAT3 m_CameraPosition;
                     uint32_t m_TotalCount;
                     Camera::Frustum m_Frustum;
+                    XMMATRIX m_ViewProjection;
+                    uint32_t _HDB_Resolution_Width;
+                    uint32_t _HDB_Resolution_Height;
                 } constants;
 
                 XMStoreFloat3(&constants.m_CameraPosition, demo.m_CullingCameraPosition);
-                constants.m_Frustum = demo.m_Camera.GetFrustum(demo.m_CullingCameraPosition, demo.m_CullingCameraRotation);
                 constants.m_TotalCount = meshletsCount;
+                constants.m_Frustum = demo.m_Camera.GetFrustum(demo.m_CullingCameraPosition, demo.m_CullingCameraRotation);
+                constants.m_ViewProjection = demo.m_Camera.GetViewMatrix() * demo.m_Camera.GetProjectionMatrix();
+                constants._HDB_Resolution_Width = hdbDesc.Width;
+                constants._HDB_Resolution_Height = hdbDesc.Height;
 
                 pRootSignature->SetComputeConstantBuffer(commandList, constants);
             }
@@ -222,7 +348,8 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
         },
         {
             { ResourceIds::GraphOutput, OutputType::RenderTarget },
-            { ::ResourceIds::User::DepthBuffer, OutputType::DepthWrite }
+            { ::ResourceIds::User::DepthBuffer, OutputType::DepthWrite },
+            { ::ResourceIds::User::OpaqueFinishedToken, OutputType::Token }
         },
         [&demo, pRootSignature, pMeshletDrawIncorrect](const RenderContext& context, CommandList& commandList)
         {
@@ -246,15 +373,11 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
     renderPasses.emplace_back(RenderPass::Create(
         L"Draw Occluders",
         {
-            { ::ResourceIds::User::CommonVertexBuffer, InputType::ShaderResource },
-            { ::ResourceIds::User::CommonIndexBuffer, InputType::ShaderResource },
-            { ::ResourceIds::User::MeshletsBuffer, InputType::ShaderResource },
-            { ::ResourceIds::User::TransformsBuffer, InputType::ShaderResource },
-            { ::ResourceIds::User::MeshletDrawCommands, InputType::IndirectArgument },
+            { ::ResourceIds::User::OpaqueFinishedToken, InputType::Token },
         },
         {
             { ResourceIds::GraphOutput, OutputType::RenderTarget },
-            { ::ResourceIds::User::DepthBuffer, OutputType::DepthWrite }
+            { ::ResourceIds::User::DepthBuffer, OutputType::DepthRead }
         },
         [&demo, pRootSignature](const RenderContext&, CommandList& commandList)
         {
@@ -263,13 +386,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
                 const auto& pMaterial = go.GetMaterial();
                 pMaterial->Bind(commandList);
 
-                struct
-                {
-                    XMMATRIX m_WorldMatrix;
-                    XMMATRIX m_InverseTransposeWorldMatrix;
-                } cbuffer;
-                cbuffer.m_WorldMatrix = go.GetWorldMatrix();
-                cbuffer.m_InverseTransposeWorldMatrix = XMMatrixTranspose(XMMatrixInverse(nullptr, cbuffer.m_WorldMatrix));
+                const auto cbuffer = OccluderCBuffer(go.GetWorldMatrix());
                 pRootSignature->SetMaterialConstantBuffer(commandList, sizeof(cbuffer), &cbuffer);
 
                 go.GetModel()->Draw(commandList);
@@ -280,11 +397,16 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
 
     const RenderMetadataExpression renderWidthExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenWidth; };
     const RenderMetadataExpression renderHeightExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenHeight; };
+    const RenderMetadataExpression hdbSizeExpression = [](const RenderMetadata&) { return HdbResolution; };
 
+
+    auto hdbDesc = TextureDescription{ ::ResourceIds::User::HierarchicalDepthBuffer, [](const auto&) { return HdbResolution; }, [](const auto&) { return HdbResolution; }, DEPTH_BUFFER_FORMAT, { 1.0f, 0u }, Clear };
+    hdbDesc.m_MipLevels = 0;
 
     std::vector textures = {
-        TextureDescription{ ::ResourceIds::User::DepthBuffer, renderWidthExpression, renderHeightExpression, DEPTH_BUFFER_FORMAT, { 1.0f, 0u }, Clear },
         TextureDescription{ ResourceIds::GraphOutput, renderWidthExpression, renderHeightExpression, Window::BUFFER_FORMAT_SRGB, CLEAR_COLOR, Clear },
+        TextureDescription{ ::ResourceIds::User::DepthBuffer, renderWidthExpression, renderHeightExpression, DEPTH_BUFFER_FORMAT, { 1.0f, 0u }, Clear },
+        hdbDesc
     };
 
     std::vector buffers =
@@ -299,6 +421,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
     std::vector<TokenDescription> tokens =
     {
         { ::ResourceIds::User::SetupFinishedToken },
+        { ::ResourceIds::User::OpaqueFinishedToken },
     };
 
     return std::make_unique<RenderGraphRoot>(std::move(renderPasses), std::move(textures), std::move(buffers), std::move(tokens));

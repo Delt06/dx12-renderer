@@ -474,7 +474,7 @@ public:
 
     void SetComputeRootUnorderedAccessView(UINT rootParameterIndex, const Resource& resource);
 
-    void SetAutomaticViewportAndScissorRect(const RenderTarget& renderTarget);
+    void SetAutomaticViewportAndScissorRect(const RenderTarget& renderTarget, UINT mipLevel = 0);
     void SetInfiniteScrissorRect();
 
     const RenderTargetFormats& GetLastRenderTargetFormats() const { return m_LastRenderTargetState.GetFormats(); }

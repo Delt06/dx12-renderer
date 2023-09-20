@@ -31,6 +31,13 @@ float4 main(const VertexShaderOutput IN): SV_TARGET
     }
     #endif
 
+    #ifdef DEBUG_FLAGS
+    if ((g_Meshlet_Flags & MESHLET_FLAGS_PASSED_OCCLUSION_CULLING) == 0)
+    {
+        return float4(0, 0, 1, 1);
+    }
+    #endif
+
     const float3 normalWs = normalize(IN.NormalWS);
     const float diffuse = saturate(dot(g_Pipeline_DirectionalLight.DirectionWs.xyz, normalWs)) * 0.5 + 0.5;
     const float3 albedo = MESHLET_COLORS[g_Meshlet_Index % MESHLET_COLORS_COUNT] * 0.5f;

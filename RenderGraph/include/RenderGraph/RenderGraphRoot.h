@@ -30,16 +30,10 @@ namespace RenderGraph
         void Present(const std::shared_ptr<Window>& pWindow, ResourceId resourceId = ResourceIds::GraphOutput);
         void MarkDirty();
 
-        struct RenderTargetInfo
-        {
-            std::shared_ptr<RenderTarget> m_RenderTarget = nullptr;
-            bool m_ReadonlyDepth = false;
-        };
-
     private:
         void CheckPotentiallyDirtyResources(const RenderMetadata& renderMetadata);
         void Build(const RenderMetadata& renderMetadata);
-        void PrepareResourceForRenderPass(CommandList& commandList, const RenderPass& renderPass, uint32_t renderPassIndex);
+        void PrepareResourcesForRenderPass(CommandList& commandList, const RenderPass& renderPass, uint32_t renderPassIndex, RenderContext& context);
 
         D3D12_RESOURCE_STATES GetCurrentResourceState(const Resource& resource) const;
         void SetCurrentResourceState(const Resource& resource, D3D12_RESOURCE_STATES state);
@@ -52,7 +46,7 @@ namespace RenderGraph
 
         std::shared_ptr<CommandQueue> m_DirectCommandQueue;
 
-        const std::vector<std::unique_ptr<RenderPass>> m_RenderPassesDescription;
+        std::vector<std::unique_ptr<RenderPass>> m_RenderPassesDescription;
         std::vector<std::vector<RenderPass*>> m_RenderPassesSorted;
         std::vector<RenderPass*> m_RenderPassesBuilt;
 
