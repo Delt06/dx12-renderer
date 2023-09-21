@@ -62,19 +62,19 @@ public:
 
     // placed resource
     explicit Texture(const D3D12_RESOURCE_DESC& resourceDesc,
-        const ComPtr<ID3D12Heap>& pHeap,
+        const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap,
         UINT64 heapOffset = 0,
         const D3D12_CLEAR_VALUE* clearValue = nullptr,
         TextureUsageType textureUsage = TextureUsageType::Albedo,
         const std::wstring& name = L"");
     explicit Texture(const D3D12_RESOURCE_DESC& resourceDesc,
-        const ComPtr<ID3D12Heap>& pHeap,
+        const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap,
         UINT64 heapOffset = 0,
         const ClearValue& clearValue = {},
         TextureUsageType textureUsage = TextureUsageType::Albedo,
         const std::wstring& name = L"");
 
-    explicit Texture(ComPtr<ID3D12Resource> resource,
+    explicit Texture(Microsoft::WRL::ComPtr<ID3D12Resource> resource,
         TextureUsageType textureUsage = TextureUsageType::Albedo,
         const std::wstring& name = L"");
 
