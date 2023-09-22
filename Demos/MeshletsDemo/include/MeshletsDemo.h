@@ -10,9 +10,10 @@
 #include <DX12Library/VertexBuffer.h>
 #include <DX12Library/StructuredBuffer.h>
 
-#include <Framework/Light.h>
+#include <Framework/ImGuiImpl.h>
 #include <Framework/GameObject.h>
 #include <Framework/GraphicsSettings.h>
+#include <Framework/Light.h>
 #include <Framework/Mesh.h>
 #include <Framework/Material.h>
 #include <Framework/CommonRootSignature.h>
@@ -24,6 +25,11 @@
 #include "MeshletBuilder.h"
 #include "Transform.h"
 
+namespace RenderGraph
+{
+    class User;
+}
+
 class MeshletsDemo final : public Game
 {
 public:
@@ -34,6 +40,19 @@ public:
 
     bool LoadContent() override;
     void UnloadContent() override;
+
+protected:
+    void OnUpdate(UpdateEventArgs& e) override;
+    void OnRender(RenderEventArgs& e) override;
+    void OnKeyPressed(KeyEventArgs& e) override;
+    void OnKeyReleased(KeyEventArgs& e) override;
+    void OnMouseMoved(MouseMotionEventArgs& e) override;
+    void OnMouseWheel(MouseWheelEventArgs& e) override;
+    void OnResize(ResizeEventArgs& e) override;
+    void OnImGui();
+
+private:
+    friend class RenderGraph::User;
 
     Camera m_Camera;
     std::vector<GameObject> m_MeshletGameObjects;
@@ -47,16 +66,9 @@ public:
 
     std::vector<GameObject> m_OccluderGameObjects;
 
-protected:
-    void OnUpdate(UpdateEventArgs& e) override;
-    void OnRender(RenderEventArgs& e) override;
-    void OnKeyPressed(KeyEventArgs& e) override;
-    void OnKeyReleased(KeyEventArgs& e) override;
-    void OnMouseMoved(MouseMotionEventArgs& e) override;
-    void OnMouseWheel(MouseWheelEventArgs& e) override;
-    void OnResize(ResizeEventArgs& e) override;
+    std::unique_ptr<ImGuiImpl> m_ImGui;
 
-private:
+
     std::shared_ptr<Texture> m_WhiteTexture2d;
 
     std::unique_ptr<RenderGraph::RenderGraphRoot> m_RenderGraph;

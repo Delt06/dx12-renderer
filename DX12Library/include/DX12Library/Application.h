@@ -41,6 +41,7 @@
 #include <memory>
 #include <string>
 
+
 class CommandQueue;
 class DescriptorAllocator;
 class Game;
@@ -152,6 +153,10 @@ public:
 
     const Microsoft::WRL::ComPtr<IDxcLibrary>& GetDxcLibrary() const;
 
+    using WndProcHandler = LRESULT (*)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+    static void AddWndProcHandler(WndProcHandler handler);
+    static void RemoveWndProcHandler(WndProcHandler handler);
+
 protected:
     // Create an application instance.
     Application(HINSTANCE hInst);
@@ -184,4 +189,6 @@ private:
     bool m_TearingSupported;
 
     static uint64_t s_FrameCount;
+
+    static inline std::vector<WndProcHandler> s_WndProcHandlers = {};
 };

@@ -26,6 +26,7 @@ namespace ResourceIds
         // Textures
         static inline const RenderGraph::ResourceId DepthBuffer = RenderGraph::ResourceIds::GetResourceId(L"DepthBuffer");
         static inline const RenderGraph::ResourceId HierarchicalDepthBuffer = RenderGraph::ResourceIds::GetResourceId(L"HierarchicalDepthBuffer");
+        static inline const RenderGraph::ResourceId ImGuiRenderTarget = RenderGraph::ResourceIds::GetResourceId(L"ImGuiRenderTarget");
 
         // Buffers
         static inline const RenderGraph::ResourceId CommonVertexBuffer = RenderGraph::ResourceIds::GetResourceId(L"CommonVertexBuffer");
@@ -37,12 +38,15 @@ namespace ResourceIds
         // Tokens
         static inline const RenderGraph::ResourceId SetupFinishedToken = RenderGraph::ResourceIds::GetResourceId(L"SetupFinishedToken");
         static inline const RenderGraph::ResourceId OpaqueFinishedToken = RenderGraph::ResourceIds::GetResourceId(L"OpaqueFinishedToken");
+        static inline const RenderGraph::ResourceId ImGuiRenderFinished = RenderGraph::ResourceIds::GetResourceId(L"ImGuiRenderFinished");
+        static inline const RenderGraph::ResourceId MainViewFinishedToken = RenderGraph::ResourceIds::GetResourceId(L"MainViewFinishedToken");
     };
 }
 
 namespace
 {
     constexpr FLOAT CLEAR_COLOR[] = { 53.0f / 255.0f, 82.0f / 255.0f, 138.0f / 255.0f, 1.0f };
+    constexpr FLOAT IMGUI_CLEAR_COLOR[] = { 0.0f, 0.0f, 0.0f, 0.0f };
     constexpr DXGI_FORMAT BACK_BUFFER_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
     constexpr DXGI_FORMAT DEPTH_BUFFER_FORMAT = DXGI_FORMAT_D32_FLOAT;
     constexpr uint32_t HdbResolution = 256;
@@ -78,7 +82,7 @@ namespace CBuffer
 std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
     MeshletsDemo& demo,
     const std::shared_ptr<CommonRootSignature>& pRootSignature,
-    CommandList& commandList
+    CommandList& cmd
 )
 {
     using namespace RenderGraph;
@@ -91,7 +95,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
     renderPasses.emplace_back(RenderPass::Create(
         L"Setup",
         {
-
+            { ::ResourceIds::User::ImGuiRenderFinished, InputType::Token }
         },
         {
             { ::ResourceIds::User::SetupFinishedToken, OutputType::Token }
@@ -195,7 +199,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
         }
     ));
 
-    const auto pBlitMesh = Mesh::CreateBlitTriangle(commandList);
+    const auto pBlitMesh = Mesh::CreateBlitTriangle(cmd);
 
     renderPasses.emplace_back(RenderPass::Create(
         L"Render HDB: remaining mips",
@@ -415,14 +419,15 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
         },
         {
             { ResourceIds::GraphOutput, OutputType::RenderTarget },
-            { ::ResourceIds::User::DepthBuffer, OutputType::DepthRead }
+            { ::ResourceIds::User::DepthBuffer, OutputType::DepthRead },
+            { ::ResourceIds::User::MainViewFinishedToken, OutputType::Token }
         },
         [
-            pBoundingSphereMesh = Mesh::CreateSphere(commandList, 2, 8),
+            pBoundingSphereMesh = Mesh::CreateSphere(cmd, 2, 8),
             pBoundingSphereShader = std::make_shared<Shader>(pRootSignature, ShaderBlob(L"DebugBoundingSphere_VS.cso"), ShaderBlob(L"SelectedMeshletColor_PS.cso"), debugGeometryPsb),
-            pBoundingSquareMesh = Mesh::CreateVerticalQuad(commandList, 2, 2),
+            pBoundingSquareMesh = Mesh::CreateVerticalQuad(cmd, 2, 2),
             pBoundingSquareShader = std::make_shared<Shader>(pRootSignature, ShaderBlob(L"DebugBoundingSquare_VS.cso"), ShaderBlob(L"SelectedMeshletColor_PS.cso"), debugGeometryPsb),
-            pAabbMesh = Mesh::CreateCube(commandList, 2),
+            pAabbMesh = Mesh::CreateCube(cmd, 2),
             pAabbShader = std::make_shared<Shader>(pRootSignature, ShaderBlob(L"DebugAABB_VS.cso"), ShaderBlob(L"SelectedMeshletColor_PS.cso"), debugGeometryPsb)
         ](const RenderContext&, CommandList& commandList)
         {
@@ -443,6 +448,38 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
         }
     ));
 
+    renderPasses.emplace_back(
+        RenderPass::Create(
+            L"ImGui: Render",
+            {
+            },
+            {
+                { ::ResourceIds::User::ImGuiRenderTarget, OutputType::RenderTarget },
+                { ::ResourceIds::User::ImGuiRenderFinished, OutputType::Token },
+            },
+            [&demo](const RenderContext&, CommandList& commandList)
+            {
+                demo.m_ImGui->DrawToRenderTarget(commandList);
+            }
+        ));
+
+    renderPasses.emplace_back(
+        RenderPass::Create(
+            L"ImGui: Copy to Output",
+            {
+                { ::ResourceIds::User::ImGuiRenderTarget, InputType::ShaderResource },
+                { ::ResourceIds::User::MainViewFinishedToken, InputType::Token },
+            },
+            {
+                { ResourceIds::GraphOutput, OutputType::RenderTarget },
+            },
+            [&demo](const RenderContext& context, CommandList& commandList)
+            {
+                const auto& pImGuiRenderTarget = context.m_ResourcePool->GetTexture(::ResourceIds::User::ImGuiRenderTarget);
+                demo.m_ImGui->BlitCombine(commandList, pImGuiRenderTarget);
+            }
+        ));
+
     const RenderMetadataExpression renderWidthExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenWidth; };
     const RenderMetadataExpression renderHeightExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenHeight; };
     const RenderMetadataExpression hdbSizeExpression = [](const RenderMetadata&) { return HdbResolution; };
@@ -454,6 +491,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
     std::vector textures = {
         TextureDescription{ ResourceIds::GraphOutput, renderWidthExpression, renderHeightExpression, Window::BUFFER_FORMAT_SRGB, CLEAR_COLOR, Clear },
         TextureDescription{ ::ResourceIds::User::DepthBuffer, renderWidthExpression, renderHeightExpression, DEPTH_BUFFER_FORMAT, { 1.0f, 0u }, Clear },
+        TextureDescription{ ::ResourceIds::User::ImGuiRenderTarget, renderWidthExpression, renderHeightExpression, ImGuiImpl::BUFFER_FORMAT, IMGUI_CLEAR_COLOR, Clear },
         hdbDesc
     };
 
@@ -470,6 +508,8 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
     {
         { ::ResourceIds::User::SetupFinishedToken },
         { ::ResourceIds::User::OpaqueFinishedToken },
+        { ::ResourceIds::User::ImGuiRenderFinished },
+        { ::ResourceIds::User::MainViewFinishedToken },
     };
 
     return std::make_unique<RenderGraphRoot>(std::move(renderPasses), std::move(textures), std::move(buffers), std::move(tokens));

@@ -60,6 +60,7 @@ MeshletsDemo::MeshletsDemo(const std::wstring& name, const int width, const int 
     , m_CameraController{}
     , m_Width(0)
     , m_Height(0)
+
 {
     const XMVECTOR cameraPos = XMVectorSet(0, 5, -20, 1);
     const XMVECTOR cameraTarget = XMVectorSet(0, 5, 0, 1);
@@ -91,6 +92,7 @@ bool MeshletsDemo::LoadContent()
     }
 
     m_RootSignature = std::make_shared<CommonRootSignature>(m_WhiteTexture2d);
+    m_ImGui = std::make_unique<ImGuiImpl>(*pCmd, *PWindow, m_RootSignature);
 
     m_DirectionalLight.m_Color = XMFLOAT4(1, 1, 1, 1);
     m_DirectionalLight.m_DirectionWs = XMFLOAT4(1, 1, 0, 0);
@@ -240,6 +242,17 @@ void MeshletsDemo::OnResize(ResizeEventArgs& e)
     }
 }
 
+void MeshletsDemo::OnImGui()
+{
+    ImGui::Begin("Meshlets");
+
+    ImGui::Checkbox("Freeze camera for cone and frustum culling", &m_FreezeCulling);
+    ImGui::InputInt("Selected meshlet index", reinterpret_cast<int*>(&m_SelectedMeshletIndex));
+    m_SelectedMeshletIndex = std::clamp(m_SelectedMeshletIndex, 0u, static_cast<uint32_t>(m_MeshletsBuffer.m_Meshlets.size() - 1));
+
+    ImGui::End();
+}
+
 void MeshletsDemo::UnloadContent()
 {}
 
@@ -302,6 +315,10 @@ void MeshletsDemo::OnRender(RenderEventArgs& e)
 
     static uint64_t frameIndex = 0;
 
+    m_ImGui->BeginFrame();
+    OnImGui();
+    m_ImGui->Render();
+
     {
         RenderGraph::RenderMetadata metadata;
         metadata.m_ScreenWidth = m_Width;
@@ -311,13 +328,15 @@ void MeshletsDemo::OnRender(RenderEventArgs& e)
         m_RenderGraph->Execute(metadata);
     }
 
-
     m_RenderGraph->Present(PWindow);
     frameIndex++;
 }
 
 void MeshletsDemo::OnKeyPressed(KeyEventArgs& e)
 {
+    if (m_ImGui->WantsToCaptureKeyboard())
+        return;
+
     Base::OnKeyPressed(e);
 
     // ReSharper disable once CppDefaultCaseNotHandledInSwitchStatement
@@ -392,6 +411,9 @@ void MeshletsDemo::OnKeyPressed(KeyEventArgs& e)
 
 void MeshletsDemo::OnKeyReleased(KeyEventArgs& e)
 {
+    if (m_ImGui->WantsToCaptureKeyboard())
+        return;
+
     Base::OnKeyReleased(e);
 
     // ReSharper disable once CppDefaultCaseNotHandledInSwitchStatement
@@ -435,6 +457,9 @@ void MeshletsDemo::OnKeyReleased(KeyEventArgs& e)
 
 void MeshletsDemo::OnMouseMoved(MouseMotionEventArgs& e)
 {
+    if (m_ImGui->WantsToCaptureMouse())
+        return;
+
     Base::OnMouseMoved(e);
 
     if (e.LeftButton)
@@ -451,6 +476,9 @@ void MeshletsDemo::OnMouseMoved(MouseMotionEventArgs& e)
 
 void MeshletsDemo::OnMouseWheel(MouseWheelEventArgs& e)
 {
+    if (m_ImGui->WantsToCaptureMouse())
+        return;
+
     {
         auto fov = m_Camera.GetFov();
 

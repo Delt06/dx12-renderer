@@ -35,6 +35,8 @@ set(HEADER_FILES
         "include/Framework/MSAADepthResolvePass.h"
         "include/Framework/SSAOUtils.h"
         "include/Framework/TAA.h"
+        
+        "include/Framework/ImGuiImpl.h"
 )
 
 set(SOURCE_FILES
@@ -66,6 +68,8 @@ set(SOURCE_FILES
         "src/MSAADepthResolvePass.cpp"
         "src/SSAOUtils.cpp"
         "src/TAA.cpp"
+        
+        "src/ImGuiImpl.cpp"
         )
 
 set(SHADER_FILES_VERTEX
@@ -77,6 +81,7 @@ set(SHADER_FILES_PIXEL
         "shaders/Bloom_Prefilter_PS.hlsl"
         "shaders/Bloom_Downsample_PS.hlsl"
         "shaders/TAA_Resolve_PS.hlsl"
+        "shaders/ImGuiCombine_PS.hlsl"
         )
 
 set(SHADER_FILES_COMPUTE
@@ -99,3 +104,7 @@ target_include_directories(${TARGET_NAME}
 target_link_libraries(${TARGET_NAME}
         PUBLIC DX12Library
         )
+        
+# imgui
+find_package(imgui CONFIG REQUIRED)
+target_link_libraries(${TARGET_NAME} PUBLIC imgui::imgui)

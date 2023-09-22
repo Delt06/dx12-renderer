@@ -245,13 +245,7 @@ RenderGraph::RenderGraphRoot::RenderGraphRoot(
 
 void RenderGraph::RenderGraphRoot::Execute(const RenderMetadata& renderMetadata)
 {
-    CheckPotentiallyDirtyResources(renderMetadata);
-
-    if (m_Dirty)
-    {
-        Build(renderMetadata);
-        m_Dirty = false;
-    }
+    RebuildIfNecessary(renderMetadata);
 
     const auto pCommandList = m_DirectCommandQueue->GetCommandList();
     auto& cmd = *pCommandList;
@@ -307,9 +301,40 @@ void RenderGraph::RenderGraphRoot::Present(const std::shared_ptr<Window>& pWindo
     pWindow->Present(*pTexture);
 }
 
+void RenderGraph::RenderGraphRoot::DrawToGraphOutput(const RenderMetadata& renderMetadata, const std::function<void(CommandList&)>& drawCallback)
+{
+    RebuildIfNecessary(renderMetadata);
+
+    const auto pCommandList = m_DirectCommandQueue->GetCommandList();
+    auto& commandList = *pCommandList;
+
+    const auto& pGraphOutput = m_ResourcePool->GetTexture(ResourceIds::GraphOutput);
+    TransitionBarrier(*pGraphOutput, D3D12_RESOURCE_STATE_RENDER_TARGET);
+    FlushBarriers(commandList);
+
+    commandList.SetRenderTarget(*m_GraphOutputRenderTarget);
+    commandList.SetAutomaticViewportAndScissorRect(*m_GraphOutputRenderTarget);
+
+    drawCallback(commandList);
+
+    m_DirectCommandQueue->ExecuteCommandList(pCommandList);
+
+}
+
 void RenderGraph::RenderGraphRoot::MarkDirty()
 {
     m_Dirty = true;
+}
+
+void RenderGraph::RenderGraphRoot::RebuildIfNecessary(const RenderMetadata& renderMetadata)
+{
+    CheckPotentiallyDirtyResources(renderMetadata);
+
+    if (m_Dirty)
+    {
+        Build(renderMetadata);
+        m_Dirty = false;
+    }
 }
 
 void RenderGraph::RenderGraphRoot::CheckPotentiallyDirtyResources(const RenderMetadata& renderMetadata)
@@ -440,6 +465,9 @@ void RenderGraph::RenderGraphRoot::Build(const RenderMetadata& renderMetadata)
             m_RenderTargets.insert(std::pair{ pRenderPass.get(), renderTargetInfo });
         }
     }
+
+    m_GraphOutputRenderTarget = std::make_shared<RenderTarget>();
+    m_GraphOutputRenderTarget->AttachTexture(Color0, m_ResourcePool->GetTexture(ResourceIds::GraphOutput));
 }
 
 D3D12_RESOURCE_STATES RenderGraph::RenderGraphRoot::GetCurrentResourceState(const Resource& resource) const
