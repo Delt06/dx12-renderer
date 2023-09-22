@@ -44,7 +44,7 @@ namespace
             XMMATRIX View;
             XMMATRIX ViewProjection;
 
-            XMFLOAT3 Samples[SAMPLES_COUNT];
+            XMFLOAT4 Samples[SAMPLES_COUNT];
         };
     }
 
