@@ -159,11 +159,12 @@
 
 ### Requirements
 
-Packages (e.g., installed via `vcpkg`):
+Packages (installed via `vcpkg`):
 
 - [assimp](https://github.com/assimp/assimp)
 - [DirectXTex](https://github.com/microsoft/DirectXTex)
 - [DirectXMesh](https://github.com/microsoft/DirectXMesh)
+- [meshoptimizer](https://github.com/zeux/meshoptimizer)
 
 ## Sources
 
