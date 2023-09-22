@@ -1,8 +1,5 @@
 #define THREAD_BLOCK_SIZE 32
 
-#define DEBUG_CULLING 1
-#define OCCLUSION_CULLING_AABB 1
-
 #include "ShaderLibrary/Meshlets.hlsli"
 #include "ShaderLibrary/Geometry.hlsli"
 
@@ -32,6 +29,8 @@ cbuffer CBuffer : register(b0)
     float4x4 _ViewProjection;
     uint _HDB_Resolution_Width;
     uint _HDB_Resolution_Height;
+    uint _OcclusionCullingMode;
+    uint _Debug;
 }
 
 struct MeshletInfo
@@ -98,17 +97,24 @@ bool OcclusionCullingAABB(const MeshletInfo meshletInfo)
     return OcclusionCulling(boundingSquare);
 }
 
+bool OcclusionCulling(const MeshletInfo meshletInfo)
+{
+    [branch]
+    if (_OcclusionCullingMode == 0)
+    {
+        return OcclusionCullingAABB(meshletInfo);
+    }
+
+    return OcclusionCullingBoundingSphere(meshletInfo);
+
+}
+
 bool Culling(const MeshletInfo meshletInfo)
 {
     return
     ConeCulling(meshletInfo) &&
     FrustumCulling(meshletInfo) &&
-#if OCCLUSION_CULLING_AABB == 1
-    OcclusionCullingAABB(meshletInfo)
-#else
-    OcclusionCullingBoundingSphere(meshletInfo)
-#endif
-    ;
+    OcclusionCulling(meshletInfo);
 }
 
 [numthreads(THREAD_BLOCK_SIZE, 1, 1)]
@@ -126,9 +132,8 @@ void main(in uint3 dispatchId : SV_DispatchThreadID)
     const AABB aabb = AABBObjectToWorldSpace(meshlet.bounds.aabbCenter, meshlet.bounds.aabbHalfSize, transform.worldMatrix);
     const MeshletInfo meshletInfo = { meshlet, transform, boundingSphere, aabb };
 
-#if DEBUG_CULLING == 0
-    if (Culling(meshletInfo))
-#endif
+    [branch]
+    if (_Debug || Culling(meshletInfo))
     {
         IndirectCommand indirectCommand;
         indirectCommand.meshletIndex = meshletIndex;
@@ -138,22 +143,24 @@ void main(in uint3 dispatchId : SV_DispatchThreadID)
         indirectCommand.drawArguments.StartInstanceLocation = 0;
         indirectCommand.flags = 0;
 
-#if DEBUG_CULLING == 1
-        if (ConeCulling(meshletInfo))
+        [branch]
+        if (_Debug)
         {
-            indirectCommand.flags |= MESHLET_FLAGS_PASSED_CONE_CULLING;
-        }
+            if (ConeCulling(meshletInfo))
+            {
+                indirectCommand.flags |= MESHLET_FLAGS_PASSED_CONE_CULLING;
+            }
 
-        if (FrustumCulling(meshletInfo))
-        {
-            indirectCommand.flags |= MESHLET_FLAGS_PASSED_FRUSTUM_CULLING;
-        }
+            if (FrustumCulling(meshletInfo))
+            {
+                indirectCommand.flags |= MESHLET_FLAGS_PASSED_FRUSTUM_CULLING;
+            }
 
-        if (OcclusionCullingAABB(meshletInfo))
-        {
-            indirectCommand.flags |= MESHLET_FLAGS_PASSED_OCCLUSION_CULLING;
+            if (OcclusionCulling(meshletInfo))
+            {
+                indirectCommand.flags |= MESHLET_FLAGS_PASSED_OCCLUSION_CULLING;
+            }
         }
-#endif
 
         _IndirectCommands.Append(indirectCommand);
     }

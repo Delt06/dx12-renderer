@@ -3,28 +3,26 @@
 
 #include "Meshlet_VertexShaderOutput.hlsli"
 
-#define DEBUG_FLAGS 1
-
 float4 main(const VertexShaderOutput IN): SV_TARGET
 {
-#if DEBUG_FLAGS == 1
-
-    if ((g_Meshlet_Flags & MESHLET_FLAGS_PASSED_CONE_CULLING) == 0)
+    [branch]
+    if (g_Pipeline_DebugGpuCulling)
     {
-        return float4(1, 0, 0, 1);
-    }
+        if ((g_Meshlet_Flags & MESHLET_FLAGS_PASSED_CONE_CULLING) == 0)
+        {
+            return float4(1, 0, 0, 1);
+        }
 
-    if ((g_Meshlet_Flags & MESHLET_FLAGS_PASSED_FRUSTUM_CULLING) == 0)
-    {
-        return float4(0, 1, 0, 1);
-    }
+        if ((g_Meshlet_Flags & MESHLET_FLAGS_PASSED_FRUSTUM_CULLING) == 0)
+        {
+            return float4(0, 1, 0, 1);
+        }
 
-    if ((g_Meshlet_Flags & MESHLET_FLAGS_PASSED_OCCLUSION_CULLING) == 0)
-    {
-        return float4(0, 0, 1, 1);
+        if ((g_Meshlet_Flags & MESHLET_FLAGS_PASSED_OCCLUSION_CULLING) == 0)
+        {
+            return float4(0, 0, 1, 1);
+        }
     }
-
-#endif
 
     if (g_Pipeline_SelectedMeshletIndex == g_Meshlet_Index)
     {

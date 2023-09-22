@@ -49,7 +49,6 @@ namespace
     constexpr FLOAT IMGUI_CLEAR_COLOR[] = { 0.0f, 0.0f, 0.0f, 0.0f };
     constexpr DXGI_FORMAT BACK_BUFFER_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
     constexpr DXGI_FORMAT DEPTH_BUFFER_FORMAT = DXGI_FORMAT_D32_FLOAT;
-    constexpr uint32_t HdbResolution = 256;
 }
 
 namespace CBuffer
@@ -71,6 +70,7 @@ namespace CBuffer
         DirectionalLight g_Pipeline_DirectionalLight;
 
         uint32_t g_Pipeline_SelectedMeshletIndex;
+        uint32_t g_Pipeline_DebugGpuCulling;
     };
 
     struct MeshletRootConstants
@@ -124,6 +124,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
             pipelineCBuffer.g_Pipeline_DirectionalLight = demo.m_DirectionalLight;
 
             pipelineCBuffer.g_Pipeline_SelectedMeshletIndex = demo.m_SelectedMeshletIndex;
+            pipelineCBuffer.g_Pipeline_DebugGpuCulling = demo.m_DebugGpuCulling ? 1 : 0;
 
             pRootSignature->Bind(commandList);
             pRootSignature->SetPipelineConstantBuffer(commandList, pipelineCBuffer);
@@ -324,16 +325,20 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
                     uint32_t m_TotalCount;
                     Camera::Frustum m_Frustum;
                     XMMATRIX m_ViewProjection;
-                    uint32_t _HDB_Resolution_Width;
-                    uint32_t _HDB_Resolution_Height;
+                    uint32_t m_HDB_Resolution_Width;
+                    uint32_t m_HDB_Resolution_Height;
+                    uint32_t m_OcclusionCullingMode;
+                    uint32_t m_Debug;
                 } constants;
 
                 XMStoreFloat3(&constants.m_CameraPosition, demo.m_CullingCameraPosition);
                 constants.m_TotalCount = meshletsCount;
                 constants.m_Frustum = demo.m_Camera.GetFrustum(demo.m_CullingCameraPosition, demo.m_CullingCameraRotation);
                 constants.m_ViewProjection = demo.m_Camera.GetViewMatrix() * demo.m_Camera.GetProjectionMatrix();
-                constants._HDB_Resolution_Width = hdbDesc.Width;
-                constants._HDB_Resolution_Height = hdbDesc.Height;
+                constants.m_HDB_Resolution_Width = hdbDesc.Width;
+                constants.m_HDB_Resolution_Height = hdbDesc.Height;
+                constants.m_OcclusionCullingMode = demo.m_OcclusionCullingMode;
+                constants.m_Debug = demo.m_DebugGpuCulling ? 1 : 0;
 
                 pRootSignature->SetComputeConstantBuffer(commandList, constants);
             }
@@ -389,6 +394,11 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
         },
         [&demo, pRootSignature](const RenderContext&, CommandList& commandList)
         {
+            if (!demo.m_RenderOccluders)
+            {
+                return;
+            }
+
             for (auto& go : demo.m_OccluderGameObjects)
             {
                 const auto& pMaterial = go.GetMaterial();
@@ -482,10 +492,10 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
 
     const RenderMetadataExpression renderWidthExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenWidth; };
     const RenderMetadataExpression renderHeightExpression = [](const RenderMetadata& metadata) { return metadata.m_ScreenHeight; };
-    const RenderMetadataExpression hdbSizeExpression = [](const RenderMetadata&) { return HdbResolution; };
+    const RenderMetadataExpression hdbSizeExpression = [&demo](const RenderMetadata&) { return demo.m_HdbResolution; };
 
 
-    auto hdbDesc = TextureDescription{ ::ResourceIds::User::HierarchicalDepthBuffer, [](const auto&) { return HdbResolution; }, [](const auto&) { return HdbResolution; }, DEPTH_BUFFER_FORMAT, { 1.0f, 0u }, Clear };
+    auto hdbDesc = TextureDescription{ ::ResourceIds::User::HierarchicalDepthBuffer, hdbSizeExpression, hdbSizeExpression, DEPTH_BUFFER_FORMAT, { 1.0f, 0u }, Clear };
     hdbDesc.m_MipLevels = 0;
 
     std::vector textures = {

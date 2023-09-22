@@ -30,6 +30,7 @@ cbuffer PipelineCBuffer : register(b0, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE)
     DirectionalLight g_Pipeline_DirectionalLight;
 
     uint g_Pipeline_SelectedMeshletIndex;
+    uint g_Pipeline_DebugGpuCulling;
 };
 
 ScreenParameters GetScreenParameters()

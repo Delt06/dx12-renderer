@@ -91,7 +91,12 @@ private:
     };
 
     CameraData* m_PAlignedCameraData;
+
+    uint32_t m_HdbResolution = 256;
     bool m_FreezeCulling = false;
+    uint32_t m_OcclusionCullingMode = 0;
+    bool m_DebugGpuCulling = false;
+    bool m_RenderOccluders = true;
 
     struct
     {

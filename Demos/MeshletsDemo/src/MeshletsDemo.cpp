@@ -245,12 +245,50 @@ void MeshletsDemo::OnResize(ResizeEventArgs& e)
 void MeshletsDemo::OnImGui()
 {
     ImGui::Begin("Meshlets");
-    ImGui::SetWindowPos({25.0f, 25.0f});
-    ImGui::SetWindowSize({600.0f, 100.0f});
+
+    {
+        ImGui::InputInt("Selected Meshlet Index", reinterpret_cast<int*>(&m_SelectedMeshletIndex));
+        m_SelectedMeshletIndex = std::clamp(m_SelectedMeshletIndex, 0u, static_cast<uint32_t>(m_MeshletsBuffer.m_Meshlets.size() - 1));
+    }
 
     ImGui::Checkbox("Freeze camera for cone and frustum culling", &m_FreezeCulling);
-    ImGui::InputInt("Selected meshlet index", reinterpret_cast<int*>(&m_SelectedMeshletIndex));
-    m_SelectedMeshletIndex = std::clamp(m_SelectedMeshletIndex, 0u, static_cast<uint32_t>(m_MeshletsBuffer.m_Meshlets.size() - 1));
+
+    if (ImGui::CollapsingHeader("Occlusion Culling", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        {
+            ImGui::InputInt("HDB Resolution", reinterpret_cast<int*>(&m_HdbResolution));
+            m_HdbResolution = std::clamp(m_HdbResolution, 0u, 2048u);
+        }
+
+        {
+            static const char* modes[2] = { "AABB", "Bounding Sphere" };
+            ImGui::Combo("Occlusion Culling Mode", reinterpret_cast<int*>(&m_OcclusionCullingMode), modes, _countof(modes));
+        }
+
+        ImGui::Checkbox("Render Occluders", &m_RenderOccluders);
+
+        ImGui::Checkbox("Debug GPU Culling", &m_DebugGpuCulling);
+        if (m_DebugGpuCulling)
+        {
+            ImGui::Separator();
+            ImGui::Indent();
+
+            ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
+            ImGui::Text("Red - failed cone culling");
+            ImGui::PopStyleColor();
+
+            ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 255, 0, 255));
+            ImGui::Text("Green - failed frustum culling");
+            ImGui::PopStyleColor();
+
+            ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 0, 255, 255));
+            ImGui::Text("Blue - failed occlusion culling");
+            ImGui::PopStyleColor();
+
+            ImGui::Unindent();
+            ImGui::Separator();
+        }
+    }
 
     ImGui::End();
 }
