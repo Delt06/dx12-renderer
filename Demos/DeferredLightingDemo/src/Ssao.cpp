@@ -144,7 +144,7 @@ void Ssao::SsaoPass(CommandList& commandList, const Texture& gBufferNormals, con
     m_SsaoPassMaterial->SetVariable<float>("Radius", radius);
     m_SsaoPassMaterial->SetVariable<uint32_t>("KernelSize", SsaoPassRootParameters::SSAOCBuffer::SAMPLES_COUNT);
     m_SsaoPassMaterial->SetVariable<float>("Power", power);
-    m_SsaoPassMaterial->SetVariable("Samples", m_Samples.size() * sizeof(XMFLOAT4), m_Samples.data());
+    m_SsaoPassMaterial->SetArrayVariable("Samples", m_Samples);
 
     m_SsaoPassMaterial->SetShaderResourceView("noiseTexture", ShaderResourceView(m_NoiseTexture));
 

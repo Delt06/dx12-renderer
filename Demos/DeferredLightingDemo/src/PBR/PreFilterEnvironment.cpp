@@ -47,8 +47,8 @@ void PreFilterEnvironment::SetSourceCubemap(CommandList& commandList, const std:
 
     m_Material->SetShaderResourceView("source", ShaderResourceView(texture, 0, UINT_MAX, srvDesc));
 
-    m_SourceWidth = sourceDesc.Width;
-    m_SourceHeight = sourceDesc.Height;
+    m_SourceWidth = static_cast<float>(sourceDesc.Width);
+    m_SourceHeight = static_cast<float>(sourceDesc.Height);
 }
 
 void PreFilterEnvironment::SetRenderTarget(CommandList& commandList, RenderTarget& renderTarget, UINT texArrayIndex, UINT mipLevel)

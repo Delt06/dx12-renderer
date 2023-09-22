@@ -85,7 +85,7 @@ void Material::SetAllVariables(size_t size, const void* data)
     memcpy(m_ConstantBuffer.get(), data, size);
 }
 
-void Material::SetVariable(const std::string& name, size_t size, const void* data, bool throwOnNotFound)
+void Material::SetVariable(const std::string& name, size_t size, const void* data, bool array, bool throwOnNotFound)
 {
     if (m_ConstantBuffer == nullptr)
     {
@@ -96,9 +96,19 @@ void Material::SetVariable(const std::string& name, size_t size, const void* dat
     {
         if (variable.Name != name) continue;
 
-        if (size != variable.Size)
+        if (array)
         {
-            throw std::exception("Variable size mismatch.");
+            if (size > variable.Size)
+            {
+                throw std::exception("The value is too big for the destination array variable.");
+            }
+        }
+        else
+        {
+            if (size != variable.Size)
+            {
+                throw std::exception("Variable size mismatch.");
+            }
         }
 
         memcpy(m_ConstantBuffer.get() + variable.Offset, data, size);

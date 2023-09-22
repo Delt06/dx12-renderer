@@ -105,7 +105,7 @@ SSAOPass::SSAOPass(const std::shared_ptr<CommonRootSignature>& rootSignature, Co
             );
         m_SSAOMaterial = Material::Create(ssaoShader);
         m_SSAOMaterial->SetShaderResourceView("noiseTexture", ShaderResourceView(m_NoiseTexture));
-        m_SSAOMaterial->SetVariable("Samples", m_Samples.size() * sizeof(DirectX::XMFLOAT4), m_Samples.data());
+        m_SSAOMaterial->SetArrayVariable("Samples", m_Samples);
         m_SSAOMaterial->SetVariable<uint32_t>("KernelSize", SAMPLES_COUNT);
 
         auto ssaoBlurShader = std::make_shared<Shader>(rootSignature,
