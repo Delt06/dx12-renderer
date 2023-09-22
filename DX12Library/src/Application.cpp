@@ -268,6 +268,16 @@ void Application::RemoveWndProcHandler(const WndProcHandler handler)
     std::erase(s_WndProcHandlers, handler);
 }
 
+void Application::AddKeyDownListener(const KeyDownListener listener)
+{
+    s_KeyDownListeners.push_back(listener);
+}
+
+auto Application::RemoveKeyDownListener(KeyDownListener listener) -> void
+{
+    std::erase(s_KeyDownListeners, listener);
+}
+
 bool Application::IsTearingSupported() const
 {
     return m_TearingSupported;
@@ -554,6 +564,15 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM l
                 {
                     GetMessage(&charMsg, hwnd, 0, 0);
                     c = static_cast<unsigned int>(charMsg.wParam);
+
+                    if (charMsg.wParam > 0 && charMsg.wParam < 0x10000)
+                    {
+                        for (const auto listener : Application::s_KeyDownListeners)
+                        {
+                            listener(c);
+                        }
+                    }
+
                 }
                 bool shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
                 bool control = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;

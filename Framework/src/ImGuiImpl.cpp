@@ -11,6 +11,14 @@
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+namespace
+{
+    void AddInputCharacter(const unsigned int c)
+    {
+        ImGui::GetIO().AddInputCharacter(static_cast<unsigned short>(c));
+    }
+}
+
 ImGuiImpl::ImGuiImpl(CommandList& commandList, const Window& window, const std::shared_ptr<CommonRootSignature>& pRootSignature)
     : m_CombineShader(std::make_shared<Shader>(pRootSignature,
         ShaderBlob(ShaderBytecode_Blit_VS, sizeof ShaderBytecode_Blit_VS),
@@ -54,10 +62,13 @@ ImGuiImpl::ImGuiImpl(CommandList& commandList, const Window& window, const std::
     );
 
     Application::AddWndProcHandler(ImGui_ImplWin32_WndProcHandler);
+    Application::AddKeyDownListener(AddInputCharacter);
 }
+
 ImGuiImpl::~ImGuiImpl()
 {
     Application::RemoveWndProcHandler(ImGui_ImplWin32_WndProcHandler);
+    Application::RemoveKeyDownListener(AddInputCharacter);
     ImGui_ImplDX12_Shutdown();
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();

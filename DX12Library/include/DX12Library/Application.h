@@ -157,6 +157,10 @@ public:
     static void AddWndProcHandler(WndProcHandler handler);
     static void RemoveWndProcHandler(WndProcHandler handler);
 
+    using KeyDownListener = void (*)(unsigned int c);
+    static void AddKeyDownListener(KeyDownListener listener);
+    static void RemoveKeyDownListener(KeyDownListener listener);
+
 protected:
     // Create an application instance.
     Application(HINSTANCE hInst);
@@ -191,4 +195,5 @@ private:
     static uint64_t s_FrameCount;
 
     static inline std::vector<WndProcHandler> s_WndProcHandlers = {};
+    static inline std::vector<KeyDownListener> s_KeyDownListeners = {};
 };
