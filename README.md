@@ -156,6 +156,7 @@ Packages (e.g., installed via `vcpkg`):
 - https://blog.traverseresearch.nl/render-graph-101-f42646255636
 - https://themaister.net/blog/2017/08/15/render-graphs-and-vulkan-a-deep-dive/
 - https://github.com/zeux/niagara
+- https://arm-software.github.io/opengl-es-sdk-for-android/occlusion_culling.html
 
 ### Libraries and Tools
 
