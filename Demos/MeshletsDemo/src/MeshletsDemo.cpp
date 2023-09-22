@@ -245,6 +245,8 @@ void MeshletsDemo::OnResize(ResizeEventArgs& e)
 void MeshletsDemo::OnImGui()
 {
     ImGui::Begin("Meshlets");
+    ImGui::SetWindowPos({25.0f, 25.0f});
+    ImGui::SetWindowSize({600.0f, 100.0f});
 
     ImGui::Checkbox("Freeze camera for cone and frustum culling", &m_FreezeCulling);
     ImGui::InputInt("Selected meshlet index", reinterpret_cast<int*>(&m_SelectedMeshletIndex));
