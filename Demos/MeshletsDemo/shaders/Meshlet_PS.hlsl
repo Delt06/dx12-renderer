@@ -7,7 +7,7 @@
 
 float4 main(const VertexShaderOutput IN): SV_TARGET
 {
-    #ifdef DEBUG_FLAGS
+#if DEBUG_FLAGS == 1
 
     if ((g_Meshlet_Flags & MESHLET_FLAGS_PASSED_CONE_CULLING) == 0)
     {
@@ -24,7 +24,7 @@ float4 main(const VertexShaderOutput IN): SV_TARGET
         return float4(0, 0, 1, 1);
     }
 
-    #endif
+#endif
 
     if (g_Pipeline_SelectedMeshletIndex == g_Meshlet_Index)
     {

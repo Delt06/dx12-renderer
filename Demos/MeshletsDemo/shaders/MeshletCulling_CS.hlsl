@@ -1,5 +1,8 @@
 #define THREAD_BLOCK_SIZE 32
 
+#define DEBUG_CULLING 1
+#define OCCLUSION_CULLING_AABB 1
+
 #include "ShaderLibrary/Meshlets.hlsli"
 #include "ShaderLibrary/Geometry.hlsli"
 
@@ -31,8 +34,18 @@ cbuffer CBuffer : register(b0)
     uint _HDB_Resolution_Height;
 }
 
-bool ConeCulling(const in Meshlet meshlet, const in Transform transform)
+struct MeshletInfo
 {
+    Meshlet meshlet;
+    Transform transform;
+    BoundingSphere boundingSphere;
+    AABB aabb;
+};
+
+bool ConeCulling(const MeshletInfo meshletInfo)
+{
+    const Transform transform = meshletInfo.transform;
+    const Meshlet meshlet = meshletInfo.meshlet;
     const float3 coneApex = mul(transform.worldMatrix, float4(meshlet.bounds.coneApex, 1.0f)).xyz;
     const float3 coneAxis = mul((float3x3) transform.inverseTransposeWorldMatrix, meshlet.bounds.coneAxis);
 
@@ -47,10 +60,10 @@ float DistanceToPlane(const float4 plane, const float3 position)
     return dot(float4(position, -1.0), plane);
 }
 
-bool FrustumCulling(const BoundingSphere boundingSphere)
+bool FrustumCulling(const MeshletInfo meshletInfo)
 {
-    const float3 center = boundingSphere.center;
-    const float radius = boundingSphere.radius;
+    const float3 center = meshletInfo.boundingSphere.center;
+    const float radius = meshletInfo.boundingSphere.radius;
 
     // https://gist.github.com/XProger/6d1fd465c823bba7138b638691831288
     const float dist01 = min(DistanceToPlane(_FrustumPlanes[0], center), DistanceToPlane(_FrustumPlanes[1], center));
@@ -60,10 +73,8 @@ bool FrustumCulling(const BoundingSphere boundingSphere)
     return min(min(dist01, dist23), dist45) + radius > 0;
 }
 
-bool OcclusionCulling(const BoundingSphere boundingSphere)
+bool OcclusionCulling(const BoundingSquareSS boundingSquare)
 {
-    BoundingSquareSS boundingSquare = ComputeScreenSpaceBoundingSquareFromSphere(boundingSphere, _ViewProjection);
-
     const float2 boundsSizePixels = (boundingSquare.maxUV - boundingSquare.minUV) * float2(_HDB_Resolution_Width, _HDB_Resolution_Height);
     const float lod = ceil(log2(max(boundsSizePixels.x, boundsSizePixels.y) * 0.5f));
 
@@ -75,12 +86,29 @@ bool OcclusionCulling(const BoundingSphere boundingSphere)
     return boundingSquare.minNdcDepth <= maxOccluderDepth;
 }
 
-bool Culling(const in Meshlet meshlet, const in Transform transform, const BoundingSphere boundingSphere)
+bool OcclusionCullingBoundingSphere(const MeshletInfo meshletInfo)
+{
+    const BoundingSquareSS boundingSquare = ComputeScreenSpaceBoundingSquareFromSphere(meshletInfo.boundingSphere, _ViewProjection);
+    return OcclusionCulling(boundingSquare);
+}
+
+bool OcclusionCullingAABB(const MeshletInfo meshletInfo)
+{
+    const BoundingSquareSS boundingSquare = ComputeScreenSpaceBoundingSquareFromAABB(meshletInfo.aabb, _ViewProjection);
+    return OcclusionCulling(boundingSquare);
+}
+
+bool Culling(const MeshletInfo meshletInfo)
 {
     return
-    // ConeCulling(meshlet, transform) &&
-    // FrustumCulling(boundingSphere) &&
-    OcclusionCulling(boundingSphere);
+    ConeCulling(meshletInfo) &&
+    FrustumCulling(meshletInfo) &&
+#if OCCLUSION_CULLING_AABB == 1
+    OcclusionCullingAABB(meshletInfo)
+#else
+    OcclusionCullingBoundingSphere(meshletInfo)
+#endif
+    ;
 }
 
 [numthreads(THREAD_BLOCK_SIZE, 1, 1)]
@@ -95,8 +123,12 @@ void main(in uint3 dispatchId : SV_DispatchThreadID)
     const Meshlet meshlet = _MeshletsBuffer[meshletIndex];
     const Transform transform = _TransformsBuffer[meshlet.transformIndex];
     const BoundingSphere boundingSphere = BoundingSphereObjectToWorldSpace(meshlet.bounds.center, meshlet.bounds.radius, transform.worldMatrix);
+    const AABB aabb = AABBObjectToWorldSpace(meshlet.bounds.aabbCenter, meshlet.bounds.aabbHalfSize, transform.worldMatrix);
+    const MeshletInfo meshletInfo = { meshlet, transform, boundingSphere, aabb };
 
-    // if (Culling(meshlet, transform, boundingSphere))
+#if DEBUG_CULLING == 0
+    if (Culling(meshletInfo))
+#endif
     {
         IndirectCommand indirectCommand;
         indirectCommand.meshletIndex = meshletIndex;
@@ -106,20 +138,22 @@ void main(in uint3 dispatchId : SV_DispatchThreadID)
         indirectCommand.drawArguments.StartInstanceLocation = 0;
         indirectCommand.flags = 0;
 
-        if (ConeCulling(meshlet, transform))
+#if DEBUG_CULLING == 1
+        if (ConeCulling(meshletInfo))
         {
             indirectCommand.flags |= MESHLET_FLAGS_PASSED_CONE_CULLING;
         }
 
-        if (FrustumCulling(boundingSphere))
+        if (FrustumCulling(meshletInfo))
         {
             indirectCommand.flags |= MESHLET_FLAGS_PASSED_FRUSTUM_CULLING;
         }
 
-        if (OcclusionCulling(boundingSphere))
+        if (OcclusionCullingAABB(meshletInfo))
         {
             indirectCommand.flags |= MESHLET_FLAGS_PASSED_OCCLUSION_CULLING;
         }
+#endif
 
         _IndirectCommands.Append(indirectCommand);
     }
