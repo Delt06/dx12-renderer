@@ -92,6 +92,36 @@
 - Hold <kbd>LMB</kbd> and move the mouse to orient the camera;
 - Press <kbd>L</kbd> to toggle light animation.
 
+### MeshletsDemo
+
+- [MeshletsDemo](./Demos/MeshletsDemo)
+  - Meshlets are built via [meshoptimizer](https://github.com/zeux/meshoptimizer).
+  - GPU Meshlet Culling:
+    - Cone backface culling;
+    - Frustum culling (bounding spheres);
+    - HDB (Hi-Z) occlusion culling (bounding spheres or AABBs):
+      - Additional low poly geometry is treated as occluders (red transparent in the screenshot); 
+  - Culled meshlets are rendered via `ExecuteIndirect`;
+  - Uses Render Graph.
+
+![Meshlets Demo Screenshot](./Screenshots/MeshletsDemo.jpg)
+
+#### Controls
+
+- Use <kbd>WASD</kbd>/Arrow Keys to move the camera;
+- Hold <kbd>LMB</kbd> and move the mouse to orient the camera;
+- Press <kbd>C</kbd> to "freeze" the camera for cone and frustum culling;
+- Press <kbd>M</kbd> and <kbd>N</kbd> to scroll the debugged meshlets forwards and backwards respectively.
+
+### RenderGraph
+
+- [RenderGraph](./Demos/RenderGraph)
+  - A simple implementation of a render graph:
+    - Passes are defined via lambdas;
+    - Resources are marked as either inputs or outputs;
+    - GPU memory is aliased between different buffers and render targets when their lifetimes do not overlap; 
+    - Special "Token" resources are used for more controlled render pass ordering.
+
 ### GrassDemo
 
 - [GrassDemo](./Demos/GrassDemo)
