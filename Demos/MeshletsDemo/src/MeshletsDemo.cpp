@@ -375,6 +375,15 @@ void MeshletsDemo::OnKeyPressed(KeyEventArgs& e)
         m_FreezeCulling = !m_FreezeCulling;
         OutputDebugStringA(m_FreezeCulling ? "Freeze Culling: On\n" : "Freeze Culling: Off\n");
         break;
+    case KeyCode::N:
+        m_SelectedMeshletIndex--;
+        if (m_SelectedMeshletIndex == -1)
+            m_SelectedMeshletIndex = m_MeshletsBuffer.m_Meshlets.size() - 1;
+        break;
+    case KeyCode::M:
+        m_SelectedMeshletIndex++;
+        m_SelectedMeshletIndex %= m_MeshletsBuffer.m_Meshlets.size();
+        break;
     case KeyCode::ShiftKey:
         m_CameraController.m_Shift = true;
         break;

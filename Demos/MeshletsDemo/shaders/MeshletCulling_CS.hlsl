@@ -86,7 +86,9 @@ void ComputeScreenSpaceBoundingSquare(const float3 center, const float radius, o
     }
 
     outMin = saturate(minNdc * 0.5 + 0.5);
+    outMin.y = 1 - outMin.y;
     outMax = saturate(maxNdc * 0.5 + 0.5);
+    outMax.y = 1 - outMax.y;
 }
 
 bool OcclusionCulling(const float3 center, const float radius)
@@ -108,7 +110,10 @@ bool OcclusionCulling(const float3 center, const float radius)
 
 bool Culling(const in Meshlet meshlet, const in Transform transform, const float3 center, const float radius)
 {
-    return ConeCulling(meshlet, transform) && FrustumCulling(center, radius) && OcclusionCulling(center, radius);
+    return
+    // ConeCulling(meshlet, transform) &&
+    // FrustumCulling(center, radius) &&
+    OcclusionCulling(center, radius);
 }
 
 [numthreads(THREAD_BLOCK_SIZE, 1, 1)]
@@ -126,7 +131,7 @@ void main(in uint3 dispatchId : SV_DispatchThreadID)
     const float maxScale = max(transform.worldMatrix[0][0], max(transform.worldMatrix[1][1], transform.worldMatrix[2][2]));
     const float radius = meshlet.bounds.radius * maxScale;
 
-    if (Culling(meshlet, transform, center, radius))
+    // if (Culling(meshlet, transform, center, radius))
     {
         IndirectCommand indirectCommand;
         indirectCommand.meshletIndex = meshletIndex;

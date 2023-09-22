@@ -65,6 +65,8 @@ namespace CBuffer
         XMFLOAT2 g_Pipeline_Screen_TexelSize;
 
         DirectionalLight g_Pipeline_DirectionalLight;
+
+        uint32_t g_Pipeline_SelectedMeshletIndex;
     };
 
     struct MeshletRootConstants
@@ -116,6 +118,8 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
             pipelineCBuffer.g_Pipeline_Screen_TexelSize = { 1.0f / pipelineCBuffer.g_Pipeline_Screen_Resolution.x, 1.0f / pipelineCBuffer.g_Pipeline_Screen_Resolution.y };
 
             pipelineCBuffer.g_Pipeline_DirectionalLight = demo.m_DirectionalLight;
+
+            pipelineCBuffer.g_Pipeline_SelectedMeshletIndex = demo.m_SelectedMeshletIndex;
 
             pRootSignature->Bind(commandList);
             pRootSignature->SetPipelineConstantBuffer(commandList, pipelineCBuffer);
@@ -392,6 +396,37 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
                 go.GetModel()->Draw(commandList);
                 pMaterial->Unbind(commandList);
             }
+        }
+    ));
+
+
+
+    renderPasses.emplace_back(RenderPass::Create(
+        L"Debug: Draw Bounding Spheres",
+        {
+            { ::ResourceIds::User::OpaqueFinishedToken, InputType::Token },
+        },
+        {
+            { ResourceIds::GraphOutput, OutputType::RenderTarget },
+            { ::ResourceIds::User::DepthBuffer, OutputType::DepthRead }
+        },
+        [&demo, pRootSignature,
+            pMesh = Mesh::CreateSphere(commandList, 2),
+            pShader = std::make_shared<Shader>(pRootSignature, ShaderBlob(L"DebugBoundingSphere_VS.cso"), ShaderBlob(L"DebugBoundingSphere_PS.cso"), [](PipelineStateBuilder& psb)
+            {
+                auto desc = CD3DX12_RASTERIZER_DESC(CD3DX12_DEFAULT{});
+                desc.FillMode = D3D12_FILL_MODE_WIREFRAME;
+                desc.CullMode = D3D12_CULL_MODE_NONE;
+                psb.WithRasterizer(desc);
+                psb.WithDisabledDepthWrite();
+            })
+        ](const RenderContext&, CommandList& commandList)
+        {
+            pMesh->Bind(commandList);
+            pShader->Bind(commandList);
+
+            pRootSignature->SetGraphicsRootConstants(commandList, demo.m_SelectedMeshletIndex);
+            pMesh->Draw(commandList, 1);
         }
     ));
 

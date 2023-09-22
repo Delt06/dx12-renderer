@@ -28,6 +28,8 @@ cbuffer PipelineCBuffer : register(b0, COMMON_ROOT_SIGNATURE_PIPELINE_SPACE)
     float2 g_Pipeline_Screen_TexelSize;
 
     DirectionalLight g_Pipeline_DirectionalLight;
+
+    uint g_Pipeline_SelectedMeshletIndex;
 };
 
 ScreenParameters GetScreenParameters()

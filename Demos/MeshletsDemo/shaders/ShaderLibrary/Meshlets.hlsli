@@ -50,4 +50,15 @@ const static uint MESHLET_FLAGS_PASSED_CONE_CULLING = 1 << 0;
 const static uint MESHLET_FLAGS_PASSED_FRUSTUM_CULLING = 1 << 1;
 const static uint MESHLET_FLAGS_PASSED_OCCLUSION_CULLING = 1 << 2;
 
+#define MESHLET_COLORS_COUNT 5
+
+const static float3 MESHLET_COLORS[MESHLET_COLORS_COUNT] =
+{
+    float3(1, 0, 0),
+    float3(1, 1, 0),
+    float3(1, 1, 1),
+    float3(0, 1, 1),
+    float3(0, 0, 1),
+};
+
 #endif

@@ -43,6 +43,7 @@ public:
     DirectionalLight m_DirectionalLight;
     DirectX::XMVECTOR m_CullingCameraPosition;
     DirectX::XMVECTOR m_CullingCameraRotation;
+    uint32_t m_SelectedMeshletIndex = 0;
 
     std::vector<GameObject> m_OccluderGameObjects;
 
