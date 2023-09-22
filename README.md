@@ -115,7 +115,7 @@
 
 ### RenderGraph
 
-- [RenderGraph](./Demos/RenderGraph)
+- [RenderGraph](./RenderGraph)
   - A simple implementation of a render graph:
     - Passes are defined via lambdas;
     - Resources are marked as either inputs or outputs;
