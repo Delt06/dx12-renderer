@@ -201,8 +201,8 @@ void SceneRenderer::MainPass(CommandList &commandList)
         pipelineCBuffer.m_DirectionalLightViewProjection = m_DirectionalLightShadowPassPso->GetShadowViewProjectionMatrix();
         pipelineCBuffer.m_DirectionalLight = m_Scene->MainDirectionalLight;
 
-        pipelineCBuffer.m_NumPointLights = m_Scene->PointLights.size();
-        pipelineCBuffer.m_NumSpotLights = m_Scene->SpotLights.size();
+        pipelineCBuffer.m_NumPointLights = static_cast<uint32_t>(m_Scene->PointLights.size());
+        pipelineCBuffer.m_NumSpotLights = static_cast<uint32_t>(m_Scene->SpotLights.size());
 
         pipelineCBuffer.m_ShadowReceiverParameters.PoissonSpreadInv = 1.0f / m_GraphicsSettings.DirectionalLightShadows.m_PoissonSpread;
         pipelineCBuffer.m_ShadowReceiverParameters.PointLightPoissonSpreadInv = 1.0f / m_GraphicsSettings.PointLightShadows.m_PoissonSpread;

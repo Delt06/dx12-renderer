@@ -11,6 +11,21 @@ using namespace Microsoft::WRL;
 
 namespace
 {
+    XMFLOAT3 AsFloat3(XMFLOAT4 values)
+    {
+        return { values.x, values.y, values.z };
+    }
+
+    XMFLOAT2 AsFloat2(XMFLOAT4 values)
+    {
+        return { values.x, values.y };
+    }
+
+    XMFLOAT4 AsFloat4(XMFLOAT3 values)
+    {
+        return { values.x, values.y, values.z, 0.0f };
+    }
+
     void GenerateTangents(VertexCollectionType& vertices, const IndexCollectionType& indices)
     {
         const size_t nVerts = vertices.size();
@@ -23,9 +38,9 @@ namespace
         for (size_t j = 0; j < nVerts; ++j)
         {
             const auto& vertexAttributes = vertices[j];
-            pos[j] = vertexAttributes.Position;
-            normals[j] = vertexAttributes.Normal;
-            texcoords[j] = vertexAttributes.Uv;
+            pos[j] = AsFloat3(vertexAttributes.Position);
+            normals[j] = AsFloat3(vertexAttributes.Normal);
+            texcoords[j] = AsFloat2(vertexAttributes.Uv);
         }
         const auto tangents = std::make_unique<XMFLOAT3[]>(nVerts);
         const auto bitangents = std::make_unique<XMFLOAT3[]>(nVerts);
@@ -37,31 +52,46 @@ namespace
         for (size_t j = 0; j < nVerts; ++j)
         {
             auto& vertexAttributes = vertices[j];
-            vertexAttributes.Tangent = tangents[j];
-            vertexAttributes.Bitangent = bitangents[j];
+            vertexAttributes.Tangent = AsFloat4(tangents[j]);
+            vertexAttributes.Bitangent = AsFloat4(bitangents[j]);
+        }
+    }
+
+    // Helper for flipping winding of geometric primitives for LH vs. RH coords
+    void ReverseWinding(IndexCollectionType& indices, VertexCollectionType& vertices)
+    {
+        assert((indices.size() % 3) == 0);
+        for (auto it = indices.begin(); it != indices.end(); it += 3)
+        {
+            std::swap(*it, *(it + 2));
+        }
+
+        for (auto it = vertices.begin(); it != vertices.end(); ++it)
+        {
+            it->Uv.x = (1.f - it->Uv.x);
         }
     }
 }
 
 const D3D12_INPUT_ELEMENT_DESC VertexAttributes::INPUT_ELEMENTS[] = {
     {
-        "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, VERTEX_BUFFER_SLOT_INDEX, D3D12_APPEND_ALIGNED_ELEMENT,
+        "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, VERTEX_BUFFER_SLOT_INDEX, D3D12_APPEND_ALIGNED_ELEMENT,
         D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0
     },
     {
-        "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, VERTEX_BUFFER_SLOT_INDEX, D3D12_APPEND_ALIGNED_ELEMENT,
+        "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, VERTEX_BUFFER_SLOT_INDEX, D3D12_APPEND_ALIGNED_ELEMENT,
         D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0
     },
     {
-        "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, VERTEX_BUFFER_SLOT_INDEX, D3D12_APPEND_ALIGNED_ELEMENT,
+        "TEXCOORD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, VERTEX_BUFFER_SLOT_INDEX, D3D12_APPEND_ALIGNED_ELEMENT,
         D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0
     },
     {
-        "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, VERTEX_BUFFER_SLOT_INDEX, D3D12_APPEND_ALIGNED_ELEMENT,
+        "TANGENT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, VERTEX_BUFFER_SLOT_INDEX, D3D12_APPEND_ALIGNED_ELEMENT,
         D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0
     },
     {
-        "BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, VERTEX_BUFFER_SLOT_INDEX, D3D12_APPEND_ALIGNED_ELEMENT,
+        "BINORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, VERTEX_BUFFER_SLOT_INDEX, D3D12_APPEND_ALIGNED_ELEMENT,
         D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0
     },
 };
@@ -105,12 +135,68 @@ void Mesh::SetSkinningVertexAttributes(CommandList& commandList, const SkinningV
     commandList.CopyVertexBuffer(m_SkinningVertexBuffer, vertexAttributes);
 }
 
+const Armature& Mesh::GetArmature() const
+{
+    return m_Armature;
+}
+
+Armature& Mesh::GetArmature()
+{
+    return m_Armature;
+}
+
 const Aabb& Mesh::GetAabb() const
 {
     return m_Aabb;
 }
 
 Mesh::~Mesh() = default;
+
+MeshPrototype::MeshPrototype(VertexCollectionType&& vertices, IndexCollectionType&& indices, const bool rhCoords, const bool generateTangents)
+    : m_Vertices(std::move(vertices))
+    , m_Indices(std::move(indices))
+{
+    if (m_Vertices.size() == 0)
+    {
+        throw std::exception("Empty vertex buffer.");
+    }
+
+    if (m_Indices.size() == 0)
+    {
+        throw std::exception("Empty index buffer.");
+    }
+
+    if (m_Vertices.size() >= USHRT_MAX)
+    {
+        throw std::exception("Too many vertices for 16-bit index buffer");
+    }
+
+    if (!rhCoords)
+    {
+        ReverseWinding(m_Indices, m_Vertices);
+    }
+
+    if (generateTangents)
+    {
+        GenerateTangents(m_Vertices, m_Indices);
+    }
+}
+
+namespace
+{
+    template <typename T>
+    void AddToVector(std::vector<T>& destination, const std::vector<T>& source)
+    {
+        destination.insert(destination.end(), source.begin(), source.end());
+    }
+}
+
+void MeshPrototype::AddVertexAttributes(const MeshPrototype& otherPrototype)
+{
+    AddToVector(m_Vertices, otherPrototype.m_Vertices);
+    AddToVector(m_Indices, otherPrototype.m_Indices);
+    AddToVector(m_SkinningVertexAttributes, otherPrototype.m_SkinningVertexAttributes);
+}
 
 void Mesh::Draw(CommandList& commandList, const uint32_t instanceCount) const
 {
@@ -120,7 +206,7 @@ void Mesh::Draw(CommandList& commandList, const uint32_t instanceCount) const
 
 void Mesh::Bind(CommandList& commandList) const
 {
-    commandList.SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    commandList.SetPrimitiveTopology(PRIMITIVE_TOPOLOGY);
     commandList.SetVertexBuffer(VertexAttributes::VERTEX_BUFFER_SLOT_INDEX, m_VertexBuffer);
 
     if (m_SkinningVertexBuffer.GetNumVertices() > 0)
@@ -202,24 +288,24 @@ std::shared_ptr<Mesh> Mesh::CreateSphere(CommandList& commandList, float diamete
 std::shared_ptr<Mesh> Mesh::CreateCube(CommandList& commandList, float size, bool rhcoords)
 {
     // A cube has six faces, each one pointing in a different direction.
-    const int FaceCount = 6;
+    constexpr int FaceCount = 6;
 
-    static const XMVECTORF32 faceNormals[FaceCount] =
+    static constexpr XMVECTORF32 faceNormals[FaceCount] =
     {
-        {{0, 0, 1}},
-        {{0, 0, -1}},
-        {{1, 0, 0}},
-        {{-1, 0, 0}},
-        {{0, 1, 0}},
-        {{0, -1, 0}},
+        { { 0, 0, 1 } },
+        { { 0, 0, -1 } },
+        { { 1, 0, 0 } },
+        { { -1, 0, 0 } },
+        { { 0, 1, 0 } },
+        { { 0, -1, 0 } },
     };
 
-    static const XMVECTORF32 textureCoordinates[4] =
+    static constexpr XMVECTORF32 textureCoordinates[4] =
     {
-        {{1, 0}},
-        {{1, 1}},
-        {{0, 1}},
-        {{0, 0}},
+        { { 1, 0 } },
+        { { 1, 1 } },
+        { { 0, 1 } },
+        { { 0, 0 } },
     };
 
     VertexCollectionType vertices;
@@ -266,7 +352,7 @@ static inline XMVECTOR GetCircleVector(size_t i, size_t tessellation)
 
     XMScalarSinCos(&dx, &dz, angle);
 
-    XMVECTORF32 v = { {dx, 0, dz, 0} };
+    XMVECTORF32 v = { { dx, 0, dz, 0 } };
     return v;
 }
 
@@ -277,7 +363,7 @@ static inline XMVECTOR GetCircleTangent(size_t i, size_t tessellation)
 
     XMScalarSinCos(&dx, &dz, angle);
 
-    XMVECTORF32 v = { {dx, 0, dz, 0} };
+    XMVECTORF32 v = { { dx, 0, dz, 0 } };
     return v;
 }
 
@@ -436,10 +522,10 @@ std::shared_ptr<Mesh> Mesh::CreatePlane(CommandList& commandList, float width, f
 {
     VertexCollectionType vertices =
     {
-        {XMFLOAT3(-0.5f * width, 0.0f, 0.5f * height), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f)}, // 0
-        {XMFLOAT3(0.5f * width, 0.0f, 0.5f * height), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 0.0f)}, // 1
-        {XMFLOAT3(0.5f * width, 0.0f, -0.5f * height), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 1.0f)}, // 2
-        {XMFLOAT3(-0.5f * width, 0.0f, -0.5f * height), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f)} // 3
+        { XMFLOAT3(-0.5f * width, 0.0f, 0.5f * height), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) }, // 0
+        { XMFLOAT3(0.5f * width, 0.0f, 0.5f * height), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) }, // 1
+        { XMFLOAT3(0.5f * width, 0.0f, -0.5f * height), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) }, // 2
+        { XMFLOAT3(-0.5f * width, 0.0f, -0.5f * height), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) } // 3
     };
 
     IndexCollectionType indices =
@@ -454,10 +540,10 @@ std::shared_ptr<Mesh> Mesh::CreateVerticalQuad(CommandList& commandList, float w
 {
     VertexCollectionType vertices =
     {
-        {XMFLOAT3(width * -0.5f, 0.5f * height, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 0.0f)}, // 0
-        {XMFLOAT3(0.5f * width, 0.5f * height, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 0.0f)}, // 1
-        {XMFLOAT3(0.5f * width, -0.5f * height, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 1.0f)}, // 2
-        {XMFLOAT3(-0.5f * width, -0.5f * height, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 1.0f)} // 3
+        { XMFLOAT3(width * -0.5f, 0.5f * height, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 0.0f) }, // 0
+        { XMFLOAT3(0.5f * width, 0.5f * height, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 0.0f) }, // 1
+        { XMFLOAT3(0.5f * width, -0.5f * height, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 1.0f) }, // 2
+        { XMFLOAT3(-0.5f * width, -0.5f * height, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 1.0f) } // 3
     };
 
     IndexCollectionType indices =
@@ -468,25 +554,25 @@ std::shared_ptr<Mesh> Mesh::CreateVerticalQuad(CommandList& commandList, float w
     return CreateMesh(commandList, vertices, indices, rhCoords);
 }
 
-std::shared_ptr<Mesh> Mesh::CreateSpotlightPyramid(CommandList& commandList, float size, float depth, bool rhCoords)
+std::shared_ptr<Mesh> Mesh::CreateSpotlightPyramid(CommandList& commandList, const float width, const float depth, const bool rhCoords)
 {
-    const float halfSize = size * 0.5f;
+    const float halfSize = width * 0.5f;
     VertexCollectionType vertices =
     {
         {
             XMFLOAT3(0, 0, 0), XMFLOAT3(0, 0, -1), XMFLOAT2(0, 0)
         },
         {
-            XMFLOAT3(halfSize , halfSize , depth), XMFLOAT3(0, 0, 1), XMFLOAT2(0, 0)
+            XMFLOAT3(halfSize, halfSize, depth), XMFLOAT3(0, 0, 1), XMFLOAT2(0, 0)
         },
         {
-            XMFLOAT3(halfSize , -halfSize , depth), XMFLOAT3(0, 0, 1), XMFLOAT2(0, 0)
+            XMFLOAT3(halfSize, -halfSize, depth), XMFLOAT3(0, 0, 1), XMFLOAT2(0, 0)
         },
         {
-            XMFLOAT3(-halfSize , halfSize , depth), XMFLOAT3(0, 0, 1), XMFLOAT2(0, 0)
+            XMFLOAT3(-halfSize, halfSize, depth), XMFLOAT3(0, 0, 1), XMFLOAT2(0, 0)
         },
         {
-            XMFLOAT3(-halfSize , -halfSize , depth), XMFLOAT3(0, 0, 1), XMFLOAT2(0, 0)
+            XMFLOAT3(-halfSize, -halfSize, depth), XMFLOAT3(0, 0, 1), XMFLOAT2(0, 0)
         }
     };
     IndexCollectionType indices =
@@ -530,20 +616,11 @@ std::shared_ptr<Mesh> Mesh::CreateMesh(CommandList& commandList, VertexCollectio
     mesh->Initialize(commandList, vertices, indices, rhCoords);
     return mesh;
 }
-
-// Helper for flipping winding of geometric primitives for LH vs. RH coords
-static void ReverseWinding(IndexCollectionType& indices, VertexCollectionType& vertices)
+std::shared_ptr<Mesh> Mesh::CreateMesh(CommandList& commandList, const MeshPrototype& prototype)
 {
-    assert((indices.size() % 3) == 0);
-    for (auto it = indices.begin(); it != indices.end(); it += 3)
-    {
-        std::swap(*it, *(it + 2));
-    }
-
-    for (auto it = vertices.begin(); it != vertices.end(); ++it)
-    {
-        it->Uv.x = (1.f - it->Uv.x);
-    }
+    auto mesh = std::make_shared<Mesh>();
+    mesh->Initialize(commandList, prototype);
+    return mesh;
 }
 
 void Mesh::Initialize(CommandList& commandList, VertexCollectionType& vertices, IndexCollectionType& indices,
@@ -562,108 +639,29 @@ void Mesh::Initialize(CommandList& commandList, VertexCollectionType& vertices, 
     m_IndexCount = static_cast<UINT>(indices.size());
 }
 
+void Mesh::Initialize(CommandList& commandList, const MeshPrototype& prototype)
+{
+    CalculateAabb(prototype.m_Vertices);
+    commandList.CopyVertexBuffer(m_VertexBuffer, prototype.m_Vertices);
+    commandList.CopyIndexBuffer(m_IndexBuffer, prototype.m_Indices);
+
+    m_Armature = prototype.m_Armature;
+
+    if (prototype.m_SkinningVertexAttributes.size() > 0)
+    {
+        SetSkinningVertexAttributes(commandList, prototype.m_SkinningVertexAttributes);
+    }
+
+    m_IndexCount = static_cast<UINT>(prototype.m_Indices.size());
+}
+
 void Mesh::CalculateAabb(const VertexCollectionType& vertices)
 {
     m_Aabb = {};
 
     for (auto& vertex : vertices)
     {
-        const XMVECTOR position = XMLoadFloat3(&vertex.Position);
+        const XMVECTOR position = XMLoadFloat4(&vertex.Position);
         m_Aabb.Encapsulate(position);
-    }
-}
-
-void Mesh::SetBones(const std::vector<Bone>& bones)
-{
-    m_Bones.resize(bones.size());
-    std::copy(bones.begin(), bones.end(), m_Bones.begin());
-
-    for (size_t i = 0; i < m_Bones.size(); ++i)
-    {
-        auto& bone = m_Bones[i];
-        m_BoneIndicesByNames[bone.Name] = i;
-    }
-
-    m_BoneChildrenByIndex.resize(bones.size());
-}
-
-void Mesh::SetBoneChildren(size_t boneIndex, const std::vector<size_t>& childrenIndices)
-{
-    auto& children = m_BoneChildrenByIndex[boneIndex];
-    children.resize(childrenIndices.size());
-    std::copy(childrenIndices.begin(), childrenIndices.end(), children.begin());
-}
-
-const std::vector<size_t>& Mesh::GetBoneChildren(size_t boneIndex) const
-{
-    return m_BoneChildrenByIndex[boneIndex];
-}
-
-bool Mesh::HasBones() const
-{
-    return m_Bones.size() > 0;
-}
-
-const std::vector<Bone>& Mesh::GetBones() const
-{
-    return m_Bones;
-}
-
-Bone& Mesh::GetBone(const std::string& name)
-{
-    return m_Bones[GetBoneIndex(name)];
-}
-
-Bone& Mesh::GetBone(size_t index)
-{
-    return m_Bones[index];
-}
-
-bool Mesh::HasBone(const std::string& name) const
-{
-    return m_BoneIndicesByNames.find(name) != m_BoneIndicesByNames.end();
-}
-
-size_t Mesh::GetBoneIndex(const std::string& name) const
-{
-    auto findResult = m_BoneIndicesByNames.find(name);
-    if (findResult != m_BoneIndicesByNames.end())
-    {
-        return findResult->second;
-    }
-
-    throw std::exception("Bone not found.");
-}
-
-void Mesh::UpdateBoneGlobalTransforms()
-{
-    for (size_t i = 0; i < m_Bones.size(); ++i)
-    {
-        UpdateBoneGlobalTransforms(i, XMMatrixIdentity());
-    }
-}
-
-void Mesh::MarkBonesDirty()
-{
-    for (auto& bone : m_Bones)
-    {
-        bone.IsDirty = true;
-    }
-}
-
-void Mesh::UpdateBoneGlobalTransforms(size_t rootIndex, XMMATRIX parentTransform)
-{
-    auto& bone = m_Bones[rootIndex];
-    if (!bone.IsDirty)
-    {
-        return;
-    }
-
-    bone.GlobalTransform = bone.LocalTransform * parentTransform;
-    bone.IsDirty = false;
-
-    for (size_t childIndex : m_BoneChildrenByIndex[rootIndex])
-    {
-        UpdateBoneGlobalTransforms(childIndex, bone.GlobalTransform);
     }
 }

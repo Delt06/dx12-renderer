@@ -6,7 +6,8 @@
 #include "Buffer.h"
 #include "Helpers.h"
 
-namespace {
+namespace
+{
     UINT64 GetBufferOffset(const D3D12_RESOURCE_DESC& resourceDesc, UINT64 baseOffset)
     {
         auto pDevice = Application::Get().GetDevice();
@@ -21,30 +22,30 @@ namespace {
 
 StructuredBuffer::StructuredBuffer(const std::wstring& name /*= L""*/)
     : Buffer(name)
-    , m_CounterBuffer(std::make_shared<ByteAddressBuffer>(COUNTER_DESC, 1, 4, name + L" Counter"))
     , m_NumElements(0)
     , m_ElementSize(0)
+    , m_CounterBuffer(std::make_shared<ByteAddressBuffer>(COUNTER_DESC, 1, 4, name + L" Counter"))
 {
     m_Srv = Application::Get().AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     m_Uav = Application::Get().AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 }
 
-StructuredBuffer::StructuredBuffer(const D3D12_RESOURCE_DESC resourceDesc, size_t numElements, size_t elementSize, const std::wstring& name /*= L""*/)
+StructuredBuffer::StructuredBuffer(const D3D12_RESOURCE_DESC& resourceDesc, const size_t numElements, const size_t elementSize, const std::wstring& name /*= L""*/)
     : Buffer(resourceDesc, numElements, elementSize, name)
-    , m_CounterBuffer(std::make_shared<ByteAddressBuffer>(COUNTER_DESC, 1, 4, name + L" Counter"))
     , m_NumElements(numElements)
     , m_ElementSize(elementSize)
+    , m_CounterBuffer(std::make_shared<ByteAddressBuffer>(COUNTER_DESC, 1, 4, name + L" Counter"))
 {
     m_Srv = Application::Get().AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     m_Uav = Application::Get().AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     CreateViews(m_NumElements, m_ElementSize);
 }
 
-StructuredBuffer::StructuredBuffer(const D3D12_RESOURCE_DESC& resourceDesc, const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap, UINT64 heapOffset, size_t numElements, size_t elementSize, const std::wstring & name)
+StructuredBuffer::StructuredBuffer(const D3D12_RESOURCE_DESC& resourceDesc, const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap, UINT64 heapOffset, size_t numElements, size_t elementSize, const std::wstring& name)
     : Buffer(resourceDesc, pHeap, GetBufferOffset(resourceDesc, heapOffset), numElements, elementSize, name)
-    , m_CounterBuffer(std::make_shared<ByteAddressBuffer>(COUNTER_DESC, pHeap, heapOffset, 1, 4, name + L" Counter"))
     , m_NumElements(numElements)
     , m_ElementSize(elementSize)
+    , m_CounterBuffer(std::make_shared<ByteAddressBuffer>(COUNTER_DESC, pHeap, heapOffset, 1, 4, name + L" Counter"))
 {
     m_Srv = Application::Get().AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     m_Uav = Application::Get().AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);

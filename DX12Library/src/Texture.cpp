@@ -13,18 +13,16 @@ Texture::Texture(TextureUsageType textureUsage, const std::wstring& name)
 
 Texture::Texture(const D3D12_RESOURCE_DESC& resourceDesc, const ClearValue& clearValue /*= {}*/, TextureUsageType textureUsage /*= TextureUsageType::Albedo*/, const std::wstring& name /*= L""*/)
     : Texture(resourceDesc, clearValue.GetD3D12ClearValue(), textureUsage, name)
-{
+{}
 
-}
-
-Texture::Texture(const D3D12_RESOURCE_DESC& resourceDesc, const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap, UINT64 heapOffset, const D3D12_CLEAR_VALUE* clearValue, TextureUsageType textureUsage, const std::wstring& name)
+Texture::Texture(const D3D12_RESOURCE_DESC& resourceDesc, const ComPtr<ID3D12Heap>& pHeap, UINT64 heapOffset, const D3D12_CLEAR_VALUE* clearValue, TextureUsageType textureUsage, const std::wstring& name)
     : Resource(resourceDesc, pHeap, heapOffset, clearValue, name)
     , m_TextureUsage(textureUsage)
 {
     CreateViews();
 }
 
-Texture::Texture(const D3D12_RESOURCE_DESC& resourceDesc, const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap, UINT64 heapOffset, const ClearValue & clearValue, TextureUsageType textureUsage, const std::wstring & name)
+Texture::Texture(const D3D12_RESOURCE_DESC& resourceDesc, const ComPtr<ID3D12Heap>& pHeap, UINT64 heapOffset, const ClearValue& clearValue, TextureUsageType textureUsage, const std::wstring& name)
     : Texture(resourceDesc, pHeap, heapOffset, clearValue.GetD3D12ClearValue(), textureUsage, name)
 {}
 
@@ -226,26 +224,30 @@ void Texture::CreateViews()
             device->CreateDepthStencilView(m_d3d12Resource.Get(), nullptr,
                 m_DepthStencilView.GetDescriptorHandle(0));
 
-            for (UINT16 i = 0; i < arraySize; ++i)
+            for (UINT16 arrayIndex = 0; arrayIndex < arraySize; ++arrayIndex)
             {
-                D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
-                dsvDesc.Format = desc.Format;
-                if (desc.SampleDesc.Count == 1)
+                for (UINT16 mipLevel = 0; mipLevel < mipLevels; ++mipLevel)
                 {
-                    dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
-                    dsvDesc.Texture2DArray.ArraySize = 1;
-                    dsvDesc.Texture2DArray.MipSlice = 0;
-                    dsvDesc.Texture2DArray.FirstArraySlice = i;
-                }
-                else
-                {
-                    dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY;
-                    dsvDesc.Texture2DMSArray.ArraySize = 1;
-                    dsvDesc.Texture2DMSArray.FirstArraySlice = i;
-                }
+                    D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
+                    dsvDesc.Format = desc.Format;
+                    if (desc.SampleDesc.Count == 1)
+                    {
+                        dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
+                        dsvDesc.Texture2DArray.ArraySize = 1;
+                        dsvDesc.Texture2DArray.MipSlice = mipLevel;
+                        dsvDesc.Texture2DArray.FirstArraySlice = arrayIndex;
+                    }
+                    else
+                    {
+                        dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY;
+                        dsvDesc.Texture2DMSArray.ArraySize = 1;
+                        dsvDesc.Texture2DMSArray.FirstArraySlice = arrayIndex;
+                    }
 
-                device->CreateDepthStencilView(m_d3d12Resource.Get(), &dsvDesc,
-                    m_DepthStencilView.GetDescriptorHandle(i + 1));
+                    const UINT16 offset = GetRenderTargetSubresourceIndex(arrayIndex, mipLevel) + 1;
+                    device->CreateDepthStencilView(m_d3d12Resource.Get(), &dsvDesc,
+                        m_DepthStencilView.GetDescriptorHandle(offset));
+                }
             }
         }
     }
@@ -326,9 +328,9 @@ D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetRenderTargetView() const
     return m_RenderTargetView.GetDescriptorHandle();
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetRenderTargetViewArray(const uint32_t index, uint32_t mipLevel) const
+D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetRenderTargetViewArray(const uint32_t index, const uint32_t mipLevel) const
 {
-    uint32_t offset = GetRenderTargetSubresourceIndex(index, mipLevel) + 1;
+    const uint32_t offset = GetRenderTargetSubresourceIndex(index, mipLevel) + 1;
     return m_RenderTargetView.GetDescriptorHandle(offset);
 }
 
@@ -337,9 +339,10 @@ D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetDepthStencilView() const
     return m_DepthStencilView.GetDescriptorHandle();
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetDepthStencilViewArray(const uint32_t index) const
+D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetDepthStencilViewArray(const uint32_t index, const uint32_t mipLevel) const
 {
-    return m_DepthStencilView.GetDescriptorHandle(index + 1);
+    const uint32_t offset = GetRenderTargetSubresourceIndex(index, mipLevel) + 1;
+    return m_DepthStencilView.GetDescriptorHandle(offset);
 }
 
 

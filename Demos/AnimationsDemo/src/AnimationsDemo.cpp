@@ -316,16 +316,16 @@ void AnimationsDemo::OnUpdate(UpdateEventArgs& e)
 	{
 		for (auto& mesh : go.GetModel()->GetMeshes())
 		{
-			const auto runTransforms = m_RunAnimation->GetBonesTranforms(*mesh, m_Time);
-			const auto idleTransforms = m_IdleAnimation->GetBonesTranforms(*mesh, m_Time);
-			const auto topTransforms = m_TopAnimation->GetBonesTranforms(*mesh, m_Time);
+			const auto runTransforms = m_RunAnimation->GetBonesTransforms(*mesh, m_Time);
+			const auto idleTransforms = m_IdleAnimation->GetBonesTransforms(*mesh, m_Time);
+			const auto topTransforms = m_TopAnimation->GetBonesTransforms(*mesh, m_Time);
 			const auto topBodyMask = Animation::BuildMask(*mesh, "mixamorig:Spine");
 
 			auto transforms = Animation::Blend(runTransforms, idleTransforms, weight);
 			transforms = Animation::ApplyMask(topTransforms, transforms, topBodyMask);
 
 			Animation::Apply(*mesh, transforms);
-			mesh->UpdateBoneGlobalTransforms();
+			mesh->GetArmature().UpdateBoneGlobalTransforms();
 		}
 	}
 }
@@ -369,7 +369,7 @@ void AnimationsDemo::OnRender(RenderEventArgs& e)
 
 			for (const auto& mesh : model->GetMeshes())
 			{
-				auto& bones = mesh->GetBones();
+				auto& bones = mesh->GetArmature().GetBones();
 				std::vector<BoneSbItem> bonesSb;
 				bonesSb.reserve(bones.size());
 
@@ -401,7 +401,7 @@ void AnimationsDemo::OnRender(RenderEventArgs& e)
 
 			for (const auto& mesh : model->GetMeshes())
 			{
-				for (const auto& bone : mesh->GetBones())
+				for (const auto& bone : mesh->GetArmature().GetBones())
 				{
 					CBuffer::Model modelCBuffer{};
 					XMMATRIX boneModelMatrix = bone.GlobalTransform * go.GetWorldMatrix();

@@ -21,8 +21,8 @@ public:
 
     void SetPipelineConstantBuffer(CommandList& commandList, size_t size, const void* data) const;
 
-    template<typename T>
-    inline void SetPipelineConstantBuffer(CommandList& commandList, const T& data) const
+    template <typename T>
+    void SetPipelineConstantBuffer(CommandList& commandList, const T& data) const
     {
         SetPipelineConstantBuffer(commandList, sizeof(T), &data);
     }
@@ -31,24 +31,32 @@ public:
 
     void SetModelConstantBuffer(CommandList& commandList, size_t size, const void* data) const;
 
-    template<typename T>
-    inline void SetModelConstantBuffer(CommandList& commandList, const T& data) const
+    template <typename T>
+    void SetModelConstantBuffer(CommandList& commandList, const T& data) const
     {
         SetModelConstantBuffer(commandList, sizeof(T), &data);
     }
 
     void SetComputeConstantBuffer(CommandList& commandList, size_t size, const void* data) const;
 
-    template<typename T>
-    inline void SetGraphicsRootConstants(CommandList& commandList, const T& data) const
+    template <typename T>
+    void SetGraphicsRootConstants(CommandList& commandList, const T& data) const
     {
         SetGraphicsRootConstants(commandList, sizeof(T), &data);
     }
 
     void SetGraphicsRootConstants(CommandList& commandList, size_t size, const void* data) const;
 
-    template<typename T>
-    inline void SetComputeConstantBuffer(CommandList& commandList, const T& data) const
+    template <typename T>
+    void SetComputeRootConstants(CommandList& commandList, const T& data) const
+    {
+        SetComputeRootConstants(commandList, sizeof(T), &data);
+    }
+
+    void SetComputeRootConstants(CommandList& commandList, size_t size, const void* data) const;
+
+    template <typename T>
+    void SetComputeConstantBuffer(CommandList& commandList, const T& data) const
     {
         SetComputeConstantBuffer(commandList, sizeof(T), &data);
     }
@@ -89,7 +97,6 @@ public:
     };
 
 private:
-
     using RootParameter = CD3DX12_ROOT_PARAMETER1;
     using DescriptorRange = CD3DX12_DESCRIPTOR_RANGE1;
     using StaticSampler = CD3DX12_STATIC_SAMPLER_DESC;

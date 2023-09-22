@@ -49,9 +49,8 @@ Microsoft::WRL::ComPtr<ID3D12PipelineState> PipelineStateBuilder::Build(Microsof
 
     // if depth-stencil format is unknown, disable the depth-stencil unit
     pipelineStateStream.DepthStencil = m_DepthStencilFormat != DXGI_FORMAT_UNKNOWN ?
-        m_DepthStencilDesc :
-        CD3DX12_DEPTH_STENCIL_DESC()
-        ;
+                                           m_DepthStencilDesc :
+                                           CD3DX12_DEPTH_STENCIL_DESC();
 
     pipelineStateStream.SampleDesc = m_SampleDesc;
 
@@ -95,9 +94,23 @@ PipelineStateBuilder& PipelineStateBuilder::WithBlend(const CD3DX12_BLEND_DESC& 
     return *this;
 }
 
+PipelineStateBuilder& PipelineStateBuilder::WithAlphaBlend()
+{
+    auto blendDesc = CD3DX12_BLEND_DESC(CD3DX12_DEFAULT());
+    auto& rtBlendDesc = blendDesc.RenderTarget[0];
+    rtBlendDesc.BlendEnable = true;
+    rtBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
+    rtBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+    rtBlendDesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+    rtBlendDesc.SrcBlendAlpha = D3D12_BLEND_SRC_ALPHA;
+    rtBlendDesc.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+    rtBlendDesc.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
+    return WithBlend(blendDesc);
+}
+
 PipelineStateBuilder& PipelineStateBuilder::WithAdditiveBlend()
 {
-    CD3DX12_BLEND_DESC blendDesc = CD3DX12_BLEND_DESC(CD3DX12_DEFAULT());
+    auto blendDesc = CD3DX12_BLEND_DESC(CD3DX12_DEFAULT());
     auto& rtBlendDesc = blendDesc.RenderTarget[0];
     rtBlendDesc.BlendEnable = true;
     rtBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
@@ -120,7 +133,14 @@ PipelineStateBuilder& PipelineStateBuilder::WithDisabledDepthStencil()
     return WithDepthStencil({});
 }
 
-PipelineStateBuilder& PipelineStateBuilder::WithInputLayout(const std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout)
+PipelineStateBuilder& PipelineStateBuilder::WithDisabledDepthWrite()
+{
+    auto desc = CD3DX12_DEPTH_STENCIL_DESC(CD3DX12_DEFAULT{});
+    desc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+    return WithDepthStencil(desc);
+}
+
+PipelineStateBuilder& PipelineStateBuilder::WithInputLayout(const std::vector<D3D12_INPUT_ELEMENT_DESC>& inputLayout)
 {
     m_InputLayout = inputLayout;
     return *this;

@@ -22,13 +22,13 @@
  *  IN THE SOFTWARE.
  */
 
- /**
-  *  @file Texture.h
-  *  @date October 24, 2018
-  *  @author Jeremiah van Oosten
-  *
-  *  @brief A wrapper for a DX12 Texture object.
-  */
+/**
+ *  @file Texture.h
+ *  @date October 24, 2018
+ *  @author Jeremiah van Oosten
+ *
+ *  @brief A wrapper for a DX12 Texture object.
+ */
 
 
 #include "Resource.h"
@@ -128,7 +128,7 @@ public:
      * Get the DSV for the texture.
      */
     virtual D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilView() const;
-    virtual D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilViewArray(uint32_t index) const;
+    virtual D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilViewArray(uint32_t index, uint32_t mipLevel = 0) const;
 
     bool CheckSrvSupport() const
     {
@@ -143,8 +143,8 @@ public:
     bool CheckUavSupport() const
     {
         return CheckFormatSupport(D3D12_FORMAT_SUPPORT1_TYPED_UNORDERED_ACCESS_VIEW) &&
-            CheckFormatSupport(D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) &&
-            CheckFormatSupport(D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE);
+        CheckFormatSupport(D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) &&
+        CheckFormatSupport(D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE);
     }
 
     bool CheckDsvSupport() const
@@ -165,9 +165,9 @@ public:
 
     uint32_t GetRenderTargetSubresourceIndex(UINT16 arrayIndex, UINT16 mipLevel) const;
     uint32_t GetDepthStencilSubresourceIndex(UINT16 arrayIndex) const;
+
 protected:
 private:
-
     DescriptorAllocation CreateShaderResourceView(const D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc) const;
     DescriptorAllocation CreateUnorderedAccessView(const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc) const;
 

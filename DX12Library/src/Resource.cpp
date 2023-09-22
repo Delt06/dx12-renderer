@@ -36,7 +36,7 @@ Resource::Resource(const D3D12_RESOURCE_DESC& resourceDesc, const D3D12_CLEAR_VA
     SetName(name);
 }
 
-Resource::Resource(const D3D12_RESOURCE_DESC& resourceDesc, const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap, UINT64 heapOffset, const D3D12_CLEAR_VALUE * clearValue, const std::wstring & name)
+Resource::Resource(const D3D12_RESOURCE_DESC& resourceDesc, const ComPtr<ID3D12Heap>& pHeap, UINT64 heapOffset, const D3D12_CLEAR_VALUE* clearValue, const std::wstring& name)
 {
     if (clearValue)
     {
@@ -45,7 +45,7 @@ Resource::Resource(const D3D12_RESOURCE_DESC& resourceDesc, const Microsoft::WRL
 
     auto device = Application::Get().GetDevice();
 
-    const auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+    Assert(pHeap != nullptr, "Heap cannot be null.");
     ThrowIfFailed(device->CreatePlacedResource(
         pHeap.Get(),
         heapOffset,

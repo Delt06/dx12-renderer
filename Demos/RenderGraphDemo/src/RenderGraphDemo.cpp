@@ -82,17 +82,6 @@ namespace
 
         return M;
     }
-
-    UINT GetMsaaQualityLevels(ComPtr<ID3D12Device2> device, DXGI_FORMAT format, UINT sampleCount)
-    {
-        D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msLevels;
-        msLevels.Format = format;
-        msLevels.SampleCount = sampleCount;
-        msLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
-
-        ThrowIfFailed(device->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msLevels, sizeof(msLevels)));
-        return msLevels.NumQualityLevels;
-    }
 }
 
 namespace Pipeline

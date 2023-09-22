@@ -7,6 +7,7 @@ set(HEADER_FILES
         include/RenderGraph/RenderGraphRoot.h
         include/RenderGraph/RenderMetadata.h
         include/RenderGraph/RenderPass.h
+        include/RenderGraph/RenderTargetInfo.h
         include/RenderGraph/ResourceDescription.h
         include/RenderGraph/ResourceId.h
         include/RenderGraph/ResourcePool.h

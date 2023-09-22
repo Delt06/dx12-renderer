@@ -210,7 +210,7 @@ void GrassChunk::DispatchCulling(CommandList& commandList)
             );
         }
 
-        commandList.Dispatch(Math::AlignUp(m_TotalCount, CULL_THREAD_GROUP_SIZE), 1, 1);
+        commandList.Dispatch(Math::AlignUp(m_TotalCount, CULL_THREAD_GROUP_SIZE) / CULL_THREAD_GROUP_SIZE, 1, 1);
     }
 }
 

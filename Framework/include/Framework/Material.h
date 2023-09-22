@@ -31,10 +31,14 @@ public:
 
 	template<typename T> void SetVariable(const std::string& name, const T& data, bool throwOnNotFound = true)
 	{
-		SetVariable(name, sizeof(data), &data, throwOnNotFound);
+		SetVariable(name, sizeof(data), &data, false, throwOnNotFound);
 	}
 
-	void SetVariable(const std::string& name, size_t size, const void* data, bool throwOnNotFound = true);
+    template<typename T> void SetArrayVariable(const std::string& name, const std::vector<T>& data, bool throwOnNotFound = true)
+	{
+	    SetVariable(name, sizeof(T) * data.size(), data.data(), true, throwOnNotFound);
+	}
+
 	void SetShaderResourceView(const std::string& name, const ShaderResourceView& shaderResourceView);
 
 	void Bind(CommandList& commandList);
@@ -48,6 +52,8 @@ public:
 	static std::shared_ptr<Material> Create(const Material& materialPreset);
 
 private:
+
+    void SetVariable(const std::string& name, size_t size, const void* data, bool array = false, bool throwOnNotFound = true);
 
 	void UploadConstantBuffer(CommandList& commandList);
 	void UploadShaderResourceViews(CommandList& commandList);

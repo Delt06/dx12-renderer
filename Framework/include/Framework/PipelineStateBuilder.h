@@ -12,7 +12,7 @@
 class PipelineStateBuilder final
 {
 public:
-    explicit PipelineStateBuilder(const std::shared_ptr<RootSignature> rootSignature);
+    explicit PipelineStateBuilder(std::shared_ptr<RootSignature> rootSignature);
 
     Microsoft::WRL::ComPtr<ID3D12PipelineState> Build(Microsoft::WRL::ComPtr<ID3D12Device2> device) const;
 
@@ -21,16 +21,18 @@ public:
     PipelineStateBuilder& WithShaders(const Microsoft::WRL::ComPtr<ID3DBlob>& vertexShader, const Microsoft::WRL::ComPtr<ID3DBlob>& pixelShader);
 
     PipelineStateBuilder& WithBlend(const CD3DX12_BLEND_DESC& blendDesc);
+    PipelineStateBuilder& WithAlphaBlend();
     PipelineStateBuilder& WithAdditiveBlend();
 
     PipelineStateBuilder& WithDepthStencil(const CD3DX12_DEPTH_STENCIL_DESC& depthStencil);
     PipelineStateBuilder& WithDisabledDepthStencil();
+    PipelineStateBuilder& WithDisabledDepthWrite();
 
-    PipelineStateBuilder& WithInputLayout(const std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout);
+    PipelineStateBuilder& WithInputLayout(const std::vector<D3D12_INPUT_ELEMENT_DESC>& inputLayout);
     PipelineStateBuilder& WithRasterizer(const CD3DX12_RASTERIZER_DESC& rasterizer);
 
 private:
-    const std::shared_ptr<RootSignature> m_RootSignature;
+    std::shared_ptr<RootSignature> m_RootSignature;
 
     std::vector<DXGI_FORMAT> m_RenderTargetFormats;
     DXGI_SAMPLE_DESC m_SampleDesc;

@@ -4,6 +4,7 @@ project("Framework")
 
 set(HEADER_FILES
         "include/Framework/Aabb.h"
+        "include/Framework/Armature.h"
         
         "include/Framework/Bone.h"
         "include/Framework/BoundingSphere.h"
@@ -28,6 +29,7 @@ set(HEADER_FILES
         "include/Framework/Material.h" 
         "include/Framework/ShaderResourceView.h" 
         "include/Framework/ShaderBlob.h"
+        "include/Framework/SharedUploadBuffer.h"
         "include/Framework/UnorderedAccessView.h"
         "include/Framework/ComputeShader.h"
         "include/Framework/MSAADepthResolvePass.h"
@@ -37,6 +39,7 @@ set(HEADER_FILES
 
 set(SOURCE_FILES
         "src/Aabb.cpp"
+        "src/Armature.cpp"
         
         "src/Bone.cpp"
         "src/BoundingSphere.cpp"
@@ -56,6 +59,7 @@ set(SOURCE_FILES
         "src/CommonRootSignature.cpp" 
         "src/PipelineStateBuilder.cpp" 
         "src/Shader.cpp" 
+        "src/SharedUploadBuffer.cpp" 
         "src/Material.cpp" 
         "src/ShaderBlob.cpp"
         "src/ComputeShader.cpp"

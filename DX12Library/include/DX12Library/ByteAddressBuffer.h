@@ -36,7 +36,7 @@
 
 #include <d3dx12.h>
 
-class ByteAddressBuffer : public Buffer
+class ByteAddressBuffer final: public Buffer
 {
 public:
     ByteAddressBuffer(const std::wstring& name = L"");

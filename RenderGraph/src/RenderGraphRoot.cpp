@@ -76,7 +76,7 @@ namespace
             {
                 for (const auto& pass : passesWithNoDependencies)
                 {
-                    tempList.erase(std::remove(tempList.begin(), tempList.end(), pass), tempList.end());
+                    std::erase(tempList, pass);
                 }
 
                 result.emplace_back(std::move(passesWithNoDependencies));
@@ -136,11 +136,11 @@ namespace
         return unusedPasses;
     }
 
-    RenderGraph::RenderGraphRoot::RenderTargetInfo CreateRenderTargetOrDefault(const RenderGraph::RenderPass& renderPass, const std::vector<std::shared_ptr<Texture>>& textures)
+    RenderGraph::RenderTargetInfo CreateRenderTargetOrDefault(const RenderGraph::RenderPass& renderPass, const RenderGraph::ResourcePool& resources)
     {
         using namespace RenderGraph;
 
-        RenderGraphRoot::RenderTargetInfo renderTargetInfo = {};
+        RenderTargetInfo renderTargetInfo = {};
         uint32_t colorTexturesCount = 0;
         uint32_t depthTexturesCount = 0;
 
@@ -155,10 +155,9 @@ namespace
                         renderTargetInfo.m_RenderTarget = std::make_shared<RenderTarget>();
                     }
 
-                    const auto& pTexture = textures[output.m_Id];
-                    Assert(pTexture != nullptr, "Texture is null.");
+                    const auto& pTexture = resources.GetTexture(output.m_Id);
 
-                    AttachmentPoint attachmentPoint = (AttachmentPoint)((uint32_t)Color0 + colorTexturesCount);
+                    const auto attachmentPoint = static_cast<AttachmentPoint>(static_cast<uint32_t>(Color0) + colorTexturesCount);
                     renderTargetInfo.m_RenderTarget->AttachTexture(attachmentPoint, pTexture);
 
                     colorTexturesCount++;
@@ -175,8 +174,7 @@ namespace
                         renderTargetInfo.m_RenderTarget = std::make_shared<RenderTarget>();
                     }
 
-                    const auto& pTexture = textures[output.m_Id];
-                    Assert(pTexture != nullptr, "Texture is null.");
+                    const auto& pTexture = resources.GetTexture(output.m_Id);
 
                     renderTargetInfo.m_RenderTarget->AttachTexture(DepthStencil, pTexture);
                     depthTexturesCount++;
@@ -188,6 +186,8 @@ namespace
                     }
                 }
                 break;
+            default:
+                break;
             }
         }
 
@@ -197,9 +197,9 @@ namespace
 
 RenderGraph::RenderGraphRoot::RenderGraphRoot(
     std::vector<std::unique_ptr<RenderPass>>&& renderPasses,
-    std::vector<RenderGraph::TextureDescription>&& textures,
-    std::vector<RenderGraph::BufferDescription>&& buffers,
-    std::vector<RenderGraph::TokenDescription>&& tokens
+    std::vector<TextureDescription>&& textures,
+    std::vector<BufferDescription>&& buffers,
+    std::vector<TokenDescription>&& tokens
 )
     : m_DirectCommandQueue(Application::Get().GetCommandQueue(D3D12_COMMAND_LIST_TYPE_DIRECT))
     , m_RenderPassesDescription(std::move(renderPasses))
@@ -245,13 +245,15 @@ RenderGraph::RenderGraphRoot::RenderGraphRoot(
 
 void RenderGraph::RenderGraphRoot::Execute(const RenderMetadata& renderMetadata)
 {
+    CheckPotentiallyDirtyResources(renderMetadata);
+
     if (m_Dirty)
     {
         Build(renderMetadata);
         m_Dirty = false;
     }
 
-    auto pCommandList = m_DirectCommandQueue->GetCommandList();
+    const auto pCommandList = m_DirectCommandQueue->GetCommandList();
     auto& cmd = *pCommandList;
     Assert(m_PendingBarriers.size() == 0, "Pending barriers were left from after the previous frame.");
 
@@ -263,12 +265,14 @@ void RenderGraph::RenderGraphRoot::Execute(const RenderMetadata& renderMetadata)
         context.m_Metadata = renderMetadata;
 
         uint32_t renderPassIndex = 0;
+        m_ResourcePool->BeginFrame(cmd);
 
         for (const auto& pRenderPass : m_RenderPassesBuilt)
         {
             PIXScope(cmd, pRenderPass->GetPassName().c_str());
 
-            PrepareResourceForRenderPass(cmd, *pRenderPass, renderPassIndex);
+            context.m_RenderTargetInfo = {};
+            PrepareResourcesForRenderPass(cmd, *pRenderPass, renderPassIndex, context);
             pRenderPass->Execute(context, cmd);
 
             renderPassIndex++;
@@ -278,11 +282,11 @@ void RenderGraph::RenderGraphRoot::Execute(const RenderMetadata& renderMetadata)
     m_DirectCommandQueue->ExecuteCommandList(pCommandList);
 }
 
-void RenderGraph::RenderGraphRoot::Present(const std::shared_ptr<Window>& pWindow, RenderGraph::ResourceId resourceId)
+void RenderGraph::RenderGraphRoot::Present(const std::shared_ptr<Window>& pWindow, ResourceId resourceId)
 {
     const auto& pTexture = m_ResourcePool->GetTexture(resourceId);
 
-    auto pCommandList = m_DirectCommandQueue->GetCommandList();
+    const auto pCommandList = m_DirectCommandQueue->GetCommandList();
 
     {
         PIXScope(*pCommandList, L"Render Graph: Prepare Present");
@@ -308,6 +312,57 @@ void RenderGraph::RenderGraphRoot::MarkDirty()
     m_Dirty = true;
 }
 
+void RenderGraph::RenderGraphRoot::CheckPotentiallyDirtyResources(const RenderMetadata& renderMetadata)
+{
+    if (m_Dirty)
+    {
+        return;
+    }
+
+    m_ResourcePool->ForEachResource([this, &renderMetadata](const ResourceDescription& resourceDescription)
+    {
+        // ReSharper disable once CppDefaultCaseNotHandledInSwitchStatement
+        // ReSharper disable once CppIncompleteSwitchStatement
+        switch (resourceDescription.m_ResourceType)
+        {
+        case ResourceType::Texture:
+            {
+                const auto& pTexture = m_ResourcePool->GetTexture(resourceDescription.m_Id);
+                const auto d3d12Desc = pTexture->GetD3D12ResourceDesc();
+                if (
+                    resourceDescription.m_TextureDescription.m_WidthExpression(renderMetadata) != d3d12Desc.Width ||
+                    resourceDescription.m_TextureDescription.m_HeightExpression(renderMetadata) != d3d12Desc.Height
+                    )
+                {
+                    m_Dirty = true;
+                    return false;
+                }
+
+                break;
+            }
+
+        case ResourceType::Buffer:
+            {
+                const auto& pBuffer = m_ResourcePool->GetBuffer(resourceDescription.m_Id);
+                const auto d3d12Desc = pBuffer->GetD3D12ResourceDesc();
+                if (resourceDescription.m_BufferDescription.m_SizeExpression(renderMetadata) * resourceDescription.m_BufferDescription.m_Stride != d3d12Desc.Width)
+                {
+                    m_Dirty = true;
+                    return false;
+                }
+
+                break;
+            }
+
+        // these cannot invalidate the graph
+        case ResourceType::Token:
+        default:
+            break;
+        }
+
+        return true;
+    });
+}
 void RenderGraph::RenderGraphRoot::Build(const RenderMetadata& renderMetadata)
 {
     const auto& application = Application::Get();
@@ -355,7 +410,7 @@ void RenderGraph::RenderGraphRoot::Build(const RenderMetadata& renderMetadata)
         {
             if (m_ResourcePool->IsRegistered(desc.m_Id))
             {
-                const auto& pTexture = m_ResourcePool->CreateTexture(desc.m_Id, pDevice);
+                const auto& pTexture = m_ResourcePool->CreateTexture(desc.m_Id);
                 SetCurrentResourceState(*pTexture, D3D12_RESOURCE_STATE_COMMON);
             }
         }
@@ -364,11 +419,11 @@ void RenderGraph::RenderGraphRoot::Build(const RenderMetadata& renderMetadata)
         {
             if (m_ResourcePool->IsRegistered(desc.m_Id))
             {
-                const auto& pBuffer = m_ResourcePool->CreateBuffer(desc.m_Id, pDevice);
+                const auto& pBuffer = m_ResourcePool->CreateBuffer(desc.m_Id);
                 pBuffer->ForEachResourceRecursive([this](const auto& r)
-                    {
-                        SetCurrentResourceState(r, D3D12_RESOURCE_STATE_COMMON);
-                    });
+                {
+                    SetCurrentResourceState(r, D3D12_RESOURCE_STATE_COMMON);
+                });
             }
         }
     }
@@ -378,23 +433,23 @@ void RenderGraph::RenderGraphRoot::Build(const RenderMetadata& renderMetadata)
 
     for (const auto& pRenderPass : m_RenderPassesDescription)
     {
-        RenderTargetInfo renderTargetInfo = CreateRenderTargetOrDefault(*pRenderPass, m_ResourcePool->GetAllTextures());
+        RenderTargetInfo renderTargetInfo = CreateRenderTargetOrDefault(*pRenderPass, *m_ResourcePool);
 
         if (renderTargetInfo.m_RenderTarget != nullptr)
         {
-            m_RenderTargets.insert(std::pair<RenderPass*, RenderTargetInfo>{ pRenderPass.get(), renderTargetInfo});
+            m_RenderTargets.insert(std::pair{ pRenderPass.get(), renderTargetInfo });
         }
     }
 }
 
-D3D12_RESOURCE_STATES RenderGraph::RenderGraphRoot::GetCurrentResourceState(const Resource &resource) const
+D3D12_RESOURCE_STATES RenderGraph::RenderGraphRoot::GetCurrentResourceState(const Resource& resource) const
 {
     const auto& result = m_ResourceStates.find(&resource);
     Assert(result != m_ResourceStates.end(), "Resource does not have a registered state");
     return result->second;
 }
 
-void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& commandList, const RenderPass& renderPass, uint32_t renderPassIndex)
+void RenderGraph::RenderGraphRoot::PrepareResourcesForRenderPass(CommandList& commandList, const RenderPass& renderPass, const uint32_t renderPassIndex, RenderContext& context)
 {
     for (const auto& input : renderPass.GetInputs())
     {
@@ -408,18 +463,26 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
         // SRV barriers
         if (input.m_Type == InputType::ShaderResource)
         {
-            resource.ForEachResourceRecursive([this](const auto& r)
-                {
-                    TransitionBarrier(r, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-                });
+            resource.ForEachResourceRecursive([this](const Resource& r)
+            {
+                TransitionBarrier(r, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+            });
         }
 
         if (input.m_Type == InputType::CopySource)
         {
-            resource.ForEachResourceRecursive([this](const auto& r)
-                {
-                    TransitionBarrier(r, D3D12_RESOURCE_STATE_COPY_SOURCE);
-                });
+            resource.ForEachResourceRecursive([this](const Resource& r)
+            {
+                TransitionBarrier(r, D3D12_RESOURCE_STATE_COPY_SOURCE);
+            });
+        }
+
+        if (input.m_Type == InputType::IndirectArgument)
+        {
+            resource.ForEachResourceRecursive([this](const Resource& r)
+            {
+                TransitionBarrier(r, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+            });
         }
     }
 
@@ -435,10 +498,10 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
         if (lifecycle.m_BeginPassIndex == renderPassIndex)
         {
             const auto& resource = m_ResourcePool->GetResource(output.m_Id);
-            resource.ForEachResourceRecursive([&commandList](const auto& r)
-                {
-                    commandList.AliasingBarrier(nullptr, r.GetD3D12Resource());
-                });
+            resource.ForEachResourceRecursive([this](const auto& r)
+            {
+                AliasingBarrier(r);
+            });
         }
     }
 
@@ -447,6 +510,8 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
     if (renderTargetFindResult != m_RenderTargets.end())
     {
         const auto& renderTargetInfo = renderTargetFindResult->second;
+        context.m_RenderTargetInfo = renderTargetInfo;
+
         const auto& pRenderTarget = renderTargetInfo.m_RenderTarget;
         const auto& textures = pRenderTarget->GetTextures();
 
@@ -483,19 +548,19 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
         if (output.m_Type == OutputType::CopyDestination)
         {
             resource.ForEachResourceRecursive([this](const auto& r)
-                {
-                    TransitionBarrier(r, D3D12_RESOURCE_STATE_COPY_DEST);
-                });
+            {
+                TransitionBarrier(r, D3D12_RESOURCE_STATE_COPY_DEST);
+            });
         }
 
         // UAV barriers
         if (output.m_Type == OutputType::UnorderedAccess)
         {
             resource.ForEachResourceRecursive([this](const auto& r)
-                {
-                    TransitionBarrier(r, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-                    UavBarrier(r);
-                });
+            {
+                TransitionBarrier(r, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                UavBarrier(r);
+            });
         }
     }
 
@@ -517,17 +582,27 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
 
             switch (description.GetInitAction())
             {
-            case ResourceInitAction::Clear:
+            case Clear:
                 {
                     Assert(description.m_ResourceType == ResourceType::Texture, "Only textures support the clear init action.");
-                    const auto& texture = *m_ResourcePool->GetTexture(output.m_Id);
-                    commandList.ClearTexture(texture, description.GetClearValue());
+
+                    if (output.m_Type == OutputType::RenderTarget)
+                    {
+                        const auto& texture = *m_ResourcePool->GetTexture(output.m_Id);
+                        commandList.ClearTexture(texture, description.GetClearValue());
+                    }
+                    else if (output.m_Type == OutputType::DepthRead || output.m_Type == OutputType::DepthWrite)
+                    {
+                        const auto& texture = *m_ResourcePool->GetTexture(output.m_Id);
+                        const auto dsClearValue = description.GetClearValue().GetD3D12ClearValue()->DepthStencil;
+                        commandList.ClearDepthStencilTexture(texture, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, dsClearValue.Depth, dsClearValue.Stencil);
+                    }
                 }
                 break;
-            case ResourceInitAction::CopyDestination:
+            case CopyDestination:
                 // don't do anything here, the copy in the pass should do the job
                 break;
-            case ResourceInitAction::Discard:
+            case Discard:
                 {
                     const auto& resource = m_ResourcePool->GetResource(output.m_Id);
                     commandList.DiscardResource(resource);
@@ -545,7 +620,6 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
     {
         const auto& renderTargetInfo = renderTargetFindResult->second;
         const auto& pRenderTarget = renderTargetInfo.m_RenderTarget;
-        const auto& textures = pRenderTarget->GetTextures();
 
         commandList.SetRenderTarget(*pRenderTarget);
         commandList.SetAutomaticViewportAndScissorRect(*pRenderTarget);
@@ -554,10 +628,10 @@ void RenderGraph::RenderGraphRoot::PrepareResourceForRenderPass(CommandList& com
 
 void RenderGraph::RenderGraphRoot::SetCurrentResourceState(const Resource& resource, D3D12_RESOURCE_STATES state)
 {
-    auto existingEntry = m_ResourceStates.find(&resource);
+    const auto existingEntry = m_ResourceStates.find(&resource);
     if (existingEntry == m_ResourceStates.end())
     {
-        m_ResourceStates.insert(std::pair<const Resource*, D3D12_RESOURCE_STATES> {&resource, state});
+        m_ResourceStates.insert(std::pair<const Resource*, D3D12_RESOURCE_STATES>{ &resource, state });
     }
     else
     {
@@ -589,6 +663,12 @@ void RenderGraph::RenderGraphRoot::UavBarrier(const Resource& resource)
     m_PendingBarriers.push_back(barrier);
 }
 
+void RenderGraph::RenderGraphRoot::AliasingBarrier(const Resource& resourceAfter)
+{
+    const auto barrier = CD3DX12_RESOURCE_BARRIER::Aliasing(nullptr, resourceAfter.GetD3D12Resource().Get());
+    m_PendingBarriers.push_back(barrier);
+}
+
 void RenderGraph::RenderGraphRoot::FlushBarriers(CommandList& commandList)
 {
     if (m_PendingBarriers.size() == 0)
@@ -597,7 +677,7 @@ void RenderGraph::RenderGraphRoot::FlushBarriers(CommandList& commandList)
     }
 
     const auto& pDxCmd = commandList.GetGraphicsCommandList();
-    pDxCmd->ResourceBarrier((UINT)m_PendingBarriers.size(), m_PendingBarriers.data());
+    pDxCmd->ResourceBarrier(m_PendingBarriers.size(), m_PendingBarriers.data());
     m_PendingBarriers.clear();
 }
 

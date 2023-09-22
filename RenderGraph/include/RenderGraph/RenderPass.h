@@ -19,6 +19,7 @@ namespace RenderGraph
         Token,
         ShaderResource,
         CopySource,
+        IndirectArgument,
     };
 
     struct Input
@@ -63,6 +64,8 @@ namespace RenderGraph
         const std::vector<Input>& GetInputs() const { return m_Inputs; }
         const std::vector<Output>& GetOutputs() const { return m_Outputs; }
         const std::wstring& GetPassName() const { return m_PassName; }
+
+        virtual ~RenderPass() = default;
 
     protected:
         virtual void InitImpl(CommandList& commandList) = 0;
