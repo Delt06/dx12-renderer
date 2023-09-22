@@ -28,9 +28,11 @@ namespace RenderGraph
 
         void Execute(const RenderMetadata& renderMetadata);
         void Present(const std::shared_ptr<Window>& pWindow, ResourceId resourceId = ResourceIds::GraphOutput);
+        void DrawToGraphOutput(const RenderMetadata& renderMetadata, const std::function<void(CommandList&)>& drawCallback);
         void MarkDirty();
 
     private:
+        void RebuildIfNecessary(const RenderMetadata& renderMetadata);
         void CheckPotentiallyDirtyResources(const RenderMetadata& renderMetadata);
         void Build(const RenderMetadata& renderMetadata);
         void PrepareResourcesForRenderPass(CommandList& commandList, const RenderPass& renderPass, uint32_t renderPassIndex, RenderContext& context);
@@ -56,6 +58,7 @@ namespace RenderGraph
 
         std::shared_ptr<ResourcePool> m_ResourcePool;
         std::map<const RenderPass*, RenderTargetInfo> m_RenderTargets;
+        std::shared_ptr<RenderTarget> m_GraphOutputRenderTarget;
         std::map<const Resource*, D3D12_RESOURCE_STATES> m_ResourceStates;
         std::vector<D3D12_RESOURCE_BARRIER> m_PendingBarriers;
 

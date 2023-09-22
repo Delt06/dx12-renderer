@@ -51,7 +51,7 @@ Application::Application(HINSTANCE hInst)
     wndClass.hInstance = m_hInstance;
     wndClass.hCursor = LoadCursor(nullptr, IDC_ARROW);
     wndClass.hIcon = LoadIcon(m_hInstance, MAKEINTRESOURCE(APP_ICON));
-    wndClass.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wndClass.hbrBackground = (HBRUSH) (COLOR_WINDOW + 1);
     wndClass.lpszMenuName = nullptr;
     wndClass.lpszClassName = WINDOW_CLASS_NAME;
     wndClass.hIconSm = LoadIcon(m_hInstance, MAKEINTRESOURCE(APP_ICON));
@@ -107,7 +107,7 @@ void Application::Initialize()
     // Initialize frame counter
     s_FrameCount = 0;
 
-    srand(static_cast <unsigned> (time(nullptr)));
+    srand(static_cast<unsigned>(time(nullptr)));
 
     ThrowIfFailed(DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&m_DxcLibrary)));
 }
@@ -256,6 +256,26 @@ bool Application::CheckTearingSupport()
     }
 
     return allowTearing == TRUE;
+}
+
+void Application::AddWndProcHandler(const WndProcHandler handler)
+{
+    s_WndProcHandlers.push_back(handler);
+}
+
+void Application::RemoveWndProcHandler(const WndProcHandler handler)
+{
+    std::erase(s_WndProcHandlers, handler);
+}
+
+void Application::AddKeyDownListener(const KeyDownListener listener)
+{
+    s_KeyDownListeners.push_back(listener);
+}
+
+auto Application::RemoveKeyDownListener(KeyDownListener listener) -> void
+{
+    std::erase(s_KeyDownListeners, listener);
 }
 
 bool Application::IsTearingSupported() const
@@ -498,6 +518,14 @@ MouseButtonEventArgs::MouseButton DecodeMouseButton(UINT messageID)
 
 static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    for (const auto& handler : Application::s_WndProcHandlers)
+    {
+        if (handler(hwnd, message, wParam, lParam))
+        {
+            return true;
+        }
+    }
+
     WindowPtr pWindow;
     {
         auto iter = gs_Windows.find(hwnd);
@@ -536,6 +564,15 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM l
                 {
                     GetMessage(&charMsg, hwnd, 0, 0);
                     c = static_cast<unsigned int>(charMsg.wParam);
+
+                    if (charMsg.wParam > 0 && charMsg.wParam < 0x10000)
+                    {
+                        for (const auto listener : Application::s_KeyDownListeners)
+                        {
+                            listener(c);
+                        }
+                    }
+
                 }
                 bool shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
                 bool control = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
@@ -572,9 +609,9 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM l
                 pWindow->OnKeyReleased(keyEventArgs);
             }
             break;
-            // The default window procedure will play a system notification sound
-            // when pressing the Alt+Enter keyboard combination if this message is
-            // not handled.
+        // The default window procedure will play a system notification sound
+        // when pressing the Alt+Enter keyboard combination if this message is
+        // not handled.
         case WM_SYSCHAR:
             break;
         case WM_MOUSEMOVE:
