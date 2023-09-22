@@ -24,12 +24,7 @@ namespace RenderGraph
             uint32_t m_BeginPassIndex;
             uint32_t m_EndPassIndex;
 
-            static bool Intersect(const ResourceLifecycle& lifecycle1, const ResourceLifecycle& lifecycle2)
-            {
-                return
-                    lifecycle2.m_BeginPassIndex <= lifecycle1.m_BeginPassIndex && lifecycle1.m_BeginPassIndex <= lifecycle2.m_EndPassIndex ||
-                    lifecycle2.m_BeginPassIndex <= lifecycle1.m_EndPassIndex && lifecycle1.m_EndPassIndex <= lifecycle2.m_EndPassIndex;
-            }
+            static bool Intersect(const ResourceLifecycle& lifecycle1, const ResourceLifecycle& lifecycle2);
         };
 
         struct HeapInfo

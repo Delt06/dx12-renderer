@@ -7,20 +7,32 @@ using namespace RenderGraph;
 
 namespace
 {
-    TransientResourceAllocator::ResourceLifecycle& GetOrAdd(std::map<ResourceId, TransientResourceAllocator::ResourceLifecycle>& map, const ResourceId& id, uint32_t passIndex)
+    TransientResourceAllocator::ResourceLifecycle& GetOrAdd(std::map<ResourceId, TransientResourceAllocator::ResourceLifecycle>& map, const ResourceId& id, const uint32_t passIndex)
     {
         if (!map.contains(id))
         {
-            map.insert(std::pair<ResourceId, TransientResourceAllocator::ResourceLifecycle> {id, { id, passIndex, passIndex }});
+            map.insert(std::pair<ResourceId, TransientResourceAllocator::ResourceLifecycle>{ id, { id, passIndex, passIndex } });
         }
 
         return map[id];
     }
+
+    bool IntersectHelper(const TransientResourceAllocator::ResourceLifecycle& l, const TransientResourceAllocator::ResourceLifecycle& r)
+    {
+        return
+        r.m_BeginPassIndex <= l.m_BeginPassIndex && l.m_BeginPassIndex <= r.m_EndPassIndex ||
+        r.m_BeginPassIndex <= l.m_EndPassIndex && l.m_EndPassIndex <= r.m_EndPassIndex;
+    }
+}
+
+bool TransientResourceAllocator::ResourceLifecycle::Intersect(const ResourceLifecycle& lifecycle1, const ResourceLifecycle& lifecycle2)
+{
+    return IntersectHelper(lifecycle1, lifecycle2) || IntersectHelper(lifecycle2, lifecycle1);
 }
 
 std::map<ResourceId, TransientResourceAllocator::ResourceLifecycle> TransientResourceAllocator::GetResourceLifecycles(const std::vector<RenderPass*>& renderPasses)
 {
-    std::map<ResourceId, TransientResourceAllocator::ResourceLifecycle> lifecycles;
+    std::map<ResourceId, ResourceLifecycle> lifecycles;
 
     for (uint32_t passIndex = 0; passIndex < renderPasses.size(); ++passIndex)
     {
@@ -51,9 +63,9 @@ std::map<ResourceId, TransientResourceAllocator::ResourceLifecycle> TransientRes
 }
 
 
-std::vector<TransientResourceAllocator::HeapInfo> TransientResourceAllocator::CreateHeaps(const std::map<ResourceId, TransientResourceAllocator::ResourceLifecycle>& lifecycles, const std::map<ResourceId, ResourceDescription>& resourceDescriptions, const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice)
+std::vector<TransientResourceAllocator::HeapInfo> TransientResourceAllocator::CreateHeaps(const std::map<ResourceId, ResourceLifecycle>& lifecycles, const std::map<ResourceId, ResourceDescription>& resourceDescriptions, const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice)
 {
-    std::vector<TransientResourceAllocator::HeapInfo> heaps;
+    std::vector<HeapInfo> heaps;
 
     for (const auto& [id, lifecycle] : lifecycles)
     {
@@ -119,7 +131,14 @@ std::vector<TransientResourceAllocator::HeapInfo> TransientResourceAllocator::Cr
             {
                 {
                     const auto& otherHeap = heaps[theBiggestFittingHeapIndex];
-                    expandingHeap.m_ResourceLifecycles.push_back(otherHeap.m_ResourceLifecycles[0]);
+                    const auto& otherLifecycle = otherHeap.m_ResourceLifecycles[0];
+
+                    for (const auto& resourceLifecycle : expandingHeap.m_ResourceLifecycles)
+                    {
+                        Assert(!ResourceLifecycle::Intersect(resourceLifecycle, otherLifecycle), "Some of the existing lifecycles intersect the newly added one.");
+                    }
+
+                    expandingHeap.m_ResourceLifecycles.push_back(otherLifecycle);
                 }
 
                 heaps.erase(heaps.begin() + theBiggestFittingHeapIndex);
@@ -134,7 +153,6 @@ std::vector<TransientResourceAllocator::HeapInfo> TransientResourceAllocator::Cr
     for (uint32_t i = 0; i < heaps.size(); ++i)
     {
         auto& heapInfo = heaps[i];
-        const auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
         D3D12_RESOURCE_ALLOCATION_INFO allocationInfo = { heapInfo.m_Size, heapInfo.m_Alignment };
         const auto heapDesc = CD3DX12_HEAP_DESC(allocationInfo, D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_NONE);
 
@@ -146,5 +164,3 @@ std::vector<TransientResourceAllocator::HeapInfo> TransientResourceAllocator::Cr
 
     return heaps;
 }
-
-
