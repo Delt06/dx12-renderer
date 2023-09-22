@@ -22,6 +22,7 @@ set(SOURCE_FILES
 set(SHADER_FILES_VERTEX
         shaders/Debugging/DebugBoundingSphere_VS.hlsl
         shaders/Debugging/DebugBoundingSquare_VS.hlsl
+        shaders/Debugging/DebugAABB_VS.hlsl
         shaders/Meshlet_VS.hlsl
         shaders/Occluder_VS.hlsl
         )

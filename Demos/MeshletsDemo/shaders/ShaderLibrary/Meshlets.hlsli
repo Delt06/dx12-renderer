@@ -15,6 +15,9 @@ struct MeshletBounds
     float3 coneApex;
     float3 coneAxis;
     float coneCutoff; /* = cos(angle/2) */
+
+    float3 aabbCenter;
+    float3 aabbHalfSize;
 };
 
 struct Meshlet

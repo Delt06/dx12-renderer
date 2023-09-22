@@ -62,7 +62,7 @@ bool FrustumCulling(const BoundingSphere boundingSphere)
 
 bool OcclusionCulling(const BoundingSphere boundingSphere)
 {
-    BoundingSquareSS boundingSquare = ComputeScreenSpaceBoundingSquare(boundingSphere, _ViewProjection);
+    BoundingSquareSS boundingSquare = ComputeScreenSpaceBoundingSquareFromSphere(boundingSphere, _ViewProjection);
 
     const float2 boundsSizePixels = (boundingSquare.maxUV - boundingSquare.minUV) * float2(_HDB_Resolution_Width, _HDB_Resolution_Height);
     const float lod = ceil(log2(max(boundsSizePixels.x, boundsSizePixels.y) * 0.5f));

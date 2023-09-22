@@ -418,10 +418,12 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
             { ::ResourceIds::User::DepthBuffer, OutputType::DepthRead }
         },
         [
-            pBoundingSphereMesh = Mesh::CreateSphere(commandList, 2),
+            pBoundingSphereMesh = Mesh::CreateSphere(commandList, 2, 8),
             pBoundingSphereShader = std::make_shared<Shader>(pRootSignature, ShaderBlob(L"DebugBoundingSphere_VS.cso"), ShaderBlob(L"SelectedMeshletColor_PS.cso"), debugGeometryPsb),
             pBoundingSquareMesh = Mesh::CreateVerticalQuad(commandList, 2, 2),
-            pBoundingSquareShader = std::make_shared<Shader>(pRootSignature, ShaderBlob(L"DebugBoundingSquare_VS.cso"), ShaderBlob(L"SelectedMeshletColor_PS.cso"), debugGeometryPsb)
+            pBoundingSquareShader = std::make_shared<Shader>(pRootSignature, ShaderBlob(L"DebugBoundingSquare_VS.cso"), ShaderBlob(L"SelectedMeshletColor_PS.cso"), debugGeometryPsb),
+            pAabbMesh = Mesh::CreateCube(commandList, 2),
+            pAabbShader = std::make_shared<Shader>(pRootSignature, ShaderBlob(L"DebugAABB_VS.cso"), ShaderBlob(L"SelectedMeshletColor_PS.cso"), debugGeometryPsb)
         ](const RenderContext&, CommandList& commandList)
         {
             {
@@ -432,6 +434,11 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
             {
                 pBoundingSquareShader->Bind(commandList);
                 pBoundingSquareMesh->Draw(commandList, 1);
+            }
+
+            {
+                pAabbShader->Bind(commandList);
+                pAabbMesh->Draw(commandList, 1);
             }
         }
     ));

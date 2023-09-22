@@ -14,6 +14,9 @@ struct MeshletBounds
     DirectX::XMFLOAT3 m_ConeApex;
     DirectX::XMFLOAT3 m_ConeAxis;
     float m_ConeCutoff; /* = cos(angle/2) */
+
+    DirectX::XMFLOAT3 m_AabbCenter;
+    DirectX::XMFLOAT3 m_AabbHalfSize;
 };
 
 struct Meshlet

@@ -12,6 +12,33 @@ namespace
         destination.y = source[1];
         destination.z = source[2];
     }
+
+    void ComputeMeshletAabb(MeshletBounds& bounds, const meshopt_Meshlet& meshlet,
+        const std::vector<unsigned int>& vertices,
+        const std::vector<unsigned char>& indices,
+        const std::vector<VertexAttributes>& vertexAttributes
+    )
+    {
+        XMVECTOR min = XMVectorReplicate(FLT_MAX);
+        XMVECTOR max = XMVectorReplicate(-FLT_MAX);
+
+        const uint32_t indexCount = meshlet.triangle_count * 3;
+
+        for (uint32_t i = 0; i < indexCount; ++i)
+        {
+            const auto index = indices[meshlet.triangle_offset + i];
+            const auto& vertex = vertexAttributes[vertices[meshlet.vertex_offset + index]];
+
+            const XMVECTOR position = XMLoadFloat4(&vertex.Position);
+            min = XMVectorMin(position, min);
+            max = XMVectorMax(position, max);
+        }
+
+        const auto halfSize = (max - min) * 0.5f;
+        XMStoreFloat3(&bounds.m_AabbCenter, min + halfSize);
+        XMStoreFloat3(&bounds.m_AabbHalfSize, halfSize);
+    }
+
 }
 
 MeshletBuilder::MeshletSet MeshletBuilder::BuildMeshlets(const MeshPrototype& meshPrototype, uint32_t baseVertexOffset, uint32_t baseIndexOffset)
@@ -42,6 +69,7 @@ MeshletBuilder::MeshletSet MeshletBuilder::BuildMeshlets(const MeshPrototype& me
     {
         const meshopt_Meshlet& meshoptMeshlet = meshoptMeshlets[i];
         Meshlet meshlet;
+        meshlet.m_TransformIndex = -1;
 
         {
             const meshopt_Bounds meshoptBounds = meshopt_computeMeshletBounds(
@@ -58,6 +86,8 @@ MeshletBuilder::MeshletSet MeshletBuilder::BuildMeshlets(const MeshPrototype& me
             CopyFloatArrayToDirectXFloat3(bounds.m_ConeApex, meshoptBounds.cone_apex);
             CopyFloatArrayToDirectXFloat3(bounds.m_ConeAxis, meshoptBounds.cone_axis);
             bounds.m_ConeCutoff = meshoptBounds.cone_cutoff;
+
+            ComputeMeshletAabb(bounds, meshoptMeshlet, vertices, indices, meshPrototype.m_Vertices);
         }
 
         {

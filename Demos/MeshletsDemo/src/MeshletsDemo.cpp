@@ -378,7 +378,7 @@ void MeshletsDemo::OnKeyPressed(KeyEventArgs& e)
     case KeyCode::N:
         m_SelectedMeshletIndex--;
         if (m_SelectedMeshletIndex == -1)
-            m_SelectedMeshletIndex = m_MeshletsBuffer.m_Meshlets.size() - 1;
+            m_SelectedMeshletIndex = static_cast<uint32_t>(m_MeshletsBuffer.m_Meshlets.size()) - 1;
         break;
     case KeyCode::M:
         m_SelectedMeshletIndex++;

@@ -17,12 +17,12 @@ float4 main(const CommonVertexAttributes IN) : SV_POSITION
     const Transform transform = _TransformsBuffer[meshlet.transformIndex];
 
     const BoundingSphere boundingSphere = BoundingSphereObjectToWorldSpace(bounds.center, bounds.radius, transform.worldMatrix);
-    const BoundingSquareSS boundingSquare = ComputeScreenSpaceBoundingSquare(boundingSphere, g_Pipeline_ViewProjection);
+    const BoundingSquareSS boundingSquare = ComputeScreenSpaceBoundingSquareFromSphere(boundingSphere, g_Pipeline_ViewProjection);
 
     const float2 minNdc = UvToNdc(boundingSquare.minUV);
     const float2 maxNdc = UvToNdc(boundingSquare.maxUV);
     const float2 halfSizeNdc = (maxNdc - minNdc) * 0.5f;
-    const float2 centerNdc = minNdc + halfSizeNdc;
+    const float2 centerNdc = (minNdc + maxNdc) * 0.5f;
 
     float4 positionCs;
     positionCs.xy = IN.position.xy * halfSizeNdc + centerNdc;
