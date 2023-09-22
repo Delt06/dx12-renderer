@@ -21,12 +21,13 @@ set(SOURCE_FILES
 
 set(SHADER_FILES_VERTEX
         shaders/Debugging/DebugBoundingSphere_VS.hlsl
+        shaders/Debugging/DebugBoundingSquare_VS.hlsl
         shaders/Meshlet_VS.hlsl
         shaders/Occluder_VS.hlsl
         )
 
 set(SHADER_FILES_PIXEL
-        shaders/Debugging/DebugBoundingSphere_PS.hlsl
+        shaders/Debugging/SelectedMeshletColor_PS.hlsl
         shaders/HDB_Downsample_PS.hlsl
         shaders/Meshlet_PS.hlsl
         shaders/Occluder_DepthOnly_PS.hlsl

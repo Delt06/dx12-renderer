@@ -399,10 +399,17 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
         }
     ));
 
-
+    const auto debugGeometryPsb = [](PipelineStateBuilder& psb)
+    {
+        auto desc = CD3DX12_RASTERIZER_DESC(CD3DX12_DEFAULT{});
+        desc.FillMode = D3D12_FILL_MODE_WIREFRAME;
+        desc.CullMode = D3D12_CULL_MODE_NONE;
+        psb.WithRasterizer(desc);
+        psb.WithDisabledDepthWrite();
+    };
 
     renderPasses.emplace_back(RenderPass::Create(
-        L"Debug: Draw Bounding Spheres",
+        L"Debug: Meshlet Bounds",
         {
             { ::ResourceIds::User::OpaqueFinishedToken, InputType::Token },
         },
@@ -410,23 +417,22 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
             { ResourceIds::GraphOutput, OutputType::RenderTarget },
             { ::ResourceIds::User::DepthBuffer, OutputType::DepthRead }
         },
-        [&demo, pRootSignature,
-            pMesh = Mesh::CreateSphere(commandList, 2),
-            pShader = std::make_shared<Shader>(pRootSignature, ShaderBlob(L"DebugBoundingSphere_VS.cso"), ShaderBlob(L"DebugBoundingSphere_PS.cso"), [](PipelineStateBuilder& psb)
-            {
-                auto desc = CD3DX12_RASTERIZER_DESC(CD3DX12_DEFAULT{});
-                desc.FillMode = D3D12_FILL_MODE_WIREFRAME;
-                desc.CullMode = D3D12_CULL_MODE_NONE;
-                psb.WithRasterizer(desc);
-                psb.WithDisabledDepthWrite();
-            })
+        [
+            pBoundingSphereMesh = Mesh::CreateSphere(commandList, 2),
+            pBoundingSphereShader = std::make_shared<Shader>(pRootSignature, ShaderBlob(L"DebugBoundingSphere_VS.cso"), ShaderBlob(L"SelectedMeshletColor_PS.cso"), debugGeometryPsb),
+            pBoundingSquareMesh = Mesh::CreateVerticalQuad(commandList, 2, 2),
+            pBoundingSquareShader = std::make_shared<Shader>(pRootSignature, ShaderBlob(L"DebugBoundingSquare_VS.cso"), ShaderBlob(L"SelectedMeshletColor_PS.cso"), debugGeometryPsb)
         ](const RenderContext&, CommandList& commandList)
         {
-            pMesh->Bind(commandList);
-            pShader->Bind(commandList);
+            {
+                pBoundingSphereShader->Bind(commandList);
+                pBoundingSphereMesh->Draw(commandList, 1);
+            }
 
-            pRootSignature->SetGraphicsRootConstants(commandList, demo.m_SelectedMeshletIndex);
-            pMesh->Draw(commandList, 1);
+            {
+                pBoundingSquareShader->Bind(commandList);
+                pBoundingSquareMesh->Draw(commandList, 1);
+            }
         }
     ));
 
