@@ -122,22 +122,10 @@ const Resource& RenderGraph::ResourcePool::GetResource(const ResourceId resource
 {
     Assert(IsRegistered(resourceId), "Resource is not registered.");
 
-    if (resourceId < m_Textures.size())
+    if (resourceId < m_ResourceInstances.size())
     {
-        if (const auto& pTexture = m_Textures[resourceId];
-            pTexture != nullptr)
-        {
-            return *pTexture;
-        }
-    }
-
-    if (resourceId < m_Buffers.size())
-    {
-        if (const std::shared_ptr<Buffer>& pBuffer = m_Buffers[resourceId];
-            pBuffer != nullptr)
-        {
-            return *pBuffer;
-        }
+        const ResourceInstance& resourceInstance = m_ResourceInstances[resourceId];
+        return resourceInstance.GetResource();
     }
 
     throw std::exception("Not implemented");
@@ -146,17 +134,23 @@ const Resource& RenderGraph::ResourcePool::GetResource(const ResourceId resource
 const std::shared_ptr<Texture>& RenderGraph::ResourcePool::GetTexture(const ResourceId resourceId) const
 {
     Assert(IsRegistered(resourceId), "Resource is not registered.");
-    Assert(resourceId < m_Textures.size(), "Resource ID out of range.");
+    Assert(resourceId < m_ResourceInstances.size(), "Resource ID out of range.");
     Assert(m_ResourceDescriptions.at(resourceId).m_ResourceType == ResourceType::Texture, "Invalid resource type.");
-    return m_Textures[resourceId];
+
+    const ResourceInstance& resourceInstance = m_ResourceInstances[resourceId];
+    Assert(resourceInstance.m_Type == ResourceInstanceType::Texture, "Invalid resource type.");
+    return resourceInstance.m_Texture;
 }
 
 const std::shared_ptr<Buffer>& RenderGraph::ResourcePool::GetBuffer(const ResourceId resourceId) const
 {
     Assert(IsRegistered(resourceId), "Resource is not registered.");
-    Assert(resourceId < m_Buffers.size(), "Resource ID out of range.");
+    Assert(resourceId < m_ResourceInstances.size(), "Resource ID out of range.");
     Assert(m_ResourceDescriptions.at(resourceId).m_ResourceType == ResourceType::Buffer, "Invalid resource type.");
-    return m_Buffers[resourceId];
+
+    const ResourceInstance& resourceInstance = m_ResourceInstances[resourceId];
+    Assert(resourceInstance.m_Type == ResourceInstanceType::Buffer, "Invalid resource type.");
+    return resourceInstance.m_Buffer;
 }
 
 std::shared_ptr<StructuredBuffer> RenderGraph::ResourcePool::GetStructuredBuffer(const ResourceId resourceId) const
@@ -221,8 +215,7 @@ void RenderGraph::ResourcePool::Clear()
     m_HeapInfos.clear();
     m_ResourceHeapInfo.clear();
 
-    m_Textures.clear();
-    m_Buffers.clear();
+    m_ResourceInstances.clear();
 }
 
 void RenderGraph::ResourcePool::InitHeaps(const std::vector<RenderPass*>& renderPasses, const ComPtr<ID3D12Device2>& pDevice)
@@ -384,12 +377,11 @@ const std::shared_ptr<Texture>& RenderGraph::ResourcePool::CreateTexture(const R
     const ComPtr<ID3D12Heap>& pHeap = m_HeapInfos[heapIndex].m_Heap;
     const std::shared_ptr<Texture> pTexture = CreateTextureImpl(resourceDescription, pHeap);
 
-    if (resourceId >= m_Textures.size())
-    {
-        m_Textures.resize(resourceId + 1);
-    }
+    ResourceInstance resourceInstance = {};
+    resourceInstance.m_Type = ResourceInstanceType::Texture;
+    resourceInstance.m_Texture = pTexture;
 
-    return m_Textures[resourceId] = pTexture;
+    return AppendResourceInstance(resourceId, resourceInstance).m_Texture;
 }
 
 const std::shared_ptr<Buffer>& RenderGraph::ResourcePool::CreateBuffer(const ResourceId resourceId)
@@ -401,10 +393,35 @@ const std::shared_ptr<Buffer>& RenderGraph::ResourcePool::CreateBuffer(const Res
     const ComPtr<ID3D12Heap>& pHeap = m_HeapInfos[heapIndex].m_Heap;
     const std::shared_ptr<Buffer> pBuffer = CreateBufferImpl(resourceMetadata, pHeap);
 
-    if (resourceId >= m_Buffers.size())
+    ResourceInstance resourceInstance = {};
+    resourceInstance.m_Type = ResourceInstanceType::Buffer;
+    resourceInstance.m_Buffer = pBuffer;
+
+    return AppendResourceInstance(resourceId, resourceInstance).m_Buffer;
+}
+
+const Resource& RenderGraph::ResourcePool::ResourceInstance::GetResource() const
+{
+    switch (m_Type)
     {
-        m_Buffers.resize(resourceId + 1);
+    case ResourceInstanceType::Texture: // NOLINT(bugprone-branch-clone)
+        Assert(m_Texture != nullptr, "Invalid texture.");
+        return *m_Texture;
+    case ResourceInstanceType::Buffer:
+        Assert(m_Buffer != nullptr, "Invalid buffer.");
+        return *m_Buffer;
+    default:
+        Assert(false, "Invalid resource type.");
+        return *m_Texture;
+    }
+}
+
+RenderGraph::ResourcePool::ResourceInstance& RenderGraph::ResourcePool::AppendResourceInstance(const ResourceId resourceId, const ResourceInstance& resourceInstance)
+{
+    if (resourceId >= m_ResourceInstances.size())
+    {
+        m_ResourceInstances.resize(resourceId + 1);
     }
 
-    return m_Buffers[resourceId] = pBuffer;
+    return m_ResourceInstances[resourceId] = resourceInstance;
 }

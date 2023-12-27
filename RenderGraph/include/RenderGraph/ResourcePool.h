@@ -38,8 +38,6 @@ namespace RenderGraph
         const std::shared_ptr<Buffer>& GetBuffer(ResourceId resourceId) const;
         std::shared_ptr<StructuredBuffer> GetStructuredBuffer(ResourceId resourceId) const;
         std::shared_ptr<ByteAddressBuffer> GetByteAddressBuffer(ResourceId resourceId) const;
-        const std::vector<std::shared_ptr<Texture>>& GetAllTextures() const { return m_Textures; }
-        const std::vector<std::shared_ptr<Buffer>>& GetAllBuffers() const { return m_Buffers; }
 
         void ForEachResource(const std::function<bool(const ResourceDescription&)>& func);
 
@@ -66,8 +64,24 @@ namespace RenderGraph
         const std::shared_ptr<Buffer>& CreateBuffer(ResourceId resourceId);
 
     private:
-        std::vector<std::shared_ptr<Texture>> m_Textures;
-        std::vector<std::shared_ptr<Buffer>> m_Buffers;
+        enum class ResourceInstanceType
+        {
+            Texture,
+            Buffer,
+        };
+
+        struct ResourceInstance
+        {
+            ResourceInstanceType m_Type;
+            std::shared_ptr<Texture> m_Texture;
+            std::shared_ptr<Buffer> m_Buffer;
+
+            const Resource& GetResource() const;
+        };
+
+        ResourceInstance& AppendResourceInstance(ResourceId resourceId, const ResourceInstance& resourceInstance);
+
+        std::vector<ResourceInstance> m_ResourceInstances;
         std::map<ResourceId, ResourceDescription> m_ResourceDescriptions;
         std::vector<TransientResourceAllocator::HeapInfo> m_HeapInfos;
 
