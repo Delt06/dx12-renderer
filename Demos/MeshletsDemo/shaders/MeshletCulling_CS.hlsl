@@ -77,10 +77,10 @@ bool OcclusionCulling(const BoundingSquareSS boundingSquare)
     const float2 boundsSizePixels = (boundingSquare.maxUV - boundingSquare.minUV) * float2(_HDB_Resolution_Width, _HDB_Resolution_Height);
     const float lod = ceil(log2(max(boundsSizePixels.x, boundsSizePixels.y) * 0.5f));
 
-    float maxOccluderDepth = _HDB.SampleLevel(g_Common_LinearClampSampler, boundingSquare.minUV, lod);
-    maxOccluderDepth = max(maxOccluderDepth, _HDB.SampleLevel(g_Common_LinearClampSampler, boundingSquare.maxUV, lod));
-    maxOccluderDepth = max(maxOccluderDepth, _HDB.SampleLevel(g_Common_LinearClampSampler, float2(boundingSquare.minUV.x, boundingSquare.maxUV.y), lod));
-    maxOccluderDepth = max(maxOccluderDepth, _HDB.SampleLevel(g_Common_LinearClampSampler, float2(boundingSquare.maxUV.x, boundingSquare.minUV.y), lod));
+    float maxOccluderDepth = _HDB.SampleLevel(g_Common_PointClampSampler, boundingSquare.minUV, lod);
+    maxOccluderDepth = max(maxOccluderDepth, _HDB.SampleLevel(g_Common_PointClampSampler, boundingSquare.maxUV, lod));
+    maxOccluderDepth = max(maxOccluderDepth, _HDB.SampleLevel(g_Common_PointClampSampler, float2(boundingSquare.minUV.x, boundingSquare.maxUV.y), lod));
+    maxOccluderDepth = max(maxOccluderDepth, _HDB.SampleLevel(g_Common_PointClampSampler, float2(boundingSquare.maxUV.x, boundingSquare.minUV.y), lod));
 
     return boundingSquare.minNdcDepth <= maxOccluderDepth;
 }
