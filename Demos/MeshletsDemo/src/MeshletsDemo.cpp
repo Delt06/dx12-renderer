@@ -257,7 +257,7 @@ void MeshletsDemo::OnImGui()
     {
         {
             ImGui::InputInt("HDB Resolution", reinterpret_cast<int*>(&m_HdbResolution));
-            m_HdbResolution = std::clamp(m_HdbResolution, 0u, 2048u);
+            m_HdbResolution = std::clamp(m_HdbResolution, 4u, 2048u);
         }
 
         {
