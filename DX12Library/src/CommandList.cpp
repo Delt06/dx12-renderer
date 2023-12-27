@@ -730,8 +730,7 @@ void CommandList::SetViewport(const D3D12_VIEWPORT& viewport)
 void CommandList::SetViewports(const std::vector<D3D12_VIEWPORT>& viewports)
 {
     assert(viewports.size() < D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE);
-    m_D3d12CommandList->RSSetViewports(viewports.size(),
-        viewports.data());
+    m_D3d12CommandList->RSSetViewports(static_cast<UINT>(viewports.size()), viewports.data());
 }
 
 void CommandList::SetScissorRect(const D3D12_RECT& scissorRect)
@@ -742,8 +741,7 @@ void CommandList::SetScissorRect(const D3D12_RECT& scissorRect)
 void CommandList::SetScissorRects(const std::vector<D3D12_RECT>& scissorRects)
 {
     assert(scissorRects.size() < D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE);
-    m_D3d12CommandList->RSSetScissorRects(scissorRects.size(),
-        scissorRects.data());
+    m_D3d12CommandList->RSSetScissorRects(static_cast<UINT>(scissorRects.size()), scissorRects.data());
 }
 
 void CommandList::SetPipelineState(const ComPtr<ID3D12PipelineState>& pipelineState)
@@ -967,8 +965,7 @@ void CommandList::SetRenderTarget(const RenderTarget& renderTarget, UINT texArra
 
     const D3D12_CPU_DESCRIPTOR_HANDLE* pDsv = depthStencilDescriptor.ptr != 0 ? &depthStencilDescriptor : nullptr;
 
-    m_D3d12CommandList->OMSetRenderTargets(renderTargetDescriptors.size(),
-        renderTargetDescriptors.data(), FALSE, pDsv);
+    m_D3d12CommandList->OMSetRenderTargets(static_cast<UINT>(renderTargetDescriptors.size()), renderTargetDescriptors.data(), FALSE, pDsv);
 
     m_LastRenderTargetState = RenderTargetState(renderTarget);
 }

@@ -93,7 +93,7 @@ namespace
     std::set<RenderGraph::RenderPass*> FindUnusedPasses(const std::vector<std::vector<RenderGraph::RenderPass*>>& sortedRenderPasses)
     {
         std::set<RenderGraph::ResourceId> usedResources;
-        usedResources.insert(RenderGraph::ResourceIds::GraphOutput);
+        usedResources.insert(RenderGraph::ResourceIds::GRAPH_OUTPUT);
 
         std::set<RenderGraph::RenderPass*> unusedPasses;
 
@@ -115,8 +115,7 @@ namespace
                 const auto& outputs = pPass->GetOutputs();
 
                 // check if any of the outputs is used
-                const auto findResult = std::find_if(
-                    outputs.begin(), outputs.end(),
+                const auto findResult = std::ranges::find_if(outputs,
                     [&usedResources](const RenderGraph::Output& o) { return usedResources.contains(o.m_Id); }
                 );
 
@@ -203,18 +202,18 @@ RenderGraph::RenderGraphRoot::RenderGraphRoot(
 )
     : m_DirectCommandQueue(Application::Get().GetCommandQueue(D3D12_COMMAND_LIST_TYPE_DIRECT))
     , m_RenderPassesDescription(std::move(renderPasses))
-    , m_TextureDescriptions(textures)
-    , m_BufferDescriptions(buffers)
-    , m_TokenDescriptions(tokens)
+    , m_TextureDescriptions(std::move(textures))
+    , m_BufferDescriptions(std::move(buffers))
+    , m_TokenDescriptions(std::move(tokens))
     , m_ResourcePool(std::make_shared<ResourcePool>())
 {
     {
-        auto pCommandList = m_DirectCommandQueue->GetCommandList();
+        const auto pCommandList = m_DirectCommandQueue->GetCommandList();
 
         {
             PIXScope(*pCommandList, L"Render Graph: Init");
 
-            for (auto& pRenderPass : m_RenderPassesDescription)
+            for (const auto& pRenderPass : m_RenderPassesDescription)
             {
                 pRenderPass->Init(*pCommandList);
             }
@@ -308,7 +307,7 @@ void RenderGraph::RenderGraphRoot::DrawToGraphOutput(const RenderMetadata& rende
     const auto pCommandList = m_DirectCommandQueue->GetCommandList();
     auto& commandList = *pCommandList;
 
-    const auto& pGraphOutput = m_ResourcePool->GetTexture(ResourceIds::GraphOutput);
+    const auto& pGraphOutput = m_ResourcePool->GetTexture(ResourceIds::GRAPH_OUTPUT);
     TransitionBarrier(*pGraphOutput, D3D12_RESOURCE_STATE_RENDER_TARGET);
     FlushBarriers(commandList);
 
@@ -467,7 +466,7 @@ void RenderGraph::RenderGraphRoot::Build(const RenderMetadata& renderMetadata)
     }
 
     m_GraphOutputRenderTarget = std::make_shared<RenderTarget>();
-    m_GraphOutputRenderTarget->AttachTexture(Color0, m_ResourcePool->GetTexture(ResourceIds::GraphOutput));
+    m_GraphOutputRenderTarget->AttachTexture(Color0, m_ResourcePool->GetTexture(ResourceIds::GRAPH_OUTPUT));
 }
 
 D3D12_RESOURCE_STATES RenderGraph::RenderGraphRoot::GetCurrentResourceState(const Resource& resource) const
@@ -656,10 +655,9 @@ void RenderGraph::RenderGraphRoot::PrepareResourcesForRenderPass(CommandList& co
 
 void RenderGraph::RenderGraphRoot::SetCurrentResourceState(const Resource& resource, D3D12_RESOURCE_STATES state)
 {
-    const auto existingEntry = m_ResourceStates.find(&resource);
-    if (existingEntry == m_ResourceStates.end())
+    if (const auto existingEntry = m_ResourceStates.find(&resource); existingEntry == m_ResourceStates.end())
     {
-        m_ResourceStates.insert(std::pair<const Resource*, D3D12_RESOURCE_STATES>{ &resource, state });
+        m_ResourceStates.insert(std::pair{ &resource, state });
     }
     else
     {
@@ -697,7 +695,7 @@ void RenderGraph::RenderGraphRoot::AliasingBarrier(const Resource& resourceAfter
     m_PendingBarriers.push_back(barrier);
 }
 
-void RenderGraph::RenderGraphRoot::FlushBarriers(CommandList& commandList)
+void RenderGraph::RenderGraphRoot::FlushBarriers(const CommandList& commandList)
 {
     if (m_PendingBarriers.size() == 0)
     {
@@ -705,11 +703,11 @@ void RenderGraph::RenderGraphRoot::FlushBarriers(CommandList& commandList)
     }
 
     const auto& pDxCmd = commandList.GetGraphicsCommandList();
-    pDxCmd->ResourceBarrier(m_PendingBarriers.size(), m_PendingBarriers.data());
+    pDxCmd->ResourceBarrier(static_cast<UINT>(m_PendingBarriers.size()), m_PendingBarriers.data());
     m_PendingBarriers.clear();
 }
 
-bool RenderGraph::RenderGraphRoot::IsResourceDefined(ResourceId id)
+bool RenderGraph::RenderGraphRoot::IsResourceDefined(const ResourceId id) const
 {
     for (const auto& texture : m_TextureDescriptions)
     {

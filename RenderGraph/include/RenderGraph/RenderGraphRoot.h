@@ -27,7 +27,7 @@ namespace RenderGraph
         );
 
         void Execute(const RenderMetadata& renderMetadata);
-        void Present(const std::shared_ptr<Window>& pWindow, ResourceId resourceId = ResourceIds::GraphOutput);
+        void Present(const std::shared_ptr<Window>& pWindow, ResourceId resourceId = ResourceIds::GRAPH_OUTPUT);
         void DrawToGraphOutput(const RenderMetadata& renderMetadata, const std::function<void(CommandList&)>& drawCallback);
         void MarkDirty();
 
@@ -42,9 +42,9 @@ namespace RenderGraph
         void TransitionBarrier(const Resource& resource, D3D12_RESOURCE_STATES stateAfter);
         void UavBarrier(const Resource& resource);
         void AliasingBarrier(const Resource& resourceAfter);
-        void FlushBarriers(CommandList& commandList);
+        void FlushBarriers(const CommandList& commandList);
 
-        bool IsResourceDefined(ResourceId id);
+        bool IsResourceDefined(ResourceId id) const;
 
         std::shared_ptr<CommandQueue> m_DirectCommandQueue;
 

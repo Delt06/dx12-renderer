@@ -360,7 +360,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
             { ::ResourceIds::User::MeshletDrawCommands, InputType::IndirectArgument },
         },
         {
-            { ResourceIds::GraphOutput, OutputType::RenderTarget },
+            { ResourceIds::GRAPH_OUTPUT, OutputType::RenderTarget },
             { ::ResourceIds::User::DepthBuffer, OutputType::DepthWrite },
             { ::ResourceIds::User::OpaqueFinishedToken, OutputType::Token }
         },
@@ -389,7 +389,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
             { ::ResourceIds::User::OpaqueFinishedToken, InputType::Token },
         },
         {
-            { ResourceIds::GraphOutput, OutputType::RenderTarget },
+            { ResourceIds::GRAPH_OUTPUT, OutputType::RenderTarget },
             { ::ResourceIds::User::DepthBuffer, OutputType::DepthRead }
         },
         [&demo, pRootSignature](const RenderContext&, CommandList& commandList)
@@ -428,7 +428,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
             { ::ResourceIds::User::OpaqueFinishedToken, InputType::Token },
         },
         {
-            { ResourceIds::GraphOutput, OutputType::RenderTarget },
+            { ResourceIds::GRAPH_OUTPUT, OutputType::RenderTarget },
             { ::ResourceIds::User::DepthBuffer, OutputType::DepthRead },
             { ::ResourceIds::User::MainViewFinishedToken, OutputType::Token }
         },
@@ -481,7 +481,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
                 { ::ResourceIds::User::MainViewFinishedToken, InputType::Token },
             },
             {
-                { ResourceIds::GraphOutput, OutputType::RenderTarget },
+                { ResourceIds::GRAPH_OUTPUT, OutputType::RenderTarget },
             },
             [&demo](const RenderContext& context, CommandList& commandList)
             {
@@ -499,7 +499,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
     hdbDesc.m_MipLevels = 0;
 
     std::vector textures = {
-        TextureDescription{ ResourceIds::GraphOutput, renderWidthExpression, renderHeightExpression, Window::BUFFER_FORMAT_SRGB, CLEAR_COLOR, Clear },
+        TextureDescription{ ResourceIds::GRAPH_OUTPUT, renderWidthExpression, renderHeightExpression, Window::BUFFER_FORMAT_SRGB, CLEAR_COLOR, Clear },
         TextureDescription{ ::ResourceIds::User::DepthBuffer, renderWidthExpression, renderHeightExpression, DEPTH_BUFFER_FORMAT, { 1.0f, 0u }, Clear },
         TextureDescription{ ::ResourceIds::User::ImGuiRenderTarget, renderWidthExpression, renderHeightExpression, ImGuiImpl::BUFFER_FORMAT, IMGUI_CLEAR_COLOR, Clear },
         hdbDesc

@@ -11,7 +11,7 @@ namespace
     {
         if (!map.contains(id))
         {
-            map.insert(std::pair<ResourceId, TransientResourceAllocator::ResourceLifecycle>{ id, { id, passIndex, passIndex } });
+            map.insert(std::pair{ id, TransientResourceAllocator::ResourceLifecycle{ id, passIndex, passIndex } });
         }
 
         return map[id];
@@ -55,7 +55,7 @@ std::map<ResourceId, TransientResourceAllocator::ResourceLifecycle> TransientRes
 
     {
         const uint32_t lastPassIndex = static_cast<uint32_t>(renderPasses.size()) - 1;
-        auto& graphOutputLifecycle = GetOrAdd(lifecycles, ResourceIds::GraphOutput, lastPassIndex);
+        auto& graphOutputLifecycle = GetOrAdd(lifecycles, ResourceIds::GRAPH_OUTPUT, lastPassIndex);
         graphOutputLifecycle.m_EndPassIndex = lastPassIndex;
     }
 
@@ -69,10 +69,8 @@ std::vector<TransientResourceAllocator::HeapInfo> TransientResourceAllocator::Cr
 
     for (const auto& [id, lifecycle] : lifecycles)
     {
-        const auto findResult = resourceDescriptions.find(id);
-
         // actually used resources should always be registered at this point
-        if (findResult != resourceDescriptions.end())
+        if (const auto findResult = resourceDescriptions.find(id); findResult != resourceDescriptions.end())
         {
             HeapInfo heapInfo;
             heapInfo.m_Size = findResult->second.m_TotalSize;
@@ -97,8 +95,8 @@ std::vector<TransientResourceAllocator::HeapInfo> TransientResourceAllocator::Cr
 
             for (uint32_t otherIndex = expandingIndex + 1; otherIndex < heaps.size(); ++otherIndex)
             {
-                const auto& otherHeap = heaps[otherIndex];
-                if (otherHeap.m_Size <= expandingHeap.m_Size &&
+                if (const auto& otherHeap = heaps[otherIndex];
+                    otherHeap.m_Size <= expandingHeap.m_Size &&
                     otherHeap.m_Alignment == expandingHeap.m_Alignment &&
                     otherHeap.m_ResourceLifecycles.size() == 1
                     )

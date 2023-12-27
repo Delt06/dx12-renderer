@@ -10,9 +10,11 @@
 #include "RenderPass.h"
 #include "ResourceDescription.h"
 
+using namespace Microsoft::WRL;
+
 namespace
 {
-    UINT GetMsaaQualityLevels(const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice, DXGI_FORMAT format, UINT sampleCount)
+    UINT GetMsaaQualityLevels(const ComPtr<ID3D12Device2>& pDevice, DXGI_FORMAT format, UINT sampleCount)
     {
         D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msLevels;
         msLevels.Format = format;
@@ -23,20 +25,20 @@ namespace
         return msLevels.NumQualityLevels;
     }
 
-    D3D12_RESOURCE_ALLOCATION_INFO GetResourceAllocationInfo(const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice, const CD3DX12_RESOURCE_DESC& desc)
+    D3D12_RESOURCE_ALLOCATION_INFO GetResourceAllocationInfo(const ComPtr<ID3D12Device2>& pDevice, const CD3DX12_RESOURCE_DESC& desc)
     {
         return pDevice->GetResourceAllocationInfo(0, 1, &desc);
     }
 
-    D3D12_RESOURCE_ALLOCATION_INFO GetStructuredBufferResourceAllocationInfo(const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice, const D3D12_RESOURCE_DESC& desc, const D3D12_RESOURCE_DESC& counterDesc)
+    D3D12_RESOURCE_ALLOCATION_INFO GetStructuredBufferResourceAllocationInfo(const ComPtr<ID3D12Device2>& pDevice, const D3D12_RESOURCE_DESC& desc, const D3D12_RESOURCE_DESC& counterDesc)
     {
-        D3D12_RESOURCE_DESC descs[2] = { counterDesc, desc };
+        const D3D12_RESOURCE_DESC descs[2] = { counterDesc, desc };
         return pDevice->GetResourceAllocationInfo(0, 2, descs);
     }
 
     std::shared_ptr<Texture> CreateTextureImpl(
         const RenderGraph::ResourceDescription& desc,
-        const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap
+        const ComPtr<ID3D12Heap>& pHeap
     )
     {
         const bool useClearValue =
@@ -57,7 +59,7 @@ namespace
 
     std::shared_ptr<Buffer> CreateBufferImpl(
         const RenderGraph::ResourceDescription& desc,
-        const Microsoft::WRL::ComPtr<ID3D12Heap>& pHeap
+        const ComPtr<ID3D12Heap>& pHeap
     )
     {
         constexpr UINT64 heapOffset = 0u;
@@ -116,70 +118,62 @@ void RenderGraph::ResourcePool::BeginFrame(CommandList& commandList)
         }
     }
 }
-const Resource& RenderGraph::ResourcePool::GetResource(ResourceId resourceId) const
+const Resource& RenderGraph::ResourcePool::GetResource(const ResourceId resourceId) const
 {
     Assert(IsRegistered(resourceId), "Resource is not registered.");
 
-    if (resourceId < m_Textures.size())
+    if (resourceId < m_ResourceInstances.size())
     {
-        const auto& pTexture = m_Textures[resourceId];
-
-        if (pTexture != nullptr)
-        {
-            return *pTexture;
-        }
-    }
-
-    if (resourceId < m_Buffers.size())
-    {
-        const auto& pBuffer = m_Buffers[resourceId];
-
-        if (pBuffer != nullptr)
-        {
-            return *pBuffer;
-        }
+        const ResourceInstance& resourceInstance = m_ResourceInstances[resourceId];
+        return resourceInstance.GetResource();
     }
 
     throw std::exception("Not implemented");
 }
 
-const std::shared_ptr<Texture>& RenderGraph::ResourcePool::GetTexture(ResourceId resourceId) const
+const std::shared_ptr<Texture>& RenderGraph::ResourcePool::GetTexture(const ResourceId resourceId) const
 {
     Assert(IsRegistered(resourceId), "Resource is not registered.");
-    Assert(resourceId < m_Textures.size(), "Resource ID out of range.");
+    Assert(resourceId < m_ResourceInstances.size(), "Resource ID out of range.");
     Assert(m_ResourceDescriptions.at(resourceId).m_ResourceType == ResourceType::Texture, "Invalid resource type.");
-    return m_Textures[resourceId];
+
+    const ResourceInstance& resourceInstance = m_ResourceInstances[resourceId];
+    Assert(resourceInstance.m_Type == ResourceInstanceType::Texture, "Invalid resource type.");
+    return resourceInstance.m_Texture;
 }
 
-const std::shared_ptr<Buffer>& RenderGraph::ResourcePool::GetBuffer(ResourceId resourceId) const
+const std::shared_ptr<Buffer>& RenderGraph::ResourcePool::GetBuffer(const ResourceId resourceId) const
 {
     Assert(IsRegistered(resourceId), "Resource is not registered.");
-    Assert(resourceId < m_Buffers.size(), "Resource ID out of range.");
+    Assert(resourceId < m_ResourceInstances.size(), "Resource ID out of range.");
     Assert(m_ResourceDescriptions.at(resourceId).m_ResourceType == ResourceType::Buffer, "Invalid resource type.");
-    return m_Buffers[resourceId];
+
+    const ResourceInstance& resourceInstance = m_ResourceInstances[resourceId];
+    Assert(resourceInstance.m_Type == ResourceInstanceType::Buffer, "Invalid resource type.");
+    return resourceInstance.m_Buffer;
 }
 
 std::shared_ptr<StructuredBuffer> RenderGraph::ResourcePool::GetStructuredBuffer(const ResourceId resourceId) const
 {
-    const auto& pBuffer = GetBuffer(resourceId);
-    const auto pStructuredBuffer = std::dynamic_pointer_cast<StructuredBuffer>(pBuffer);
+    const std::shared_ptr<Buffer>& pBuffer = GetBuffer(resourceId);
+    const std::shared_ptr<StructuredBuffer> pStructuredBuffer = std::dynamic_pointer_cast<StructuredBuffer>(pBuffer);
     Assert(pStructuredBuffer != nullptr, "Invalid cast");
     return pStructuredBuffer;
 }
 
 std::shared_ptr<ByteAddressBuffer> RenderGraph::ResourcePool::GetByteAddressBuffer(ResourceId resourceId) const
 {
-    const auto& pBuffer = GetBuffer(resourceId);
-    const auto pByteAddressBuffer = std::dynamic_pointer_cast<ByteAddressBuffer>(pBuffer);
+    const std::shared_ptr<Buffer>& pBuffer = GetBuffer(resourceId);
+    const std::shared_ptr<ByteAddressBuffer> pByteAddressBuffer = std::dynamic_pointer_cast<ByteAddressBuffer>(pBuffer);
     Assert(pByteAddressBuffer != nullptr, "Invalid cast");
     return pByteAddressBuffer;
 }
 
 void RenderGraph::ResourcePool::ForEachResource(const std::function<bool(const ResourceDescription&)>& func)
 {
-    for (const auto& [key, value] : m_ResourceDescriptions)
+    for (const auto& [resourceId, resourceDescription] : m_ResourceDescriptions)
     {
-        if (const bool shouldContinue = func(value); !shouldContinue)
+        if (const bool shouldContinue = func(resourceDescription); !shouldContinue)
         {
             break;
         }
@@ -188,16 +182,17 @@ void RenderGraph::ResourcePool::ForEachResource(const std::function<bool(const R
 
 const RenderGraph::TransientResourceAllocator::ResourceLifecycle& RenderGraph::ResourcePool::GetResourceLifecycle(ResourceId resourceId)
 {
-    const auto& indices = m_ResourceHeapIndices[resourceId];
-    return m_HeapInfos[indices.first].m_ResourceLifecycles[indices.second];
+    const ResourceHeapInfo& resourceHeapInfo = m_ResourceHeapInfo[resourceId];
+    const TransientResourceAllocator::HeapInfo& heapInfo = m_HeapInfos[resourceHeapInfo.m_HeapIndex];
+    return heapInfo.m_ResourceLifecycles[resourceHeapInfo.m_LifecycleIndex];
 }
 
-bool RenderGraph::ResourcePool::IsRegistered(ResourceId resourceId) const
+bool RenderGraph::ResourcePool::IsRegistered(const ResourceId resourceId) const
 {
     return m_ResourceDescriptions.contains(resourceId);
 }
 
-const RenderGraph::ResourceDescription& RenderGraph::ResourcePool::GetDescription(ResourceId resourceId) const
+const RenderGraph::ResourceDescription& RenderGraph::ResourcePool::GetDescription(const ResourceId resourceId) const
 {
     Assert(IsRegistered(resourceId), "The resource is not registered.");
     return m_ResourceDescriptions.find(resourceId)->second;
@@ -218,13 +213,12 @@ void RenderGraph::ResourcePool::Clear()
 
     m_ResourceDescriptions.clear();
     m_HeapInfos.clear();
-    m_ResourceHeapIndices.clear();
+    m_ResourceHeapInfo.clear();
 
-    m_Textures.clear();
-    m_Buffers.clear();
+    m_ResourceInstances.clear();
 }
 
-void RenderGraph::ResourcePool::InitHeaps(const std::vector<RenderPass*>& renderPasses, const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice)
+void RenderGraph::ResourcePool::InitHeaps(const std::vector<RenderPass*>& renderPasses, const ComPtr<ID3D12Device2>& pDevice)
 {
     const auto lifecycles = TransientResourceAllocator::GetResourceLifecycles(renderPasses);
     m_HeapInfos = TransientResourceAllocator::CreateHeaps(lifecycles, m_ResourceDescriptions, pDevice);
@@ -236,12 +230,12 @@ void RenderGraph::ResourcePool::InitHeaps(const std::vector<RenderPass*>& render
         for (uint32_t lifecycleIndex = 0; lifecycleIndex < heapInfo.m_ResourceLifecycles.size(); ++lifecycleIndex)
         {
             const auto& lifecycle = heapInfo.m_ResourceLifecycles[lifecycleIndex];
-            m_ResourceHeapIndices[lifecycle.m_Id] = std::pair<uint32_t, uint32_t>{ heapIndex, lifecycleIndex };
+            m_ResourceHeapInfo[lifecycle.m_Id] = { heapIndex, lifecycleIndex };
         }
     }
 }
 
-void RenderGraph::ResourcePool::RegisterTexture(const TextureDescription& desc, const std::vector<RenderPass*>& renderPasses, const RenderMetadata& renderMetadata, const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice)
+void RenderGraph::ResourcePool::RegisterTexture(const TextureDescription& desc, const std::vector<RenderPass*>& renderPasses, const RenderMetadata& renderMetadata, const ComPtr<ID3D12Device2>& pDevice)
 {
     D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
     auto textureUsageType = TextureUsageType::Other;
@@ -323,7 +317,7 @@ void RenderGraph::ResourcePool::RegisterTexture(const TextureDescription& desc, 
     m_ResourceDescriptions[desc.m_Id] = description;
 }
 
-void RenderGraph::ResourcePool::RegisterBuffer(const BufferDescription& desc, const std::vector<RenderPass*>& renderPasses, const RenderMetadata& renderMetadata, const Microsoft::WRL::ComPtr<ID3D12Device2>& pDevice)
+void RenderGraph::ResourcePool::RegisterBuffer(const BufferDescription& desc, const std::vector<RenderPass*>& renderPasses, const RenderMetadata& renderMetadata, const ComPtr<ID3D12Device2>& pDevice)
 {
     D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
 
@@ -356,8 +350,8 @@ void RenderGraph::ResourcePool::RegisterBuffer(const BufferDescription& desc, co
         resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
     }
 
-    const auto elementsCount = desc.m_SizeExpression(renderMetadata);
-    const auto totalSize = elementsCount * desc.m_Stride;
+    const size_t elementsCount = desc.m_SizeExpression(renderMetadata);
+    const size_t totalSize = elementsCount * desc.m_Stride;
     const auto dxDesc = CD3DX12_RESOURCE_DESC::Buffer(totalSize, resourceFlags);
 
     ResourceDescription description = {};
@@ -378,32 +372,56 @@ const std::shared_ptr<Texture>& RenderGraph::ResourcePool::CreateTexture(const R
 {
     Assert(IsRegistered(resourceId), "The resource is not registered.");
 
-    const auto& resourceMetadata = m_ResourceDescriptions[resourceId];
-    const auto heapIndex = m_ResourceHeapIndices[resourceId].first;
-    const auto& pHeap = m_HeapInfos[heapIndex].m_Heap;
-    const auto pTexture = CreateTextureImpl(resourceMetadata, pHeap);
+    const ResourceDescription& resourceDescription = m_ResourceDescriptions[resourceId];
+    const uint32_t heapIndex = m_ResourceHeapInfo[resourceId].m_HeapIndex;
+    const ComPtr<ID3D12Heap>& pHeap = m_HeapInfos[heapIndex].m_Heap;
+    const std::shared_ptr<Texture> pTexture = CreateTextureImpl(resourceDescription, pHeap);
 
-    if (resourceId >= m_Textures.size())
-    {
-        m_Textures.resize(resourceId + 1);
-    }
+    ResourceInstance resourceInstance = {};
+    resourceInstance.m_Type = ResourceInstanceType::Texture;
+    resourceInstance.m_Texture = pTexture;
 
-    return m_Textures[resourceId] = pTexture;
+    return AppendResourceInstance(resourceId, resourceInstance).m_Texture;
 }
 
 const std::shared_ptr<Buffer>& RenderGraph::ResourcePool::CreateBuffer(const ResourceId resourceId)
 {
     Assert(IsRegistered(resourceId), "The resource is not registered.");
 
-    const auto& resourceMetadata = m_ResourceDescriptions[resourceId];
-    const auto heapIndex = m_ResourceHeapIndices[resourceId].first;
-    const auto& pHeap = m_HeapInfos[heapIndex].m_Heap;
-    const auto pBuffer = CreateBufferImpl(resourceMetadata, pHeap);
+    const ResourceDescription& resourceMetadata = m_ResourceDescriptions[resourceId];
+    const uint32_t heapIndex = m_ResourceHeapInfo[resourceId].m_HeapIndex;
+    const ComPtr<ID3D12Heap>& pHeap = m_HeapInfos[heapIndex].m_Heap;
+    const std::shared_ptr<Buffer> pBuffer = CreateBufferImpl(resourceMetadata, pHeap);
 
-    if (resourceId >= m_Buffers.size())
+    ResourceInstance resourceInstance = {};
+    resourceInstance.m_Type = ResourceInstanceType::Buffer;
+    resourceInstance.m_Buffer = pBuffer;
+
+    return AppendResourceInstance(resourceId, resourceInstance).m_Buffer;
+}
+
+const Resource& RenderGraph::ResourcePool::ResourceInstance::GetResource() const
+{
+    switch (m_Type)
     {
-        m_Buffers.resize(resourceId + 1);
+    case ResourceInstanceType::Texture: // NOLINT(bugprone-branch-clone)
+        Assert(m_Texture != nullptr, "Invalid texture.");
+        return *m_Texture;
+    case ResourceInstanceType::Buffer:
+        Assert(m_Buffer != nullptr, "Invalid buffer.");
+        return *m_Buffer;
+    default:
+        Assert(false, "Invalid resource type.");
+        return *m_Texture;
+    }
+}
+
+RenderGraph::ResourcePool::ResourceInstance& RenderGraph::ResourcePool::AppendResourceInstance(const ResourceId resourceId, const ResourceInstance& resourceInstance)
+{
+    if (resourceId >= m_ResourceInstances.size())
+    {
+        m_ResourceInstances.resize(resourceId + 1);
     }
 
-    return m_Buffers[resourceId] = pBuffer;
+    return m_ResourceInstances[resourceId] = resourceInstance;
 }
