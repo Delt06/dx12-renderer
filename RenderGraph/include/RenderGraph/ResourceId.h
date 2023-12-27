@@ -15,7 +15,7 @@ namespace RenderGraph
         static ResourceId GetResourceId(const wchar_t* name);
         static const std::wstring& GetResourceName(ResourceId id);
 
-        static const ResourceId GraphOutput;
+        static const ResourceId GRAPH_OUTPUT;
 
     private:
         static inline std::vector<std::wstring> s_Names = { L"Null" };

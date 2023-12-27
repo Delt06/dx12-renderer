@@ -151,7 +151,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
                 { ::ResourceIds::User::ColorSplitBuffer, InputType::ShaderResource },
             },
             {
-                { RenderGraph::ResourceIds::GraphOutput, OutputType::RenderTarget }
+                { RenderGraph::ResourceIds::GRAPH_OUTPUT, OutputType::RenderTarget }
             },
             [pBlitMesh, pMaterial](const auto& context, auto& commandList)
             {
@@ -195,7 +195,7 @@ std::unique_ptr<RenderGraph::RenderGraphRoot> RenderGraph::User::Create(
         {::ResourceIds::User::TempRenderTarget, renderWidthExpression, renderHeightExpression, BACK_BUFFER_FORMAT, CLEAR_COLOR, ResourceInitAction::CopyDestination},
         {::ResourceIds::User::TempRenderTarget2, renderWidthExpression, renderHeightExpression, BACK_BUFFER_FORMAT, CLEAR_COLOR, ResourceInitAction::Clear},
         {::ResourceIds::User::TempRenderTarget3, renderWidthExpression, renderHeightExpression, BACK_BUFFER_FORMAT, CLEAR_COLOR, ResourceInitAction::Clear},
-        {RenderGraph::ResourceIds::GraphOutput, renderWidthExpression, renderHeightExpression, Window::BUFFER_FORMAT_SRGB, CLEAR_COLOR, ResourceInitAction::Discard},
+        {RenderGraph::ResourceIds::GRAPH_OUTPUT, renderWidthExpression, renderHeightExpression, Window::BUFFER_FORMAT_SRGB, CLEAR_COLOR, ResourceInitAction::Discard},
     };
 
     struct ColorSplitEntry

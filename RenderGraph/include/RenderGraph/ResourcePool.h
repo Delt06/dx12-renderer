@@ -73,7 +73,12 @@ namespace RenderGraph
 
         std::queue<std::pair<Microsoft::WRL::ComPtr<ID3D12Resource>, uint64_t>> m_DeferredDeletionQueue;
 
-        // pair: heap index, lifecycle index
-        std::map<ResourceId, std::pair<uint32_t, uint32_t>> m_ResourceHeapIndices;
+        struct ResourceHeapInfo
+        {
+            uint32_t m_HeapIndex;
+            uint32_t m_LifecycleIndex;
+        };
+
+        std::map<ResourceId, ResourceHeapInfo> m_ResourceHeapInfo;
     };
 }

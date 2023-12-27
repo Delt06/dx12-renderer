@@ -2,7 +2,7 @@
 
 namespace RenderGraph
 {
-    class LambdaRenderPass : public RenderPass
+    class LambdaRenderPass final : public RenderPass
     {
     public:
         LambdaRenderPass(
@@ -22,19 +22,14 @@ namespace RenderGraph
             }
         }
 
-        virtual ~LambdaRenderPass() override
-        {
-            m_ExecuteFunc = nullptr;
-        }
+        ~LambdaRenderPass() override = default;
 
     protected:
-        virtual void InitImpl(CommandList& commandList) override
-        {
-        }
+        void InitImpl(CommandList& commandList) override
+        {}
 
-        virtual void ExecuteImpl(const RenderContext& context, CommandList& commandList) override
+        void ExecuteImpl(const RenderContext& context, CommandList& commandList) override
         {
-
             m_ExecuteFunc(context, commandList);
         }
 
@@ -49,7 +44,7 @@ std::unique_ptr<RenderGraph::RenderPass> RenderGraph::RenderPass::Create(
     const std::vector<Output>& outputs,
     const ExecuteFuncT& executeFunc)
 {
-    auto pRenderPass = new LambdaRenderPass(inputs, outputs, executeFunc);
+    const auto pRenderPass = new LambdaRenderPass(inputs, outputs, executeFunc);
     pRenderPass->SetPassName(passName);
     return std::unique_ptr<RenderPass>(pRenderPass);
 }
@@ -59,23 +54,23 @@ void RenderGraph::RenderPass::Init(CommandList& commandList)
     InitImpl(commandList);
 }
 
-void RenderGraph::RenderPass::Execute(const RenderGraph::RenderContext& context, CommandList& commandList)
+void RenderGraph::RenderPass::Execute(const RenderContext& context, CommandList& commandList)
 {
     ExecuteImpl(context, commandList);
 }
 
-void RenderGraph::RenderPass::RegisterInput(const RenderGraph::Input& input)
+void RenderGraph::RenderPass::RegisterInput(const Input& input)
 {
     Assert(input.m_Type != InputType::Invalid, "Input is invalid.");
-    Assert(std::find_if(m_Inputs.begin(), m_Inputs.end(), [input](const auto& i) { return i.m_Id == input.m_Id; }) == m_Inputs.end(), "Input with such ID is already registered.");
+    Assert(std::ranges::find_if(m_Inputs, [input](const auto& i) { return i.m_Id == input.m_Id; }) == m_Inputs.end(), "Input with such ID is already registered.");
 
     m_Inputs.push_back(input);
 }
 
-void RenderGraph::RenderPass::RegisterOutput(const RenderGraph::Output& output)
+void RenderGraph::RenderPass::RegisterOutput(const Output& output)
 {
     Assert(output.m_Type != OutputType::Invalid, "Output is invalid.");
-    Assert(std::find_if(m_Outputs.begin(), m_Outputs.end(), [output](const auto& o) { return o.m_Id == output.m_Id; }) == m_Outputs.end(), "Output with such ID is already registered.");
+    Assert(std::ranges::find_if(m_Outputs, [output](const auto& o) { return o.m_Id == output.m_Id; }) == m_Outputs.end(), "Output with such ID is already registered.");
 
     m_Outputs.push_back(output);
 }
@@ -89,4 +84,3 @@ void RenderGraph::RenderPass::SetPassName(const std::wstring& passName)
 {
     m_PassName = passName;
 }
-
